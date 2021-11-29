@@ -59,7 +59,8 @@ def test_cirim(shape, cascades, center_fractions, accelerations):
     with torch.no_grad():
         y = torch.view_as_complex(next(cirim.inference(output, output, mask, accumulate_estimates=True))[0][-1])
 
-    assert y.shape[1:] == x.shape[2:4]
+    if y.shape[1:] != x.shape[2:4]:
+        raise AssertionError
 
 
 @pytest.mark.parametrize(
@@ -86,7 +87,8 @@ def test_unet(shape, out_chans, chans):
 
     y = unet(x)
 
-    assert y.shape[1] == out_chans
+    if y.shape[1] != out_chans:
+        raise AssertionError
 
 
 @pytest.mark.parametrize(
@@ -128,4 +130,5 @@ def test_varnet(shape, chans, center_fractions, accelerations, mask_center):
 
     y = varnet(output, np.array([]), mask.byte())
 
-    assert y.shape[1:] == x.shape[2:4]
+    if y.shape[1:] != x.shape[2:4]:
+        raise AssertionError

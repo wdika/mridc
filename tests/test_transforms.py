@@ -26,8 +26,10 @@ def test_to_tensor(x):
         None
     """
     x = to_tensor(x)
-    assert x.dim() == 4
-    assert x.shape[-1] == 2
+    if x.dim() != 4:
+        raise AssertionError
+    if x.shape[-1] != 2:
+        raise AssertionError
 
 
 @pytest.mark.parametrize("x", [(torch.zeros([1, 320, 320, 2]).type(torch.complex64))])
@@ -42,8 +44,10 @@ def test_tensor_to_complex_np(x):
         None
     """
     x = tensor_to_complex_np(x)
-    assert x.ndim == 3
-    assert x.shape[-1] != 2
+    if x.ndim != 3:
+        raise AssertionError
+    if x.shape[-1] == 2:
+        raise AssertionError
 
 
 @pytest.mark.parametrize("x, crop_size", [(torch.zeros([320, 320]).type(torch.complex64), (160, 160))])
@@ -59,7 +63,8 @@ def test_center_crop(x, crop_size):
         None
     """
     x = center_crop(x, crop_size)
-    assert x.shape == crop_size
+    if x.shape != crop_size:
+        raise AssertionError
 
 
 @pytest.mark.parametrize("x, crop_size", [(torch.zeros([320, 320, 2]).type(torch.complex64), (160, 160))])
@@ -75,7 +80,8 @@ def test_complex_center_crop(x, crop_size):
         None
     """
     x = complex_center_crop(x, crop_size)
-    assert x.shape[:-1] == crop_size
+    if x.shape[:-1] != crop_size:
+        raise AssertionError
 
 
 @pytest.mark.parametrize(
@@ -93,4 +99,5 @@ def test_center_crop_to_smallest(x, y):
         None
     """
     x, y = center_crop_to_smallest(x, y)
-    assert x.shape == y.shape
+    if x.shape != y.shape:
+        raise AssertionError

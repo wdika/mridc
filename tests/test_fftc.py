@@ -32,7 +32,8 @@ def test_orthogonal_fft2(shape):
     out_numpy = np.fft.fft2(input_numpy, norm="ortho")
     out_numpy = np.fft.fftshift(out_numpy, (-2, -1))
 
-    assert np.allclose(out_torch, out_numpy)
+    if not np.allclose(out_torch, out_numpy):
+        raise AssertionError
 
 
 @pytest.mark.parametrize("shape", [[3, 3], [4, 6], [10, 8, 4]])
@@ -54,7 +55,8 @@ def test_non_orthogonal_fft2(shape):
     input_numpy = tensor_to_complex_np(x)
     out_numpy = np.fft.fft2(input_numpy, norm="ortho")
 
-    assert np.allclose(out_torch, out_numpy)
+    if not np.allclose(out_torch, out_numpy):
+        raise AssertionError
 
 
 @pytest.mark.parametrize("shape", [[3, 3], [4, 6], [10, 8, 4]])
@@ -78,7 +80,8 @@ def test_orthogonal_fft2_backward_normalization(shape):
     out_numpy = np.fft.fft2(input_numpy, norm="backward")
     out_numpy = np.fft.fftshift(out_numpy, (-2, -1))
 
-    assert np.allclose(out_torch, out_numpy)
+    if not np.allclose(out_torch, out_numpy):
+        raise AssertionError
 
 
 @pytest.mark.parametrize("shape", [[3, 3], [4, 6], [10, 8, 4]])
@@ -102,7 +105,8 @@ def test_orthogonal_fft2_forward_normalization(shape):
     out_numpy = np.fft.fft2(input_numpy, norm="forward")
     out_numpy = np.fft.fftshift(out_numpy, (-2, -1))
 
-    assert np.allclose(out_torch, out_numpy)
+    if not np.allclose(out_torch, out_numpy):
+        raise AssertionError
 
 
 @pytest.mark.parametrize("shape", [[3, 3], [4, 6], [10, 8, 4]])
@@ -126,7 +130,8 @@ def test_orthogonal_ifft2(shape):
     out_numpy = np.fft.ifft2(input_numpy, norm="ortho")
     out_numpy = np.fft.fftshift(out_numpy, (-2, -1))
 
-    assert np.allclose(out_torch, out_numpy)
+    if not np.allclose(out_torch, out_numpy):
+        raise AssertionError
 
 
 @pytest.mark.parametrize("shape", [[3, 3], [4, 6], [10, 8, 4]])
@@ -148,7 +153,8 @@ def test_non_orthogonal_ifft2(shape):
     input_numpy = tensor_to_complex_np(x)
     out_numpy = np.fft.ifft2(input_numpy, norm="ortho")
 
-    assert np.allclose(out_torch, out_numpy)
+    if not np.allclose(out_torch, out_numpy):
+        raise AssertionError
 
 
 @pytest.mark.parametrize("shape", [[3, 3], [4, 6], [10, 8, 4]])
@@ -172,7 +178,8 @@ def test_orthogonal_ifft2_backward_normalization(shape):
     out_numpy = np.fft.ifft2(input_numpy, norm="backward")
     out_numpy = np.fft.fftshift(out_numpy, (-2, -1))
 
-    assert np.allclose(out_torch, out_numpy)
+    if not np.allclose(out_torch, out_numpy):
+        raise AssertionError
 
 
 @pytest.mark.parametrize("shape", [[3, 3], [4, 6], [10, 8, 4]])
@@ -196,7 +203,8 @@ def test_orthogonal_ifft2_forward_normalization(shape):
     out_numpy = np.fft.ifft2(input_numpy, norm="forward")
     out_numpy = np.fft.fftshift(out_numpy, (-2, -1))
 
-    assert np.allclose(out_torch, out_numpy)
+    if not np.allclose(out_torch, out_numpy):
+        raise AssertionError
 
 
 @pytest.mark.parametrize("shape", [[3, 3], [4, 6], [10, 8, 4]])
@@ -216,7 +224,8 @@ def test_complex_abs(shape):
     input_numpy = tensor_to_complex_np(x)
     out_numpy = np.abs(input_numpy)
 
-    assert np.allclose(out_torch, out_numpy)
+    if not np.allclose(out_torch, out_numpy):
+        raise AssertionError
 
 
 @pytest.mark.parametrize("shift, dim", [(0, 0), (1, 0), (-1, 0), (100, 0), ([1, 2], [1, 2])])
@@ -243,7 +252,8 @@ def test_roll(shift, dim, shape):
     out_torch = roll(torch.from_numpy(x), torch_shift, torch_dim).numpy()
     out_numpy = np.roll(x, shift, dim)
 
-    assert np.allclose(out_torch, out_numpy)
+    if not np.allclose(out_torch, out_numpy):
+        raise AssertionError
 
 
 @pytest.mark.parametrize("shape", [[5, 3], [2, 4, 6]])
@@ -261,7 +271,8 @@ def test_fftshift(shape):
     out_torch = fftshift(torch.from_numpy(x)).numpy()
     out_numpy = np.fft.fftshift(x)
 
-    assert np.allclose(out_torch, out_numpy)
+    if not np.allclose(out_torch, out_numpy):
+        raise AssertionError
 
 
 @pytest.mark.parametrize("shape", [[5, 3], [2, 4, 5], [2, 7, 5]])
@@ -279,4 +290,5 @@ def test_ifftshift(shape):
     out_torch = ifftshift(torch.from_numpy(x)).numpy()
     out_numpy = np.fft.ifftshift(x)
 
-    assert np.allclose(out_torch, out_numpy)
+    if not np.allclose(out_torch, out_numpy):
+        raise AssertionError
