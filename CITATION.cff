@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Karkalousos
+    given-names: Dimitrios
+    orcid: https://orcid.org/0000-0001-5983-0322
+  - family-names: Caan
+    given-names: Matthan
+    orcid: https://orcid.org/0000-0002-5162-8880
+title: "MRI Data Consistency"
+version: 0.0.1
+date-released: 2021-29-11
