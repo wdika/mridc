@@ -41,11 +41,16 @@ def test_create_mask_for_random_type(
     mask, acc = mask_func(x, seed, half_scan_percentage)
     mask = mask.squeeze(0).numpy()
 
-    assert isinstance(mask_func, expected_mask_func)
-    assert accelerations[0] <= mask_func.choose_acceleration()[1] <= accelerations[1]
-    assert mask.shape == (x[1], 1)
-    assert mask.dtype == np.float32
-    assert accelerations[0] <= acc <= accelerations[1]
+    if not isinstance(mask_func, expected_mask_func):
+        raise AssertionError
+    if not accelerations[0] <= mask_func.choose_acceleration()[1] <= accelerations[1]:
+        raise AssertionError
+    if mask.shape != (x[1], 1):
+        raise AssertionError
+    if mask.dtype != np.float32:
+        raise AssertionError
+    if not accelerations[0] <= acc <= accelerations[1]:
+        raise AssertionError
 
 
 @pytest.mark.parametrize(
@@ -75,11 +80,16 @@ def test_create_mask_for_equispaced_type(
     mask, acc = mask_func(x, seed, half_scan_percentage)
     mask = mask.squeeze(0).numpy()
 
-    assert isinstance(mask_func, expected_mask_func)
-    assert accelerations[0] <= mask_func.choose_acceleration()[1] <= accelerations[1]
-    assert mask.shape == (x[1], 1)
-    assert mask.dtype == np.float32
-    assert accelerations[0] <= acc <= accelerations[1]
+    if not isinstance(mask_func, expected_mask_func):
+        raise AssertionError
+    if not accelerations[0] <= mask_func.choose_acceleration()[1] <= accelerations[1]:
+        raise AssertionError
+    if mask.shape != (x[1], 1):
+        raise AssertionError
+    if mask.dtype != np.float32:
+        raise AssertionError
+    if not accelerations[0] <= acc <= accelerations[1]:
+        raise AssertionError
 
 
 @pytest.mark.parametrize(
@@ -110,11 +120,16 @@ def test_create_mask_for_gaussian1d_type(
     mask, acc = mask_func(x, seed, half_scan_percentage, scale)
     mask = mask.squeeze(0).numpy()
 
-    assert isinstance(mask_func, expected_mask_func)
-    assert accelerations[0] <= mask_func.choose_acceleration()[1] <= accelerations[1]
-    assert mask.shape == (x[1], 1)
-    assert mask.dtype == np.float32
-    assert accelerations[0] <= acc <= accelerations[1]
+    if not isinstance(mask_func, expected_mask_func):
+        raise AssertionError
+    if not accelerations[0] <= mask_func.choose_acceleration()[1] <= accelerations[1]:
+        raise AssertionError
+    if mask.shape != (x[1], 1):
+        raise AssertionError
+    if mask.dtype != np.float32:
+        raise AssertionError
+    if not accelerations[0] <= acc <= accelerations[1]:
+        raise AssertionError
 
 
 @pytest.mark.parametrize(
@@ -145,8 +160,13 @@ def test_create_mask_for_gaussian2d_type(
     mask, acc = mask_func(x, seed, half_scan_percentage, scale)
     mask = mask.squeeze(0).squeeze(-1).numpy()
 
-    assert isinstance(mask_func, expected_mask_func)
-    assert accelerations[0] <= mask_func.choose_acceleration()[1] <= accelerations[1]
-    assert mask.shape == tuple(x[1:-1])
-    assert mask.dtype == np.float32
-    assert accelerations[0] <= acc <= accelerations[1]
+    if not isinstance(mask_func, expected_mask_func):
+        raise AssertionError
+    if not accelerations[0] <= mask_func.choose_acceleration()[1] <= accelerations[1]:
+        raise AssertionError
+    if mask.shape != tuple(x[1:-1]):
+        raise AssertionError
+    if mask.dtype != np.float32:
+        raise AssertionError
+    if not accelerations[0] <= acc <= accelerations[1]:
+        raise AssertionError
