@@ -89,7 +89,7 @@ class CombinedSliceDataset(torch.utils.data.Dataset):
             sample_rates = [None] * len(roots)
         if volume_sample_rates is None:
             volume_sample_rates = [None] * len(roots)
-        if not (len(roots) == len(transforms) == len(challenges) == len(sample_rates) == len(volume_sample_rates)):
+        if not len(roots) == len(transforms) == len(challenges) == len(sample_rates) == len(volume_sample_rates):
             raise ValueError("Lengths of roots, transforms, challenges, sample_rates do not match")
 
         self.datasets = []
