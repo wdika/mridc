@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.collections.reconstruction.models.sigmanet.sensitivity_net &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../../../../../" id="documentation_options" src="../../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../../_static/jquery.js"></script>
+        <script src="../../../../../../_static/underscore.js"></script>
+        <script src="../../../../../../_static/doctools.js"></script>
+    <script src="../../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../../../index.html">Module code</a> &raquo;</li>
+      <li>mridc.collections.reconstruction.models.sigmanet.sensitivity_net</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.collections.reconstruction.models.sigmanet.sensitivity_net</h1><div class="highlight"><pre>
+<span></span><span class="c1"># coding=utf-8</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="c1"># Taken and adapted from:</span>
+<span class="c1"># https://github.com/khammernik/sigmanet/blob/master/reconstruction/common/mytorch/models/sn.py</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+
+
+<div class="viewcode-block" id="matrix_invert"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.matrix_invert">[docs]</a><span class="k">def</span> <span class="nf">matrix_invert</span><span class="p">(</span><span class="n">xx</span><span class="p">,</span> <span class="n">xy</span><span class="p">,</span> <span class="n">yx</span><span class="p">,</span> <span class="n">yy</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Invert a 2x2 matrix.&quot;&quot;&quot;</span>
+    <span class="n">det</span> <span class="o">=</span> <span class="n">xx</span> <span class="o">*</span> <span class="n">yy</span> <span class="o">-</span> <span class="n">xy</span> <span class="o">*</span> <span class="n">yx</span>
+    <span class="k">return</span> <span class="n">yy</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">det</span><span class="p">),</span> <span class="o">-</span><span class="n">xy</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">det</span><span class="p">),</span> <span class="o">-</span><span class="n">yx</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">det</span><span class="p">),</span> <span class="n">xx</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">det</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ComplexInstanceNorm"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexInstanceNorm">[docs]</a><span class="k">class</span> <span class="nc">ComplexInstanceNorm</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Motivated by &#39;Deep Complex Networks&#39; (https://arxiv.org/pdf/1705.09792.pdf)&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ComplexInstanceNorm</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mean</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cov_xx_half</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cov_xy_half</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cov_yx_half</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cov_yy_half</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ComplexInstanceNorm.complex_instance_norm"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexInstanceNorm.complex_instance_norm">[docs]</a>    <span class="k">def</span> <span class="nf">complex_instance_norm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Operates on images x of size [nBatch, nSmaps, nFE, nPE, 2]&quot;&quot;&quot;</span>
+        <span class="n">x_combined</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">mean</span> <span class="o">=</span> <span class="n">x_combined</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">x_m</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="n">mean</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mean</span> <span class="o">=</span> <span class="n">mean</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">complex_pseudocovariance</span><span class="p">(</span><span class="n">x_m</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ComplexInstanceNorm.complex_pseudocovariance"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexInstanceNorm.complex_pseudocovariance">[docs]</a>    <span class="k">def</span> <span class="nf">complex_pseudocovariance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Data variable hast to be already mean-free! Operates on images x of size [nBatch, nSmaps, nFE, nPE, 2]&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span>
+        <span class="n">shape</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+
+        <span class="c1"># compute number of elements</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">shape</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+
+        <span class="c1"># separate real/imaginary channel</span>
+        <span class="n">re</span><span class="p">,</span> <span class="n">im</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">unbind</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># dimensions is now length of original shape - 1 (because channels are seperated)</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+
+        <span class="c1"># compute covariance entries. cxy = cyx</span>
+        <span class="n">cxx</span> <span class="o">=</span> <span class="p">(</span><span class="n">re</span> <span class="o">*</span> <span class="n">re</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">dim</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">N</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">cyy</span> <span class="o">=</span> <span class="p">(</span><span class="n">im</span> <span class="o">*</span> <span class="n">im</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">dim</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">N</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">cxy</span> <span class="o">=</span> <span class="p">(</span><span class="n">re</span> <span class="o">*</span> <span class="n">im</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">dim</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">N</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Eigenvalue decomposition C = V*S*inv(V)</span>
+        <span class="c1"># compute eigenvalues</span>
+        <span class="n">s1</span> <span class="o">=</span> <span class="p">(</span><span class="n">cxx</span> <span class="o">+</span> <span class="n">cyy</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">cxx</span> <span class="o">+</span> <span class="n">cyy</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="mi">4</span> <span class="o">-</span> <span class="n">cxx</span> <span class="o">*</span> <span class="n">cyy</span> <span class="o">+</span> <span class="n">cxy</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">s2</span> <span class="o">=</span> <span class="p">(</span><span class="n">cxx</span> <span class="o">+</span> <span class="n">cyy</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">cxx</span> <span class="o">+</span> <span class="n">cyy</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="mi">4</span> <span class="o">-</span> <span class="n">cxx</span> <span class="o">*</span> <span class="n">cyy</span> <span class="o">+</span> <span class="n">cxy</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="c1"># compute eigenvectors</span>
+        <span class="n">v1x</span> <span class="o">=</span> <span class="n">s1</span> <span class="o">-</span> <span class="n">cyy</span>
+        <span class="n">v1y</span> <span class="o">=</span> <span class="n">cxy</span>
+        <span class="n">v2x</span> <span class="o">=</span> <span class="n">s2</span> <span class="o">-</span> <span class="n">cyy</span>
+        <span class="n">v2y</span> <span class="o">=</span> <span class="n">cxy</span>
+
+        <span class="c1"># normalize eigenvectors</span>
+        <span class="n">norm1</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">v1x</span> <span class="o">*</span> <span class="n">v1x</span> <span class="o">+</span> <span class="n">v1y</span> <span class="o">*</span> <span class="n">v1y</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="n">dim</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="n">norm2</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">v2x</span> <span class="o">*</span> <span class="n">v2x</span> <span class="o">+</span> <span class="n">v2y</span> <span class="o">*</span> <span class="n">v2y</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="n">dim</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+
+        <span class="n">v1x</span> <span class="o">=</span> <span class="n">v1x</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">norm1</span><span class="p">)</span>
+        <span class="n">v1y</span> <span class="o">=</span> <span class="n">v1y</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">norm1</span><span class="p">)</span>
+
+        <span class="n">v2x</span> <span class="o">=</span> <span class="n">v2x</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">norm2</span><span class="p">)</span>
+        <span class="n">v2y</span> <span class="o">=</span> <span class="n">v2y</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">norm2</span><span class="p">)</span>
+
+        <span class="c1"># now we need the sqrt of the covariance matrix.</span>
+        <span class="c1"># C^{-0.5} = V * sqrt(S) * inv(V)</span>
+        <span class="n">det</span> <span class="o">=</span> <span class="n">v1x</span> <span class="o">*</span> <span class="n">v2y</span> <span class="o">-</span> <span class="n">v2x</span> <span class="o">*</span> <span class="n">v1y</span>
+        <span class="n">s1</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">s1</span><span class="p">)</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">det</span><span class="p">)</span>
+        <span class="n">s2</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">s2</span><span class="p">)</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">det</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">cov_xx_half</span> <span class="o">=</span> <span class="n">v1x</span> <span class="o">*</span> <span class="n">v2y</span> <span class="o">*</span> <span class="n">s1</span> <span class="o">-</span> <span class="n">v1y</span> <span class="o">*</span> <span class="n">v2x</span> <span class="o">*</span> <span class="n">s2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cov_yy_half</span> <span class="o">=</span> <span class="n">v1x</span> <span class="o">*</span> <span class="n">v2y</span> <span class="o">*</span> <span class="n">s2</span> <span class="o">-</span> <span class="n">v1y</span> <span class="o">*</span> <span class="n">v2x</span> <span class="o">*</span> <span class="n">s1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cov_xy_half</span> <span class="o">=</span> <span class="n">v1x</span> <span class="o">*</span> <span class="n">v2x</span> <span class="o">*</span> <span class="p">(</span><span class="n">s2</span> <span class="o">-</span> <span class="n">s1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cov_yx_half</span> <span class="o">=</span> <span class="n">v1y</span> <span class="o">*</span> <span class="n">v2y</span> <span class="o">*</span> <span class="p">(</span><span class="n">s1</span> <span class="o">-</span> <span class="n">s2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ComplexInstanceNorm.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexInstanceNorm.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Operates on images x of size [nBatch, nSmaps, nFE, nPE, 2]&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ComplexInstanceNorm.set_normalization"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexInstanceNorm.set_normalization">[docs]</a>    <span class="k">def</span> <span class="nf">set_normalization</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the normalization parameters for a given input.&quot;&quot;&quot;</span>
+        <span class="n">mean</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="n">torch</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()])</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">complex_pseudocovariance</span><span class="p">(</span><span class="nb">input</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mean</span> <span class="o">=</span> <span class="n">mean</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cov_xx_half</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov_xx_half</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cov_xy_half</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov_xy_half</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cov_yx_half</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov_yx_half</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cov_yy_half</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov_yy_half</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ComplexInstanceNorm.normalize"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexInstanceNorm.normalize">[docs]</a>    <span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Normalize the input x.&quot;&quot;&quot;</span>
+        <span class="n">x_m</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">mean</span>
+        <span class="n">re</span><span class="p">,</span> <span class="n">im</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">unbind</span><span class="p">(</span><span class="n">x_m</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">cov_xx_half_inv</span><span class="p">,</span> <span class="n">cov_xy_half_inv</span><span class="p">,</span> <span class="n">cov_yx_half_inv</span><span class="p">,</span> <span class="n">cov_yy_half_inv</span> <span class="o">=</span> <span class="n">matrix_invert</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cov_xx_half</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov_xy_half</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov_yx_half</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov_yy_half</span>
+        <span class="p">)</span>
+        <span class="n">x_norm_re</span> <span class="o">=</span> <span class="n">cov_xx_half_inv</span> <span class="o">*</span> <span class="n">re</span> <span class="o">+</span> <span class="n">cov_xy_half_inv</span> <span class="o">*</span> <span class="n">im</span>
+        <span class="n">x_norm_im</span> <span class="o">=</span> <span class="n">cov_yx_half_inv</span> <span class="o">*</span> <span class="n">re</span> <span class="o">+</span> <span class="n">cov_yy_half_inv</span> <span class="o">*</span> <span class="n">im</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">x_norm_re</span><span class="p">,</span> <span class="n">x_norm_im</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="o">-</span><span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">img</span></div>
+
+<div class="viewcode-block" id="ComplexInstanceNorm.unnormalize"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexInstanceNorm.unnormalize">[docs]</a>    <span class="k">def</span> <span class="nf">unnormalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Unnormalize the input x.&quot;&quot;&quot;</span>
+        <span class="n">re</span><span class="p">,</span> <span class="n">im</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">unbind</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">x_unnorm_re</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov_xx_half</span> <span class="o">*</span> <span class="n">re</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov_xy_half</span> <span class="o">*</span> <span class="n">im</span>
+        <span class="n">x_unnorm_im</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov_yx_half</span> <span class="o">*</span> <span class="n">re</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov_yy_half</span> <span class="o">*</span> <span class="n">im</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">x_unnorm_re</span><span class="p">,</span> <span class="n">x_unnorm_im</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mean</span></div></div>
+
+
+<div class="viewcode-block" id="ComplexNormWrapper"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexNormWrapper">[docs]</a><span class="k">class</span> <span class="nc">ComplexNormWrapper</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Wrapper for complex normalization.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">complex_instance_norm</span> <span class="o">=</span> <span class="n">ComplexInstanceNorm</span><span class="p">()</span>
+
+<div class="viewcode-block" id="ComplexNormWrapper.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexNormWrapper.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>
+        <span class="c1"># compute complex instance norm on sample of size [nBatch, nSmaps, nFE, nPE, 2]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">complex_instance_norm</span><span class="o">.</span><span class="n">set_normalization</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">complex_instance_norm</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+
+        <span class="c1"># re-shape data from [nBatch, nSmaps, nFE, nPE, 2] to [nBatch*nSmaps, 2, nFE, nPE]</span>
+        <span class="n">shp</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">shp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">shp</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="o">*</span><span class="n">shp</span><span class="p">[</span><span class="mi">2</span><span class="p">:])</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="c1"># apply denoising</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+
+        <span class="c1"># re-shape data from [nBatch*nSmaps, 2, nFE, nPE]</span>
+        <span class="c1"># to [nBatch, nSmaps, nFE, nPE, 2]</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">*</span><span class="n">shp</span><span class="p">)</span>
+        <span class="c1"># unnormalize</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">complex_instance_norm</span><span class="o">.</span><span class="n">unnormalize</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">output</span></div></div>
+
+
+<div class="viewcode-block" id="SensitivityNetwork"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork">[docs]</a><span class="k">class</span> <span class="nc">SensitivityNetwork</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Sensitivity network with data term based on forward and adjoint containing the sensitivity maps&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">num_iter</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">,</span>
+        <span class="n">datalayer</span><span class="p">,</span>
+        <span class="n">shared_params</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">save_space</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">reset_cache</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        num_iter: Number of iterations.</span>
+<span class="sd">        model: Model to be used for the forward and adjoint.</span>
+<span class="sd">        datalayer: Data layer to be used for the forward and adjoint.</span>
+<span class="sd">        shared_params: If True, the parameters of the model are shared between the forward and adjoint.</span>
+<span class="sd">        save_space: If True, the adjoint is computed in the forward pass.</span>
+<span class="sd">        reset_cache: If True, the adjoint is computed in the forward pass.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">shared_params</span> <span class="o">=</span> <span class="n">shared_params</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_iter</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">shared_params</span> <span class="k">else</span> <span class="n">num_iter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_iter_total</span> <span class="o">=</span> <span class="n">num_iter</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_trainable</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">*</span> <span class="n">num_iter</span>
+
+        <span class="c1"># setup the modules</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gradR</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">([</span><span class="n">ComplexNormWrapper</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_iter</span><span class="p">)])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">gradD</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">([</span><span class="n">datalayer</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_iter</span><span class="p">)])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_space</span> <span class="o">=</span> <span class="n">save_space</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_space</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">forward</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward_save_space</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset_cache</span> <span class="o">=</span> <span class="n">reset_cache</span>
+
+<div class="viewcode-block" id="SensitivityNetwork.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">smaps</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x: Input data.</span>
+<span class="sd">        y: Subsampled k-space data.</span>
+<span class="sd">        smaps: Coil sensitivity maps.</span>
+<span class="sd">        mask: Sampling mask.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Output data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">x_all</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="p">]</span>
+        <span class="n">x_half_all</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">shared_params</span><span class="p">:</span>
+            <span class="n">num_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_iter_total</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">num_iter</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">is_trainable</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_iter</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_iter</span><span class="p">):</span>
+            <span class="n">x_thalf</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">gradR</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_iter</span><span class="p">](</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gradD</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_iter</span><span class="p">](</span><span class="n">x_thalf</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">smaps</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+            <span class="n">x_all</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">x_half_all</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x_thalf</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">x_all</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="SensitivityNetwork.forward_save_space"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.forward_save_space">[docs]</a>    <span class="k">def</span> <span class="nf">forward_save_space</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">smaps</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x: Input data.</span>
+<span class="sd">        y: Subsampled k-space data.</span>
+<span class="sd">        smaps: Coil sensitivity maps.</span>
+<span class="sd">        mask: Sampling mask.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Output data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">shared_params</span><span class="p">:</span>
+            <span class="n">num_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_iter_total</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">num_iter</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">is_trainable</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_iter</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_iter</span><span class="p">):</span>
+            <span class="n">x_thalf</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">gradR</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_iter</span><span class="p">](</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gradD</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_iter</span><span class="p">](</span><span class="n">x_thalf</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">smaps</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+
+            <span class="c1"># would run out of memory at test time</span>
+            <span class="c1"># if this is False for some cases</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">reset_cache</span><span class="p">:</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">empty_cache</span><span class="p">()</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">backends</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">cufft_plan_cache</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">x</span></div>
+
+<div class="viewcode-block" id="SensitivityNetwork.freeze"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.freeze">[docs]</a>    <span class="k">def</span> <span class="nf">freeze</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;freeze parameter of cascade i&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">gradR</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">parameters</span><span class="p">():</span>
+            <span class="n">param</span><span class="o">.</span><span class="n">require_grad_</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_trainable</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="SensitivityNetwork.unfreeze"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.unfreeze">[docs]</a>    <span class="k">def</span> <span class="nf">unfreeze</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;freeze parameter of cascade i&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">gradR</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">parameters</span><span class="p">():</span>
+            <span class="n">param</span><span class="o">.</span><span class="n">require_grad_</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_trainable</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="SensitivityNetwork.freeze_all"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.freeze_all">[docs]</a>    <span class="k">def</span> <span class="nf">freeze_all</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;freeze parameter of cascade i&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_iter</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">freeze</span><span class="p">(</span><span class="n">i</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SensitivityNetwork.unfreeze_all"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.unfreeze_all">[docs]</a>    <span class="k">def</span> <span class="nf">unfreeze_all</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;freeze parameter of cascade i&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_iter</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">unfreeze</span><span class="p">(</span><span class="n">i</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SensitivityNetwork.copy_params"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.copy_params">[docs]</a>    <span class="k">def</span> <span class="nf">copy_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src_i</span><span class="p">,</span> <span class="n">trg_j</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;copy i-th cascade net parameters to j-th cascade net parameters&quot;&quot;&quot;</span>
+        <span class="n">src_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gradR</span><span class="p">[</span><span class="n">src_i</span><span class="p">]</span><span class="o">.</span><span class="n">parameters</span><span class="p">()</span>
+        <span class="n">trg_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gradR</span><span class="p">[</span><span class="n">trg_j</span><span class="p">]</span><span class="o">.</span><span class="n">parameters</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">trg_param</span><span class="p">,</span> <span class="n">src_param</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">trg_params</span><span class="p">,</span> <span class="n">src_params</span><span class="p">):</span>
+            <span class="n">trg_param</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy_</span><span class="p">(</span><span class="n">src_param</span><span class="o">.</span><span class="n">data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SensitivityNetwork.stage_training_init"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.stage_training_init">[docs]</a>    <span class="k">def</span> <span class="nf">stage_training_init</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;set stage training flag to True&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">freeze_all</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unfreeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">is_trainable</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SensitivityNetwork.stage_training_transition_i"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.stage_training_transition_i">[docs]</a>    <span class="k">def</span> <span class="nf">stage_training_transition_i</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;set stage training flag to True&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">shared_params</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c1"># if all unlocked, don&#39;t do anything</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">is_trainable</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_iter</span><span class="p">):</span>
+
+                <span class="c1"># if last cascade is reached, unlock all</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_iter</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">unfreeze_all</span><span class="p">()</span>
+                    <span class="k">break</span>
+
+                <span class="c1"># freeze current i, unlock next. copy parameter if specified</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_trainable</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">freeze</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">unfreeze</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">copy</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">copy_params</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="k">break</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

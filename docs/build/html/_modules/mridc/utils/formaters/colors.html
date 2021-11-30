@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.utils.formaters.colors &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>mridc.utils.formaters.colors</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.utils.formaters.colors</h1><div class="highlight"><pre>
+<span></span><span class="c1"># encoding: utf-8</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="c1"># Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/utils/formatters/colors.py</span>
+
+<span class="n">CSI</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[&quot;</span>
+<span class="n">OSC</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\033</span><span class="s2">]&quot;</span>
+<span class="n">BEL</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\007</span><span class="s2">&quot;</span>
+
+
+<div class="viewcode-block" id="code_to_chars"><a class="viewcode-back" href="../../../../mridc.utils.formaters.html#mridc.utils.formaters.colors.code_to_chars">[docs]</a><span class="k">def</span> <span class="nf">code_to_chars</span><span class="p">(</span><span class="n">code</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert ANSI color code to string of characters.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    code: ANSI color code.</span>
+<span class="sd">        int</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    String of characters.</span>
+<span class="sd">        str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">CSI</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">code</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;m&quot;</span></div>
+
+
+<div class="viewcode-block" id="set_title"><a class="viewcode-back" href="../../../../mridc.utils.formaters.html#mridc.utils.formaters.colors.set_title">[docs]</a><span class="k">def</span> <span class="nf">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set terminal title.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    title: Title.</span>
+<span class="sd">        str</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    String of characters.</span>
+<span class="sd">        str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OSC</span><span class="si">}</span><span class="s2">2;</span><span class="si">{</span><span class="n">title</span><span class="si">}{</span><span class="n">BEL</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="clear_screen"><a class="viewcode-back" href="../../../../mridc.utils.formaters.html#mridc.utils.formaters.colors.clear_screen">[docs]</a><span class="k">def</span> <span class="nf">clear_screen</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Clear terminal screen.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mode: Mode.</span>
+<span class="sd">        int</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    String of characters.</span>
+<span class="sd">        str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">CSI</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;J&quot;</span></div>
+
+
+<div class="viewcode-block" id="clear_line"><a class="viewcode-back" href="../../../../mridc.utils.formaters.html#mridc.utils.formaters.colors.clear_line">[docs]</a><span class="k">def</span> <span class="nf">clear_line</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Clear terminal line.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mode: Mode.</span>
+<span class="sd">        int</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    String of characters.</span>
+<span class="sd">        str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">CSI</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;K&quot;</span></div>
+
+
+<div class="viewcode-block" id="AnsiCodes"><a class="viewcode-back" href="../../../../mridc.utils.formaters.html#mridc.utils.formaters.colors.AnsiCodes">[docs]</a><span class="k">class</span> <span class="nc">AnsiCodes</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;ANSI color codes.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># the subclasses declare class attributes which are numbers.</span>
+        <span class="c1"># Upon instantiation we define instance attributes, which are the same</span>
+        <span class="c1"># as the class attributes but wrapped with the ANSI escape sequence</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">):</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">code_to_chars</span><span class="p">(</span><span class="n">value</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="AnsiCursor"><a class="viewcode-back" href="../../../../mridc.utils.formaters.html#mridc.utils.formaters.colors.AnsiCursor">[docs]</a><span class="k">class</span> <span class="nc">AnsiCursor</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;ANSI cursor codes.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="AnsiCursor.UP"><a class="viewcode-back" href="../../../../mridc.utils.formaters.html#mridc.utils.formaters.colors.AnsiCursor.UP">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">UP</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Move the cursor up n lines.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n: Number of lines.</span>
+<span class="sd">            int</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        String of characters.</span>
+<span class="sd">            str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">CSI</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;A&quot;</span></div>
+
+<div class="viewcode-block" id="AnsiCursor.DOWN"><a class="viewcode-back" href="../../../../mridc.utils.formaters.html#mridc.utils.formaters.colors.AnsiCursor.DOWN">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">DOWN</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Move the cursor down n lines.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n: Number of lines.</span>
+<span class="sd">            int</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        String of characters.</span>
+<span class="sd">            str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">CSI</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;B&quot;</span></div>
+
+<div class="viewcode-block" id="AnsiCursor.FORWARD"><a class="viewcode-back" href="../../../../mridc.utils.formaters.html#mridc.utils.formaters.colors.AnsiCursor.FORWARD">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">FORWARD</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Move the cursor forward n lines.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n: Number of lines.</span>
+<span class="sd">            int</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        String of characters.</span>
+<span class="sd">            str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">CSI</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;C&quot;</span></div>
+
+<div class="viewcode-block" id="AnsiCursor.BACK"><a class="viewcode-back" href="../../../../mridc.utils.formaters.html#mridc.utils.formaters.colors.AnsiCursor.BACK">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">BACK</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Move the cursor back n lines.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n: Number of lines.</span>
+<span class="sd">            int</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        String of characters.</span>
+<span class="sd">            str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">CSI</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;D&quot;</span></div>
+
+<div class="viewcode-block" id="AnsiCursor.POS"><a class="viewcode-back" href="../../../../mridc.utils.formaters.html#mridc.utils.formaters.colors.AnsiCursor.POS">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">POS</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Move the cursor to the specified position.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x: X position.</span>
+<span class="sd">            int</span>
+<span class="sd">        y: Y position.</span>
+<span class="sd">            int</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        String of characters.</span>
+<span class="sd">            str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">CSI</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;;&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;H&quot;</span></div></div>
+
+
+<div class="viewcode-block" id="AnsiFore"><a class="viewcode-back" href="../../../../mridc.utils.formaters.html#mridc.utils.formaters.colors.AnsiFore">[docs]</a><span class="k">class</span> <span class="nc">AnsiFore</span><span class="p">(</span><span class="n">AnsiCodes</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;ANSI color codes for foreground text.&quot;&quot;&quot;</span>
+
+    <span class="n">BLACK</span> <span class="o">=</span> <span class="mi">30</span>
+    <span class="n">RED</span> <span class="o">=</span> <span class="mi">31</span>
+    <span class="n">GREEN</span> <span class="o">=</span> <span class="mi">32</span>
+    <span class="n">YELLOW</span> <span class="o">=</span> <span class="mi">33</span>
+    <span class="n">BLUE</span> <span class="o">=</span> <span class="mi">34</span>
+    <span class="n">MAGENTA</span> <span class="o">=</span> <span class="mi">35</span>
+    <span class="n">CYAN</span> <span class="o">=</span> <span class="mi">36</span>
+    <span class="n">WHITE</span> <span class="o">=</span> <span class="mi">37</span>
+    <span class="n">RESET</span> <span class="o">=</span> <span class="mi">39</span>
+
+    <span class="c1"># These are fairly well supported, but not part of the standard.</span>
+    <span class="n">LIGHTBLACK_EX</span> <span class="o">=</span> <span class="mi">90</span>
+    <span class="n">LIGHTRED_EX</span> <span class="o">=</span> <span class="mi">91</span>
+    <span class="n">LIGHTGREEN_EX</span> <span class="o">=</span> <span class="mi">92</span>
+    <span class="n">LIGHTYELLOW_EX</span> <span class="o">=</span> <span class="mi">93</span>
+    <span class="n">LIGHTBLUE_EX</span> <span class="o">=</span> <span class="mi">94</span>
+    <span class="n">LIGHTMAGENTA_EX</span> <span class="o">=</span> <span class="mi">95</span>
+    <span class="n">LIGHTCYAN_EX</span> <span class="o">=</span> <span class="mi">96</span>
+    <span class="n">LIGHTWHITE_EX</span> <span class="o">=</span> <span class="mi">97</span></div>
+
+
+<div class="viewcode-block" id="AnsiBack"><a class="viewcode-back" href="../../../../mridc.utils.formaters.html#mridc.utils.formaters.colors.AnsiBack">[docs]</a><span class="k">class</span> <span class="nc">AnsiBack</span><span class="p">(</span><span class="n">AnsiCodes</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;ANSI color codes for background text.&quot;&quot;&quot;</span>
+
+    <span class="n">BLACK</span> <span class="o">=</span> <span class="mi">40</span>
+    <span class="n">RED</span> <span class="o">=</span> <span class="mi">41</span>
+    <span class="n">GREEN</span> <span class="o">=</span> <span class="mi">42</span>
+    <span class="n">YELLOW</span> <span class="o">=</span> <span class="mi">43</span>
+    <span class="n">BLUE</span> <span class="o">=</span> <span class="mi">44</span>
+    <span class="n">MAGENTA</span> <span class="o">=</span> <span class="mi">45</span>
+    <span class="n">CYAN</span> <span class="o">=</span> <span class="mi">46</span>
+    <span class="n">WHITE</span> <span class="o">=</span> <span class="mi">47</span>
+    <span class="n">RESET</span> <span class="o">=</span> <span class="mi">49</span>
+
+    <span class="c1"># These are fairly well supported, but not part of the standard.</span>
+    <span class="n">LIGHTBLACK_EX</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="n">LIGHTRED_EX</span> <span class="o">=</span> <span class="mi">101</span>
+    <span class="n">LIGHTGREEN_EX</span> <span class="o">=</span> <span class="mi">102</span>
+    <span class="n">LIGHTYELLOW_EX</span> <span class="o">=</span> <span class="mi">103</span>
+    <span class="n">LIGHTBLUE_EX</span> <span class="o">=</span> <span class="mi">104</span>
+    <span class="n">LIGHTMAGENTA_EX</span> <span class="o">=</span> <span class="mi">105</span>
+    <span class="n">LIGHTCYAN_EX</span> <span class="o">=</span> <span class="mi">106</span>
+    <span class="n">LIGHTWHITE_EX</span> <span class="o">=</span> <span class="mi">107</span></div>
+
+
+<div class="viewcode-block" id="AnsiStyle"><a class="viewcode-back" href="../../../../mridc.utils.formaters.html#mridc.utils.formaters.colors.AnsiStyle">[docs]</a><span class="k">class</span> <span class="nc">AnsiStyle</span><span class="p">(</span><span class="n">AnsiCodes</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;ANSI color codes for text styles.&quot;&quot;&quot;</span>
+
+    <span class="n">BRIGHT</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">DIM</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">NORMAL</span> <span class="o">=</span> <span class="mi">22</span>
+    <span class="n">RESET_ALL</span> <span class="o">=</span> <span class="mi">0</span></div>
+
+
+<span class="n">Fore</span> <span class="o">=</span> <span class="n">AnsiFore</span><span class="p">()</span>
+<span class="n">Back</span> <span class="o">=</span> <span class="n">AnsiBack</span><span class="p">()</span>
+<span class="n">Style</span> <span class="o">=</span> <span class="n">AnsiStyle</span><span class="p">()</span>
+<span class="n">Cursor</span> <span class="o">=</span> <span class="n">AnsiCursor</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

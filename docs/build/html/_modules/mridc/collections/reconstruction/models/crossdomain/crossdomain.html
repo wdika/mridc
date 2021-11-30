@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.collections.reconstruction.models.crossdomain.crossdomain &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../../../../../" id="documentation_options" src="../../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../../_static/jquery.js"></script>
+        <script src="../../../../../../_static/underscore.js"></script>
+        <script src="../../../../../../_static/doctools.js"></script>
+    <script src="../../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../../../index.html">Module code</a> &raquo;</li>
+      <li>mridc.collections.reconstruction.models.crossdomain.crossdomain</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.collections.reconstruction.models.crossdomain.crossdomain</h1><div class="highlight"><pre>
+<span></span><span class="c1"># coding=utf-8</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="c1"># Taken and adapted from: https://github.com/NKI-AI/direct/blob/main/direct/nn/crossdomain/crossdomain.py</span>
+<span class="c1"># Copyright (c) DIRECT Contributors</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+
+<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">fft2c</span><span class="p">,</span> <span class="n">ifft2c</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.utils</span> <span class="kn">import</span> <span class="n">complex_conj</span><span class="p">,</span> <span class="n">complex_mul</span>
+
+
+<div class="viewcode-block" id="CrossDomainNetwork"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.crossdomain.html#mridc.collections.reconstruction.models.crossdomain.crossdomain.CrossDomainNetwork">[docs]</a><span class="k">class</span> <span class="nc">CrossDomainNetwork</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This performs optimisation in both, k-space (&quot;K&quot;) and image (&quot;I&quot;) domains according to domain_sequence.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">image_model_list</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span>
+        <span class="n">kspace_model_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">domain_sequence</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;KIKI&quot;</span><span class="p">,</span>
+        <span class="n">image_buffer_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">kspace_buffer_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">normalize_image</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">fft_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;orthogonal&quot;</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Inits CrossDomainNetwork.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        image_model_list: Image domain model list.</span>
+<span class="sd">            torch.nn.Module</span>
+<span class="sd">        kspace_model_list: K-space domain model list. If set to None, a correction step is applied.</span>
+<span class="sd">            torch.nn.Module, Default: None.</span>
+<span class="sd">        domain_sequence: Domain sequence containing only &quot;K&quot; (k-space domain) and/or &quot;I&quot; (image domain).</span>
+<span class="sd">            str, Default: &quot;KIKI&quot;.</span>
+<span class="sd">        image_buffer_size: Image buffer size.</span>
+<span class="sd">            int, Default: 1.</span>
+<span class="sd">        kspace_buffer_size: K-space buffer size.</span>
+<span class="sd">            int, Default: 1.</span>
+<span class="sd">        normalize_image: If True, input is normalized.</span>
+<span class="sd">            bool, Default: False.</span>
+<span class="sd">        fft_type: Type of FFT.</span>
+<span class="sd">            str, Default: &quot;orthogonal&quot;.</span>
+<span class="sd">        kwargs:Keyword Arguments.</span>
+<span class="sd">            dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">fft_type</span>
+
+        <span class="n">domain_sequence</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">domain_sequence</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>  <span class="c1"># type: ignore</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="n">domain_sequence</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">({</span><span class="s2">&quot;K&quot;</span><span class="p">,</span> <span class="s2">&quot;I&quot;</span><span class="p">}):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid domain sequence. Got </span><span class="si">{</span><span class="n">domain_sequence</span><span class="si">}</span><span class="s2">. Should only contain &#39;K&#39; and &#39;I&#39;.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">kspace_model_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">kspace_model_list</span><span class="p">)</span> <span class="o">!=</span> <span class="n">domain_sequence</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;K&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;K-space domain steps do not match k-space model list length.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">image_model_list</span><span class="p">)</span> <span class="o">!=</span> <span class="n">domain_sequence</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;I&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Image domain steps do not match image model list length.&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">domain_sequence</span> <span class="o">=</span> <span class="n">domain_sequence</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">kspace_model_list</span> <span class="o">=</span> <span class="n">kspace_model_list</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kspace_buffer_size</span> <span class="o">=</span> <span class="n">kspace_buffer_size</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_model_list</span> <span class="o">=</span> <span class="n">image_model_list</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_buffer_size</span> <span class="o">=</span> <span class="n">image_buffer_size</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_coil_dim</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_complex_dim</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_spatial_dims</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+<div class="viewcode-block" id="CrossDomainNetwork.kspace_correction"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.crossdomain.html#mridc.collections.reconstruction.models.crossdomain.crossdomain.CrossDomainNetwork.kspace_correction">[docs]</a>    <span class="k">def</span> <span class="nf">kspace_correction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">block_idx</span><span class="p">,</span> <span class="n">image_buffer</span><span class="p">,</span> <span class="n">kspace_buffer</span><span class="p">,</span> <span class="n">sampling_mask</span><span class="p">,</span> <span class="n">sensitivity_map</span><span class="p">,</span> <span class="n">masked_kspace</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Performs k-space correction.&quot;&quot;&quot;</span>
+        <span class="n">forward_buffer</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_forward_operator</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">clone</span><span class="p">(),</span> <span class="n">sampling_mask</span><span class="p">,</span> <span class="n">sensitivity_map</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">image_buffer</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_complex_dim</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="n">forward_buffer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">forward_buffer</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_complex_dim</span><span class="p">)</span>
+
+        <span class="n">kspace_buffer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">kspace_buffer</span><span class="p">,</span> <span class="n">forward_buffer</span><span class="p">,</span> <span class="n">masked_kspace</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_complex_dim</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">kspace_model_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">kspace_buffer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kspace_model_list</span><span class="p">[</span><span class="n">block_idx</span><span class="p">](</span><span class="n">kspace_buffer</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span>
+                <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">2</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">kspace_buffer</span> <span class="o">=</span> <span class="n">kspace_buffer</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="p">:</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">kspace_buffer</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">kspace_buffer</span></div>
+
+<div class="viewcode-block" id="CrossDomainNetwork.image_correction"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.crossdomain.html#mridc.collections.reconstruction.models.crossdomain.crossdomain.CrossDomainNetwork.image_correction">[docs]</a>    <span class="k">def</span> <span class="nf">image_correction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">block_idx</span><span class="p">,</span> <span class="n">image_buffer</span><span class="p">,</span> <span class="n">kspace_buffer</span><span class="p">,</span> <span class="n">sampling_mask</span><span class="p">,</span> <span class="n">sensitivity_map</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Performs image correction.&quot;&quot;&quot;</span>
+        <span class="n">backward_buffer</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_backward_operator</span><span class="p">(</span><span class="n">kspace</span><span class="o">.</span><span class="n">clone</span><span class="p">(),</span> <span class="n">sampling_mask</span><span class="p">,</span> <span class="n">sensitivity_map</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">kspace</span> <span class="ow">in</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">kspace_buffer</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_complex_dim</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="n">backward_buffer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">backward_buffer</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_complex_dim</span><span class="p">)</span>
+
+        <span class="n">image_buffer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">image_buffer</span><span class="p">,</span> <span class="n">backward_buffer</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_complex_dim</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">image_buffer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_model_list</span><span class="p">[</span><span class="n">block_idx</span><span class="p">](</span><span class="n">image_buffer</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">image_buffer</span></div>
+
+    <span class="k">def</span> <span class="nf">_forward_operator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">sampling_mask</span><span class="p">,</span> <span class="n">sensitivity_map</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Forward operator.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+            <span class="n">sampling_mask</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">image</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">device</span><span class="p">),</span>
+            <span class="n">fft2c</span><span class="p">(</span>
+                <span class="n">complex_mul</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">sensitivity_map</span><span class="p">),</span>
+                <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">,</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">type</span><span class="p">()),</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_backward_operator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kspace</span><span class="p">,</span> <span class="n">sampling_mask</span><span class="p">,</span> <span class="n">sensitivity_map</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Backward operator.&quot;&quot;&quot;</span>
+        <span class="n">kspace</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">sampling_mask</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">kspace</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">kspace</span><span class="o">.</span><span class="n">device</span><span class="p">),</span> <span class="n">kspace</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">complex_mul</span><span class="p">(</span>
+                <span class="n">ifft2c</span><span class="p">(</span><span class="n">kspace</span><span class="o">.</span><span class="n">float</span><span class="p">(),</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">),</span>
+                <span class="n">complex_conj</span><span class="p">(</span><span class="n">sensitivity_map</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">kspace</span><span class="o">.</span><span class="n">type</span><span class="p">())</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="CrossDomainNetwork.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.crossdomain.html#mridc.collections.reconstruction.models.crossdomain.crossdomain.CrossDomainNetwork.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">masked_kspace</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">sensitivity_map</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">sampling_mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Computes the forward pass of CrossDomainNetwork.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        masked_kspace: Subsampled k-space data.</span>
+<span class="sd">            torch.tenor, shape [batch_size, n_coil, height, width, 2]</span>
+<span class="sd">        sensitivity_map: Sensitivity map.</span>
+<span class="sd">            torch.tenor, shape [batch_size, n_coil, height, width, 2]</span>
+<span class="sd">        sampling_mask: Sampling mask.</span>
+<span class="sd">            torch.tenor, shape [batch_size, 1, height, width, 1]</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Output image.</span>
+<span class="sd">            torch.tenor, shape [batch_size, height, width, 2]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">input_image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backward_operator</span><span class="p">(</span><span class="n">masked_kspace</span><span class="p">,</span> <span class="n">sampling_mask</span><span class="p">,</span> <span class="n">sensitivity_map</span><span class="p">)</span>
+
+        <span class="n">image_buffer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">input_image</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_buffer_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_complex_dim</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">masked_kspace</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">kspace_buffer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">masked_kspace</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">kspace_buffer_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_complex_dim</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span>
+            <span class="n">masked_kspace</span><span class="o">.</span><span class="n">device</span>
+        <span class="p">)</span>
+
+        <span class="n">kspace_block_idx</span><span class="p">,</span> <span class="n">image_block_idx</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">block_domain</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain_sequence</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">block_domain</span> <span class="o">==</span> <span class="s2">&quot;K&quot;</span><span class="p">:</span>
+                <span class="n">kspace_buffer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kspace_correction</span><span class="p">(</span>
+                    <span class="n">kspace_block_idx</span><span class="p">,</span> <span class="n">image_buffer</span><span class="p">,</span> <span class="n">kspace_buffer</span><span class="p">,</span> <span class="n">sampling_mask</span><span class="p">,</span> <span class="n">sensitivity_map</span><span class="p">,</span> <span class="n">masked_kspace</span>
+                <span class="p">)</span>
+                <span class="n">kspace_block_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">image_buffer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_correction</span><span class="p">(</span>
+                    <span class="n">image_block_idx</span><span class="p">,</span> <span class="n">image_buffer</span><span class="p">,</span> <span class="n">kspace_buffer</span><span class="p">,</span> <span class="n">sampling_mask</span><span class="p">,</span> <span class="n">sensitivity_map</span>
+                <span class="p">)</span>
+                <span class="n">image_block_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">return</span> <span class="n">image_buffer</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="p">:</span><span class="mi">2</span><span class="p">]</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

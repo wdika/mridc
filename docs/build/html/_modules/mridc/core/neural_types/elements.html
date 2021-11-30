@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.core.neural_types.elements &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>mridc.core.neural_types.elements</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.core.neural_types.elements</h1><div class="highlight"><pre>
+<span></span><span class="c1"># encoding: utf-8</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="c1"># Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/neural_types/elements.py</span>
+
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">ABCMeta</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;ElementType&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;VoidType&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ChannelType&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;MRISignal&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;RecurrentsType&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;LabelsType&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;LogprobsType&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ProbsType&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;LossType&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;RegressionValuesType&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;CategoricalValuesType&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;PredictionsType&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;LengthsType&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;MaskType&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Target&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ReconstructionTarget&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ImageFeatureValue&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Index&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ImageValue&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;NormalizedImageValue&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;StringLabel&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;StringType&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Length&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;IntType&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;FloatType&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;NormalDistributionSamplesType&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;NormalDistributionMeanType&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;NormalDistributionLogVarianceType&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;LogDeterminantType&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;SequenceToSequenceAlignmentType&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="kn">from</span> <span class="nn">mridc.core.neural_types.comparison</span> <span class="kn">import</span> <span class="n">NeuralTypeComparisonResult</span>
+
+
+<div class="viewcode-block" id="ElementType"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.ElementType">[docs]</a><span class="k">class</span> <span class="nc">ElementType</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Abstract class defining semantics of the tensor elements. We are relying on Python for inheritance checking&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ElementType.__str__"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.ElementType.__str__">[docs]</a>    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Override this method to provide a human readable representation of the type&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__doc__</span></div>
+
+<div class="viewcode-block" id="ElementType.__repr__"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.ElementType.__repr__">[docs]</a>    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Override this method to provide a human readable representation of the type&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">type_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Override this property to parametrize your type. For example, you can specify &#39;storage&#39; type such as float,</span>
+<span class="sd">        int, bool with &#39;dtype&#39; keyword. Another example, is if you want to represent a signal with a particular</span>
+<span class="sd">        property (say, sample frequency), then you can put sample_freq-&gt;value in there. When two types are compared</span>
+<span class="sd">        their type_parameters must match.&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">fields</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This should be used to logically represent tuples/structures. For example, if you want to represent a \</span>
+<span class="sd">        bounding box (x, y, width, height) you can put a tuple with names (&#39;x&#39;, y&#39;, &#39;w&#39;, &#39;h&#39;) in here. Under the \</span>
+<span class="sd">        hood this should be converted to the last tensor dimension of fixed size = len(fields). When two types are \</span>
+<span class="sd">        compared their fields must match.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="ElementType.compare"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.ElementType.compare">[docs]</a>    <span class="k">def</span> <span class="nf">compare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">second</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NeuralTypeComparisonResult</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Override this method to provide a comparison between two types.&quot;&quot;&quot;</span>
+        <span class="c1"># First, check general compatibility</span>
+        <span class="n">first_t</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">second_t</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">second</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">first_t</span> <span class="o">==</span> <span class="n">second_t</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">NeuralTypeComparisonResult</span><span class="o">.</span><span class="n">SAME</span>
+        <span class="k">elif</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">first_t</span><span class="p">,</span> <span class="n">second_t</span><span class="p">):</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">NeuralTypeComparisonResult</span><span class="o">.</span><span class="n">LESS</span>
+        <span class="k">elif</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">second_t</span><span class="p">,</span> <span class="n">first_t</span><span class="p">):</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">NeuralTypeComparisonResult</span><span class="o">.</span><span class="n">GREATER</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">NeuralTypeComparisonResult</span><span class="o">.</span><span class="n">INCOMPATIBLE</span>
+
+        <span class="k">if</span> <span class="n">result</span> <span class="o">!=</span> <span class="n">NeuralTypeComparisonResult</span><span class="o">.</span><span class="n">SAME</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">result</span>
+        <span class="c1"># now check that all parameters match</span>
+        <span class="n">check_params</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type_parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="nb">set</span><span class="p">(</span><span class="n">second</span><span class="o">.</span><span class="n">type_parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">check_params</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">NeuralTypeComparisonResult</span><span class="o">.</span><span class="n">SAME_TYPE_INCOMPATIBLE_PARAMS</span>
+        <span class="k">for</span> <span class="n">k1</span><span class="p">,</span> <span class="n">v1</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">type_parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">v1</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">second</span><span class="o">.</span><span class="n">type_parameters</span><span class="p">[</span><span class="n">k1</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Treat None as Void</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">v1</span> <span class="o">!=</span> <span class="n">second</span><span class="o">.</span><span class="n">type_parameters</span><span class="p">[</span><span class="n">k1</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="n">NeuralTypeComparisonResult</span><span class="o">.</span><span class="n">SAME_TYPE_INCOMPATIBLE_PARAMS</span>
+                <span class="c1"># check that all fields match</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span> <span class="o">==</span> <span class="n">second</span><span class="o">.</span><span class="n">fields</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">NeuralTypeComparisonResult</span><span class="o">.</span><span class="n">SAME</span>
+        <span class="k">return</span> <span class="n">NeuralTypeComparisonResult</span><span class="o">.</span><span class="n">INCOMPATIBLE</span></div></div>
+
+
+<div class="viewcode-block" id="VoidType"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.VoidType">[docs]</a><span class="k">class</span> <span class="nc">VoidType</span><span class="p">(</span><span class="n">ElementType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Void-like type which is compatible with everything. It is a good practice to use this type only as necessary.</span>
+<span class="sd">    For example, when you need template-like functionality.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="VoidType.compare"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.VoidType.compare">[docs]</a>    <span class="k">def</span> <span class="nf">compare</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">second</span><span class="p">:</span> <span class="n">ABCMeta</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NeuralTypeComparisonResult</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Void type is compatible with everything.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">NeuralTypeComparisonResult</span><span class="o">.</span><span class="n">SAME</span></div></div>
+
+
+<span class="c1"># TODO: Consider moving these files elsewhere</span>
+<div class="viewcode-block" id="ChannelType"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.ChannelType">[docs]</a><span class="k">class</span> <span class="nc">ChannelType</span><span class="p">(</span><span class="n">ElementType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Element to represent convolutional input/output channel.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="RecurrentsType"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.RecurrentsType">[docs]</a><span class="k">class</span> <span class="nc">RecurrentsType</span><span class="p">(</span><span class="n">ElementType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Element type to represent recurrent layers&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="LengthsType"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.LengthsType">[docs]</a><span class="k">class</span> <span class="nc">LengthsType</span><span class="p">(</span><span class="n">ElementType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Element type representing lengths of something&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="ProbsType"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.ProbsType">[docs]</a><span class="k">class</span> <span class="nc">ProbsType</span><span class="p">(</span><span class="n">ElementType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Element type to represent probabilities. For example, outputs of softmax layers.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="LogprobsType"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.LogprobsType">[docs]</a><span class="k">class</span> <span class="nc">LogprobsType</span><span class="p">(</span><span class="n">ElementType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Element type to represent log-probabilities. For example, outputs of log softmax layers.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="LossType"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.LossType">[docs]</a><span class="k">class</span> <span class="nc">LossType</span><span class="p">(</span><span class="n">ElementType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Element type to represent outputs of Loss modules&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="MRISignal"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.MRISignal">[docs]</a><span class="k">class</span> <span class="nc">MRISignal</span><span class="p">(</span><span class="n">ElementType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Element type to represent encoded representation returned by the mri model</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    freq: sampling frequency of a signal. Note that two signals will only be the same if their freq is the same.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">freq</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;freq&quot;</span><span class="p">:</span> <span class="n">freq</span><span class="p">}</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">type_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the type parameters of the element type.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params</span></div>
+
+
+<div class="viewcode-block" id="LabelsType"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.LabelsType">[docs]</a><span class="k">class</span> <span class="nc">LabelsType</span><span class="p">(</span><span class="n">ElementType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Element type to represent labels of something. For example, labels of a dataset.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="PredictionsType"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.PredictionsType">[docs]</a><span class="k">class</span> <span class="nc">PredictionsType</span><span class="p">(</span><span class="n">LabelsType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Element type to represent some sort of predictions returned by model&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="RegressionValuesType"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.RegressionValuesType">[docs]</a><span class="k">class</span> <span class="nc">RegressionValuesType</span><span class="p">(</span><span class="n">PredictionsType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Element type to represent labels for regression task&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="CategoricalValuesType"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.CategoricalValuesType">[docs]</a><span class="k">class</span> <span class="nc">CategoricalValuesType</span><span class="p">(</span><span class="n">PredictionsType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Element type to represent labels for categorical classification task&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="MaskType"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.MaskType">[docs]</a><span class="k">class</span> <span class="nc">MaskType</span><span class="p">(</span><span class="n">PredictionsType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Element type to represent a boolean mask&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="Index"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.Index">[docs]</a><span class="k">class</span> <span class="nc">Index</span><span class="p">(</span><span class="n">ElementType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Type representing an element being an index of the sample.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="Target"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.Target">[docs]</a><span class="k">class</span> <span class="nc">Target</span><span class="p">(</span><span class="n">ElementType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Type representing an element being a target value.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="ReconstructionTarget"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.ReconstructionTarget">[docs]</a><span class="k">class</span> <span class="nc">ReconstructionTarget</span><span class="p">(</span><span class="n">Target</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Type representing an element being target value in the reconstruction task, i.e. identifier of a desired</span>
+<span class="sd">    class.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="ImageValue"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.ImageValue">[docs]</a><span class="k">class</span> <span class="nc">ImageValue</span><span class="p">(</span><span class="n">ElementType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Type representing an element/value of a single image channel,&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="NormalizedImageValue"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.NormalizedImageValue">[docs]</a><span class="k">class</span> <span class="nc">NormalizedImageValue</span><span class="p">(</span><span class="n">ImageValue</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Type representing an element/value of a single image channel normalized to &lt;0-1&gt; range.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="ImageFeatureValue"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.ImageFeatureValue">[docs]</a><span class="k">class</span> <span class="nc">ImageFeatureValue</span><span class="p">(</span><span class="n">ImageValue</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Type representing an element (single value) of a (image) feature maps.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="StringType"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.StringType">[docs]</a><span class="k">class</span> <span class="nc">StringType</span><span class="p">(</span><span class="n">ElementType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Element type representing a single string&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="StringLabel"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.StringLabel">[docs]</a><span class="k">class</span> <span class="nc">StringLabel</span><span class="p">(</span><span class="n">StringType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Type representing a label being a string with class name (e.g. the &quot;hamster&quot; class in CIFAR100).&quot;&quot;&quot;</span></div>
+
+
+<span class="k">class</span> <span class="nc">BoolType</span><span class="p">(</span><span class="n">ElementType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Element type representing a single integer&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="IntType"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.IntType">[docs]</a><span class="k">class</span> <span class="nc">IntType</span><span class="p">(</span><span class="n">ElementType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Element type representing a single integer&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="FloatType"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.FloatType">[docs]</a><span class="k">class</span> <span class="nc">FloatType</span><span class="p">(</span><span class="n">ElementType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Element type representing a single float&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="Length"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.Length">[docs]</a><span class="k">class</span> <span class="nc">Length</span><span class="p">(</span><span class="n">IntType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Type representing an element storing a &quot;length&quot; (e.g. length of a list).&quot;&quot;&quot;</span></div>
+
+
+<span class="k">class</span> <span class="nc">ProbabilityDistributionSamplesType</span><span class="p">(</span><span class="n">ElementType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Element to represent tensors that meant to be sampled from a valid probability distribution&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="NormalDistributionSamplesType"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.NormalDistributionSamplesType">[docs]</a><span class="k">class</span> <span class="nc">NormalDistributionSamplesType</span><span class="p">(</span><span class="n">ProbabilityDistributionSamplesType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Element to represent tensors that meant to be sampled from a valid normal distribution&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="SequenceToSequenceAlignmentType"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.SequenceToSequenceAlignmentType">[docs]</a><span class="k">class</span> <span class="nc">SequenceToSequenceAlignmentType</span><span class="p">(</span><span class="n">ElementType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class to represent the alignment from seq-to-seq attention outputs. Generally a mapping from encoder time steps</span>
+<span class="sd">    to decoder time steps.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="NormalDistributionMeanType"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.NormalDistributionMeanType">[docs]</a><span class="k">class</span> <span class="nc">NormalDistributionMeanType</span><span class="p">(</span><span class="n">ElementType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Element to represent the mean of a normal distribution&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="NormalDistributionLogVarianceType"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.NormalDistributionLogVarianceType">[docs]</a><span class="k">class</span> <span class="nc">NormalDistributionLogVarianceType</span><span class="p">(</span><span class="n">ElementType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Element to represent the log variance of a normal distribution&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="LogDeterminantType"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.elements.LogDeterminantType">[docs]</a><span class="k">class</span> <span class="nc">LogDeterminantType</span><span class="p">(</span><span class="n">ElementType</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Element for representing log determinants usually used in flow models&quot;&quot;&quot;</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.core.classes.common &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>mridc.core.classes.common</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.core.classes.common</h1><div class="highlight"><pre>
+<span></span><span class="c1"># encoding: utf-8</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="c1"># Interfaces common to all Neural Modules and Models.</span>
+<span class="kn">import</span> <span class="nn">hashlib</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">contextmanager</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">total_ordering</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="c1"># Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/classes/common.py</span>
+<span class="kn">import</span> <span class="nn">hydra</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">wrapt</span>
+<span class="kn">from</span> <span class="nn">omegaconf</span> <span class="kn">import</span> <span class="n">DictConfig</span><span class="p">,</span> <span class="n">OmegaConf</span>
+<span class="kn">from</span> <span class="nn">pytorch_lightning</span> <span class="kn">import</span> <span class="n">Trainer</span>
+
+<span class="kn">import</span> <span class="nn">mridc.utils</span>
+<span class="kn">from</span> <span class="nn">mridc.core.conf.trainer</span> <span class="kn">import</span> <span class="n">TrainerConfig</span>
+<span class="kn">from</span> <span class="nn">mridc.core.connectors.save_restore_connector</span> <span class="kn">import</span> <span class="n">SaveRestoreConnector</span>
+<span class="kn">from</span> <span class="nn">mridc.core.neural_types.comparison</span> <span class="kn">import</span> <span class="n">NeuralTypeComparisonResult</span>
+<span class="kn">from</span> <span class="nn">mridc.core.neural_types.neural_type</span> <span class="kn">import</span> <span class="n">NeuralType</span>
+<span class="kn">from</span> <span class="nn">mridc.utils</span> <span class="kn">import</span> <span class="n">logging</span>
+<span class="kn">from</span> <span class="nn">mridc.utils.cloud</span> <span class="kn">import</span> <span class="n">maybe_download_from_cloud</span>
+
+<span class="n">_HAS_HYDRA</span> <span class="o">=</span> <span class="kc">True</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Typing&quot;</span><span class="p">,</span> <span class="s2">&quot;FileIO&quot;</span><span class="p">,</span> <span class="s2">&quot;Model&quot;</span><span class="p">,</span> <span class="s2">&quot;PretrainedModelInfo&quot;</span><span class="p">,</span> <span class="s2">&quot;Serialization&quot;</span><span class="p">,</span> <span class="s2">&quot;is_typecheck_enabled&quot;</span><span class="p">,</span> <span class="s2">&quot;typecheck&quot;</span><span class="p">]</span>
+
+<span class="n">_TYPECHECK_ENABLED</span> <span class="o">=</span> <span class="kc">True</span>
+
+
+<div class="viewcode-block" id="is_typecheck_enabled"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.is_typecheck_enabled">[docs]</a><span class="k">def</span> <span class="nf">is_typecheck_enabled</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Getter method for typechecking state.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_TYPECHECK_ENABLED</span></div>
+
+
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">TypecheckMetadata</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Metadata class for input/output neural types.</span>
+<span class="sd">    # Primary attributes</span>
+<span class="sd">    original_types: Preserve the dictionary of type information provided.</span>
+<span class="sd">    ignore_collections: For backward compatibility, container support can be disabled explicitly</span>
+<span class="sd">        using this flag. When set to True, all nesting is ignored and nest-depth checks are skipped.</span>
+<span class="sd">    # Derived attributed</span>
+<span class="sd">    mandatory_types: Sub-dictionary of `original_types` which contains only those types which</span>
+<span class="sd">        are mandatory to include when calling the function.</span>
+<span class="sd">    base_types: Dictionary of flattened `str: NeuralType` definitions, disregarding the nest level</span>
+<span class="sd">        details into appropriate arguments.</span>
+<span class="sd">    container_depth: Dictionary mapping `str: int` - such that the valid depth of the nest of this</span>
+<span class="sd">        neural type is recorded.</span>
+<span class="sd">    has_container_types: Bool flag declaring if any of the neural types declares a container nest</span>
+<span class="sd">        in its signature.</span>
+<span class="sd">    is_singular_container_type: Bool flag declaring if this is a single Neural Type with a container</span>
+<span class="sd">        nest in its signature. Required for supporting python list expansion in return statement.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">original_types</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">NeuralType</span><span class="p">]</span>
+    <span class="n">ignore_collections</span><span class="p">:</span> <span class="nb">bool</span>
+
+    <span class="n">mandatory_types</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">NeuralType</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">base_types</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">NeuralType</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">container_depth</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">has_container_types</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">is_singular_container_type</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">has_container_types</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">type_val</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="k">for</span> <span class="n">type_val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">original_types</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">has_container_types</span> <span class="o">=</span> <span class="n">has_container_types</span>
+
+        <span class="c1"># If only one NeuralType is declared, and it declares a container nest, set to True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_singular_container_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_container_types</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">original_types</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+
+        <span class="c1"># If container nests are declared, flatten the nest into `base_types`</span>
+        <span class="c1"># Also compute the nest depth for each of the NeuralTypes</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_container_types</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">base_types</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">container_depth</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="k">for</span> <span class="n">type_key</span><span class="p">,</span> <span class="n">type_val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">original_types</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">depth</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">while</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">type_val</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">type_val</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Neural Type `</span><span class="si">{</span><span class="n">type_key</span><span class="si">}</span><span class="s2">`: </span><span class="si">{</span><span class="n">type_val</span><span class="si">}</span><span class="s2"> definition contains more than one element when&quot;</span>
+                            <span class="s2">&quot;declaring the nested container structure.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                            <span class="s2">&quot;Please ensure that you have only 1 NeuralType inside of the entire nested structure &quot;</span>
+                            <span class="s2">&quot;definition.&quot;</span>
+                        <span class="p">)</span>
+
+                    <span class="n">type_val</span> <span class="o">=</span> <span class="n">type_val</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">depth</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">base_types</span><span class="p">[</span><span class="n">type_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">type_val</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">container_depth</span><span class="p">[</span><span class="n">type_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">depth</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Otherwise, simply preserve the original_types and set depth of nest to 0.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">base_types</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">original_types</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">container_depth</span> <span class="o">=</span> <span class="p">{</span><span class="n">type_key</span><span class="p">:</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">type_key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_types</span><span class="o">.</span><span class="n">keys</span><span class="p">()}</span>
+
+        <span class="c1"># Compute subset of original_types which are mandatory in the call argspec</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mandatory_types</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">type_key</span><span class="p">:</span> <span class="n">type_val</span> <span class="k">for</span> <span class="n">type_key</span><span class="p">,</span> <span class="n">type_val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_types</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">type_val</span><span class="o">.</span><span class="n">optional</span>
+        <span class="p">}</span>
+
+
+<div class="viewcode-block" id="Typing"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.Typing">[docs]</a><span class="k">class</span> <span class="nc">Typing</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;An interface which endows module with neural types&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">input_types</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">NeuralType</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Define these to enable input neural type checks&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">output_types</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">NeuralType</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Define these to enable output neural type checks&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">_validate_input_types</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_types</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ignore_collections</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function does a few things.</span>
+<span class="sd">        1) It ensures that len(self.input_types &lt;non-optional&gt;) &lt;= len(kwargs) &lt;= len(self.input_types).</span>
+<span class="sd">        2) For each (keyword name, keyword value) passed as input to the wrapped function:</span>
+<span class="sd">            - Check if the keyword name exists in the list of valid self.input_types names.</span>
+<span class="sd">            - Check if keyword value has the `neural_type` property.</span>
+<span class="sd">                - If it does, then perform a comparative check and assert that neural types</span>
+<span class="sd">                    are compatible (SAME or GREATER).</span>
+<span class="sd">            - Check if keyword value is a container type (list or tuple). If yes,</span>
+<span class="sd">                then perform the elementwise test of neural type above on each element</span>
+<span class="sd">                of the nested structure, recursively.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_types: Either the `input_types` defined at class level, or the local function overridden type definition.</span>
+<span class="sd">        ignore_collections: For backward compatibility, container support can be disabled explicitly using this flag.</span>
+<span class="sd">        When set to True, all nesting is ignored and nest-depth checks are skipped.</span>
+<span class="sd">        kwargs: Dictionary of argument_name:argument_value pairs passed to the wrapped function upon call.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: Properly implement this</span>
+        <span class="k">if</span> <span class="n">input_types</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="c1"># Precompute metadata</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="n">TypecheckMetadata</span><span class="p">(</span><span class="n">original_types</span><span class="o">=</span><span class="n">input_types</span><span class="p">,</span> <span class="n">ignore_collections</span><span class="o">=</span><span class="n">ignore_collections</span><span class="p">)</span>
+
+        <span class="n">total_input_types</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">input_types</span><span class="p">)</span>
+        <span class="n">mandatory_input_types</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">metadata</span><span class="o">.</span><span class="n">mandatory_types</span><span class="p">)</span>
+
+        <span class="c1"># Allow number of input arguments to be &lt;= total input neural types.</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">mandatory_input_types</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">total_input_types</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Number of input arguments provided (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span><span class="si">}</span><span class="s2">) is not as expected. Function has &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">total_input_types</span><span class="si">}</span><span class="s2"> total inputs with </span><span class="si">{</span><span class="n">mandatory_input_types</span><span class="si">}</span><span class="s2"> mandatory inputs.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1"># Check if keys exists in the defined input types</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">input_types</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Input argument </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> has no corresponding input_type match. &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Existing input_types = </span><span class="si">{</span><span class="n">input_types</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+
+                <span class="c1"># Perform neural type check</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;neural_type&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">metadata</span><span class="o">.</span><span class="n">base_types</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">compare</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">neural_type</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span>
+                <span class="n">NeuralTypeComparisonResult</span><span class="o">.</span><span class="n">SAME</span><span class="p">,</span>
+                <span class="n">NeuralTypeComparisonResult</span><span class="o">.</span><span class="n">GREATER</span><span class="p">,</span>
+            <span class="p">):</span>
+                <span class="n">error_msg</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">input_types</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">compare</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">neural_type</span><span class="p">)</span><span class="si">}</span><span class="s2"> :&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Input type expected : </span><span class="si">{</span><span class="n">input_types</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Input type found : </span><span class="si">{</span><span class="n">value</span><span class="o">.</span><span class="n">neural_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">&quot;Argument: </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">]</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">dict_tuple</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">metadata</span><span class="o">.</span><span class="n">base_types</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">elements_type</span><span class="o">.</span><span class="n">type_parameters</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+                    <span class="n">error_msg</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;  input param_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> : </span><span class="si">{</span><span class="n">dict_tuple</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">dict_tuple</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">error_msg</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;  input param_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> : </span><span class="si">{</span><span class="n">dict_tuple</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">dict_tuple</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">dict_tuple</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">neural_type</span><span class="o">.</span><span class="n">elements_type</span><span class="o">.</span><span class="n">type_parameters</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+                <span class="p">)</span>
+
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">error_msg</span><span class="p">))</span>
+
+                <span class="c1"># Perform input n dim check</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;shape&quot;</span><span class="p">):</span>
+                <span class="n">value_shape</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">shape</span>
+                <span class="n">type_shape</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">base_types</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">axes</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">key</span>
+
+                <span class="k">if</span> <span class="n">type_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">value_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">type_shape</span><span class="p">)):</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Input shape mismatch occurred for </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> in module </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> : </span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;Input shape expected = </span><span class="si">{</span><span class="n">metadata</span><span class="o">.</span><span class="n">base_types</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">axes</span><span class="si">}</span><span class="s2"> | </span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;Input shape found : </span><span class="si">{</span><span class="n">value_shape</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+                <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+                    <span class="c1"># This initiates a DFS, tracking the depth count as it goes along the nested structure.</span>
+                    <span class="c1"># Initial depth is 1 as we consider the current loop to be the 1st step inside the nest.</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">__check_neural_type</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_attach_and_validate_output_types</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">out_objects</span><span class="p">,</span> <span class="n">ignore_collections</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">output_types</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function does a few things.</span>
+<span class="sd">            1) It ensures that len(out_object) == len(self.output_types).</span>
+<span class="sd">            2) If the output is a tensor (or list/tuple of list/tuple ... of tensors), it</span>
+<span class="sd">                attaches a neural_type to it. For objects without the neural_type attribute,</span>
+<span class="sd">                such as python objects (dictionaries and lists, primitive data types, structs),</span>
+<span class="sd">                no neural_type is attached.</span>
+<span class="sd">                Note: tensor.neural_type is only checked during _validate_input_types which is</span>
+<span class="sd">                called prior to forward().</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        output_types: Either the `output_types` defined at class level, or the local function overridden type</span>
+<span class="sd">        definition.</span>
+<span class="sd">        ignore_collections: For backward compatibility, container support can be disabled explicitly using this flag.</span>
+<span class="sd">        When set to True, all nesting is ignored and nest-depth checks are skipped.</span>
+<span class="sd">        out_objects: The outputs of the wrapped function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: Properly implement this</span>
+        <span class="k">if</span> <span class="n">output_types</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="c1"># Precompute metadata</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="n">TypecheckMetadata</span><span class="p">(</span><span class="n">original_types</span><span class="o">=</span><span class="n">output_types</span><span class="p">,</span> <span class="n">ignore_collections</span><span class="o">=</span><span class="n">ignore_collections</span><span class="p">)</span>
+        <span class="n">out_types_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">metadata</span><span class="o">.</span><span class="n">base_types</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+        <span class="n">mandatory_out_types_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">metadata</span><span class="o">.</span><span class="n">mandatory_types</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+
+        <span class="c1"># First convert all outputs to list/tuple format to check correct number of outputs</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out_objects</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="n">out_container</span> <span class="o">=</span> <span class="n">out_objects</span>  <span class="c1"># can be any rank nested structure</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">out_container</span> <span class="o">=</span> <span class="p">[</span><span class="n">out_objects</span><span class="p">]</span>
+
+        <span class="c1"># If this neural type has a *single output*, with *support for nested outputs*,</span>
+        <span class="c1"># then *do not* perform any check on the number of output items against the number</span>
+        <span class="c1"># of neural types (in this case, 1).</span>
+        <span class="c1"># This is done as python will *not* wrap a single returned list into a tuple of length 1,</span>
+        <span class="c1"># instead opting to keep the list intact. Therefore len(out_container) in such a case</span>
+        <span class="c1"># is the length of all the elements of that list - each of which has the same corresponding</span>
+        <span class="c1"># neural type (defined as the singular container type).</span>
+        <span class="k">if</span> <span class="n">metadata</span><span class="o">.</span><span class="n">is_singular_container_type</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="c1"># In all other cases, python will wrap multiple outputs into an outer tuple.</span>
+        <span class="c1"># Allow number of output arguments to be &lt;= total output neural types and &gt;= mandatory outputs.</span>
+
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">out_container</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">out_types_list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">out_container</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">mandatory_out_types_list</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="s2">&quot;Number of output arguments provided (</span><span class="si">{}</span><span class="s2">) is not as expected. It should be larger than </span><span class="si">{}</span><span class="s2"> and &quot;</span>
+                <span class="s2">&quot;less than </span><span class="si">{}</span><span class="s2">.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;This can be either because insufficient/extra number of output NeuralTypes were provided,&quot;</span>
+                <span class="s2">&quot;or the provided NeuralTypes </span><span class="si">{}</span><span class="s2"> should enable container support &quot;</span>
+                <span class="s2">&quot;(add &#39;[]&#39; to the NeuralType definition)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="nb">len</span><span class="p">(</span><span class="n">out_container</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">out_types_list</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">mandatory_out_types_list</span><span class="p">),</span> <span class="n">output_types</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Attach types recursively, if possible</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out_objects</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out_objects</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="c1"># Here, out_objects is a single object which can potentially be attached with a NeuralType</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">out_objects</span><span class="o">.</span><span class="n">neural_type</span> <span class="o">=</span> <span class="n">out_types_list</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+                <span class="c1"># Perform output n dim check</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">out_objects</span><span class="p">,</span> <span class="s2">&quot;shape&quot;</span><span class="p">):</span>
+                <span class="n">value_shape</span> <span class="o">=</span> <span class="n">out_objects</span><span class="o">.</span><span class="n">shape</span>
+                <span class="n">type_shape</span> <span class="o">=</span> <span class="n">out_types_list</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">axes</span>
+                <span class="k">if</span> <span class="n">type_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">value_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">type_shape</span><span class="p">):</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="n">out_types_list</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Output shape mismatch occurred for </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> in module </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> : </span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;Output shape expected = </span><span class="si">{</span><span class="n">type_shape</span><span class="si">}</span><span class="s2"> | </span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;Output shape found : </span><span class="si">{</span><span class="n">value_shape</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">metadata</span><span class="o">.</span><span class="n">is_singular_container_type</span><span class="p">:</span>
+            <span class="n">depth</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">out_objects</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">out_objects</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">tuple</span> <span class="k">else</span> <span class="mi">1</span>
+            <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">out_objects</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__attach_neural_type</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="n">depth</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">out_types_list</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># If more then one item is returned in a return statement, python will wrap</span>
+            <span class="c1"># the output with an outer tuple. Therefore there must be a 1:1 correspondence</span>
+            <span class="c1"># of the output_neural type (with or without nested structure) to the actual output</span>
+            <span class="c1"># (whether it is a single object or a nested structure of objects).</span>
+            <span class="c1"># Therefore in such a case, we &quot;start&quot; the DFS at depth 0 - since the recursion is</span>
+            <span class="c1"># being applied on 1 neural type : 1 output struct (single or nested output).</span>
+            <span class="c1"># Since we are guaranteed that the outer tuple will be built by python,</span>
+            <span class="c1"># assuming initial depth of 0 is appropriate.</span>
+            <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">res</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">out_objects</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__attach_neural_type</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">out_types_list</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">__check_neural_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Checks if the object is of the correct type, and attaches the correct NeuralType.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
+            <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__check_neural_type</span><span class="p">(</span><span class="n">elem</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="n">depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">return</span>  <span class="c1"># after processing nest, return to avoid testing nest itself</span>
+
+        <span class="n">type_val</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">base_types</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+
+        <span class="c1"># If nest depth doesnt match neural type structure depth, raise an error</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">metadata</span><span class="o">.</span><span class="n">ignore_collections</span> <span class="ow">and</span> <span class="n">depth</span> <span class="o">!=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">container_depth</span><span class="p">[</span><span class="n">name</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="s2">&quot;While checking input neural types,</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;Nested depth of value did not match container specification:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Current nested depth of NeuralType &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; (</span><span class="si">{</span><span class="n">type_val</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">depth</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Expected nested depth : </span><span class="si">{</span><span class="n">metadata</span><span class="o">.</span><span class="n">container_depth</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">&quot;neural_type&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">type_val</span><span class="o">.</span><span class="n">compare</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">neural_type</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="n">NeuralTypeComparisonResult</span><span class="o">.</span><span class="n">SAME</span><span class="p">,</span>
+            <span class="n">NeuralTypeComparisonResult</span><span class="o">.</span><span class="n">GREATER</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">type_val</span><span class="o">.</span><span class="n">compare</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">neural_type</span><span class="p">)</span><span class="si">}</span><span class="s2"> : </span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Input type expected = </span><span class="si">{</span><span class="n">type_val</span><span class="si">}</span><span class="s2"> | </span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Input type found : </span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">neural_type</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Perform input n dim check</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">&quot;shape&quot;</span><span class="p">):</span>
+            <span class="n">value_shape</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">shape</span>
+            <span class="n">type_shape</span> <span class="o">=</span> <span class="n">type_val</span><span class="o">.</span><span class="n">axes</span>
+
+            <span class="k">if</span> <span class="n">type_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">value_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">type_shape</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Input shape mismatch occurred for </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> in module </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> : </span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Input shape expected = </span><span class="si">{</span><span class="n">type_shape</span><span class="si">}</span><span class="s2"> | </span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Input shape found : </span><span class="si">{</span><span class="n">value_shape</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__attach_neural_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Attach NeuralType to the object.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
+            <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__attach_neural_type</span><span class="p">(</span><span class="n">elem</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="n">depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">return</span>  <span class="c1"># after processing nest, return to avoid argument insertion into nest itself</span>
+
+        <span class="n">type_val</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">base_types</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+
+        <span class="c1"># If nest depth doesnt match neural type structure depth, raise an error</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">metadata</span><span class="o">.</span><span class="n">ignore_collections</span> <span class="ow">and</span> <span class="n">depth</span> <span class="o">!=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">container_depth</span><span class="p">[</span><span class="n">name</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="s2">&quot;While attaching output neural types,</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;Nested depth of value did not match container specification:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Current nested depth of NeuralType &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; (</span><span class="si">{</span><span class="n">type_val</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">depth</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Expected nested depth : </span><span class="si">{</span><span class="n">metadata</span><span class="o">.</span><span class="n">container_depth</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">obj</span><span class="o">.</span><span class="n">neural_type</span> <span class="o">=</span> <span class="n">type_val</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="c1"># Perform output n dim check</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s2">&quot;shape&quot;</span><span class="p">):</span>
+            <span class="n">value_shape</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">shape</span>
+            <span class="n">type_shape</span> <span class="o">=</span> <span class="n">type_val</span><span class="o">.</span><span class="n">axes</span>
+
+            <span class="k">if</span> <span class="n">type_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">value_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">type_shape</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Output shape mismatch occurred for </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> in module </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> : </span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Output shape expected = </span><span class="si">{</span><span class="n">type_shape</span><span class="si">}</span><span class="s2"> | </span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Output shape found : </span><span class="si">{</span><span class="n">value_shape</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Serialization"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.Serialization">[docs]</a><span class="k">class</span> <span class="nc">Serialization</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class for serialization.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Serialization.from_config_dict"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.Serialization.from_config_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="s2">&quot;DictConfig&quot;</span><span class="p">,</span> <span class="n">trainer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Trainer</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Instantiates object using DictConfig-based configuration&quot;&quot;&quot;</span>
+        <span class="c1"># Resolve the config dict</span>
+        <span class="k">if</span> <span class="n">_HAS_HYDRA</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">DictConfig</span><span class="p">):</span>
+                <span class="n">config</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">to_container</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">resolve</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">config</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+                <span class="n">OmegaConf</span><span class="o">.</span><span class="n">set_struct</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
+            <span class="n">config</span> <span class="o">=</span> <span class="n">mridc</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">model_utils</span><span class="o">.</span><span class="n">maybe_update_config_version</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+        <span class="c1"># Hydra 0.x API</span>
+        <span class="k">if</span> <span class="p">(</span><span class="s2">&quot;cls&quot;</span> <span class="ow">in</span> <span class="n">config</span> <span class="ow">or</span> <span class="s2">&quot;target&quot;</span> <span class="ow">in</span> <span class="n">config</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">&quot;params&quot;</span> <span class="ow">in</span> <span class="n">config</span> <span class="ow">and</span> <span class="n">_HAS_HYDRA</span><span class="p">:</span>
+            <span class="c1"># regular hydra-based instantiation</span>
+            <span class="n">instance</span> <span class="o">=</span> <span class="n">hydra</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">instantiate</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="s2">&quot;_target_&quot;</span> <span class="ow">in</span> <span class="n">config</span> <span class="ow">and</span> <span class="n">_HAS_HYDRA</span><span class="p">:</span>
+            <span class="c1"># regular hydra-based instantiation</span>
+            <span class="n">instance</span> <span class="o">=</span> <span class="n">hydra</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">instantiate</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">instance</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">prev_error</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+            <span class="c1"># Attempt class path resolution from config `target` class (if it exists)</span>
+            <span class="k">if</span> <span class="s2">&quot;target&quot;</span> <span class="ow">in</span> <span class="n">config</span><span class="p">:</span>
+                <span class="n">target_cls</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;target&quot;</span><span class="p">]</span>  <span class="c1"># No guarantee that this is a omegaconf class</span>
+                <span class="n">imported_cls</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="c1"># try to import the target class</span>
+                    <span class="n">imported_cls</span> <span class="o">=</span> <span class="n">mridc</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">model_utils</span><span class="o">.</span><span class="n">import_class_by_path</span><span class="p">(</span><span class="n">target_cls</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+                    <span class="c1"># use subclass instead</span>
+                    <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">imported_cls</span><span class="p">):</span>
+                        <span class="n">imported_cls</span> <span class="o">=</span> <span class="bp">cls</span>
+                        <span class="k">if</span> <span class="n">accepts_trainer</span> <span class="o">:=</span> <span class="n">Serialization</span><span class="o">.</span><span class="n">_inspect_signature_for_trainer</span><span class="p">(</span><span class="n">imported_cls</span><span class="p">):</span>
+                            <span class="k">if</span> <span class="n">trainer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                                <span class="c1"># Create a dummy PL trainer object</span>
+                                <span class="n">cfg_trainer</span> <span class="o">=</span> <span class="n">TrainerConfig</span><span class="p">(</span>
+                                    <span class="n">gpus</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">accelerator</span><span class="o">=</span><span class="s2">&quot;ddp&quot;</span><span class="p">,</span> <span class="n">num_nodes</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">checkpoint_callback</span><span class="o">=</span><span class="kc">False</span>
+                                <span class="p">)</span>
+                                <span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">cfg_trainer</span><span class="p">)</span>
+                            <span class="n">instance</span> <span class="o">=</span> <span class="n">imported_cls</span><span class="p">(</span><span class="n">cfg</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">trainer</span><span class="o">=</span><span class="n">trainer</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">instance</span> <span class="o">=</span> <span class="n">imported_cls</span><span class="p">(</span><span class="n">cfg</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">tb</span> <span class="o">=</span> <span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span>
+                    <span class="n">prev_error</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Model instantiation failed.</span><span class="se">\n</span><span class="s2">Target class: </span><span class="si">{</span><span class="n">target_cls</span><span class="si">}</span><span class="se">\n</span><span class="s2">Error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">tb</span><span class="si">}</span><span class="s2">&quot;</span>
+
+                    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">prev_error</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2"> falling back to &#39;cls&#39;.&quot;</span><span class="p">)</span>
+            <span class="c1"># target class resolution was unsuccessful, fall back to current `cls`</span>
+            <span class="k">if</span> <span class="n">instance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">accepts_trainer</span> <span class="o">:=</span> <span class="n">Serialization</span><span class="o">.</span><span class="n">_inspect_signature_for_trainer</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+                        <span class="n">instance</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">cfg</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="c1"># report saved errors, if any, and raise the current error</span>
+                    <span class="k">if</span> <span class="n">prev_error</span><span class="p">:</span>
+                        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prev_error</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="n">e</span> <span class="kn">from</span> <span class="nn">e</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="s2">&quot;_cfg&quot;</span><span class="p">):</span>
+            <span class="n">instance</span><span class="o">.</span><span class="n">_cfg</span> <span class="o">=</span> <span class="n">config</span>
+        <span class="k">return</span> <span class="n">instance</span></div>
+
+<div class="viewcode-block" id="Serialization.to_config_dict"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.Serialization.to_config_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_config_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;DictConfig&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns object&#39;s configuration to config dictionary&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_cfg&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+            <span class="c1"># Resolve the config dict</span>
+            <span class="k">if</span> <span class="n">_HAS_HYDRA</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="p">,</span> <span class="n">DictConfig</span><span class="p">):</span>  <span class="c1"># type: ignore</span>
+                <span class="n">config</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">to_container</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="p">,</span> <span class="n">resolve</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+                <span class="n">config</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+                <span class="n">OmegaConf</span><span class="o">.</span><span class="n">set_struct</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
+                <span class="n">config</span> <span class="o">=</span> <span class="n">mridc</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">model_utils</span><span class="o">.</span><span class="n">maybe_update_config_version</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span> <span class="o">=</span> <span class="n">config</span>
+
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="s2">&quot;to_config_dict() can currently only return object._cfg but current object does not have it.&quot;</span>
+        <span class="p">)</span></div>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_inspect_signature_for_trainer</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">check_cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Inspects the signature of the class to see if it accepts a trainer argument.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">check_cls</span><span class="p">,</span> <span class="s2">&quot;__init__&quot;</span><span class="p">):</span>
+            <span class="n">signature</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">check_cls</span><span class="o">.</span><span class="fm">__init__</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">Trainer</span> <span class="ow">in</span> <span class="n">signature</span><span class="o">.</span><span class="n">parameters</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="FileIO"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.FileIO">[docs]</a><span class="k">class</span> <span class="nc">FileIO</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class for file IO.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="FileIO.save_to"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.FileIO.save_to">[docs]</a>    <span class="k">def</span> <span class="nf">save_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">save_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Saves module/model with weights&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="FileIO.restore_from"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.FileIO.restore_from">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">restore_from</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">restore_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">override_config_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">map_location</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">return_config</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">trainer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Trainer</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">save_restore_connector</span><span class="p">:</span> <span class="n">SaveRestoreConnector</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Restores module/model with weights&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="FileIO.from_config_file"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.FileIO.from_config_file">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_config_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path2yaml_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Instantiates an instance of mridc Model from YAML config file. Weights will be initialized randomly.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path2yaml_file: path to yaml file with model configuration</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Model instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">Serialization</span><span class="p">):</span>
+            <span class="n">conf</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path2yaml_file</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_config_dict</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">conf</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="FileIO.to_config_file"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.FileIO.to_config_file">[docs]</a>    <span class="k">def</span> <span class="nf">to_config_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path2yaml_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Saves current instance&#39;s configuration to YAML config file. Weights will not be saved.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path2yaml_file: path2yaml_file: path to yaml file where model configuration will be saved.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_cfg&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span> <span class="o">=</span> <span class="n">mridc</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">model_utils</span><span class="o">.</span><span class="n">maybe_update_config_version</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path2yaml_file</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fout</span><span class="p">:</span>
+                <span class="n">OmegaConf</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="n">fout</span><span class="p">,</span> <span class="n">resolve</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="PretrainedModelInfo"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.PretrainedModelInfo">[docs]</a><span class="nd">@total_ordering</span>
+<span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">PretrainedModelInfo</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Class to store information about a pretrained model.&quot;&quot;&quot;</span>
+
+    <span class="n">pretrained_model_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">location</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">class_</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;Model&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">aliases</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="n">extras</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;pretrained_model_name=</span><span class="si">{pretrained_model_name}</span><span class="s2">,</span><span class="se">\n\t</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;description=</span><span class="si">{description}</span><span class="s2">,</span><span class="se">\n\t</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;location=</span><span class="si">{location}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">class_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">extras</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{extras}</span><span class="s2">,</span><span class="se">\n\t</span><span class="s2">&quot;</span> <span class="s2">&quot;class_=</span><span class="si">{class_}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">extras</span><span class="o">=</span><span class="n">extras</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">(</span><span class="se">\n\t</span><span class="si">{</span><span class="n">extras</span><span class="si">}</span><span class="se">\n</span><span class="s2">)&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">location</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="c1"># another object is equal to self, iff</span>
+        <span class="c1"># if it&#39;s hash is equal to hash(self)</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="nb">hash</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">pretrained_model_name</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">pretrained_model_name</span>
+
+    <span class="k">def</span> <span class="fm">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pretrained_model_name</span> <span class="o">&lt;</span> <span class="n">other</span><span class="o">.</span><span class="n">pretrained_model_name</span></div>
+
+
+<div class="viewcode-block" id="Model"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.Model">[docs]</a><span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="n">Typing</span><span class="p">,</span> <span class="n">Serialization</span><span class="p">,</span> <span class="n">FileIO</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>  <span class="c1"># type: ignore</span>
+    <span class="sd">&quot;&quot;&quot;Abstract class offering interface which should be implemented by all mridc models.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Model.list_available_models"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.Model.list_available_models">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">list_available_models</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PretrainedModelInfo</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Should list all pre-trained models available.</span>
+<span class="sd">        Note: There is no check that requires model names and aliases to be unique. In the case of a collision,</span>
+<span class="sd">        whatever model (or alias) is listed first in the returned list will be instantiated.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        A list of PretrainedModelInfo entries.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Model.get_available_model_names"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.Model.get_available_model_names">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_available_model_names</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the list of model names available. To get the complete model description use list_available_models().</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        A list of model names.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">pretrained_model_name</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">list_available_models</span><span class="p">()]</span>  <span class="c1"># type: ignore</span>
+            <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">list_available_models</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="p">[]</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Model.from_pretrained"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.Model.from_pretrained">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_pretrained</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">refresh_cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">override_config_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">map_location</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">strict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">return_config</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">trainer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Trainer</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">save_restore_connector</span><span class="p">:</span> <span class="n">SaveRestoreConnector</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Instantiates an instance of mridc. Use restore_from() to instantiate from a local .mridc file.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model_name: String key which will be used to find the module.</span>
+<span class="sd">        refresh_cache: If set to True, then when fetching from cloud, this will re-fetch the file from cloud even if it</span>
+<span class="sd">         is already found in a cache locally.</span>
+<span class="sd">        override_config_path: Path to a yaml config that will override the internal config file.</span>
+<span class="sd">        map_location: Optional torch.device() to map the instantiated model to a device. By default (None), it will</span>
+<span class="sd">        select a GPU if available, falling back to CPU otherwise.</span>
+<span class="sd">        strict: Passed to torch.load_state_dict. By default, True.</span>
+<span class="sd">        return_config: If set to true, will return just the underlying config of the restored model as an</span>
+<span class="sd">        OmegaConf/DictConfig object without instantiating the model.</span>
+<span class="sd">        trainer: Optional Trainer objects to use for restoring the model.</span>
+<span class="sd">        save_restore_connector: Optional SaveRestoreConnector object to use for restoring the model.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        A model instance of a particular model class or its underlying config (if return_config is set).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">save_restore_connector</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">save_restore_connector</span> <span class="o">=</span> <span class="n">SaveRestoreConnector</span><span class="p">()</span>
+
+        <span class="n">location_in_the_cloud</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">description</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">models</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">list_available_models</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">models</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">pretrained_model_info</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">list_available_models</span><span class="p">():</span>  <span class="c1"># type: ignore</span>
+                <span class="n">found</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">if</span> <span class="n">pretrained_model_info</span><span class="o">.</span><span class="n">pretrained_model_name</span> <span class="o">==</span> <span class="n">model_name</span><span class="p">:</span>
+                    <span class="n">found</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">elif</span> <span class="n">pretrained_model_info</span><span class="o">.</span><span class="n">aliases</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">alias</span> <span class="ow">in</span> <span class="n">pretrained_model_info</span><span class="o">.</span><span class="n">aliases</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">alias</span> <span class="o">==</span> <span class="n">model_name</span><span class="p">:</span>
+                            <span class="n">found</span> <span class="o">=</span> <span class="kc">True</span>
+                            <span class="k">break</span>
+                <span class="k">if</span> <span class="n">found</span><span class="p">:</span>
+                    <span class="n">location_in_the_cloud</span> <span class="o">=</span> <span class="n">pretrained_model_info</span><span class="o">.</span><span class="n">location</span>
+                    <span class="n">description</span> <span class="o">=</span> <span class="n">pretrained_model_info</span><span class="o">.</span><span class="n">description</span>
+                    <span class="n">class_</span> <span class="o">=</span> <span class="n">pretrained_model_info</span><span class="o">.</span><span class="n">class_</span>
+                    <span class="k">break</span>
+
+        <span class="k">if</span> <span class="n">location_in_the_cloud</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Model </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> was not found. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Check cls.list_available_models() for the list of all available models.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">location_in_the_cloud</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">location_in_the_cloud</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">cache_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="n">mridc</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">model_utils</span><span class="o">.</span><span class="n">resolve_cache_dir</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">filename</span><span class="p">[:</span><span class="o">-</span><span class="mi">5</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+        <span class="c1"># If either description and location in the cloud changes, this will force re-download</span>
+        <span class="c1"># of the model.</span>
+        <span class="n">cache_subfolder</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha512</span><span class="p">((</span><span class="n">location_in_the_cloud</span> <span class="o">+</span> <span class="n">description</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+        <span class="c1"># if file exists on cache_folder/subfolder, it will be re-used, unless refresh_cache is True</span>
+        <span class="n">mridc_model_file_in_cache</span> <span class="o">=</span> <span class="n">maybe_download_from_cloud</span><span class="p">(</span>
+            <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">,</span> <span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span><span class="p">,</span> <span class="n">subfolder</span><span class="o">=</span><span class="n">cache_subfolder</span><span class="p">,</span> <span class="n">refresh_cache</span><span class="o">=</span><span class="n">refresh_cache</span>
+        <span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Instantiating model from pre-trained checkpoint&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">class_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">class_</span> <span class="o">=</span> <span class="bp">cls</span>
+
+        <span class="k">return</span> <span class="n">class_</span><span class="o">.</span><span class="n">restore_from</span><span class="p">(</span>
+            <span class="n">restore_path</span><span class="o">=</span><span class="n">mridc_model_file_in_cache</span><span class="p">,</span>
+            <span class="n">override_config_path</span><span class="o">=</span><span class="n">override_config_path</span><span class="p">,</span>
+            <span class="n">map_location</span><span class="o">=</span><span class="n">map_location</span><span class="p">,</span>
+            <span class="n">strict</span><span class="o">=</span><span class="n">strict</span><span class="p">,</span>
+            <span class="n">return_config</span><span class="o">=</span><span class="n">return_config</span><span class="p">,</span>
+            <span class="n">trainer</span><span class="o">=</span><span class="n">trainer</span><span class="p">,</span>
+            <span class="n">save_restore_connector</span><span class="o">=</span><span class="n">save_restore_connector</span><span class="p">,</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="typecheck"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.typecheck">[docs]</a><span class="k">class</span> <span class="nc">typecheck</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Decorator to check the type of the input arguments.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="typecheck.TypeState"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.typecheck.TypeState">[docs]</a>    <span class="k">class</span> <span class="nc">TypeState</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Placeholder to denote the default value of type information provided.</span>
+<span class="sd">        If the constructor of this decorator is used to override the class level type definition, this enum value</span>
+<span class="sd">        indicate that types will be overridden.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">UNINITIALIZED</span> <span class="o">=</span> <span class="mi">0</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">input_types</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TypeState</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">NeuralType</span><span class="p">]]]</span> <span class="o">=</span> <span class="n">TypeState</span><span class="o">.</span><span class="n">UNINITIALIZED</span><span class="p">,</span>
+        <span class="n">output_types</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TypeState</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">NeuralType</span><span class="p">]]]</span> <span class="o">=</span> <span class="n">TypeState</span><span class="o">.</span><span class="n">UNINITIALIZED</span><span class="p">,</span>
+        <span class="n">ignore_collections</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A decorator which performs input-output neural type checks, and attaches neural types to the output of the</span>
+<span class="sd">        function that it wraps.</span>
+<span class="sd">        Requires that the class inherit from `mridc.core.Typing` in order to perform type checking, and will raise an</span>
+<span class="sd">        error if that is not the case.</span>
+
+<span class="sd">        # Usage (Class level type support)</span>
+<span class="sd">        @typecheck()</span>
+<span class="sd">        def fn(self, arg1, arg2, ...):</span>
+<span class="sd">            ...</span>
+<span class="sd">        # Usage (Function level type support)</span>
+<span class="sd">        @typecheck(input_types=..., output_types=...)</span>
+<span class="sd">        def fn(self, arg1, arg2, ...):</span>
+<span class="sd">            ...</span>
+
+<span class="sd">        Points to be noted:</span>
+<span class="sd">            1) The brackets () in `@typecheck()` are necessary.</span>
+<span class="sd">                You will encounter a TypeError: __init__() takes 1 positional argument but X</span>
+<span class="sd">                were given without those brackets.</span>
+<span class="sd">            2) The function can take any number of positional arguments during definition.</span>
+<span class="sd">                When you call this function, all arguments must be passed using kwargs only.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_types</span> <span class="o">=</span> <span class="n">input_types</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_types</span> <span class="o">=</span> <span class="n">output_types</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_override</span> <span class="o">=</span> <span class="n">input_types</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">TypeState</span><span class="o">.</span><span class="n">UNINITIALIZED</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_override</span> <span class="o">=</span> <span class="n">output_types</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">TypeState</span><span class="o">.</span><span class="n">UNINITIALIZED</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_collections</span> <span class="o">=</span> <span class="n">ignore_collections</span>
+
+    <span class="nd">@wrapt</span><span class="o">.</span><span class="n">decorator</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="n">is_typecheck_enabled</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wrapped</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">Typing</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">instance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Only classes which inherit mridc.core.Typing can use this decorator !&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="n">Typing</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Only classes which inherit mridc.core.Typing can use this decorator !&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="s2">&quot;input_ports&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="s2">&quot;output_ports&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;Typing requires override of `input_types()` and `output_types()`, &quot;</span>
+                <span class="s2">&quot;not `input_ports() and `output_ports()`&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Preserve type information</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_types</span> <span class="ow">is</span> <span class="n">typecheck</span><span class="o">.</span><span class="n">TypeState</span><span class="o">.</span><span class="n">UNINITIALIZED</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">input_types</span> <span class="o">=</span> <span class="n">instance</span><span class="o">.</span><span class="n">input_types</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_types</span> <span class="ow">is</span> <span class="n">typecheck</span><span class="o">.</span><span class="n">TypeState</span><span class="o">.</span><span class="n">UNINITIALIZED</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output_types</span> <span class="o">=</span> <span class="n">instance</span><span class="o">.</span><span class="n">output_types</span>
+
+        <span class="c1"># Resolve global type or local overridden type</span>
+        <span class="n">input_types</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_types</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_override</span> <span class="k">else</span> <span class="n">instance</span><span class="o">.</span><span class="n">input_types</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_override</span><span class="p">:</span>
+            <span class="n">output_types</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_types</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">output_types</span> <span class="o">=</span> <span class="n">instance</span><span class="o">.</span><span class="n">output_types</span>
+
+        <span class="c1"># If types are not defined, skip type checks and just call the wrapped method</span>
+        <span class="k">if</span> <span class="n">input_types</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">output_types</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">wrapped</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># Check that all arguments are kwargs</span>
+        <span class="k">if</span> <span class="n">input_types</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;All arguments must be passed by kwargs only for typed methods&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Perform rudimentary input checks here</span>
+        <span class="n">instance</span><span class="o">.</span><span class="n">_validate_input_types</span><span class="p">(</span><span class="n">input_types</span><span class="o">=</span><span class="n">input_types</span><span class="p">,</span> <span class="n">ignore_collections</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ignore_collections</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># Call the method - this can be forward, or any other callable method</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="n">wrapped</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">instance</span><span class="o">.</span><span class="n">_attach_and_validate_output_types</span><span class="p">(</span>
+            <span class="n">output_types</span><span class="o">=</span><span class="n">output_types</span><span class="p">,</span> <span class="n">ignore_collections</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ignore_collections</span><span class="p">,</span> <span class="n">out_objects</span><span class="o">=</span><span class="n">outputs</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">outputs</span>
+
+<div class="viewcode-block" id="typecheck.set_typecheck_enabled"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.typecheck.set_typecheck_enabled">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">set_typecheck_enabled</span><span class="p">(</span><span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the global typecheck flag.&quot;&quot;&quot;</span>
+        <span class="k">global</span> <span class="n">_TYPECHECK_ENABLED</span>
+        <span class="n">_TYPECHECK_ENABLED</span> <span class="o">=</span> <span class="n">enabled</span></div>
+
+<div class="viewcode-block" id="typecheck.disable_checks"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.typecheck.disable_checks">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="nd">@contextmanager</span>
+    <span class="k">def</span> <span class="nf">disable_checks</span><span class="p">():</span>
+        <span class="sd">&quot;&quot;&quot;Temporarily disable type checks.&quot;&quot;&quot;</span>
+        <span class="n">typecheck</span><span class="o">.</span><span class="n">set_typecheck_enabled</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">yield</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">typecheck</span><span class="o">.</span><span class="n">set_typecheck_enabled</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.utils.formaters.base &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>mridc.utils.formaters.base</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.utils.formaters.base</h1><div class="highlight"><pre>
+<span></span><span class="c1"># encoding: utf-8</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="c1"># Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/utils/formatters/base.py</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">mridc.utils.formaters.colors</span> <span class="kn">import</span> <span class="n">Fore</span> <span class="k">as</span> <span class="n">ForegroundColors</span>
+<span class="kn">from</span> <span class="nn">mridc.utils.formaters.utils</span> <span class="kn">import</span> <span class="n">check_color_support</span><span class="p">,</span> <span class="n">to_unicode</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;BaseMRIDCFormatter&quot;</span><span class="p">,</span> <span class="s2">&quot;DebugMRIDCFormatter&quot;</span><span class="p">]</span>
+
+
+<span class="k">class</span> <span class="nc">BaseFormatter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class for all formatters used in Tornado. Key features of this formatter are:</span>
+<span class="sd">        * Color support when logging to a terminal that supports it.</span>
+<span class="sd">        * Timestamps on every log line.</span>
+<span class="sd">        * Robust against str/bytes encoding problems.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">DEFAULT_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%(color)s</span><span class="s2">[</span><span class="si">%(levelname)1.1s</span><span class="s2"> </span><span class="si">%(asctime)s</span><span class="s2"> </span><span class="si">%(module)s</span><span class="s2">:</span><span class="si">%(lineno)d</span><span class="s2">]</span><span class="si">%(end_color)s</span><span class="s2"> </span><span class="si">%(message)s</span><span class="s2">&quot;</span>
+
+    <span class="n">DEFAULT_DATE_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span>
+
+    <span class="n">DEFAULT_COLORS</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">:</span> <span class="n">ForegroundColors</span><span class="o">.</span><span class="n">CYAN</span><span class="p">,</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">:</span> <span class="n">ForegroundColors</span><span class="o">.</span><span class="n">GREEN</span><span class="p">,</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">:</span> <span class="n">ForegroundColors</span><span class="o">.</span><span class="n">YELLOW</span><span class="p">,</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">:</span> <span class="n">ForegroundColors</span><span class="o">.</span><span class="n">MAGENTA</span><span class="p">,</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">:</span> <span class="n">ForegroundColors</span><span class="o">.</span><span class="n">RED</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">datefmt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        color: Enable color support.</span>
+<span class="sd">            bool, default: True</span>
+<span class="sd">        fmt: Log message format. It will be applied to the attributes dict of log records. The text between</span>
+<span class="sd">        ``%(color)s`` and ``%(end_color)s`` will be colored depending on the level if color support is on.</span>
+<span class="sd">            str, default: None</span>
+<span class="sd">        datefmt: Datetime format. Used for formatting ``(asctime)`` placeholder in ``prefix_fmt``.</span>
+<span class="sd">            str, default: None</span>
+<span class="sd">        colors: Dictionary mapping logging level to terminal color code.</span>
+<span class="sd">            dict, default: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">fmt</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fmt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DEFAULT_FORMAT</span>
+
+        <span class="k">if</span> <span class="n">datefmt</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">datefmt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DEFAULT_DATE_FORMAT</span>
+
+        <span class="k">if</span> <span class="n">colors</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">colors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DEFAULT_COLORS</span>
+
+        <span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">datefmt</span><span class="o">=</span><span class="n">datefmt</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fmt</span> <span class="o">=</span> <span class="n">fmt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_colors</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_normal</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">color</span> <span class="ow">and</span> <span class="n">check_color_support</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_colors</span> <span class="o">=</span> <span class="n">colors</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_normal</span> <span class="o">=</span> <span class="n">ForegroundColors</span><span class="o">.</span><span class="n">RESET</span>
+
+    <span class="k">def</span> <span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Formats a record.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        record: Log record to be formatted.</span>
+<span class="sd">            LogRecord</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        The formatted record as a string.</span>
+<span class="sd">            str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">getMessage</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">AssertionError</span>
+            <span class="c1"># Encoding notes:  The logging module prefers to work with character</span>
+            <span class="c1"># strings, but only enforces that log messages are instances of</span>
+            <span class="c1"># basestring.  In python 2, non-ascii bytestrings will make</span>
+            <span class="c1"># their way through the logging framework until they blow up with</span>
+            <span class="c1"># an unhelpful decoding error (with this formatter it happens</span>
+            <span class="c1"># when we attach the prefix, but there are other opportunities for</span>
+            <span class="c1"># exceptions further along in the framework).</span>
+            <span class="c1">#</span>
+            <span class="c1"># If a byte string makes it this far, convert it to unicode to</span>
+            <span class="c1"># ensure it will make it out to the logs.  Use repr() as a fallback</span>
+            <span class="c1"># to ensure that all byte strings can be converted successfully,</span>
+            <span class="c1"># but don&#39;t do it by default so we don&#39;t add extra quotes to ascii</span>
+            <span class="c1"># bytestrings.  This is a bit of a hacky place to do this, but</span>
+            <span class="c1"># it&#39;s worth it since the encoding errors that would otherwise</span>
+            <span class="c1"># result are so useless (and tornado is fond of using utf8-encoded</span>
+            <span class="c1"># byte strings wherever possible).</span>
+            <span class="n">record</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">record</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;Bad message (</span><span class="si">%r</span><span class="s2">): </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">record</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+
+        <span class="n">record</span><span class="o">.</span><span class="n">asctime</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">formatTime</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">datefmt</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">levelno</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_colors</span><span class="p">:</span>
+            <span class="n">record</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_colors</span><span class="p">[</span><span class="n">record</span><span class="o">.</span><span class="n">levelno</span><span class="p">]</span>
+            <span class="n">record</span><span class="o">.</span><span class="n">end_color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normal</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">record</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">end_color</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="n">formatted</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fmt</span> <span class="o">%</span> <span class="n">record</span><span class="o">.</span><span class="vm">__dict__</span>
+
+        <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">exc_info</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">record</span><span class="o">.</span><span class="n">exc_text</span><span class="p">:</span>
+            <span class="n">record</span><span class="o">.</span><span class="n">exc_text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">formatException</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">exc_info</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">exc_text</span><span class="p">:</span>
+            <span class="c1"># exc_text contains multiple lines.  We need to _safe_unicode</span>
+            <span class="c1"># each line separately so that non-utf8 bytes don&#39;t cause</span>
+            <span class="c1"># all the newlines to turn into &#39;\n&#39;.</span>
+            <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="n">formatted</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()]</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">to_unicode</span><span class="p">(</span><span class="n">ln</span><span class="p">)</span> <span class="k">for</span> <span class="n">ln</span> <span class="ow">in</span> <span class="n">record</span><span class="o">.</span><span class="n">exc_text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">))</span>
+
+            <span class="n">formatted</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">formatted</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">    &quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="BaseMRIDCFormatter"><a class="viewcode-back" href="../../../../mridc.utils.formaters.html#mridc.utils.formaters.base.BaseMRIDCFormatter">[docs]</a><span class="k">class</span> <span class="nc">BaseMRIDCFormatter</span><span class="p">(</span><span class="n">BaseFormatter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base formatter for MRIDC logs.&quot;&quot;&quot;</span>
+
+    <span class="n">DEFAULT_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%(color)s</span><span class="s2">[MRIDC </span><span class="si">%(levelname)1.1s</span><span class="s2"> </span><span class="si">%(asctime)s</span><span class="s2"> </span><span class="si">%(module)s</span><span class="s2">:</span><span class="si">%(lineno)d</span><span class="s2">]</span><span class="si">%(end_color)s</span><span class="s2"> </span><span class="si">%(message)s</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="DebugMRIDCFormatter"><a class="viewcode-back" href="../../../../mridc.utils.formaters.html#mridc.utils.formaters.base.DebugMRIDCFormatter">[docs]</a><span class="k">class</span> <span class="nc">DebugMRIDCFormatter</span><span class="p">(</span><span class="n">BaseFormatter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Debug formatter for MRIDC logs.&quot;&quot;&quot;</span>
+
+    <span class="n">DEFAULT_FORMAT</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;</span><span class="si">%(color)s</span><span class="s2">[MRIDC </span><span class="si">%(levelname)1.1s</span><span class="s2"> </span><span class="si">%(asctime)s</span><span class="s2"> </span><span class="si">%(module)s</span><span class="s2">:</span><span class="si">%(lineno)d</span><span class="s2"> rank:</span><span class="si">%(rank)s</span><span class="s2">]</span><span class="si">%(end_color)s</span><span class="s2"> </span><span class="si">%(message)s</span><span class="s2">&quot;</span>
+    <span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

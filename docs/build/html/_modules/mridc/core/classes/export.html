@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.core.classes.export &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>mridc.core.classes.export</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.core.classes.export</h1><div class="highlight"><pre>
+<span></span><span class="c1"># encoding: utf-8</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="c1"># Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/classes/exportable.py</span>
+
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">torch.onnx</span> <span class="kn">import</span> <span class="n">TrainingMode</span>
+
+<span class="kn">from</span> <span class="nn">mridc.core.classes.common</span> <span class="kn">import</span> <span class="n">typecheck</span>
+<span class="kn">from</span> <span class="nn">mridc.core.utils.neural_type_utils</span> <span class="kn">import</span> <span class="n">get_dynamic_axes</span><span class="p">,</span> <span class="n">get_io_names</span>
+<span class="kn">from</span> <span class="nn">mridc.utils</span> <span class="kn">import</span> <span class="n">logging</span>
+<span class="kn">from</span> <span class="nn">mridc.utils.export_utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ExportFormat</span><span class="p">,</span>
+    <span class="n">get_export_format</span><span class="p">,</span>
+    <span class="n">parse_input_example</span><span class="p">,</span>
+    <span class="n">replace_for_export</span><span class="p">,</span>
+    <span class="n">verify_runtime</span><span class="p">,</span>
+    <span class="n">wrap_forward_method</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ExportFormat&quot;</span><span class="p">,</span> <span class="s2">&quot;Exportable&quot;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="Exportable"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.export.Exportable">[docs]</a><span class="k">class</span> <span class="nc">Exportable</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This Interface should be implemented by particular classes derived from mridc.core.NeuralModule or</span>
+<span class="sd">    mridc.core.ModelPT. It gives these entities ability to be exported for deployment to formats such as ONNX.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">input_module</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">output_module</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+<div class="viewcode-block" id="Exportable.export"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.export.Exportable.export">[docs]</a>    <span class="k">def</span> <span class="nf">export</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">output</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">input_example</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">export_params</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">do_constant_folding</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">onnx_opset_version</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">try_script</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">training</span><span class="o">=</span><span class="n">TrainingMode</span><span class="o">.</span><span class="n">EVAL</span><span class="p">,</span>
+        <span class="n">check_trace</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">use_dynamic_axes</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">dynamic_axes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">check_tolerance</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Export the module to a file.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        output: The output file path.</span>
+<span class="sd">        input_example: A dictionary of input names and values.</span>
+<span class="sd">        verbose: If True, print out the export process.</span>
+<span class="sd">        export_params: If True, export the parameters of the module.</span>
+<span class="sd">        do_constant_folding: If True, do constant folding.</span>
+<span class="sd">        onnx_opset_version: The ONNX opset version to use.</span>
+<span class="sd">        try_script: If True, try to export as TorchScript.</span>
+<span class="sd">        training: Training mode for the export.</span>
+<span class="sd">        check_trace: If True, check the trace of the exported model.</span>
+<span class="sd">        use_dynamic_axes: If True, use dynamic axes for the export.</span>
+<span class="sd">        dynamic_axes: A dictionary of input names and dynamic axes.</span>
+<span class="sd">        check_tolerance: The tolerance for the check_trace.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">my_args</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">my_args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;self&quot;</span><span class="p">)</span>
+
+        <span class="n">exportables</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">modules</span><span class="p">():</span>  <span class="c1"># type: ignore</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">Exportable</span><span class="p">):</span>
+                <span class="n">exportables</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+
+        <span class="n">qual_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__module__</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__qualname__</span>
+        <span class="nb">format</span> <span class="o">=</span> <span class="n">get_export_format</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+        <span class="n">output_descr</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">qual_name</span><span class="si">}</span><span class="s2"> exported to </span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="c1"># Pytorch&#39;s default for None is too low, can&#39;t pass None through</span>
+        <span class="k">if</span> <span class="n">onnx_opset_version</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">onnx_opset_version</span> <span class="o">=</span> <span class="mi">13</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Disable typechecks</span>
+            <span class="n">typecheck</span><span class="o">.</span><span class="n">set_typecheck_enabled</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="c1"># Allow user to completely override forward method to export</span>
+            <span class="n">forward_method</span><span class="p">,</span> <span class="n">old_forward_method</span> <span class="o">=</span> <span class="n">wrap_forward_method</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+            <span class="c1"># Set module mode</span>
+            <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">onnx</span><span class="o">.</span><span class="n">select_model_mode_for_export</span><span class="p">(</span>
+                <span class="bp">self</span><span class="p">,</span> <span class="n">training</span>
+            <span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">inference_mode</span><span class="p">(),</span> <span class="n">torch</span><span class="o">.</span><span class="n">jit</span><span class="o">.</span><span class="n">optimized_execution</span><span class="p">(</span><span class="kc">True</span><span class="p">):</span>
+
+                <span class="k">if</span> <span class="n">input_example</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">input_example</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_module</span><span class="o">.</span><span class="n">input_example</span><span class="p">()</span>
+
+                <span class="c1"># Remove i/o examples from args we propagate to enclosed Exportables</span>
+                <span class="n">my_args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;output&quot;</span><span class="p">)</span>
+                <span class="n">my_args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;input_example&quot;</span><span class="p">)</span>
+
+                <span class="c1"># Run (possibly overridden) prepare methods before calling forward()</span>
+                <span class="k">for</span> <span class="n">ex</span> <span class="ow">in</span> <span class="n">exportables</span><span class="p">:</span>
+                    <span class="n">ex</span><span class="o">.</span><span class="n">_prepare_for_export</span><span class="p">(</span><span class="o">**</span><span class="n">my_args</span><span class="p">,</span> <span class="n">noreplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_for_export</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="n">output</span><span class="p">,</span> <span class="n">input_example</span><span class="o">=</span><span class="n">input_example</span><span class="p">,</span> <span class="o">**</span><span class="n">my_args</span><span class="p">)</span>
+
+                <span class="n">input_list</span><span class="p">,</span> <span class="n">input_dict</span> <span class="o">=</span> <span class="n">parse_input_example</span><span class="p">(</span><span class="n">input_example</span><span class="p">)</span>
+                <span class="n">input_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_names</span>
+                <span class="n">output_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_names</span>
+                <span class="n">output_example</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="o">*</span><span class="n">input_list</span><span class="p">,</span> <span class="o">**</span><span class="n">input_dict</span><span class="p">))</span>  <span class="c1"># type: ignore</span>
+
+                <span class="n">jitted_model</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="k">if</span> <span class="n">try_script</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">jitted_model</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">jit</span><span class="o">.</span><span class="n">script</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;jit.script() failed!</span><span class="se">\n</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="n">ExportFormat</span><span class="o">.</span><span class="n">TORCHSCRIPT</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">jitted_model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">jitted_model</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">jit</span><span class="o">.</span><span class="n">trace_module</span><span class="p">(</span>
+                            <span class="bp">self</span><span class="p">,</span>
+                            <span class="p">{</span><span class="s2">&quot;forward&quot;</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">input_list</span><span class="p">)</span> <span class="o">+</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">input_dict</span><span class="o">.</span><span class="n">values</span><span class="p">())},</span>
+                            <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">check_trace</span><span class="o">=</span><span class="n">check_trace</span><span class="p">,</span>
+                            <span class="n">check_tolerance</span><span class="o">=</span><span class="n">check_tolerance</span><span class="p">,</span>
+                        <span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+                        <span class="n">jitted_model</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">jit</span><span class="o">.</span><span class="n">optimize_for_inference</span><span class="p">(</span><span class="n">jitted_model</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;JIT code:</span><span class="se">\n</span><span class="si">{</span><span class="n">jitted_model</span><span class="o">.</span><span class="n">code</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">jitted_model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">format</span> <span class="o">==</span> <span class="n">ExportFormat</span><span class="o">.</span><span class="n">ONNX</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">jitted_model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">jitted_model</span> <span class="o">=</span> <span class="bp">self</span>
+
+                    <span class="c1"># dynamic axis is a mapping from input/output_name =&gt; list of &quot;dynamic&quot; indices</span>
+                    <span class="k">if</span> <span class="n">dynamic_axes</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">use_dynamic_axes</span><span class="p">:</span>
+                        <span class="n">dynamic_axes</span> <span class="o">=</span> <span class="n">get_dynamic_axes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_module</span><span class="o">.</span><span class="n">input_types</span><span class="p">,</span> <span class="n">input_names</span><span class="p">)</span>
+                        <span class="n">dynamic_axes</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">get_dynamic_axes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_module</span><span class="o">.</span><span class="n">output_types</span><span class="p">,</span> <span class="n">output_names</span><span class="p">))</span>
+
+                    <span class="n">torch</span><span class="o">.</span><span class="n">onnx</span><span class="o">.</span><span class="n">export</span><span class="p">(</span>
+                        <span class="n">jitted_model</span><span class="p">,</span>
+                        <span class="n">input_example</span><span class="p">,</span>
+                        <span class="n">output</span><span class="p">,</span>
+                        <span class="n">input_names</span><span class="o">=</span><span class="n">input_names</span><span class="p">,</span>
+                        <span class="n">output_names</span><span class="o">=</span><span class="n">output_names</span><span class="p">,</span>
+                        <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+                        <span class="n">export_params</span><span class="o">=</span><span class="n">export_params</span><span class="p">,</span>
+                        <span class="n">do_constant_folding</span><span class="o">=</span><span class="n">do_constant_folding</span><span class="p">,</span>
+                        <span class="n">dynamic_axes</span><span class="o">=</span><span class="n">dynamic_axes</span><span class="p">,</span>
+                        <span class="n">opset_version</span><span class="o">=</span><span class="n">onnx_opset_version</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">check_trace</span><span class="p">:</span>
+                        <span class="n">verify_runtime</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">input_list</span><span class="p">,</span> <span class="n">input_dict</span><span class="p">,</span> <span class="n">input_names</span><span class="p">,</span> <span class="n">output_names</span><span class="p">,</span> <span class="n">output_example</span><span class="p">)</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Encountered unknown export format </span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">typecheck</span><span class="o">.</span><span class="n">set_typecheck_enabled</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">forward_method</span><span class="p">:</span>
+                <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">forward</span> <span class="o">=</span> <span class="n">old_forward_method</span>  <span class="c1"># type: ignore</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_export_teardown</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">output</span><span class="p">],</span> <span class="p">[</span><span class="n">output_descr</span><span class="p">]</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">disabled_deployment_input_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Implement this method to return a set of input names disabled for export&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">set</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">disabled_deployment_output_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Implement this method to return a set of output names disabled for export&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">set</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">supported_export_formats</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Implement this method to return a set of export formats supported. Default is all types.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">ExportFormat</span><span class="o">.</span><span class="n">ONNX</span><span class="p">,</span> <span class="n">ExportFormat</span><span class="o">.</span><span class="n">TORCHSCRIPT</span><span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">_prepare_for_export</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Override this method to prepare module for export. This is in-place operation.</span>
+<span class="sd">        Base version does common necessary module replacements (Apex etc)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="s2">&quot;noreplace&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">replace_for_export</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_export_teardown</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Override this method for any teardown code after export.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">input_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Implement this method to return a list of input names&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">get_io_names</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_module</span><span class="o">.</span><span class="n">input_types</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">disabled_deployment_input_names</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">output_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Override this method to return a set of output names disabled for export&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">get_io_names</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_module</span><span class="o">.</span><span class="n">output_types</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">disabled_deployment_output_names</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

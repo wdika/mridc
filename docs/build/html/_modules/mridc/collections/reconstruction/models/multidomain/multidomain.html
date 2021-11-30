@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.collections.reconstruction.models.multidomain.multidomain &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../../../../../" id="documentation_options" src="../../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../../_static/jquery.js"></script>
+        <script src="../../../../../../_static/underscore.js"></script>
+        <script src="../../../../../../_static/doctools.js"></script>
+    <script src="../../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../../../index.html">Module code</a> &raquo;</li>
+      <li>mridc.collections.reconstruction.models.multidomain.multidomain</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.collections.reconstruction.models.multidomain.multidomain</h1><div class="highlight"><pre>
+<span></span><span class="c1"># coding=utf-8</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="c1"># Taken and adapted from:https://github.com/NKI-AI/direct/blob/main/direct/nn/multidomainnet/multidomain.py</span>
+<span class="c1"># Copyright (c) DIRECT Contributors</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
+
+<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">fft2c</span><span class="p">,</span> <span class="n">ifft2c</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.utils</span> <span class="kn">import</span> <span class="n">complex_conj</span><span class="p">,</span> <span class="n">complex_mul</span>
+
+
+<div class="viewcode-block" id="MultiDomainConv2d"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.multidomain.html#mridc.collections.reconstruction.models.multidomain.multidomain.MultiDomainConv2d">[docs]</a><span class="k">class</span> <span class="nc">MultiDomainConv2d</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Multi-domain convolution layer.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">fft_type</span><span class="p">,</span>
+        <span class="n">in_channels</span><span class="p">,</span>
+        <span class="n">out_channels</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_conv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kspace_conv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">fft_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_channels_dim</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_spatial_dims</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+
+<div class="viewcode-block" id="MultiDomainConv2d.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.multidomain.html#mridc.collections.reconstruction.models.multidomain.multidomain.MultiDomainConv2d.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Forward method for the MultiDomainConv2d class.&quot;&quot;&quot;</span>
+        <span class="n">kspace</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">fft2c</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">fft_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_spatial_dims</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">(),</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="n">kspace</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">kspace</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">kspace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kspace_conv</span><span class="p">(</span><span class="n">kspace</span><span class="p">)</span>
+
+        <span class="n">backward</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">ifft2c</span><span class="p">(</span><span class="n">ks</span><span class="o">.</span><span class="n">float</span><span class="p">(),</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">fft_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_spatial_dims</span><span class="p">)</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">type</span><span class="p">())</span>
+            <span class="k">for</span> <span class="n">ks</span> <span class="ow">in</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">kspace</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">(),</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="n">backward</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">backward</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_conv</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">image</span><span class="p">,</span> <span class="n">backward</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_channels_dim</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">image</span></div></div>
+
+
+<div class="viewcode-block" id="MultiDomainConvTranspose2d"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.multidomain.html#mridc.collections.reconstruction.models.multidomain.multidomain.MultiDomainConvTranspose2d">[docs]</a><span class="k">class</span> <span class="nc">MultiDomainConvTranspose2d</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Multi-Domain convolutional transpose layer.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">fft_type</span><span class="p">,</span>
+        <span class="n">in_channels</span><span class="p">,</span>
+        <span class="n">out_channels</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_conv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ConvTranspose2d</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kspace_conv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ConvTranspose2d</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">fft_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_channels_dim</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_spatial_dims</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+
+<div class="viewcode-block" id="MultiDomainConvTranspose2d.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.multidomain.html#mridc.collections.reconstruction.models.multidomain.multidomain.MultiDomainConvTranspose2d.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Forward method for the MultiDomainConvTranspose2d class.&quot;&quot;&quot;</span>
+        <span class="n">kspace</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">fft2c</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">fft_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_spatial_dims</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">(),</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="n">kspace</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">kspace</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">kspace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kspace_conv</span><span class="p">(</span><span class="n">kspace</span><span class="p">)</span>
+
+        <span class="n">backward</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">ifft2c</span><span class="p">(</span><span class="n">ks</span><span class="o">.</span><span class="n">float</span><span class="p">(),</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">fft_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_spatial_dims</span><span class="p">)</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">type</span><span class="p">())</span>
+            <span class="k">for</span> <span class="n">ks</span> <span class="ow">in</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">kspace</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">(),</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="n">backward</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">backward</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_conv</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">image</span><span class="p">,</span> <span class="n">backward</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_channels_dim</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="MultiDomainConvBlock"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.multidomain.html#mridc.collections.reconstruction.models.multidomain.multidomain.MultiDomainConvBlock">[docs]</a><span class="k">class</span> <span class="nc">MultiDomainConvBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A multi-domain convolutional block that consists of two multi-domain convolution layers each followed by instance</span>
+<span class="sd">    normalization, LeakyReLU activation and dropout.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fft_type</span><span class="p">,</span> <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dropout_probability</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        in_channels: Number of input channels.</span>
+<span class="sd">        out_channels: Number of output channels.</span>
+<span class="sd">        dropout_probability: Dropout probability.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span> <span class="o">=</span> <span class="n">in_channels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span> <span class="o">=</span> <span class="n">out_channels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout_probability</span> <span class="o">=</span> <span class="n">dropout_probability</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">layers</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">MultiDomainConv2d</span><span class="p">(</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">InstanceNorm2d</span><span class="p">(</span><span class="n">out_channels</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">LeakyReLU</span><span class="p">(</span><span class="n">negative_slope</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Dropout2d</span><span class="p">(</span><span class="n">dropout_probability</span><span class="p">),</span>
+            <span class="n">MultiDomainConv2d</span><span class="p">(</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">InstanceNorm2d</span><span class="p">(</span><span class="n">out_channels</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">LeakyReLU</span><span class="p">(</span><span class="n">negative_slope</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Dropout2d</span><span class="p">(</span><span class="n">dropout_probability</span><span class="p">),</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="MultiDomainConvBlock.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.multidomain.html#mridc.collections.reconstruction.models.multidomain.multidomain.MultiDomainConvBlock.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_input</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Forward method for the MultiDomainConvBlock class.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">(</span><span class="n">_input</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;MultiDomainConvBlock(in_channels=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span><span class="si">}</span><span class="s2">, out_channels=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;dropout_probability=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout_probability</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TransposeMultiDomainConvBlock"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.multidomain.html#mridc.collections.reconstruction.models.multidomain.multidomain.TransposeMultiDomainConvBlock">[docs]</a><span class="k">class</span> <span class="nc">TransposeMultiDomainConvBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A Transpose Convolutional Block that consists of one convolution transpose layers followed by instance</span>
+<span class="sd">    normalization and LeakyReLU activation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fft_type</span><span class="p">,</span> <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        in_channels: Number of input channels.</span>
+<span class="sd">        out_channels: Number of output channels.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span> <span class="o">=</span> <span class="n">in_channels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span> <span class="o">=</span> <span class="n">out_channels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layers</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">MultiDomainConvTranspose2d</span><span class="p">(</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">InstanceNorm2d</span><span class="p">(</span><span class="n">out_channels</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">LeakyReLU</span><span class="p">(</span><span class="n">negative_slope</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="TransposeMultiDomainConvBlock.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.multidomain.html#mridc.collections.reconstruction.models.multidomain.multidomain.TransposeMultiDomainConvBlock.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_data</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Forward method for the TransposeMultiDomainConvBlock class.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">(</span><span class="n">input_data</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;MultiDomainConvBlock(in_channels=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span><span class="si">}</span><span class="s2">, out_channels=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span><span class="si">}</span><span class="s2">)&quot;</span></div>
+
+
+<div class="viewcode-block" id="StandardizationLayer"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.multidomain.html#mridc.collections.reconstruction.models.multidomain.multidomain.StandardizationLayer">[docs]</a><span class="k">class</span> <span class="nc">StandardizationLayer</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Multi-channel data standardization method. Inspired by AIRS model submission to the Fast MRI 2020 challenge.</span>
+<span class="sd">    Given individual coil images :math:`\{x_i\}_{i=1}^{N_c}` and sensitivity coil maps :math:`\{S_i\}_{i=1}^{N_c}` \</span>
+<span class="sd">    it returns</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        [(x_{sense}, {x_{res}}_1), ..., (x_{sense}, {x_{res}}_{N_c})]</span>
+
+<span class="sd">    where</span>
+
+<span class="sd">    :math:`{x_{res}}_i = xi - S_i X x_{sense}` and</span>
+
+<span class="sd">    :math:`x_{sense} = \sum_{i=1}^{N_c} {S_i}^{*} X x_i`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coil_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">channel_dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span> <span class="o">=</span> <span class="n">coil_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">channel_dim</span> <span class="o">=</span> <span class="n">channel_dim</span>
+
+<div class="viewcode-block" id="StandardizationLayer.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.multidomain.html#mridc.collections.reconstruction.models.multidomain.multidomain.StandardizationLayer.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coil_images</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">sensitivity_map</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Forward pass.&quot;&quot;&quot;</span>
+        <span class="n">combined_image</span> <span class="o">=</span> <span class="n">complex_mul</span><span class="p">(</span><span class="n">coil_images</span><span class="p">,</span> <span class="n">complex_conj</span><span class="p">(</span><span class="n">sensitivity_map</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">)</span>
+        <span class="n">residual_image</span> <span class="o">=</span> <span class="n">combined_image</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">)</span> <span class="o">-</span> <span class="n">complex_mul</span><span class="p">(</span>
+            <span class="n">combined_image</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">),</span> <span class="n">sensitivity_map</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+                    <span class="p">[</span><span class="n">combined_image</span><span class="p">,</span> <span class="n">residual_image</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">,</span> <span class="n">idx</span><span class="p">)],</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">channel_dim</span><span class="p">,</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">coil_images</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">))</span>
+            <span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">,</span>
+        <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="MultiDomainUnet2d"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.multidomain.html#mridc.collections.reconstruction.models.multidomain.multidomain.MultiDomainUnet2d">[docs]</a><span class="k">class</span> <span class="nc">MultiDomainUnet2d</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Unet modification to be used with Multi-domain network as in AIRS Medical submission to the Fast MRI 2020</span>
+<span class="sd">    challenge.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">out_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">num_filters</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">num_pool_layers</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">dropout_probability</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">fft_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;orthogonal&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        in_channels: Number of input channels to the u-net.</span>
+<span class="sd">        out_channels: Number of output channels to the u-net.</span>
+<span class="sd">        num_filters: Number of output channels of the first convolutional layer.</span>
+<span class="sd">        num_pool_layers: Number of down-sampling and up-sampling layers (depth).</span>
+<span class="sd">        dropout_probability: Dropout probability.</span>
+<span class="sd">        fft_type: FFT type.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span> <span class="o">=</span> <span class="n">in_channels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span> <span class="o">=</span> <span class="n">out_channels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_filters</span> <span class="o">=</span> <span class="n">num_filters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_pool_layers</span> <span class="o">=</span> <span class="n">num_pool_layers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout_probability</span> <span class="o">=</span> <span class="n">dropout_probability</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">fft_type</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">down_sample_layers</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">MultiDomainConvBlock</span><span class="p">(</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">in_channels</span><span class="p">,</span> <span class="n">num_filters</span><span class="p">,</span> <span class="n">dropout_probability</span><span class="p">)]</span>
+        <span class="p">)</span>
+        <span class="n">ch</span> <span class="o">=</span> <span class="n">num_filters</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_pool_layers</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">down_sample_layers</span> <span class="o">+=</span> <span class="p">[</span><span class="n">MultiDomainConvBlock</span><span class="p">(</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">ch</span><span class="p">,</span> <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">dropout_probability</span><span class="p">)]</span>
+            <span class="n">ch</span> <span class="o">*=</span> <span class="mi">2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv</span> <span class="o">=</span> <span class="n">MultiDomainConvBlock</span><span class="p">(</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">ch</span><span class="p">,</span> <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">dropout_probability</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">up_conv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">up_transpose_conv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_pool_layers</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">up_transpose_conv</span> <span class="o">+=</span> <span class="p">[</span><span class="n">TransposeMultiDomainConvBlock</span><span class="p">(</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">ch</span><span class="p">)]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">up_conv</span> <span class="o">+=</span> <span class="p">[</span><span class="n">MultiDomainConvBlock</span><span class="p">(</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">ch</span><span class="p">,</span> <span class="n">dropout_probability</span><span class="p">)]</span>
+            <span class="n">ch</span> <span class="o">//=</span> <span class="mi">2</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">up_transpose_conv</span> <span class="o">+=</span> <span class="p">[</span><span class="n">TransposeMultiDomainConvBlock</span><span class="p">(</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">ch</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">up_conv</span> <span class="o">+=</span> <span class="p">[</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+                <span class="n">MultiDomainConvBlock</span><span class="p">(</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">ch</span><span class="p">,</span> <span class="n">dropout_probability</span><span class="p">),</span>
+                <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="n">ch</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="p">]</span>
+
+<div class="viewcode-block" id="MultiDomainUnet2d.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.multidomain.html#mridc.collections.reconstruction.models.multidomain.multidomain.MultiDomainUnet2d.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_data</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Forward pass of the u-net.&quot;&quot;&quot;</span>
+        <span class="n">stack</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">input_data</span>
+
+        <span class="c1"># Apply down-sampling layers</span>
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">down_sample_layers</span><span class="p">:</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">layer</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+            <span class="n">stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">avg_pool2d</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+
+        <span class="c1"># Apply up-sampling layers</span>
+        <span class="k">for</span> <span class="n">transpose_conv</span><span class="p">,</span> <span class="n">conv</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">up_transpose_conv</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">up_conv</span><span class="p">):</span>
+            <span class="n">downsample_layer</span> <span class="o">=</span> <span class="n">stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">transpose_conv</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+
+            <span class="c1"># Reflect pad on the right/bottom if needed to handle odd input dimensions.</span>
+            <span class="n">padding</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">output</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">downsample_layer</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="n">padding</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># Padding right</span>
+            <span class="k">if</span> <span class="n">output</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">!=</span> <span class="n">downsample_layer</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]:</span>
+                <span class="n">padding</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># Padding bottom</span>
+            <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">padding</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">output</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">padding</span><span class="p">,</span> <span class="s2">&quot;reflect&quot;</span><span class="p">)</span>
+
+            <span class="n">output</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">output</span><span class="p">,</span> <span class="n">downsample_layer</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">conv</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">output</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

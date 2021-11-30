@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.collections.reconstruction.models.mwcnn.mwcnn &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../../../../../" id="documentation_options" src="../../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../../_static/jquery.js"></script>
+        <script src="../../../../../../_static/underscore.js"></script>
+        <script src="../../../../../../_static/doctools.js"></script>
+    <script src="../../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../../../index.html">Module code</a> &raquo;</li>
+      <li>mridc.collections.reconstruction.models.mwcnn.mwcnn</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.collections.reconstruction.models.mwcnn.mwcnn</h1><div class="highlight"><pre>
+<span></span><span class="c1"># coding=utf-8</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="c1"># Taken and adapted from: https://github.com/NKI-AI/direct/blob/main/direct/nn/mwcnn/mwcnn.py</span>
+<span class="c1"># Copyright (c) DIRECT Contributors</span>
+
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
+
+
+<div class="viewcode-block" id="DWT"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.mwcnn.html#mridc.collections.reconstruction.models.mwcnn.mwcnn.DWT">[docs]</a><span class="k">class</span> <span class="nc">DWT</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    2D Discrete Wavelet Transform as implemented in Liu, Pengju, et al.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    ..</span>
+
+<span class="sd">        Liu, Pengju, et al. “Multi-Level Wavelet-CNN for Image Restoration.” ArXiv:1805.07071 [Cs], May 2018. \</span>
+<span class="sd">        arXiv.org, http://arxiv.org/abs/1805.07071.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Inits DWT.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">requires_grad</span> <span class="o">=</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="DWT.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.mwcnn.html#mridc.collections.reconstruction.models.mwcnn.mwcnn.DWT.forward">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Computes DWT(`x`) given tensor `x`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x: Input tensor.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        DWT of `x`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">x01</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">,</span> <span class="p">:]</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="n">x02</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">,</span> <span class="p">:]</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="n">x1</span> <span class="o">=</span> <span class="n">x01</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">x2</span> <span class="o">=</span> <span class="n">x02</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">x3</span> <span class="o">=</span> <span class="n">x01</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">x4</span> <span class="o">=</span> <span class="n">x02</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">x_LL</span> <span class="o">=</span> <span class="n">x1</span> <span class="o">+</span> <span class="n">x2</span> <span class="o">+</span> <span class="n">x3</span> <span class="o">+</span> <span class="n">x4</span>
+        <span class="n">x_HL</span> <span class="o">=</span> <span class="o">-</span><span class="n">x1</span> <span class="o">-</span> <span class="n">x2</span> <span class="o">+</span> <span class="n">x3</span> <span class="o">+</span> <span class="n">x4</span>
+        <span class="n">x_LH</span> <span class="o">=</span> <span class="o">-</span><span class="n">x1</span> <span class="o">+</span> <span class="n">x2</span> <span class="o">-</span> <span class="n">x3</span> <span class="o">+</span> <span class="n">x4</span>
+        <span class="n">x_HH</span> <span class="o">=</span> <span class="n">x1</span> <span class="o">-</span> <span class="n">x2</span> <span class="o">-</span> <span class="n">x3</span> <span class="o">+</span> <span class="n">x4</span>
+
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">x_LL</span><span class="p">,</span> <span class="n">x_HL</span><span class="p">,</span> <span class="n">x_LH</span><span class="p">,</span> <span class="n">x_HH</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="IWT"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.mwcnn.html#mridc.collections.reconstruction.models.mwcnn.mwcnn.IWT">[docs]</a><span class="k">class</span> <span class="nc">IWT</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    2D Inverse Wavelet Transform as implemented in Liu, Pengju, et al.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    ..</span>
+
+<span class="sd">        Liu, Pengju, et al. “Multi-Level Wavelet-CNN for Image Restoration.” ArXiv:1805.07071 [Cs], May 2018. \</span>
+<span class="sd">        arXiv.org, http://arxiv.org/abs/1805.07071.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Inits IWT.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">requires_grad</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_r</span> <span class="o">=</span> <span class="mi">2</span>
+
+<div class="viewcode-block" id="IWT.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.mwcnn.html#mridc.collections.reconstruction.models.mwcnn.mwcnn.IWT.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Computes IWT(`x`) given tensor `x`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x: Input tensor.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        IWT of `x`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">batch</span><span class="p">,</span> <span class="n">in_channel</span><span class="p">,</span> <span class="n">in_height</span><span class="p">,</span> <span class="n">in_width</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
+        <span class="n">out_channel</span><span class="p">,</span> <span class="n">out_height</span><span class="p">,</span> <span class="n">out_width</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">in_channel</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_r</span><span class="o">**</span><span class="mi">2</span><span class="p">)),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_r</span> <span class="o">*</span> <span class="n">in_height</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_r</span> <span class="o">*</span> <span class="n">in_width</span>
+
+        <span class="n">x1</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">:</span><span class="n">out_channel</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="n">x2</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="n">out_channel</span> <span class="p">:</span> <span class="n">out_channel</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="n">x3</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="n">out_channel</span> <span class="o">*</span> <span class="mi">2</span> <span class="p">:</span> <span class="n">out_channel</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="n">x4</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="n">out_channel</span> <span class="o">*</span> <span class="mi">3</span> <span class="p">:</span> <span class="n">out_channel</span> <span class="o">*</span> <span class="mi">4</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">/</span> <span class="mi">2</span>
+
+        <span class="n">h</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">batch</span><span class="p">,</span> <span class="n">out_channel</span><span class="p">,</span> <span class="n">out_height</span><span class="p">,</span> <span class="n">out_width</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+        <span class="n">h</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">x1</span> <span class="o">-</span> <span class="n">x2</span> <span class="o">-</span> <span class="n">x3</span> <span class="o">+</span> <span class="n">x4</span>
+        <span class="n">h</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">x1</span> <span class="o">-</span> <span class="n">x2</span> <span class="o">+</span> <span class="n">x3</span> <span class="o">-</span> <span class="n">x4</span>
+        <span class="n">h</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">x1</span> <span class="o">+</span> <span class="n">x2</span> <span class="o">-</span> <span class="n">x3</span> <span class="o">-</span> <span class="n">x4</span>
+        <span class="n">h</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">x1</span> <span class="o">+</span> <span class="n">x2</span> <span class="o">+</span> <span class="n">x3</span> <span class="o">+</span> <span class="n">x4</span>
+
+        <span class="k">return</span> <span class="n">h</span></div></div>
+
+
+<div class="viewcode-block" id="ConvBlock"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.mwcnn.html#mridc.collections.reconstruction.models.mwcnn.mwcnn.ConvBlock">[docs]</a><span class="k">class</span> <span class="nc">ConvBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convolution Block for MWCNN as implemented in Liu, Pengju, et al.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    ..</span>
+
+<span class="sd">        Liu, Pengju, et al. “Multi-Level Wavelet-CNN for Image Restoration.” ArXiv:1805.07071 [Cs], May 2018. \</span>
+<span class="sd">        arXiv.org, http://arxiv.org/abs/1805.07071.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">out_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">kernel_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">bias</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">batchnorm</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">activation</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(</span><span class="kc">True</span><span class="p">),</span>
+        <span class="n">scale</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Inits ConvBlock.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        in_channels: Number of input channels.</span>
+<span class="sd">            int</span>
+<span class="sd">        out_channels: Number of output channels.</span>
+<span class="sd">            int</span>
+<span class="sd">        kernel_size: Conv kernel size.</span>
+<span class="sd">            int</span>
+<span class="sd">        bias: Use convolution bias.</span>
+<span class="sd">            bool, Default: True.</span>
+<span class="sd">        batchnorm: Use batch normalization.</span>
+<span class="sd">            bool, Default: False.</span>
+<span class="sd">        activation: Activation function.</span>
+<span class="sd">            torch.nn.Module, Default: nn.ReLU(True).</span>
+<span class="sd">        scale: Scale factor for convolution.</span>
+<span class="sd">            float (optional), Default: 1.0.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="n">net</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span>
+                <span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+                <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span>
+                <span class="n">kernel_size</span><span class="o">=</span><span class="n">kernel_size</span><span class="p">,</span>
+                <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">,</span>
+                <span class="n">padding</span><span class="o">=</span><span class="n">kernel_size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">batchnorm</span><span class="p">:</span>
+            <span class="n">net</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">BatchNorm2d</span><span class="p">(</span><span class="n">num_features</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="mf">0.95</span><span class="p">))</span>
+        <span class="n">net</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">activation</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">net</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="o">*</span><span class="n">net</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">scale</span>
+
+<div class="viewcode-block" id="ConvBlock.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.mwcnn.html#mridc.collections.reconstruction.models.mwcnn.mwcnn.ConvBlock.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Performs forward pass of ConvBlock.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x: Input with shape (N, C, H, W).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Output with shape (N, C&#39;, H&#39;, W&#39;).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">net</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span></div></div>
+
+
+<div class="viewcode-block" id="DilatedConvBlock"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.mwcnn.html#mridc.collections.reconstruction.models.mwcnn.mwcnn.DilatedConvBlock">[docs]</a><span class="k">class</span> <span class="nc">DilatedConvBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Double dilated Convolution Block fpr MWCNN as implemented in Liu, Pengju, et al.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    ..</span>
+
+<span class="sd">        Liu, Pengju, et al. “Multi-Level Wavelet-CNN for Image Restoration.” ArXiv:1805.07071 [Cs], May 2018. \</span>
+<span class="sd">        arXiv.org, http://arxiv.org/abs/1805.07071.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">dilations</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
+        <span class="n">kernel_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">out_channels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">bias</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">batchnorm</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">activation</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(</span><span class="kc">True</span><span class="p">),</span>
+        <span class="n">scale</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Inits DilatedConvBlock.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        in_channels: Number of input channels.</span>
+<span class="sd">            int</span>
+<span class="sd">        dilations: Number of dilations.</span>
+<span class="sd">            Tuple[int, int], Default: (1, 1).</span>
+<span class="sd">        kernel_size: Conv kernel size.</span>
+<span class="sd">            int</span>
+<span class="sd">        out_channels: Number of output channels.</span>
+<span class="sd">            int (optional), Default: None.</span>
+<span class="sd">        bias: Use convolution bias.</span>
+<span class="sd">            bool, Default: True.</span>
+<span class="sd">        batchnorm: Use batch normalization.</span>
+<span class="sd">            bool, Default: False.</span>
+<span class="sd">        activation: Activation function.</span>
+<span class="sd">            torch.nn.Module, Default: nn.ReLU(True).</span>
+<span class="sd">        scale: Scale factor for convolution.</span>
+<span class="sd">            float (optional), Default: 1.0.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="n">net</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span>
+                <span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+                <span class="n">out_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+                <span class="n">kernel_size</span><span class="o">=</span><span class="n">kernel_size</span><span class="p">,</span>
+                <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">,</span>
+                <span class="n">dilation</span><span class="o">=</span><span class="n">dilations</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="n">padding</span><span class="o">=</span><span class="n">kernel_size</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">dilations</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">batchnorm</span><span class="p">:</span>
+            <span class="n">net</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">BatchNorm2d</span><span class="p">(</span><span class="n">num_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="mf">0.95</span><span class="p">))</span>
+        <span class="n">net</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">activation</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">out_channels</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">out_channels</span> <span class="o">=</span> <span class="n">in_channels</span>
+        <span class="n">net</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span>
+                <span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+                <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span>
+                <span class="n">kernel_size</span><span class="o">=</span><span class="n">kernel_size</span><span class="p">,</span>
+                <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">,</span>
+                <span class="n">dilation</span><span class="o">=</span><span class="n">dilations</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                <span class="n">padding</span><span class="o">=</span><span class="n">kernel_size</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">dilations</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">batchnorm</span><span class="p">:</span>
+            <span class="n">net</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">BatchNorm2d</span><span class="p">(</span><span class="n">num_features</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="mf">0.95</span><span class="p">))</span>
+        <span class="n">net</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">activation</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">net</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="o">*</span><span class="n">net</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">scale</span>
+
+<div class="viewcode-block" id="DilatedConvBlock.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.mwcnn.html#mridc.collections.reconstruction.models.mwcnn.mwcnn.DilatedConvBlock.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Performs forward pass of DilatedConvBlock.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x: Input with shape (N, C, H, W).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Output with shape (N, C&#39;, H&#39;, W&#39;).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">net</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span></div></div>
+
+
+<div class="viewcode-block" id="MWCNN"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.mwcnn.html#mridc.collections.reconstruction.models.mwcnn.mwcnn.MWCNN">[docs]</a><span class="k">class</span> <span class="nc">MWCNN</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Multi-level Wavelet CNN (MWCNN) implementation as implemented in Liu, Pengju, et al.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    ..</span>
+
+<span class="sd">        Liu, Pengju, et al. “Multi-Level Wavelet-CNN for Image Restoration.” ArXiv:1805.07071 [Cs], May 2018. \</span>
+<span class="sd">        arXiv.org, http://arxiv.org/abs/1805.07071.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">input_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">first_conv_hidden_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">num_scales</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="n">bias</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">batchnorm</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">activation</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(</span><span class="kc">True</span><span class="p">),</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Inits MWCNN.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_channels: Input channels dimension.</span>
+<span class="sd">            int</span>
+<span class="sd">        first_conv_hidden_channels: First convolution output channels dimension.</span>
+<span class="sd">            int</span>
+<span class="sd">        num_scales: Number of scales.</span>
+<span class="sd">            int, Default: 4.</span>
+<span class="sd">        bias: Convolution bias. If True, adds a learnable bias to the output.</span>
+<span class="sd">            bool, Default: True.</span>
+<span class="sd">        batchnorm: If True, a batchnorm layer is added after each convolution.</span>
+<span class="sd">            bool, Default: False.</span>
+<span class="sd">        activation: Activation function applied after each convolution.</span>
+<span class="sd">            torch.nn.Module, Default: nn.ReLU().</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kernel_size</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">DWT</span> <span class="o">=</span> <span class="n">DWT</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">IWT</span> <span class="o">=</span> <span class="n">IWT</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">down</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_scales</span><span class="p">):</span>
+            <span class="n">in_channels</span> <span class="o">=</span> <span class="n">input_channels</span> <span class="k">if</span> <span class="n">idx</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">first_conv_hidden_channels</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">**</span> <span class="p">(</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">out_channels</span> <span class="o">=</span> <span class="n">first_conv_hidden_channels</span> <span class="o">*</span> <span class="mi">2</span><span class="o">**</span><span class="n">idx</span>
+            <span class="n">dilations</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">idx</span> <span class="o">!=</span> <span class="n">num_scales</span> <span class="o">-</span> <span class="mi">1</span> <span class="k">else</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">down</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+                    <span class="n">OrderedDict</span><span class="p">(</span>
+                        <span class="p">[</span>
+                            <span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;convblock</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                                <span class="n">ConvBlock</span><span class="p">(</span>
+                                    <span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+                                    <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span>
+                                    <span class="n">kernel_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_kernel_size</span><span class="p">,</span>
+                                    <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">,</span>
+                                    <span class="n">batchnorm</span><span class="o">=</span><span class="n">batchnorm</span><span class="p">,</span>
+                                    <span class="n">activation</span><span class="o">=</span><span class="n">activation</span><span class="p">,</span>
+                                <span class="p">),</span>
+                            <span class="p">),</span>
+                            <span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;dilconvblock</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                                <span class="n">DilatedConvBlock</span><span class="p">(</span>
+                                    <span class="n">in_channels</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span>
+                                    <span class="n">dilations</span><span class="o">=</span><span class="n">dilations</span><span class="p">,</span>
+                                    <span class="n">kernel_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_kernel_size</span><span class="p">,</span>
+                                    <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">,</span>
+                                    <span class="n">batchnorm</span><span class="o">=</span><span class="n">batchnorm</span><span class="p">,</span>
+                                    <span class="n">activation</span><span class="o">=</span><span class="n">activation</span><span class="p">,</span>
+                                <span class="p">),</span>
+                            <span class="p">),</span>
+                        <span class="p">]</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">up</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_scales</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">in_channels</span> <span class="o">=</span> <span class="n">first_conv_hidden_channels</span> <span class="o">*</span> <span class="mi">2</span><span class="o">**</span><span class="n">idx</span>
+            <span class="n">out_channels</span> <span class="o">=</span> <span class="n">input_channels</span> <span class="k">if</span> <span class="n">idx</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">first_conv_hidden_channels</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">**</span> <span class="p">(</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">dilations</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">idx</span> <span class="o">!=</span> <span class="n">num_scales</span> <span class="o">-</span> <span class="mi">1</span> <span class="k">else</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">up</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+                    <span class="n">OrderedDict</span><span class="p">(</span>
+                        <span class="p">[</span>
+                            <span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;invdilconvblock</span><span class="si">{</span><span class="n">num_scales</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">idx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                                <span class="n">DilatedConvBlock</span><span class="p">(</span>
+                                    <span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+                                    <span class="n">dilations</span><span class="o">=</span><span class="n">dilations</span><span class="p">,</span>
+                                    <span class="n">kernel_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_kernel_size</span><span class="p">,</span>
+                                    <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">,</span>
+                                    <span class="n">batchnorm</span><span class="o">=</span><span class="n">batchnorm</span><span class="p">,</span>
+                                    <span class="n">activation</span><span class="o">=</span><span class="n">activation</span><span class="p">,</span>
+                                <span class="p">),</span>
+                            <span class="p">),</span>
+                            <span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;invconvblock</span><span class="si">{</span><span class="n">num_scales</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">idx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                                <span class="n">ConvBlock</span><span class="p">(</span>
+                                    <span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span>
+                                    <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span><span class="p">,</span>
+                                    <span class="n">kernel_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_kernel_size</span><span class="p">,</span>
+                                    <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">,</span>
+                                    <span class="n">batchnorm</span><span class="o">=</span><span class="n">batchnorm</span><span class="p">,</span>
+                                    <span class="n">activation</span><span class="o">=</span><span class="n">activation</span><span class="p">,</span>
+                                <span class="p">),</span>
+                            <span class="p">),</span>
+                        <span class="p">]</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_scales</span> <span class="o">=</span> <span class="n">num_scales</span>
+
+<div class="viewcode-block" id="MWCNN.pad"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.mwcnn.html#mridc.collections.reconstruction.models.mwcnn.mwcnn.MWCNN.pad">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">pad</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Pad the input with zeros.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x: Input tensor.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Padded tensor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">padding</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">padding</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># Padding right - width</span>
+        <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">padding</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># Padding bottom - height</span>
+        <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">padding</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">padding</span><span class="p">,</span> <span class="s2">&quot;reflect&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span></div>
+
+<div class="viewcode-block" id="MWCNN.crop_to_shape"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.mwcnn.html#mridc.collections.reconstruction.models.mwcnn.mwcnn.MWCNN.crop_to_shape">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">crop_to_shape</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">shape</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Crop the input to the given shape.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x: Input tensor.</span>
+<span class="sd">        shape: Tuple of (height, width).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Cropped tensor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">h</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]</span>
+
+        <span class="k">if</span> <span class="n">h</span> <span class="o">&gt;</span> <span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span> <span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">:]</span>
+        <span class="k">if</span> <span class="n">w</span> <span class="o">&gt;</span> <span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="p">:</span> <span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="k">return</span> <span class="n">x</span></div>
+
+<div class="viewcode-block" id="MWCNN.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.mwcnn.html#mridc.collections.reconstruction.models.mwcnn.mwcnn.MWCNN.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_tensor</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">res</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Computes forward pass of MWCNN.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_tensor: Input tensor.</span>
+<span class="sd">            torch.tensor</span>
+<span class="sd">        res: If True, residual connection is applied to the output.</span>
+<span class="sd">            bool, Default: False.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Output tensor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">res_values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">input_tensor</span><span class="o">.</span><span class="n">clone</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_scales</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">idx</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">down</span><span class="p">[</span><span class="n">idx</span><span class="p">](</span><span class="n">x</span><span class="p">))</span>
+                <span class="n">res_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">idx</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_scales</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">down</span><span class="p">[</span><span class="n">idx</span><span class="p">](</span><span class="bp">self</span><span class="o">.</span><span class="n">DWT</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">down</span><span class="p">[</span><span class="n">idx</span><span class="p">](</span><span class="bp">self</span><span class="o">.</span><span class="n">DWT</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+                <span class="n">res_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_scales</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">idx</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_scales</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">crop_to_shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">IWT</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">up</span><span class="p">[</span><span class="n">idx</span><span class="p">](</span><span class="n">x</span><span class="p">)),</span> <span class="n">res_values</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">num_scales</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:])</span>
+                    <span class="o">+</span> <span class="n">res_values</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">num_scales</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">idx</span><span class="p">]</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">crop_to_shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">up</span><span class="p">[</span><span class="n">idx</span><span class="p">](</span><span class="n">x</span><span class="p">),</span> <span class="n">input_tensor</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:])</span>
+                <span class="k">if</span> <span class="n">res</span><span class="p">:</span>
+                    <span class="n">x</span> <span class="o">+=</span> <span class="n">input_tensor</span>
+        <span class="k">return</span> <span class="n">x</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

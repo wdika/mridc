@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.core.conf.hydra_runner &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>mridc.core.conf.hydra_runner</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.core.conf.hydra_runner</h1><div class="highlight"><pre>
+<span></span><span class="c1"># encoding: utf-8</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="c1"># Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/config/hydra_runner.py</span>
+
+<span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">argparse</span> <span class="kn">import</span> <span class="n">Namespace</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span> <span class="nn">hydra._internal.utils</span> <span class="kn">import</span> <span class="n">_run_hydra</span><span class="p">,</span> <span class="n">get_args_parser</span>
+<span class="kn">from</span> <span class="nn">hydra.core.config_store</span> <span class="kn">import</span> <span class="n">ConfigStore</span>
+<span class="kn">from</span> <span class="nn">hydra.types</span> <span class="kn">import</span> <span class="n">TaskFunction</span>
+<span class="kn">from</span> <span class="nn">omegaconf</span> <span class="kn">import</span> <span class="n">DictConfig</span><span class="p">,</span> <span class="n">OmegaConf</span>
+
+<span class="c1"># multiple interpolated values in the config</span>
+<span class="n">OmegaConf</span><span class="o">.</span><span class="n">register_new_resolver</span><span class="p">(</span><span class="s2">&quot;multiply&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">*</span> <span class="n">y</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="hydra_runner"><a class="viewcode-back" href="../../../../mridc.core.conf.html#mridc.core.conf.hydra_runner.hydra_runner">[docs]</a><span class="k">def</span> <span class="nf">hydra_runner</span><span class="p">(</span>
+    <span class="n">config_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">config_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">schema</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">TaskFunction</span><span class="p">],</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Decorator used for passing the Config paths to main function.</span>
+<span class="sd">    Optionally registers a schema used for validation/providing default values.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    config_path: Path to the config file.</span>
+<span class="sd">    config_name: Name of the config file.</span>
+<span class="sd">    schema: Schema used for validation/providing default values.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A decorator that passes the config paths to the main function.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">decorator</span><span class="p">(</span><span class="n">task_function</span><span class="p">:</span> <span class="n">TaskFunction</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="kc">None</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Decorator that passes the config paths to the main function.&quot;&quot;&quot;</span>
+
+        <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">task_function</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="n">cfg_passthrough</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DictConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+            <span class="sd">&quot;&quot;&quot;Wrapper that passes the config paths to the main function.&quot;&quot;&quot;</span>
+            <span class="c1"># Check it config was passed.</span>
+            <span class="k">if</span> <span class="n">cfg_passthrough</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">task_function</span><span class="p">(</span><span class="n">cfg_passthrough</span><span class="p">)</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="n">get_args_parser</span><span class="p">()</span>
+
+            <span class="c1"># Parse arguments in order to retrieve overrides</span>
+            <span class="n">parsed_args</span><span class="p">:</span> <span class="n">Namespace</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+            <span class="c1"># Get overriding args in dot string format</span>
+            <span class="n">overrides</span> <span class="o">=</span> <span class="n">parsed_args</span><span class="o">.</span><span class="n">overrides</span>  <span class="c1"># type: list</span>
+
+            <span class="c1"># Disable the creation of .hydra subdir</span>
+            <span class="c1"># https://hydra.cc/docs/tutorials/basic/running_your_app/working_directory</span>
+            <span class="n">overrides</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;hydra.output_subdir=null&quot;</span><span class="p">)</span>
+            <span class="c1"># Hydra logging outputs only to stdout (no log file).</span>
+            <span class="c1"># https://hydra.cc/docs/configure_hydra/logging</span>
+            <span class="n">overrides</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;hydra/job_logging=stdout&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Set run.dir ONLY for ExpManager &quot;compatibility&quot; - to be removed.</span>
+            <span class="n">overrides</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;hydra.run.dir=.&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Check if user set the schema.</span>
+            <span class="k">if</span> <span class="n">schema</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Create config store.</span>
+                <span class="n">cs</span> <span class="o">=</span> <span class="n">ConfigStore</span><span class="o">.</span><span class="n">instance</span><span class="p">()</span>
+
+                <span class="c1"># Get the correct ConfigStore &quot;path name&quot; to &quot;inject&quot; the schema.</span>
+                <span class="k">if</span> <span class="n">parsed_args</span><span class="o">.</span><span class="n">config_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">path</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">parsed_args</span><span class="o">.</span><span class="n">config_name</span><span class="p">)</span>
+                    <span class="c1"># Make sure the path is not set - as this will disable validation scheme.</span>
+                    <span class="k">if</span> <span class="n">path</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                        <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+                            <span class="s2">&quot;ERROR Cannot set config file path using `--config-name` when &quot;</span>
+                            <span class="s2">&quot;using schema. Please set path using `--config-path` and file name using &quot;</span>
+                            <span class="s2">&quot;`--config-name` separately.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="p">)</span>
+                        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="n">config_name</span>
+
+                <span class="c1"># Register the configuration as a node under the name in the group.</span>
+                <span class="n">cs</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">node</span><span class="o">=</span><span class="n">schema</span><span class="p">)</span>  <span class="c1"># group=group,</span>
+
+            <span class="c1"># Wrap a callable object with name `parse_args`</span>
+            <span class="c1"># This is to mimic the ArgParser.parse_args() API.</span>
+            <span class="k">class</span> <span class="nc">_argparse_wrapper</span><span class="p">:</span>
+                <span class="sd">&quot;&quot;&quot;Wrapper for ArgParser.parse_args().&quot;&quot;&quot;</span>
+
+                <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg_parser</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">arg_parser</span> <span class="o">=</span> <span class="n">arg_parser</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_actions</span> <span class="o">=</span> <span class="n">arg_parser</span><span class="o">.</span><span class="n">_actions</span>
+
+                <span class="nd">@staticmethod</span>
+                <span class="k">def</span> <span class="nf">parse_args</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                    <span class="sd">&quot;&quot;&quot;Parse arguments.&quot;&quot;&quot;</span>
+                    <span class="k">return</span> <span class="n">parsed_args</span>
+
+                    <span class="c1"># no return value from run_hydra() as it may sometime actually run the task_function</span>
+                    <span class="c1"># multiple times (--multirun)</span>
+
+            <span class="n">_run_hydra</span><span class="p">(</span>
+                <span class="n">args_parser</span><span class="o">=</span><span class="n">_argparse_wrapper</span><span class="p">(</span><span class="n">args</span><span class="p">),</span>  <span class="c1"># type: ignore</span>
+                <span class="n">task_function</span><span class="o">=</span><span class="n">task_function</span><span class="p">,</span>
+                <span class="n">config_path</span><span class="o">=</span><span class="n">config_path</span><span class="p">,</span>
+                <span class="n">config_name</span><span class="o">=</span><span class="n">config_name</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">wrapper</span>
+
+    <span class="k">return</span> <span class="n">decorator</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.core.utils package &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="mridc.utils package" href="mridc.utils.html" />
+    <link rel="prev" title="mridc.core.optim package" href="mridc.core.optim.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">mridc</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="mridc.html">mridc package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="mridc.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="mridc.collections.html">mridc.collections package</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="mridc.core.html">mridc.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mridc.utils.html">mridc.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.constants">mridc.constants module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.launch">mridc.launch module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.package_info">mridc.package_info module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">mridc</a> &raquo;</li>
+          <li><a href="mridc.html">mridc package</a> &raquo;</li>
+          <li><a href="mridc.core.html">mridc.core package</a> &raquo;</li>
+      <li>mridc.core.utils package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/mridc.core.utils.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <section id="mridc-core-utils-package">
+<h1>mridc.core.utils package<a class="headerlink" href="#mridc-core-utils-package" title="Permalink to this headline"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline"></a></h2>
+</section>
+<section id="module-mridc.core.utils.neural_type_utils">
+<span id="mridc-core-utils-neural-type-utils-module"></span><h2>mridc.core.utils.neural_type_utils module<a class="headerlink" href="#module-mridc.core.utils.neural_type_utils" title="Permalink to this headline"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.core.utils.neural_type_utils.extract_dynamic_axes">
+<span class="sig-prename descclassname"><span class="pre">mridc.core.utils.neural_type_utils.</span></span><span class="sig-name descname"><span class="pre">extract_dynamic_axes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ntype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mridc.core.neural_types.html#mridc.core.neural_types.neural_type.NeuralType" title="mridc.core.neural_types.neural_type.NeuralType"><span class="pre">mridc.core.neural_types.neural_type.NeuralType</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/utils/neural_type_utils.html#extract_dynamic_axes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.utils.neural_type_utils.extract_dynamic_axes" title="Permalink to this definition"></a></dt>
+<dd><p>This method will extract BATCH and TIME dimension ids from each provided input/output name argument.</p>
+<p>For example, if module/model accepts argument named “input_signal” with type corresponding to [Batch, Time, Dim]
+shape, then the returned result should contain “input_signal” -&gt; [0, 1] because Batch and Time are dynamic axes
+as they can change from call to call during inference.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>Name of input</em><em> or </em><em>output parameter</em>) – </p></li>
+<li><p><strong>ntype</strong> (<em>Corresponding Neural Type</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>A dictionary with input/output name as key and a list of dynamic axes as value.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.core.utils.neural_type_utils.get_dynamic_axes">
+<span class="sig-prename descclassname"><span class="pre">mridc.core.utils.neural_type_utils.</span></span><span class="sig-name descname"><span class="pre">get_dynamic_axes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">types</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/utils/neural_type_utils.html#get_dynamic_axes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.utils.neural_type_utils.get_dynamic_axes" title="Permalink to this definition"></a></dt>
+<dd><p>This method will return a dictionary with input/output names as keys and a list of dynamic axes as values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>types</strong> (<em>The NeuralType of the module</em><em> or </em><em>model to be inspected.</em>) – </p></li>
+<li><p><strong>names</strong> (<em>A list of names that should be inspected.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>A dictionary with input/output names as keys and a list of dynamic axes as values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.core.utils.neural_type_utils.get_io_names">
+<span class="sig-prename descclassname"><span class="pre">mridc.core.utils.neural_type_utils.</span></span><span class="sig-name descname"><span class="pre">get_io_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">types</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disabled_names</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/utils/neural_type_utils.html#get_io_names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.utils.neural_type_utils.get_io_names" title="Permalink to this definition"></a></dt>
+<dd><p>This method will return a list of input and output names for a given NeuralType.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>types</strong> (<em>The NeuralType of the module</em><em> or </em><em>model to be inspected.</em>) – </p></li>
+<li><p><strong>disabled_names</strong> (<em>A list of names that should be excluded from the result.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>A list of input and output names.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-mridc.core.utils.numba_utils">
+<span id="mridc-core-utils-numba-utils-module"></span><h2>mridc.core.utils.numba_utils module<a class="headerlink" href="#module-mridc.core.utils.numba_utils" title="Permalink to this headline"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.core.utils.numba_utils.is_numba_compat_strict">
+<span class="sig-prename descclassname"><span class="pre">mridc.core.utils.numba_utils.</span></span><span class="sig-name descname"><span class="pre">is_numba_compat_strict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/mridc/core/utils/numba_utils.html#is_numba_compat_strict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.utils.numba_utils.is_numba_compat_strict" title="Permalink to this definition"></a></dt>
+<dd><p>Returns strictness level of numba cuda compatibility checks.
+If value is true, numba cuda compatibility matrix must be satisfied.
+If value is false, only cuda availability is checked, not compatibility.
+Numba Cuda may still compile and run without issues in such a case, or it may fail.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.core.utils.numba_utils.numba_cpu_is_supported">
+<span class="sig-prename descclassname"><span class="pre">mridc.core.utils.numba_utils.</span></span><span class="sig-name descname"><span class="pre">numba_cpu_is_supported</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">min_version</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/mridc/core/utils/numba_utils.html#numba_cpu_is_supported"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.utils.numba_utils.numba_cpu_is_supported" title="Permalink to this definition"></a></dt>
+<dd><p>Tests if an appropriate version of numba is installed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>min_version</strong> (<em>The minimum version of numba that is required.</em>) – </p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>bool, whether numba CPU supported with this current installation or not.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.core.utils.numba_utils.numba_cuda_is_supported">
+<span class="sig-prename descclassname"><span class="pre">mridc.core.utils.numba_utils.</span></span><span class="sig-name descname"><span class="pre">numba_cuda_is_supported</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">min_version</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/mridc/core/utils/numba_utils.html#numba_cuda_is_supported"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.utils.numba_utils.numba_cuda_is_supported" title="Permalink to this definition"></a></dt>
+<dd><p>Tests if an appropriate version of numba is installed, and if it is,
+if cuda is supported properly within it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>min_version</strong> (<em>The minimum version of numba that is required.</em>) – </p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Whether cuda is supported with this current installation or not.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.core.utils.numba_utils.set_numba_compat_strictness">
+<span class="sig-prename descclassname"><span class="pre">mridc.core.utils.numba_utils.</span></span><span class="sig-name descname"><span class="pre">set_numba_compat_strictness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/utils/numba_utils.html#set_numba_compat_strictness"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.utils.numba_utils.set_numba_compat_strictness" title="Permalink to this definition"></a></dt>
+<dd><p>Sets the strictness level of numba cuda compatibility checks.
+If value is true, numba cuda compatibility matrix must be satisfied.
+If value is false, only cuda availability is checked, not compatibility.
+Numba Cuda may still compile and run without issues in such a case, or it may fail.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>strict</strong> (<em>Whether to enforce strict compatibility checks</em><em> or </em><em>relax them.</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.core.utils.numba_utils.skip_numba_cuda_test_if_unsupported">
+<span class="sig-prename descclassname"><span class="pre">mridc.core.utils.numba_utils.</span></span><span class="sig-name descname"><span class="pre">skip_numba_cuda_test_if_unsupported</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">min_version</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/utils/numba_utils.html#skip_numba_cuda_test_if_unsupported"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.utils.numba_utils.skip_numba_cuda_test_if_unsupported" title="Permalink to this definition"></a></dt>
+<dd><p>Helper method to skip pytest test case if numba cuda is not supported.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>min_version</strong> (<em>The minimum version of numba that is required.</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.core.utils.numba_utils.with_numba_compat_strictness">
+<span class="sig-prename descclassname"><span class="pre">mridc.core.utils.numba_utils.</span></span><span class="sig-name descname"><span class="pre">with_numba_compat_strictness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/utils/numba_utils.html#with_numba_compat_strictness"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.utils.numba_utils.with_numba_compat_strictness" title="Permalink to this definition"></a></dt>
+<dd><p>Context manager to temporarily set numba cuda compatibility strictness.</p>
+</dd></dl>
+
+</section>
+<section id="module-mridc.core.utils">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-mridc.core.utils" title="Permalink to this headline"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mridc.core.optim.html" class="btn btn-neutral float-left" title="mridc.core.optim package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mridc.utils.html" class="btn btn-neutral float-right" title="mridc.utils package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

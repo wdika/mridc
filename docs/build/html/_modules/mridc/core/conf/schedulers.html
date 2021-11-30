@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.core.conf.schedulers &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>mridc.core.conf.schedulers</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.core.conf.schedulers</h1><div class="highlight"><pre>
+<span></span><span class="c1"># encoding: utf-8</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="c1"># Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/config/schedulers.py</span>
+
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span>
+
+
+<div class="viewcode-block" id="SchedulerParams"><a class="viewcode-back" href="../../../../mridc.core.conf.html#mridc.core.conf.schedulers.SchedulerParams">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">SchedulerParams</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Base configuration for all schedulers.&quot;&quot;&quot;</span>
+
+    <span class="n">last_epoch</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span></div>
+
+
+<div class="viewcode-block" id="SquareRootConstantSchedulerParams"><a class="viewcode-back" href="../../../../mridc.core.conf.html#mridc.core.conf.schedulers.SquareRootConstantSchedulerParams">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">SquareRootConstantSchedulerParams</span><span class="p">(</span><span class="n">SchedulerParams</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base configuration for all schedulers.</span>
+<span class="sd">    It is not derived from Config as it is not a mridc object (and in particular it doesn&#39;t need a name).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">constant_steps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">constant_ratio</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="WarmupSchedulerParams"><a class="viewcode-back" href="../../../../mridc.core.conf.html#mridc.core.conf.schedulers.WarmupSchedulerParams">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">WarmupSchedulerParams</span><span class="p">(</span><span class="n">SchedulerParams</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base configuration for all schedulers.&quot;&quot;&quot;</span>
+
+    <span class="n">max_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">warmup_steps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">warmup_ratio</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="WarmupHoldSchedulerParams"><a class="viewcode-back" href="../../../../mridc.core.conf.html#mridc.core.conf.schedulers.WarmupHoldSchedulerParams">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">WarmupHoldSchedulerParams</span><span class="p">(</span><span class="n">WarmupSchedulerParams</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base configuration for all schedulers.&quot;&quot;&quot;</span>
+
+    <span class="n">hold_steps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">hold_ratio</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">min_lr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span></div>
+
+
+<div class="viewcode-block" id="WarmupAnnealingHoldSchedulerParams"><a class="viewcode-back" href="../../../../mridc.core.conf.html#mridc.core.conf.schedulers.WarmupAnnealingHoldSchedulerParams">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">WarmupAnnealingHoldSchedulerParams</span><span class="p">(</span><span class="n">WarmupSchedulerParams</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base configuration for all schedulers.&quot;&quot;&quot;</span>
+
+    <span class="n">constant_steps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">constant_ratio</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">min_lr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span></div>
+
+
+<div class="viewcode-block" id="SquareAnnealingParams"><a class="viewcode-back" href="../../../../mridc.core.conf.html#mridc.core.conf.schedulers.SquareAnnealingParams">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">SquareAnnealingParams</span><span class="p">(</span><span class="n">WarmupSchedulerParams</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Square Annealing parameter config&quot;&quot;&quot;</span>
+
+    <span class="n">min_lr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span></div>
+
+
+<div class="viewcode-block" id="SquareRootAnnealingParams"><a class="viewcode-back" href="../../../../mridc.core.conf.html#mridc.core.conf.schedulers.SquareRootAnnealingParams">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">SquareRootAnnealingParams</span><span class="p">(</span><span class="n">WarmupSchedulerParams</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Square Root Annealing parameter config&quot;&quot;&quot;</span>
+
+    <span class="n">min_lr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span></div>
+
+
+<div class="viewcode-block" id="CosineAnnealingParams"><a class="viewcode-back" href="../../../../mridc.core.conf.html#mridc.core.conf.schedulers.CosineAnnealingParams">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">CosineAnnealingParams</span><span class="p">(</span><span class="n">WarmupAnnealingHoldSchedulerParams</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Cosine Annealing parameter config&quot;&quot;&quot;</span>
+
+    <span class="n">min_lr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span></div>
+
+
+<div class="viewcode-block" id="NoamAnnealingParams"><a class="viewcode-back" href="../../../../mridc.core.conf.html#mridc.core.conf.schedulers.NoamAnnealingParams">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">NoamAnnealingParams</span><span class="p">(</span><span class="n">WarmupSchedulerParams</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Cosine Annealing parameter config&quot;&quot;&quot;</span>
+
+    <span class="n">min_lr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span></div>
+
+
+<div class="viewcode-block" id="WarmupAnnealingParams"><a class="viewcode-back" href="../../../../mridc.core.conf.html#mridc.core.conf.schedulers.WarmupAnnealingParams">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">WarmupAnnealingParams</span><span class="p">(</span><span class="n">WarmupSchedulerParams</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Warmup Annealing parameter config&quot;&quot;&quot;</span>
+
+    <span class="n">warmup_ratio</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="InverseSquareRootAnnealingParams"><a class="viewcode-back" href="../../../../mridc.core.conf.html#mridc.core.conf.schedulers.InverseSquareRootAnnealingParams">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">InverseSquareRootAnnealingParams</span><span class="p">(</span><span class="n">WarmupSchedulerParams</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Inverse Square Root Annealing parameter config&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="PolynomialDecayAnnealingParams"><a class="viewcode-back" href="../../../../mridc.core.conf.html#mridc.core.conf.schedulers.PolynomialDecayAnnealingParams">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">PolynomialDecayAnnealingParams</span><span class="p">(</span><span class="n">WarmupSchedulerParams</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Polynomial Decay Annealing parameter config&quot;&quot;&quot;</span>
+
+    <span class="n">power</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">cycle</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="PolynomialHoldDecayAnnealingParams"><a class="viewcode-back" href="../../../../mridc.core.conf.html#mridc.core.conf.schedulers.PolynomialHoldDecayAnnealingParams">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">PolynomialHoldDecayAnnealingParams</span><span class="p">(</span><span class="n">WarmupSchedulerParams</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Polynomial Hold Decay Annealing parameter config&quot;&quot;&quot;</span>
+
+    <span class="n">power</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">cycle</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="StepLRParams"><a class="viewcode-back" href="../../../../mridc.core.conf.html#mridc.core.conf.schedulers.StepLRParams">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">StepLRParams</span><span class="p">(</span><span class="n">SchedulerParams</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Config for StepLR.&quot;&quot;&quot;</span>
+
+    <span class="n">step_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span>
+    <span class="n">gamma</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span></div>
+
+
+<div class="viewcode-block" id="ExponentialLRParams"><a class="viewcode-back" href="../../../../mridc.core.conf.html#mridc.core.conf.schedulers.ExponentialLRParams">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">ExponentialLRParams</span><span class="p">(</span><span class="n">SchedulerParams</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Config for ExponentialLR.&quot;&quot;&quot;</span>
+
+    <span class="n">gamma</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.9</span></div>
+
+
+<div class="viewcode-block" id="ReduceLROnPlateauParams"><a class="viewcode-back" href="../../../../mridc.core.conf.html#mridc.core.conf.schedulers.ReduceLROnPlateauParams">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">ReduceLROnPlateauParams</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Config for ReduceLROnPlateau.&quot;&quot;&quot;</span>
+
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;min&quot;</span>
+    <span class="n">factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span>
+    <span class="n">patience</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-4</span>
+    <span class="n">threshold_mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;rel&quot;</span>
+    <span class="n">cooldown</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">min_lr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">eps</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-8</span></div>
+
+
+<div class="viewcode-block" id="CyclicLRParams"><a class="viewcode-back" href="../../../../mridc.core.conf.html#mridc.core.conf.schedulers.CyclicLRParams">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">CyclicLRParams</span><span class="p">(</span><span class="n">SchedulerParams</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Config for CyclicLR.&quot;&quot;&quot;</span>
+
+    <span class="n">base_lr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.001</span>
+    <span class="n">max_lr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span>
+    <span class="n">step_size_up</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2000</span>
+    <span class="n">step_size_down</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;triangular&quot;</span>
+    <span class="n">gamma</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">scale_mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;cycle&quot;</span>
+    <span class="c1"># scale_fn is not supported</span>
+    <span class="n">cycle_momentum</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">base_momentum</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.8</span>
+    <span class="n">max_momentum</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.9</span></div>
+
+
+<div class="viewcode-block" id="register_scheduler_params"><a class="viewcode-back" href="../../../../mridc.core.conf.html#mridc.core.conf.schedulers.register_scheduler_params">[docs]</a><span class="k">def</span> <span class="nf">register_scheduler_params</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">scheduler_params</span><span class="p">:</span> <span class="n">SchedulerParams</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Checks if the scheduler config name exists in the registry, and if it doesn&#39;t, adds it.</span>
+<span class="sd">    This allows custom schedulers to be added and called by name during instantiation.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name: Name of the optimizer. Will be used as key to retrieve the optimizer.</span>
+<span class="sd">    scheduler_params: SchedulerParams class</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">AVAILABLE_SCHEDULER_PARAMS</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cannot override pre-existing optimizers. Conflicting optimizer name = </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">AVAILABLE_SCHEDULER_PARAMS</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">scheduler_params</span>  <span class="c1"># type: ignore</span></div>
+
+
+<div class="viewcode-block" id="get_scheduler_config"><a class="viewcode-back" href="../../../../mridc.core.conf.html#mridc.core.conf.schedulers.get_scheduler_config">[docs]</a><span class="k">def</span> <span class="nf">get_scheduler_config</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">partial</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convenience method to obtain a SchedulerParams class and partially instantiate it with optimizer kwargs.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name: Name of the SchedulerParams in the registry.</span>
+<span class="sd">    kwargs: Optional kwargs of the optimizer used during instantiation.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A partially instantiated SchedulerParams.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">AVAILABLE_SCHEDULER_PARAMS</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Cannot resolve scheduler parameters &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;. Available scheduler parameters are : &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">AVAILABLE_SCHEDULER_PARAMS</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">partial</span><span class="p">(</span><span class="n">AVAILABLE_SCHEDULER_PARAMS</span><span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<span class="n">AVAILABLE_SCHEDULER_PARAMS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;SchedulerParams&quot;</span><span class="p">:</span> <span class="n">SchedulerParams</span><span class="p">,</span>
+    <span class="s2">&quot;WarmupPolicyParams&quot;</span><span class="p">:</span> <span class="n">WarmupSchedulerParams</span><span class="p">,</span>
+    <span class="s2">&quot;WarmupHoldPolicyParams&quot;</span><span class="p">:</span> <span class="n">WarmupHoldSchedulerParams</span><span class="p">,</span>
+    <span class="s2">&quot;WarmupAnnealingHoldSchedulerParams&quot;</span><span class="p">:</span> <span class="n">WarmupAnnealingHoldSchedulerParams</span><span class="p">,</span>
+    <span class="s2">&quot;SquareAnnealingParams&quot;</span><span class="p">:</span> <span class="n">SquareAnnealingParams</span><span class="p">,</span>
+    <span class="s2">&quot;SquareRootAnnealingParams&quot;</span><span class="p">:</span> <span class="n">SquareRootAnnealingParams</span><span class="p">,</span>
+    <span class="s2">&quot;InverseSquareRootAnnealingParams&quot;</span><span class="p">:</span> <span class="n">InverseSquareRootAnnealingParams</span><span class="p">,</span>
+    <span class="s2">&quot;SquareRootConstantSchedulerParams&quot;</span><span class="p">:</span> <span class="n">SquareRootConstantSchedulerParams</span><span class="p">,</span>
+    <span class="s2">&quot;CosineAnnealingParams&quot;</span><span class="p">:</span> <span class="n">CosineAnnealingParams</span><span class="p">,</span>
+    <span class="s2">&quot;NoamAnnealingParams&quot;</span><span class="p">:</span> <span class="n">NoamAnnealingParams</span><span class="p">,</span>
+    <span class="s2">&quot;WarmupAnnealingParams&quot;</span><span class="p">:</span> <span class="n">WarmupAnnealingParams</span><span class="p">,</span>
+    <span class="s2">&quot;PolynomialDecayAnnealingParams&quot;</span><span class="p">:</span> <span class="n">PolynomialDecayAnnealingParams</span><span class="p">,</span>
+    <span class="s2">&quot;PolynomialHoldDecayAnnealingParams&quot;</span><span class="p">:</span> <span class="n">PolynomialHoldDecayAnnealingParams</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

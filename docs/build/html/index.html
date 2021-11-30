@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome to mridc’s documentation! &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="mridc" href="modules.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="#" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+      <li>Welcome to mridc’s documentation!</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <section id="welcome-to-mridc-s-documentation">
+<h1>Welcome to mridc’s documentation!<a class="headerlink" href="#welcome-to-mridc-s-documentation" title="Permalink to this headline"></a></h1>
+<section id="data-consistency-for-magnetic-resonance-imaging">
+<h2>Data Consistency for Magnetic Resonance Imaging<a class="headerlink" href="#data-consistency-for-magnetic-resonance-imaging" title="Permalink to this headline"></a></h2>
+<p><a class="reference external" href="https://github.com/wdika/mridc/actions/workflows/codeql-analysis.yml"><img alt="CodeQL" src="https://github.com/wdika/mridc/actions/workflows/codeql-analysis.yml/badge.svg" /></a>
+<a class="reference external" href="https://circleci.com/gh/wdika/mridc/tree/main"><img alt="CircleCI" src="https://circleci.com/gh/wdika/mridc/tree/main.svg?style=svg" /></a>
+<a class="reference external" href="https://codecov.io/gh/wdika/mridc"><img alt="codecov" src="https://codecov.io/gh/wdika/mridc/branch/main/graph/badge.svg?token=KPPQ33DOTF" /></a>
+<a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a></p>
+<hr class="docutils" />
+<section id="introduction">
+<h3>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline"></a></h3>
+<p><strong>MRIDC is a toolbox for applying AI methods on MR imaging. A collection of tools for data consistency and data quality
+is provided for MRI data analysis. Primarily it focuses on the following tasks:</strong></p>
+<section id="reconstruction">
+<h4><strong>Reconstruction</strong>:<a class="headerlink" href="#reconstruction" title="Permalink to this headline"></a></h4>
+<p>1.<a class="reference external" href="https://iopscience.iop.org/article/10.1088/1361-6560/ac6cc2">Cascades of Independently Recurrent Inference Machines (CIRIM)</a>,
+2.<a class="reference external" href="https://ieeexplore.ieee.org/document/4472246">Compressed Sensing (CS)</a>,
+3.<a class="reference external" href="https://ieeexplore.ieee.org/document/8425639">Convolutional Recurrent Neural Networks (CRNN)</a>,
+4.<a class="reference external" href="https://ieeexplore.ieee.org/document/8067520">Deep Cascade of Convolutional Neural Networks (CCNN)</a>,
+5.<a class="reference external" href="https://onlinelibrary.wiley.com/doi/10.1002/mrm.28827">Down-Up Net (DUNET)</a>,
+6.<a class="reference external" href="https://link.springer.com/chapter/10.1007/978-3-030-59713-9_7">End-to-End Variational Network (E2EVN)</a>,
+7.<a class="reference external" href="https://ieeexplore.ieee.org/document/9578412">Joint Deep Model-Based MR Image and Coil Sensitivity Reconstruction Network (Joint-ICNet)</a>,
+8.<a class="reference external" href="http://arxiv.org/abs/2012.07819">Independently Recurrent Inference Machines (IRIM)</a>,
+9.<a class="reference external" href="https://onlinelibrary.wiley.com/doi/10.1002/mrm.27201">KIKI-Net</a>,
+10.<a class="reference external" href="https://ieeexplore.ieee.org/document/8271999">Learned Primal-Dual Net (LPDNet)</a>,
+11.<a class="reference external" href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8428775/">MultiDomainNet</a>,
+12.<a class="reference external" href="https://www.sciencedirect.com/science/article/abs/pii/S1361841518306078?via%3Dihub">Recurrent Inference Machines (RIM)</a>,
+13.<a class="reference external" href="https://arxiv.org/abs/2111.09639">Recurrent Variational Network (RVN)</a>,
+14.<a class="reference external" href="https://link.springer.com/chapter/10.1007/978-3-319-24574-4_28">UNet</a>,
+15.<a class="reference external" href="https://dl.acm.org/doi/abs/10.1007/978-3-030-32251-9_78">Variable Splitting Network (VSNet)</a>,
+16.<a class="reference external" href="https://arxiv.org/abs/2010.07290">XPDNet</a>,
+17.and Zero-Filled reconstruction (ZF).</p>
+</section>
+<section id="segmentation">
+<h4><strong>Segmentation</strong>:<a class="headerlink" href="#segmentation" title="Permalink to this headline"></a></h4>
+<p><em>Coming soon…</em></p>
+</section>
+<section id="acknowledgements">
+<h4><strong>Acknowledgements</strong><a class="headerlink" href="#acknowledgements" title="Permalink to this headline"></a></h4>
+<p>MRIDC is based on the <a class="reference external" href="https://github.com/NVIDIA/NeMo">NeMo</a> framework, using PyTorch Lightning for feasible
+high-performance multi-GPU/multi-node mixed-precision training.</p>
+<p>For the reconstruction methods:</p>
+<ul class="simple">
+<li><p>the implementations of 6 and 14 are thanks to and based on the <a class="reference external" href="https://github.com/facebookresearch/fastMRI">fastMRI repo</a>.</p></li>
+<li><p>The implementations of 7, 9, 10, 11, 13, and 16 are thanks to and based on the <a class="reference external" href="https://github.com/NKI-AI/direct">DIRECT repo</a>.</p></li>
+</ul>
+</section>
+</section>
+<section id="installation">
+<h3>Installation<a class="headerlink" href="#installation" title="Permalink to this headline"></a></h3>
+<p>MRIDC is best to be installed in a Conda environment.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>conda create -n mridc python=3.9
+conda activate mridc
+</pre></div>
+</div>
+<section id="pip">
+<h4>Pip<a class="headerlink" href="#pip" title="Permalink to this headline"></a></h4>
+<p>Use pip installation if you want the latest stable version.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install mridc
+</pre></div>
+</div>
+</section>
+<section id="from-source">
+<h4>From source<a class="headerlink" href="#from-source" title="Permalink to this headline"></a></h4>
+<p>Use source installation if you want the latest development version, as well as for contributing to MRIDC.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/wdika/mridc
+<span class="nb">cd</span> mridc
+./reinstall.sh
+</pre></div>
+</div>
+</section>
+</section>
+<section id="datasets">
+<h3>Datasets<a class="headerlink" href="#datasets" title="Permalink to this headline"></a></h3>
+<p>Recommended public datasets to use with this repo:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="http://arxiv.org/abs/1811.08839">fastMRI</a>,</p></li>
+<li><p><a class="reference external" href="http://old.mridata.org/fullysampled/knees/">Fully Sampled Knees</a>.</p></li>
+</ul>
+</section>
+<section id="api-documentation">
+<h3>API Documentation<a class="headerlink" href="#api-documentation" title="Permalink to this headline"></a></h3>
+<p><a class="reference external" href="https://mridc.readthedocs.io/en/latest/?badge=latest"><img alt="Documentation Status" src="https://readthedocs.org/projects/mridc/badge/?version=latest" /></a></p>
+<p>Access the API Documentation <a class="reference external" href="https://mridc.readthedocs.io/en/latest/modules.html">here</a></p>
+</section>
+<section id="license">
+<h3>License<a class="headerlink" href="#license" title="Permalink to this headline"></a></h3>
+<p><a class="reference external" href="https://opensource.org/licenses/Apache-2.0"><img alt="License: Apache 2.0" src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" /></a></p>
+</section>
+<section id="citation">
+<h3>Citation<a class="headerlink" href="#citation" title="Permalink to this headline"></a></h3>
+<p>Please cite MRIDC using the “<em>Cite this repository</em>” button or as</p>
+<div class="highlight-BibTeX notranslate"><div class="highlight"><pre><span></span><span class="nc">@misc</span><span class="p">{</span><span class="nl">mridc</span><span class="p">,</span>
+    <span class="na">author</span> <span class="p">=</span> <span class="s">{Karkalousos, Dimitrios and Caan, Matthan}</span><span class="p">,</span>
+    <span class="na">title</span> <span class="p">=</span> <span class="s">{MRIDC: Data Consistency for Magnetic Resonance Imaging}</span><span class="p">,</span>
+    <span class="na">year</span> <span class="p">=</span> <span class="s">{2021}</span><span class="p">,</span>
+    <span class="na">url</span> <span class="p">=</span> <span class="s">{https://github.com/wdika/mridc}</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="papers">
+<h3>Papers<a class="headerlink" href="#papers" title="Permalink to this headline"></a></h3>
+<p>The following papers use the MRIDC repo:</p>
+<p>[1] <a class="reference external" href="https://iopscience.iop.org/article/10.1088/1361-6560/ac6cc2">Karkalousos, D. et al. (2021) ‘Assessment of Data Consistency through Cascades of Independently Recurrent
+Inference Machines for fast and robust accelerated MRI reconstruction’</a></p>
+</section>
+</section>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">mridc</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="mridc.html">mridc package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="mridc.collections.html">mridc.collections package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mridc.core.html">mridc.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mridc.utils.html">mridc.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.constants">mridc.constants module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.launch">mridc.launch module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.package_info">mridc.package_info module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modules.html" class="btn btn-neutral float-right" title="mridc" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

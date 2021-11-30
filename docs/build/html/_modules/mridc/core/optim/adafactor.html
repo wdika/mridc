@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.core.optim.adafactor &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>mridc.core.optim.adafactor</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.core.optim.adafactor</h1><div class="highlight"><pre>
+<span></span><span class="c1"># encoding: utf-8</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="c1"># Taken and adapted from:</span>
+<span class="c1"># https://github.com/wdika/NeMo/blob/9d095ff261319301e4711edf7530a6bb7cf6c8b6/nemo/core/optim/adafactor.py</span>
+
+<span class="kn">import</span> <span class="nn">math</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">torch.optim.optimizer</span> <span class="kn">import</span> <span class="n">Optimizer</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Adafactor&quot;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="Adafactor"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.adafactor.Adafactor">[docs]</a><span class="k">class</span> <span class="nc">Adafactor</span><span class="p">(</span><span class="n">Optimizer</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Implements Adafactor algorithm.</span>
+
+<span class="sd">    This implementation is based on: `Adafactor: Adaptive Learning Rates with Sublinear Memory Cost`</span>
+<span class="sd">    (see https://arxiv.org/abs/1804.04235)</span>
+<span class="sd">    Note that this optimizer internally adjusts the learning rate depending on the *scale_parameter*, *relative_step*</span>
+<span class="sd">    and *warmup_init* options. To use a manual (external) learning rate schedule you should set `scale_parameter=False`</span>
+<span class="sd">    and `relative_step=False`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    params: Iterable of parameters to optimize or dicts defining parameter groups.</span>
+<span class="sd">        iterable</span>
+<span class="sd">    lr: External learning rate.</span>
+<span class="sd">        float (optional), (default: None)</span>
+<span class="sd">    eps: Regularization constants for square gradient and parameter scale respectively.</span>
+<span class="sd">        tuple (float, float), (default: (1e-30, 1e-3))</span>
+<span class="sd">    clip_threshold: Threshold of root-mean-square of final gradient update.</span>
+<span class="sd">        float, (default: 1.0)</span>
+<span class="sd">    decay_rate: Coefficient used to compute running averages of square gradient.</span>
+<span class="sd">        float, (default: -0.8)</span>
+<span class="sd">    beta1: Coefficient used for computing running averages of gradient</span>
+<span class="sd">        float, (default: None)</span>
+<span class="sd">    weight_decay: Weight decay (L2 penalty).</span>
+<span class="sd">        float (optional), (default: 0)</span>
+<span class="sd">    scale_parameter: If True, learning rate is scaled by root-mean-square of parameter.</span>
+<span class="sd">        bool (default: True)</span>
+<span class="sd">    relative_step: If True, time-dependent learning rate is computed instead of external learning rate.</span>
+<span class="sd">        bool (default: True)</span>
+<span class="sd">    warmup_init: Time-dependent learning rate computation depends on whether warm-up initialization is being used.</span>
+<span class="sd">        bool (default: False)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Adafactor Optimizer</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">params</span><span class="p">,</span>
+        <span class="n">lr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">eps</span><span class="o">=</span><span class="p">(</span><span class="mf">1e-30</span><span class="p">,</span> <span class="mf">1e-3</span><span class="p">),</span>
+        <span class="n">clip_threshold</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">decay_rate</span><span class="o">=-</span><span class="mf">0.8</span><span class="p">,</span>
+        <span class="n">beta1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">weight_decay</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">scale_parameter</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">relative_step</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">warmup_init</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">min_step</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">lr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">relative_step</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot combine manual lr and relative_step options&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">warmup_init</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">relative_step</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;warmup_init requires relative_step=True&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_step</span> <span class="o">=</span> <span class="n">min_step</span>
+
+        <span class="n">defaults</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">lr</span><span class="o">=</span><span class="n">lr</span><span class="p">,</span>
+            <span class="n">eps</span><span class="o">=</span><span class="n">eps</span><span class="p">,</span>
+            <span class="n">clip_threshold</span><span class="o">=</span><span class="n">clip_threshold</span><span class="p">,</span>
+            <span class="n">decay_rate</span><span class="o">=</span><span class="n">decay_rate</span><span class="p">,</span>
+            <span class="n">beta1</span><span class="o">=</span><span class="n">beta1</span><span class="p">,</span>
+            <span class="n">weight_decay</span><span class="o">=</span><span class="n">weight_decay</span><span class="p">,</span>
+            <span class="n">scale_parameter</span><span class="o">=</span><span class="n">scale_parameter</span><span class="p">,</span>
+            <span class="n">relative_step</span><span class="o">=</span><span class="n">relative_step</span><span class="p">,</span>
+            <span class="n">warmup_init</span><span class="o">=</span><span class="n">warmup_init</span><span class="p">,</span>
+            <span class="n">min_step</span><span class="o">=</span><span class="n">min_step</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">defaults</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">supports_memory_efficient_fp16</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Whether optimizer supports memory efficient fp16&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">supports_flat_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Whether the optimizer supports flat parameters.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">_get_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param_group</span><span class="p">,</span> <span class="n">param_state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the learning rate for the current layer.&quot;&quot;&quot;</span>
+        <span class="n">rel_step_sz</span> <span class="o">=</span> <span class="n">param_group</span><span class="p">[</span><span class="s2">&quot;lr&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">param_group</span><span class="p">[</span><span class="s2">&quot;relative_step&quot;</span><span class="p">]:</span>
+            <span class="n">min_step</span> <span class="o">=</span> <span class="mf">1e-6</span> <span class="o">*</span> <span class="n">param_state</span><span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">param_group</span><span class="p">[</span><span class="s2">&quot;warmup_init&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_step</span>
+            <span class="n">rel_step_sz</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">min_step</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">param_state</span><span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">]))</span>
+        <span class="n">param_scale</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="k">if</span> <span class="n">param_group</span><span class="p">[</span><span class="s2">&quot;scale_parameter&quot;</span><span class="p">]:</span>
+            <span class="n">param_scale</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">param_group</span><span class="p">[</span><span class="s2">&quot;eps&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">param_state</span><span class="p">[</span><span class="s2">&quot;RMS&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">param_scale</span> <span class="o">*</span> <span class="n">rel_step_sz</span>
+
+<div class="viewcode-block" id="Adafactor.step"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.adafactor.Adafactor.step">[docs]</a>    <span class="k">def</span> <span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">closure</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Performs a single optimization step.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        closure: A closure that reevaluates the model and returns the loss.</span>
+<span class="sd">            callable (optional)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">closure</span><span class="p">()</span> <span class="k">if</span> <span class="n">closure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_groups</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">group</span><span class="p">[</span><span class="s2">&quot;params&quot;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">grad</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">grad</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">data</span>
+                <span class="k">if</span> <span class="n">grad</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">in</span> <span class="p">{</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">}:</span>
+                    <span class="n">grad</span> <span class="o">=</span> <span class="n">grad</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">grad</span><span class="o">.</span><span class="n">is_sparse</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Adafactor does not support sparse gradients.&quot;</span><span class="p">)</span>
+
+                <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">p</span><span class="p">]</span>
+                <span class="n">grad_shape</span> <span class="o">=</span> <span class="n">grad</span><span class="o">.</span><span class="n">shape</span>
+
+                <span class="n">factored</span><span class="p">,</span> <span class="n">use_first_moment</span> <span class="o">=</span> <span class="n">_get_options</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">grad_shape</span><span class="p">)</span>
+                <span class="c1"># State Initialization</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">state</span><span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+                    <span class="k">if</span> <span class="n">use_first_moment</span><span class="p">:</span>
+                        <span class="c1"># Exponential moving average of gradient values</span>
+                        <span class="n">state</span><span class="p">[</span><span class="s2">&quot;exp_avg&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">grad</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">factored</span><span class="p">:</span>
+                        <span class="n">state</span><span class="p">[</span><span class="s2">&quot;exp_avg_sq_row&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">grad_shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">grad</span><span class="p">)</span>
+                        <span class="n">state</span><span class="p">[</span><span class="s2">&quot;exp_avg_sq_col&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">grad_shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">grad_shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:])</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">grad</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">state</span><span class="p">[</span><span class="s2">&quot;exp_avg_sq&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">grad</span><span class="p">)</span>
+
+                    <span class="n">state</span><span class="p">[</span><span class="s2">&quot;RMS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">use_first_moment</span><span class="p">:</span>
+                        <span class="n">state</span><span class="p">[</span><span class="s2">&quot;exp_avg&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;exp_avg&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">grad</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">factored</span><span class="p">:</span>
+                        <span class="n">state</span><span class="p">[</span><span class="s2">&quot;exp_avg_sq_row&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;exp_avg_sq_row&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">grad</span><span class="p">)</span>
+                        <span class="n">state</span><span class="p">[</span><span class="s2">&quot;exp_avg_sq_col&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;exp_avg_sq_col&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">grad</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">state</span><span class="p">[</span><span class="s2">&quot;exp_avg_sq&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;exp_avg_sq&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">grad</span><span class="p">)</span>
+
+                <span class="n">p_data_fp32</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">data</span>
+                <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">in</span> <span class="p">{</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">}:</span>
+                    <span class="n">p_data_fp32</span> <span class="o">=</span> <span class="n">p_data_fp32</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
+
+                <span class="n">state</span><span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">state</span><span class="p">[</span><span class="s2">&quot;RMS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_rms</span><span class="p">(</span><span class="n">p_data_fp32</span><span class="p">)</span>
+                <span class="n">group</span><span class="p">[</span><span class="s2">&quot;lr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_lr</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
+
+                <span class="n">beta2t</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">math</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;step&quot;</span><span class="p">],</span> <span class="n">group</span><span class="p">[</span><span class="s2">&quot;decay_rate&quot;</span><span class="p">])</span>
+                <span class="n">update</span> <span class="o">=</span> <span class="p">(</span><span class="n">grad</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">group</span><span class="p">[</span><span class="s2">&quot;eps&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">factored</span><span class="p">:</span>
+                    <span class="n">exp_avg_sq_row</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;exp_avg_sq_row&quot;</span><span class="p">]</span>
+                    <span class="n">exp_avg_sq_col</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;exp_avg_sq_col&quot;</span><span class="p">]</span>
+
+                    <span class="n">exp_avg_sq_row</span><span class="o">.</span><span class="n">mul_</span><span class="p">(</span><span class="n">beta2t</span><span class="p">)</span><span class="o">.</span><span class="n">add_</span><span class="p">(</span><span class="n">update</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">),</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">beta2t</span><span class="p">)</span>
+                    <span class="n">exp_avg_sq_col</span><span class="o">.</span><span class="n">mul_</span><span class="p">(</span><span class="n">beta2t</span><span class="p">)</span><span class="o">.</span><span class="n">add_</span><span class="p">(</span><span class="n">update</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">2</span><span class="p">),</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">beta2t</span><span class="p">)</span>
+
+                    <span class="c1"># Approximation of exponential moving average of square of gradient</span>
+                    <span class="n">update</span> <span class="o">=</span> <span class="n">_approx_sq_grad</span><span class="p">(</span><span class="n">exp_avg_sq_row</span><span class="p">,</span> <span class="n">exp_avg_sq_col</span><span class="p">)</span>
+                    <span class="n">update</span><span class="o">.</span><span class="n">mul_</span><span class="p">(</span><span class="n">grad</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">exp_avg_sq</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;exp_avg_sq&quot;</span><span class="p">]</span>
+
+                    <span class="n">exp_avg_sq</span><span class="o">.</span><span class="n">mul_</span><span class="p">(</span><span class="n">beta2t</span><span class="p">)</span><span class="o">.</span><span class="n">add_</span><span class="p">(</span><span class="n">update</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">beta2t</span><span class="p">)</span>
+                    <span class="n">update</span> <span class="o">=</span> <span class="n">exp_avg_sq</span><span class="o">.</span><span class="n">rsqrt</span><span class="p">()</span><span class="o">.</span><span class="n">mul_</span><span class="p">(</span><span class="n">grad</span><span class="p">)</span>
+
+                <span class="n">update</span><span class="o">.</span><span class="n">div_</span><span class="p">((</span><span class="n">_rms</span><span class="p">(</span><span class="n">update</span><span class="p">)</span> <span class="o">/</span> <span class="n">group</span><span class="p">[</span><span class="s2">&quot;clip_threshold&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">clamp_</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mf">1.0</span><span class="p">))</span>
+                <span class="n">update</span><span class="o">.</span><span class="n">mul_</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="s2">&quot;lr&quot;</span><span class="p">])</span>
+
+                <span class="k">if</span> <span class="n">use_first_moment</span><span class="p">:</span>
+                    <span class="n">exp_avg</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;exp_avg&quot;</span><span class="p">]</span>
+                    <span class="n">exp_avg</span><span class="o">.</span><span class="n">mul_</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="s2">&quot;beta1&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">add_</span><span class="p">(</span><span class="n">update</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span> <span class="o">-</span> <span class="n">group</span><span class="p">[</span><span class="s2">&quot;beta1&quot;</span><span class="p">])</span>
+                    <span class="n">update</span> <span class="o">=</span> <span class="n">exp_avg</span>
+
+                <span class="k">if</span> <span class="n">group</span><span class="p">[</span><span class="s2">&quot;weight_decay&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">p_data_fp32</span><span class="o">.</span><span class="n">add_</span><span class="p">(</span><span class="n">p_data_fp32</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=-</span><span class="n">group</span><span class="p">[</span><span class="s2">&quot;weight_decay&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">group</span><span class="p">[</span><span class="s2">&quot;lr&quot;</span><span class="p">])</span>
+
+                <span class="n">p_data_fp32</span><span class="o">.</span><span class="n">add_</span><span class="p">(</span><span class="o">-</span><span class="n">update</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">in</span> <span class="p">{</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">}:</span>
+                    <span class="n">p</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy_</span><span class="p">(</span><span class="n">p_data_fp32</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">loss</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_get_options</span><span class="p">(</span><span class="n">param_group</span><span class="p">,</span> <span class="n">param_shape</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the options for the current layer.&quot;&quot;&quot;</span>
+        <span class="n">factored</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">param_shape</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span>
+        <span class="n">use_first_moment</span> <span class="o">=</span> <span class="n">param_group</span><span class="p">[</span><span class="s2">&quot;beta1&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">factored</span><span class="p">,</span> <span class="n">use_first_moment</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_rms</span><span class="p">(</span><span class="n">tensor</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compute the root-mean-square of a tensor.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">tensor</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">**</span> <span class="mf">0.5</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_approx_sq_grad</span><span class="p">(</span><span class="n">exp_avg_sq_row</span><span class="p">,</span> <span class="n">exp_avg_sq_col</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the square of the gradient, but approximate the sqrt using the exponential moving average of the</span>
+<span class="sd">        squared gradient.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">r_factor</span> <span class="o">=</span> <span class="p">(</span><span class="n">exp_avg_sq_row</span> <span class="o">/</span> <span class="n">exp_avg_sq_row</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span><span class="o">.</span><span class="n">rsqrt_</span><span class="p">()</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">c_factor</span> <span class="o">=</span> <span class="n">exp_avg_sq_col</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">rsqrt</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">mul</span><span class="p">(</span><span class="n">r_factor</span><span class="p">,</span> <span class="n">c_factor</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

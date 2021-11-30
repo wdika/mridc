@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.utils.formaters package &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="mridc.utils.decorators package" href="mridc.utils.decorators.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">mridc</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="mridc.html">mridc package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="mridc.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="mridc.collections.html">mridc.collections package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mridc.core.html">mridc.core package</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="mridc.utils.html">mridc.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.constants">mridc.constants module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.launch">mridc.launch module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.package_info">mridc.package_info module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">mridc</a> &raquo;</li>
+          <li><a href="mridc.html">mridc package</a> &raquo;</li>
+          <li><a href="mridc.utils.html">mridc.utils package</a> &raquo;</li>
+      <li>mridc.utils.formaters package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/mridc.utils.formaters.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <section id="mridc-utils-formaters-package">
+<h1>mridc.utils.formaters package<a class="headerlink" href="#mridc-utils-formaters-package" title="Permalink to this headline"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline"></a></h2>
+</section>
+<section id="module-mridc.utils.formaters.base">
+<span id="mridc-utils-formaters-base-module"></span><h2>mridc.utils.formaters.base module<a class="headerlink" href="#module-mridc.utils.formaters.base" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.utils.formaters.base.BaseMRIDCFormatter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.utils.formaters.base.</span></span><span class="sig-name descname"><span class="pre">BaseMRIDCFormatter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fmt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">datefmt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/utils/formaters/base.html#BaseMRIDCFormatter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.utils.formaters.base.BaseMRIDCFormatter" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.utils.formaters.base.BaseFormatter</span></code></p>
+<p>Base formatter for MRIDC logs.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.base.BaseMRIDCFormatter.DEFAULT_FORMAT">
+<span class="sig-name descname"><span class="pre">DEFAULT_FORMAT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'%(color)s[MRIDC</span> <span class="pre">%(levelname)1.1s</span> <span class="pre">%(asctime)s</span> <span class="pre">%(module)s:%(lineno)d]%(end_color)s</span> <span class="pre">%(message)s'</span></em><a class="headerlink" href="#mridc.utils.formaters.base.BaseMRIDCFormatter.DEFAULT_FORMAT" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.utils.formaters.base.DebugMRIDCFormatter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.utils.formaters.base.</span></span><span class="sig-name descname"><span class="pre">DebugMRIDCFormatter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fmt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">datefmt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/utils/formaters/base.html#DebugMRIDCFormatter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.utils.formaters.base.DebugMRIDCFormatter" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.utils.formaters.base.BaseFormatter</span></code></p>
+<p>Debug formatter for MRIDC logs.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.base.DebugMRIDCFormatter.DEFAULT_FORMAT">
+<span class="sig-name descname"><span class="pre">DEFAULT_FORMAT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'%(color)s[MRIDC</span> <span class="pre">%(levelname)1.1s</span> <span class="pre">%(asctime)s</span> <span class="pre">%(module)s:%(lineno)d</span> <span class="pre">rank:%(rank)s]%(end_color)s</span> <span class="pre">%(message)s'</span></em><a class="headerlink" href="#mridc.utils.formaters.base.DebugMRIDCFormatter.DEFAULT_FORMAT" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-mridc.utils.formaters.colors">
+<span id="mridc-utils-formaters-colors-module"></span><h2>mridc.utils.formaters.colors module<a class="headerlink" href="#module-mridc.utils.formaters.colors" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiBack">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.utils.formaters.colors.</span></span><span class="sig-name descname"><span class="pre">AnsiBack</span></span><a class="reference internal" href="_modules/mridc/utils/formaters/colors.html#AnsiBack"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiBack" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mridc.utils.formaters.colors.AnsiCodes" title="mridc.utils.formaters.colors.AnsiCodes"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.utils.formaters.colors.AnsiCodes</span></code></a></p>
+<p>ANSI color codes for background text.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiBack.BLACK">
+<span class="sig-name descname"><span class="pre">BLACK</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">40</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiBack.BLACK" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiBack.BLUE">
+<span class="sig-name descname"><span class="pre">BLUE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">44</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiBack.BLUE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiBack.CYAN">
+<span class="sig-name descname"><span class="pre">CYAN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">46</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiBack.CYAN" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiBack.GREEN">
+<span class="sig-name descname"><span class="pre">GREEN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">42</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiBack.GREEN" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiBack.LIGHTBLACK_EX">
+<span class="sig-name descname"><span class="pre">LIGHTBLACK_EX</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">100</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiBack.LIGHTBLACK_EX" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiBack.LIGHTBLUE_EX">
+<span class="sig-name descname"><span class="pre">LIGHTBLUE_EX</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">104</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiBack.LIGHTBLUE_EX" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiBack.LIGHTCYAN_EX">
+<span class="sig-name descname"><span class="pre">LIGHTCYAN_EX</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">106</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiBack.LIGHTCYAN_EX" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiBack.LIGHTGREEN_EX">
+<span class="sig-name descname"><span class="pre">LIGHTGREEN_EX</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">102</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiBack.LIGHTGREEN_EX" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiBack.LIGHTMAGENTA_EX">
+<span class="sig-name descname"><span class="pre">LIGHTMAGENTA_EX</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">105</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiBack.LIGHTMAGENTA_EX" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiBack.LIGHTRED_EX">
+<span class="sig-name descname"><span class="pre">LIGHTRED_EX</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">101</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiBack.LIGHTRED_EX" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiBack.LIGHTWHITE_EX">
+<span class="sig-name descname"><span class="pre">LIGHTWHITE_EX</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">107</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiBack.LIGHTWHITE_EX" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiBack.LIGHTYELLOW_EX">
+<span class="sig-name descname"><span class="pre">LIGHTYELLOW_EX</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">103</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiBack.LIGHTYELLOW_EX" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiBack.MAGENTA">
+<span class="sig-name descname"><span class="pre">MAGENTA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">45</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiBack.MAGENTA" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiBack.RED">
+<span class="sig-name descname"><span class="pre">RED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">41</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiBack.RED" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiBack.RESET">
+<span class="sig-name descname"><span class="pre">RESET</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">49</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiBack.RESET" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiBack.WHITE">
+<span class="sig-name descname"><span class="pre">WHITE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">47</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiBack.WHITE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiBack.YELLOW">
+<span class="sig-name descname"><span class="pre">YELLOW</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">43</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiBack.YELLOW" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiCodes">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.utils.formaters.colors.</span></span><span class="sig-name descname"><span class="pre">AnsiCodes</span></span><a class="reference internal" href="_modules/mridc/utils/formaters/colors.html#AnsiCodes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiCodes" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>ANSI color codes.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiCursor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.utils.formaters.colors.</span></span><span class="sig-name descname"><span class="pre">AnsiCursor</span></span><a class="reference internal" href="_modules/mridc/utils/formaters/colors.html#AnsiCursor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiCursor" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>ANSI cursor codes.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiCursor.BACK">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">BACK</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/utils/formaters/colors.html#AnsiCursor.BACK"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiCursor.BACK" title="Permalink to this definition"></a></dt>
+<dd><p>Move the cursor back n lines.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>n</strong> (<em>Number of lines.</em>) – int</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>String of characters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiCursor.DOWN">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DOWN</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/utils/formaters/colors.html#AnsiCursor.DOWN"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiCursor.DOWN" title="Permalink to this definition"></a></dt>
+<dd><p>Move the cursor down n lines.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>n</strong> (<em>Number of lines.</em>) – int</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>String of characters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiCursor.FORWARD">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">FORWARD</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/utils/formaters/colors.html#AnsiCursor.FORWARD"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiCursor.FORWARD" title="Permalink to this definition"></a></dt>
+<dd><p>Move the cursor forward n lines.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>n</strong> (<em>Number of lines.</em>) – int</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>String of characters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiCursor.POS">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">POS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/utils/formaters/colors.html#AnsiCursor.POS"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiCursor.POS" title="Permalink to this definition"></a></dt>
+<dd><p>Move the cursor to the specified position.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>X position.</em>) – int</p></li>
+<li><p><strong>y</strong> (<em>Y position.</em>) – int</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>String of characters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiCursor.UP">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">UP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/utils/formaters/colors.html#AnsiCursor.UP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiCursor.UP" title="Permalink to this definition"></a></dt>
+<dd><p>Move the cursor up n lines.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>n</strong> (<em>Number of lines.</em>) – int</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>String of characters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiFore">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.utils.formaters.colors.</span></span><span class="sig-name descname"><span class="pre">AnsiFore</span></span><a class="reference internal" href="_modules/mridc/utils/formaters/colors.html#AnsiFore"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiFore" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mridc.utils.formaters.colors.AnsiCodes" title="mridc.utils.formaters.colors.AnsiCodes"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.utils.formaters.colors.AnsiCodes</span></code></a></p>
+<p>ANSI color codes for foreground text.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiFore.BLACK">
+<span class="sig-name descname"><span class="pre">BLACK</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">30</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiFore.BLACK" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiFore.BLUE">
+<span class="sig-name descname"><span class="pre">BLUE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">34</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiFore.BLUE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiFore.CYAN">
+<span class="sig-name descname"><span class="pre">CYAN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">36</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiFore.CYAN" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiFore.GREEN">
+<span class="sig-name descname"><span class="pre">GREEN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">32</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiFore.GREEN" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiFore.LIGHTBLACK_EX">
+<span class="sig-name descname"><span class="pre">LIGHTBLACK_EX</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">90</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiFore.LIGHTBLACK_EX" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiFore.LIGHTBLUE_EX">
+<span class="sig-name descname"><span class="pre">LIGHTBLUE_EX</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">94</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiFore.LIGHTBLUE_EX" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiFore.LIGHTCYAN_EX">
+<span class="sig-name descname"><span class="pre">LIGHTCYAN_EX</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">96</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiFore.LIGHTCYAN_EX" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiFore.LIGHTGREEN_EX">
+<span class="sig-name descname"><span class="pre">LIGHTGREEN_EX</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">92</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiFore.LIGHTGREEN_EX" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiFore.LIGHTMAGENTA_EX">
+<span class="sig-name descname"><span class="pre">LIGHTMAGENTA_EX</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">95</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiFore.LIGHTMAGENTA_EX" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiFore.LIGHTRED_EX">
+<span class="sig-name descname"><span class="pre">LIGHTRED_EX</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">91</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiFore.LIGHTRED_EX" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiFore.LIGHTWHITE_EX">
+<span class="sig-name descname"><span class="pre">LIGHTWHITE_EX</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">97</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiFore.LIGHTWHITE_EX" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiFore.LIGHTYELLOW_EX">
+<span class="sig-name descname"><span class="pre">LIGHTYELLOW_EX</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">93</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiFore.LIGHTYELLOW_EX" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiFore.MAGENTA">
+<span class="sig-name descname"><span class="pre">MAGENTA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">35</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiFore.MAGENTA" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiFore.RED">
+<span class="sig-name descname"><span class="pre">RED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">31</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiFore.RED" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiFore.RESET">
+<span class="sig-name descname"><span class="pre">RESET</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">39</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiFore.RESET" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiFore.WHITE">
+<span class="sig-name descname"><span class="pre">WHITE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">37</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiFore.WHITE" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiFore.YELLOW">
+<span class="sig-name descname"><span class="pre">YELLOW</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">33</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiFore.YELLOW" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiStyle">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.utils.formaters.colors.</span></span><span class="sig-name descname"><span class="pre">AnsiStyle</span></span><a class="reference internal" href="_modules/mridc/utils/formaters/colors.html#AnsiStyle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiStyle" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mridc.utils.formaters.colors.AnsiCodes" title="mridc.utils.formaters.colors.AnsiCodes"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.utils.formaters.colors.AnsiCodes</span></code></a></p>
+<p>ANSI color codes for text styles.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiStyle.BRIGHT">
+<span class="sig-name descname"><span class="pre">BRIGHT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiStyle.BRIGHT" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiStyle.DIM">
+<span class="sig-name descname"><span class="pre">DIM</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiStyle.DIM" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiStyle.NORMAL">
+<span class="sig-name descname"><span class="pre">NORMAL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">22</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiStyle.NORMAL" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.AnsiStyle.RESET_ALL">
+<span class="sig-name descname"><span class="pre">RESET_ALL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#mridc.utils.formaters.colors.AnsiStyle.RESET_ALL" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.clear_line">
+<span class="sig-prename descclassname"><span class="pre">mridc.utils.formaters.colors.</span></span><span class="sig-name descname"><span class="pre">clear_line</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/utils/formaters/colors.html#clear_line"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.utils.formaters.colors.clear_line" title="Permalink to this definition"></a></dt>
+<dd><p>Clear terminal line.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>mode</strong> (<em>Mode.</em>) – int</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>String of characters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.clear_screen">
+<span class="sig-prename descclassname"><span class="pre">mridc.utils.formaters.colors.</span></span><span class="sig-name descname"><span class="pre">clear_screen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/utils/formaters/colors.html#clear_screen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.utils.formaters.colors.clear_screen" title="Permalink to this definition"></a></dt>
+<dd><p>Clear terminal screen.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>mode</strong> (<em>Mode.</em>) – int</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>String of characters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.code_to_chars">
+<span class="sig-prename descclassname"><span class="pre">mridc.utils.formaters.colors.</span></span><span class="sig-name descname"><span class="pre">code_to_chars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">code</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/utils/formaters/colors.html#code_to_chars"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.utils.formaters.colors.code_to_chars" title="Permalink to this definition"></a></dt>
+<dd><p>Convert ANSI color code to string of characters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>code</strong> (<em>ANSI color code.</em>) – int</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>String of characters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.utils.formaters.colors.set_title">
+<span class="sig-prename descclassname"><span class="pre">mridc.utils.formaters.colors.</span></span><span class="sig-name descname"><span class="pre">set_title</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">title</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/utils/formaters/colors.html#set_title"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.utils.formaters.colors.set_title" title="Permalink to this definition"></a></dt>
+<dd><p>Set terminal title.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>title</strong> (<em>Title.</em>) – str</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>String of characters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-mridc.utils.formaters.utils">
+<span id="mridc-utils-formaters-utils-module"></span><h2>mridc.utils.formaters.utils module<a class="headerlink" href="#module-mridc.utils.formaters.utils" title="Permalink to this headline"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.utils.formaters.utils.check_color_support">
+<span class="sig-prename descclassname"><span class="pre">mridc.utils.formaters.utils.</span></span><span class="sig-name descname"><span class="pre">check_color_support</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/utils/formaters/utils.html#check_color_support"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.utils.formaters.utils.check_color_support" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>True if the terminal supports color, False otherwise.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.utils.formaters.utils.to_unicode">
+<span class="sig-prename descclassname"><span class="pre">mridc.utils.formaters.utils.</span></span><span class="sig-name descname"><span class="pre">to_unicode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/utils/formaters/utils.html#to_unicode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.utils.formaters.utils.to_unicode" title="Permalink to this definition"></a></dt>
+<dd><p>Converts a string to unicode. If the string is already unicode, it is returned as is. If it is a byte string, it is
+decoded using utf-8.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>value</strong> (<em>The string to convert.</em>) – str</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>The converted string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-mridc.utils.formaters">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-mridc.utils.formaters" title="Permalink to this headline"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mridc.utils.decorators.html" class="btn btn-neutral float-left" title="mridc.utils.decorators package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

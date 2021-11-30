@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.core.optim package &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="mridc.core.utils package" href="mridc.core.utils.html" />
+    <link rel="prev" title="mridc.core.neural_types package" href="mridc.core.neural_types.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">mridc</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="mridc.html">mridc package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="mridc.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="mridc.collections.html">mridc.collections package</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="mridc.core.html">mridc.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mridc.utils.html">mridc.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.constants">mridc.constants module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.launch">mridc.launch module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.package_info">mridc.package_info module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">mridc</a> &raquo;</li>
+          <li><a href="mridc.html">mridc package</a> &raquo;</li>
+          <li><a href="mridc.core.html">mridc.core package</a> &raquo;</li>
+      <li>mridc.core.optim package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/mridc.core.optim.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <section id="mridc-core-optim-package">
+<h1>mridc.core.optim package<a class="headerlink" href="#mridc-core-optim-package" title="Permalink to this headline"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline"></a></h2>
+</section>
+<section id="module-mridc.core.optim.adafactor">
+<span id="mridc-core-optim-adafactor-module"></span><h2>mridc.core.optim.adafactor module<a class="headerlink" href="#module-mridc.core.optim.adafactor" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.core.optim.adafactor.Adafactor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.optim.adafactor.</span></span><span class="sig-name descname"><span class="pre">Adafactor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(1e-30,</span> <span class="pre">0.001)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decay_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">0.8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_decay</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale_parameter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relative_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_init</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/adafactor.html#Adafactor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.adafactor.Adafactor" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.optimizer.Optimizer</span></code></p>
+<p>Implements Adafactor algorithm.</p>
+<p>This implementation is based on: <cite>Adafactor: Adaptive Learning Rates with Sublinear Memory Cost</cite>
+(see <a class="reference external" href="https://arxiv.org/abs/1804.04235">https://arxiv.org/abs/1804.04235</a>)
+Note that this optimizer internally adjusts the learning rate depending on the <em>scale_parameter</em>, <em>relative_step</em>
+and <em>warmup_init</em> options. To use a manual (external) learning rate schedule you should set <cite>scale_parameter=False</cite>
+and <cite>relative_step=False</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>params</strong> (<em>Iterable of parameters to optimize</em><em> or </em><em>dicts defining parameter groups.</em>) – iterable</p></li>
+<li><p><strong>lr</strong> (<em>External learning rate.</em>) – float (optional), (default: None)</p></li>
+<li><p><strong>eps</strong> (<em>Regularization constants for square gradient and parameter scale respectively.</em>) – tuple (float, float), (default: (1e-30, 1e-3))</p></li>
+<li><p><strong>clip_threshold</strong> (<em>Threshold of root-mean-square of final gradient update.</em>) – float, (default: 1.0)</p></li>
+<li><p><strong>decay_rate</strong> (<em>Coefficient used to compute running averages of square gradient.</em>) – float, (default: -0.8)</p></li>
+<li><p><strong>beta1</strong> (<em>Coefficient used for computing running averages of gradient</em>) – float, (default: None)</p></li>
+<li><p><strong>weight_decay</strong> (<em>Weight decay</em><em> (</em><em>L2 penalty</em><em>)</em><em>.</em>) – float (optional), (default: 0)</p></li>
+<li><p><strong>scale_parameter</strong> (<em>If True</em><em>, </em><em>learning rate is scaled by root-mean-square of parameter.</em>) – bool (default: True)</p></li>
+<li><p><strong>relative_step</strong> (<em>If True</em><em>, </em><em>time-dependent learning rate is computed instead of external learning rate.</em>) – bool (default: True)</p></li>
+<li><p><strong>warmup_init</strong> (<em>Time-dependent learning rate computation depends on whether warm-up initialization is being used.</em>) – bool (default: False)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Adafactor Optimizer</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.optim.adafactor.Adafactor.step">
+<span class="sig-name descname"><span class="pre">step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">closure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/adafactor.html#Adafactor.step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.adafactor.Adafactor.step" title="Permalink to this definition"></a></dt>
+<dd><p>Performs a single optimization step.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>closure</strong> (<em>A closure that reevaluates the model and returns the loss.</em>) – callable (optional)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="mridc.core.optim.adafactor.Adafactor.supports_flat_params">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_flat_params</span></span><a class="headerlink" href="#mridc.core.optim.adafactor.Adafactor.supports_flat_params" title="Permalink to this definition"></a></dt>
+<dd><p>Whether the optimizer supports flat parameters.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="mridc.core.optim.adafactor.Adafactor.supports_memory_efficient_fp16">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_memory_efficient_fp16</span></span><a class="headerlink" href="#mridc.core.optim.adafactor.Adafactor.supports_memory_efficient_fp16" title="Permalink to this definition"></a></dt>
+<dd><p>Whether optimizer supports memory efficient fp16</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-mridc.core.optim.lr_scheduler">
+<span id="mridc-core-optim-lr-scheduler-module"></span><h2>mridc.core.optim.lr_scheduler module<a class="headerlink" href="#module-mridc.core.optim.lr_scheduler" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.core.optim.lr_scheduler.CosineAnnealing">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.optim.lr_scheduler.</span></span><span class="sig-name descname"><span class="pre">CosineAnnealing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_steps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/lr_scheduler.html#CosineAnnealing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.lr_scheduler.CosineAnnealing" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.optim.lr_scheduler.WarmupAnnealHoldPolicy" title="mridc.core.optim.lr_scheduler.WarmupAnnealHoldPolicy"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.optim.lr_scheduler.WarmupAnnealHoldPolicy</span></code></a></p>
+<p>Anneal learning rate by cosine.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.core.optim.lr_scheduler.InverseSquareRootAnnealing">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.optim.lr_scheduler.</span></span><span class="sig-name descname"><span class="pre">InverseSquareRootAnnealing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_steps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/lr_scheduler.html#InverseSquareRootAnnealing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.lr_scheduler.InverseSquareRootAnnealing" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.optim.lr_scheduler.WarmupPolicy" title="mridc.core.optim.lr_scheduler.WarmupPolicy"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.optim.lr_scheduler.WarmupPolicy</span></code></a></p>
+<p>Inverse square root learning rate annealing.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.core.optim.lr_scheduler.NoamAnnealing">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.optim.lr_scheduler.</span></span><span class="sig-name descname"><span class="pre">NoamAnnealing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/lr_scheduler.html#NoamAnnealing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.lr_scheduler.NoamAnnealing" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.lr_scheduler._LRScheduler</span></code></p>
+<p>Noam learning rate annealing.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.optim.lr_scheduler.NoamAnnealing.get_lr">
+<span class="sig-name descname"><span class="pre">get_lr</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/lr_scheduler.html#NoamAnnealing.get_lr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.lr_scheduler.NoamAnnealing.get_lr" title="Permalink to this definition"></a></dt>
+<dd><p>Get learning rate at current step.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.core.optim.lr_scheduler.PolynomialDecayAnnealing">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.optim.lr_scheduler.</span></span><span class="sig-name descname"><span class="pre">PolynomialDecayAnnealing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_steps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">power</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cycle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/lr_scheduler.html#PolynomialDecayAnnealing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.lr_scheduler.PolynomialDecayAnnealing" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.optim.lr_scheduler.WarmupPolicy" title="mridc.core.optim.lr_scheduler.WarmupPolicy"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.optim.lr_scheduler.WarmupPolicy</span></code></a></p>
+<p>Polynomial decay learning rate annealing.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.core.optim.lr_scheduler.PolynomialHoldDecayAnnealing">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.optim.lr_scheduler.</span></span><span class="sig-name descname"><span class="pre">PolynomialHoldDecayAnnealing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_steps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">power</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cycle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/lr_scheduler.html#PolynomialHoldDecayAnnealing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.lr_scheduler.PolynomialHoldDecayAnnealing" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.optim.lr_scheduler.WarmupHoldPolicy" title="mridc.core.optim.lr_scheduler.WarmupHoldPolicy"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.optim.lr_scheduler.WarmupHoldPolicy</span></code></a></p>
+<p>Polynomial decay learning rate annealing.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.core.optim.lr_scheduler.SquareAnnealing">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.optim.lr_scheduler.</span></span><span class="sig-name descname"><span class="pre">SquareAnnealing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_steps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/lr_scheduler.html#SquareAnnealing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.lr_scheduler.SquareAnnealing" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.optim.lr_scheduler.WarmupPolicy" title="mridc.core.optim.lr_scheduler.WarmupPolicy"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.optim.lr_scheduler.WarmupPolicy</span></code></a></p>
+<p>Anneal learning rate by square.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.core.optim.lr_scheduler.SquareRootAnnealing">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.optim.lr_scheduler.</span></span><span class="sig-name descname"><span class="pre">SquareRootAnnealing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_steps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/lr_scheduler.html#SquareRootAnnealing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.lr_scheduler.SquareRootAnnealing" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.optim.lr_scheduler.WarmupPolicy" title="mridc.core.optim.lr_scheduler.WarmupPolicy"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.optim.lr_scheduler.WarmupPolicy</span></code></a></p>
+<p>Anneal learning rate by square root.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.core.optim.lr_scheduler.SquareRootConstantPolicy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.optim.lr_scheduler.</span></span><span class="sig-name descname"><span class="pre">SquareRootConstantPolicy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constant_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constant_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/lr_scheduler.html#SquareRootConstantPolicy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.lr_scheduler.SquareRootConstantPolicy" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.lr_scheduler._LRScheduler</span></code></p>
+<p>Adds warmup kwargs and warmup logic to lr policy. All arguments should be passed as kwargs for clarity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>warmup_steps</strong> (<em>Number of training steps in warmup stage</em>) – </p></li>
+<li><p><strong>warmup_ratio</strong> (<em>Ratio of warmup steps to total steps</em>) – </p></li>
+<li><p><strong>max_steps</strong> (Total number of steps while training or <cite>None</cite> for infinite training) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.optim.lr_scheduler.SquareRootConstantPolicy.get_lr">
+<span class="sig-name descname"><span class="pre">get_lr</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/lr_scheduler.html#SquareRootConstantPolicy.get_lr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.lr_scheduler.SquareRootConstantPolicy.get_lr" title="Permalink to this definition"></a></dt>
+<dd><p>Get learning rate at current step.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.core.optim.lr_scheduler.T5InverseSquareRootAnnealing">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.optim.lr_scheduler.</span></span><span class="sig-name descname"><span class="pre">T5InverseSquareRootAnnealing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_steps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/lr_scheduler.html#T5InverseSquareRootAnnealing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.lr_scheduler.T5InverseSquareRootAnnealing" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.optim.lr_scheduler.SquareRootConstantPolicy" title="mridc.core.optim.lr_scheduler.SquareRootConstantPolicy"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.optim.lr_scheduler.SquareRootConstantPolicy</span></code></a></p>
+<p>Inverse square root learning rate annealing.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.core.optim.lr_scheduler.WarmupAnnealHoldPolicy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.optim.lr_scheduler.</span></span><span class="sig-name descname"><span class="pre">WarmupAnnealHoldPolicy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constant_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">constant_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/lr_scheduler.html#WarmupAnnealHoldPolicy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.lr_scheduler.WarmupAnnealHoldPolicy" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.lr_scheduler._LRScheduler</span></code></p>
+<p>Adds warmup kwargs and warmup logic to lr policy. All arguments should be passed as kwargs for clarity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>warmup_steps</strong> (<em>Number of training steps in warmup stage</em>) – </p></li>
+<li><p><strong>warmup_ratio</strong> (<em>Ratio of warmup steps to total steps</em>) – </p></li>
+<li><p><strong>max_steps</strong> (Total number of steps while training or <cite>None</cite> for infinite training) – </p></li>
+<li><p><strong>min_lr</strong> (<em>Minimum lr to hold the learning rate after decay at.</em>) – </p></li>
+<li><p><strong>constant_steps</strong> (<em>Number of steps to keep lr constant at.</em>) – </p></li>
+<li><p><strong>constant_ratio</strong> (<em>Ratio of steps to keep lr constant.</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.optim.lr_scheduler.WarmupAnnealHoldPolicy.get_lr">
+<span class="sig-name descname"><span class="pre">get_lr</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/lr_scheduler.html#WarmupAnnealHoldPolicy.get_lr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.lr_scheduler.WarmupAnnealHoldPolicy.get_lr" title="Permalink to this definition"></a></dt>
+<dd><p>Get learning rate at current step.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.core.optim.lr_scheduler.WarmupAnnealing">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.optim.lr_scheduler.</span></span><span class="sig-name descname"><span class="pre">WarmupAnnealing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_steps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/lr_scheduler.html#WarmupAnnealing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.lr_scheduler.WarmupAnnealing" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.optim.lr_scheduler.WarmupPolicy" title="mridc.core.optim.lr_scheduler.WarmupPolicy"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.optim.lr_scheduler.WarmupPolicy</span></code></a></p>
+<p>Warmup learning rate annealing.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.core.optim.lr_scheduler.WarmupHoldPolicy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.optim.lr_scheduler.</span></span><span class="sig-name descname"><span class="pre">WarmupHoldPolicy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hold_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hold_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/lr_scheduler.html#WarmupHoldPolicy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.lr_scheduler.WarmupHoldPolicy" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.optim.lr_scheduler.WarmupPolicy" title="mridc.core.optim.lr_scheduler.WarmupPolicy"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.optim.lr_scheduler.WarmupPolicy</span></code></a></p>
+<p>Variant of WarmupPolicy which maintains high learning rate for a defined number of steps. All arguments should be
+passed as kwargs for clarity,</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>warmup_steps</strong> (<em>Number of training steps in warmup stage</em>) – </p></li>
+<li><p><strong>warmup_ratio</strong> (<em>Ratio of warmup steps to total steps</em>) – </p></li>
+<li><p><strong>hold_steps</strong> (<em>Number of training steps to hold the learning rate after warm up</em>) – </p></li>
+<li><p><strong>hold_ratio</strong> (<em>Ratio of hold steps to total steps</em>) – </p></li>
+<li><p><strong>max_steps</strong> (Total number of steps while training or <cite>None</cite> for infinite training) – </p></li>
+<li><p><strong>Results</strong> – </p></li>
+<li><p><strong>-------</strong> – </p></li>
+<li><p><strong>steps</strong> (<em>Learning rate is linearly increased from 0 to 1 over warmup</em>) – </p></li>
+<li><p><strong>hold</strong> (<em>then linearly decreased from 1 to 0 over</em>) – </p></li>
+<li><p><strong>steps.</strong> – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.optim.lr_scheduler.WarmupHoldPolicy.get_lr">
+<span class="sig-name descname"><span class="pre">get_lr</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/lr_scheduler.html#WarmupHoldPolicy.get_lr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.lr_scheduler.WarmupHoldPolicy.get_lr" title="Permalink to this definition"></a></dt>
+<dd><p>Get learning rate at current step.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.core.optim.lr_scheduler.WarmupPolicy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.optim.lr_scheduler.</span></span><span class="sig-name descname"><span class="pre">WarmupPolicy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/lr_scheduler.html#WarmupPolicy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.lr_scheduler.WarmupPolicy" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.lr_scheduler._LRScheduler</span></code></p>
+<p>Adds warmup kwargs and warmup logic to lr policy. All arguments should be passed as kwargs for clarity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>warmup_steps</strong> (<em>Number of training steps in warmup stage.</em>) – </p></li>
+<li><p><strong>warmup_ratio</strong> (<em>Ratio of warmup steps to total steps.</em>) – </p></li>
+<li><p><strong>max_steps</strong> (Total number of steps while training or <cite>None</cite> for infinite training.) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>lr</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Learning rate for current step.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.optim.lr_scheduler.WarmupPolicy.get_lr">
+<span class="sig-name descname"><span class="pre">get_lr</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/lr_scheduler.html#WarmupPolicy.get_lr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.lr_scheduler.WarmupPolicy.get_lr" title="Permalink to this definition"></a></dt>
+<dd><p>Get learning rate at current step.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.core.optim.lr_scheduler.compute_max_steps">
+<span class="sig-prename descclassname"><span class="pre">mridc.core.optim.lr_scheduler.</span></span><span class="sig-name descname"><span class="pre">compute_max_steps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_epochs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">accumulate_grad_batches</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit_train_batches</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_workers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_last</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/lr_scheduler.html#compute_max_steps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.lr_scheduler.compute_max_steps" title="Permalink to this definition"></a></dt>
+<dd><p>Compute effective max_steps from the provided parameters.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.core.optim.lr_scheduler.get_scheduler">
+<span class="sig-prename descclassname"><span class="pre">mridc.core.optim.lr_scheduler.</span></span><span class="sig-name descname"><span class="pre">get_scheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.optim.lr_scheduler._LRScheduler</span></span></span><a class="reference internal" href="_modules/mridc/core/optim/lr_scheduler.html#get_scheduler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.lr_scheduler.get_scheduler" title="Permalink to this definition"></a></dt>
+<dd><p>Convenience method to obtain an _LRScheduler class and partially instantiate it with optimizer kwargs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>Name of the scheduler in the registry.</em>) – </p></li>
+<li><p><strong>kwargs</strong> (<em>Optional kwargs of the scheduler used during instantiation.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>A partially instantiated _LRScheduler</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.core.optim.lr_scheduler.prepare_lr_scheduler">
+<span class="sig-prename descclassname"><span class="pre">mridc.core.optim.lr_scheduler.</span></span><span class="sig-name descname"><span class="pre">prepare_lr_scheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.optim.optimizer.Optimizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scheduler_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">omegaconf.dictconfig.DictConfig</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_dataloader</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.utils.data.dataloader.DataLoader</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/mridc/core/optim/lr_scheduler.html#prepare_lr_scheduler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.lr_scheduler.prepare_lr_scheduler" title="Permalink to this definition"></a></dt>
+<dd><p>Constructs an LR Scheduler (optionally) for a given optimizer, based on a config with the following schema.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>optimizer</strong> (<em>The optimizer to use for the scheduler.</em>) – <p>name: &lt;name of optimizer&gt;</p>
+<p>lr: &lt;maximal learning rate&gt;</p>
+<p># &lt;additional optimizer arguments&gt;</p>
+<p>args:</p>
+<blockquote>
+<div><p>name: auto  # special keyword, resolves to correct optimizer config for given optimizer name</p>
+<p># cls: mridc.core.config.optimizers.NovogradParams  # explicit instantiation by class path</p>
+<p>params:  # optional override parameters for the optimizer config</p>
+<blockquote>
+<div><p>betas: [0.8, 0.5]</p>
+<p>weight_decay: 0.001</p>
+</div></blockquote>
+</div></blockquote>
+</p></li>
+<li><p><strong>scheduler_config</strong> (<em>The scheduler config.</em>) – <p>name: &lt;name of scheduler&gt;</p>
+<p>iters_per_batch: null # computed at runtime; mandatory to have</p>
+<p>max_steps: null # computed at runtime or explicitly set here; mandatory to have</p>
+<p># pytorch lightning args &lt;mandatory&gt;</p>
+<p>monitor: val_loss</p>
+<p>reduce_on_plateau: false</p>
+<p># &lt;scheduler config override&gt;</p>
+<p>args:</p>
+<blockquote>
+<div><p>name: auto  # special keyword, resolves to correct optimizer config for given optimizer name</p>
+<p># cls: mridc.core.config.schedulers.CosineAnnealingParams  # explicit instantiation by class path</p>
+<p>params:  # optional override parameters for the optimizer config</p>
+<blockquote>
+<div><p>warmup_steps: null</p>
+<p>warmup_ratio: null</p>
+<p>min_lr: 0.0</p>
+<p>last_epoch: -1</p>
+</div></blockquote>
+</div></blockquote>
+</p></li>
+<li><p><strong>train_dataloader</strong> (<em>Optional requirement</em><em>, </em><em>must be passed if &quot;iters_per_batch&quot; is defined instead of &quot;max_steps&quot;.     Used to compute effective &quot;max_steps&quot;.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>A dictionary containing the LR Scheduler implementation if the config was successfully parsed along with other     parameters required by Pytorch Lightning, otherwise None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.core.optim.lr_scheduler.register_scheduler">
+<span class="sig-prename descclassname"><span class="pre">mridc.core.optim.lr_scheduler.</span></span><span class="sig-name descname"><span class="pre">register_scheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scheduler</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.optim.lr_scheduler._LRScheduler</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scheduler_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mridc.core.conf.html#mridc.core.conf.schedulers.SchedulerParams" title="mridc.core.conf.schedulers.SchedulerParams"><span class="pre">mridc.core.conf.schedulers.SchedulerParams</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/lr_scheduler.html#register_scheduler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.lr_scheduler.register_scheduler" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if the scheduler name exists in the registry, and if it doesn’t, adds it.
+This allows custom schedulers to be added and called by name during instantiation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>Name of the optimizer. Will be used as key to retrieve the optimizer.</em>) – </p></li>
+<li><p><strong>scheduler</strong> (<em>Scheduler class</em><em> (</em><em>inherits from _LRScheduler</em><em>)</em>) – </p></li>
+<li><p><strong>scheduler_params</strong> (<em>The parameters as a dataclass of the scheduler</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-mridc.core.optim.novograd">
+<span id="mridc-core-optim-novograd-module"></span><h2>mridc.core.optim.novograd module<a class="headerlink" href="#module-mridc.core.optim.novograd" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.core.optim.novograd.Novograd">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.optim.novograd.</span></span><span class="sig-name descname"><span class="pre">Novograd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">betas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(0.95,</span> <span class="pre">0.98)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_decay</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grad_averaging</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amsgrad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">luc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">luc_trust</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">luc_eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/novograd.html#Novograd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.novograd.Novograd" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.optimizer.Optimizer</span></code></p>
+<p>Implements Novograd algorithm.
+It has been proposed  in “Stochastic Gradient Methods with Layer-wise Adaptive Moments for Training of Deep
+Networks” (<a class="reference external" href="https://arxiv.org/abs/1905.11286">https://arxiv.org/abs/1905.11286</a>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>params</strong> (<em>Iterable of parameters to optimize</em><em> or </em><em>dicts defining parameter groups.</em>) – iterable</p></li>
+<li><p><strong>lr</strong> (<em>Learning rate.</em>) – float, (default: 1e-3)</p></li>
+<li><p><strong>betas</strong> (<em>Coefficients used for computing running averages of gradient and its square.</em>) – (Tuple[float, float], optional) (default: (0.9, 0.999))</p></li>
+<li><p><strong>eps</strong> (<em>Term added to the denominator to improve numerical stability.</em>) – (float, optional), (default: 1e-8)</p></li>
+<li><p><strong>(</strong><strong>float</strong> (<em>weight_decay</em>) – </p></li>
+<li><p><strong>optional</strong><strong>)</strong> (<em>weight decay</em><em> (</em><em>L2 penalty</em><em>) </em><em>(</em><em>default: 0</em><em>)</em>) – </p></li>
+<li><p><strong>amsgrad</strong> (<em>whether to use the AMSGrad variant of this algorithm from the paper &quot;On the Convergence of Adam and</em>) – </p></li>
+<li><p><strong>Beyond&quot;.</strong> – (boolean, optional), (default: False)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.optim.novograd.Novograd.step">
+<span class="sig-name descname"><span class="pre">step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">closure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/novograd.html#Novograd.step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.novograd.Novograd.step" title="Permalink to this definition"></a></dt>
+<dd><p>Performs a single optimization step.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>closure</strong> (<em>A closure that reevaluates the model and returns the loss.</em>) – </p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>loss</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="mridc.core.classes.html#mridc.core.classes.loss.Loss" title="mridc.core.classes.loss.Loss">Loss</a> (if provided)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-mridc.core.optim.optimizer_with_master_params">
+<span id="mridc-core-optim-optimizer-with-master-params-module"></span><h2>mridc.core.optim.optimizer_with_master_params module<a class="headerlink" href="#module-mridc.core.optim.optimizer_with_master_params" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.GradBucket">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.optim.optimizer_with_master_params.</span></span><span class="sig-name descname"><span class="pre">GradBucket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">numel</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#GradBucket"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.GradBucket" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Persistent buffer for main gradients that remains allocated between training iterations.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.GradBucket.allreduce_buffer">
+<span class="sig-name descname"><span class="pre">allreduce_buffer</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#GradBucket.allreduce_buffer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.GradBucket.allreduce_buffer" title="Permalink to this definition"></a></dt>
+<dd><p>Synchronous buffer data allreduce</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.GradBucket.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_index</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#GradBucket.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.GradBucket.get" title="Permalink to this definition"></a></dt>
+<dd><p>Return a tensor with the input <cite>shape</cite> as a view into the 1-D data starting at <cite>start_index</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.GradBucket.zero">
+<span class="sig-name descname"><span class="pre">zero</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#GradBucket.zero"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.GradBucket.zero" title="Permalink to this definition"></a></dt>
+<dd><p>Reset the buffer to zero.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.optim.optimizer_with_master_params.</span></span><span class="sig-name descname"><span class="pre">MainParamsOptimizerWrapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fp32_grad_accum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">contiguous_grad_bucket</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">async_grad_allreduce</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#MainParamsOptimizerWrapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.optimizer.Optimizer</span></code></p>
+<p>Float16 optimizer wrapper for half precision (fp16 and bf16) data types.
+This optimizer wrapper holds main parameters and gradients in fp32 to support
+stable convergence.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>optimizer</strong> (<em>base optimizer such as Adam</em><em> or </em><em>SGD.</em>) – </p></li>
+<li><p><strong>fp32_grad_accum</strong> (<em>to enable the use of fp32 in gradient accumulation and allreduce.</em>) – </p></li>
+<li><p><strong>contiguous_grad_bucket</strong> (<em>to enable allocating the master gradients in the contiguous memory space to reduce memory</em>) – </p></li>
+<li><p><strong>fragmentation.</strong> – </p></li>
+<li><p><strong>async_grad_allreduce</strong> (<em>enable asynchronous gradient allreduce that is executed along with the training step back prop.</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.allreduce_main_grads">
+<span class="sig-name descname"><span class="pre">allreduce_main_grads</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#MainParamsOptimizerWrapper.allreduce_main_grads"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.allreduce_main_grads" title="Permalink to this definition"></a></dt>
+<dd><p>All reduce main grads.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.async_master_grads_allreudce">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">async_master_grads_allreudce</span></span><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.async_master_grads_allreudce" title="Permalink to this definition"></a></dt>
+<dd><p>Return whether to use async allreduce for master grads.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.copy_model_grads_to_main_grads">
+<span class="sig-name descname"><span class="pre">copy_model_grads_to_main_grads</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#MainParamsOptimizerWrapper.copy_model_grads_to_main_grads"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.copy_model_grads_to_main_grads" title="Permalink to this definition"></a></dt>
+<dd><p>Copy model grads to main grads.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.fp32_grad_accumulation">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fp32_grad_accumulation</span></span><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.fp32_grad_accumulation" title="Permalink to this definition"></a></dt>
+<dd><p>Return whether to accumulate gradients in fp32.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.get_parameters">
+<span class="sig-name descname"><span class="pre">get_parameters</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#MainParamsOptimizerWrapper.get_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.get_parameters" title="Permalink to this definition"></a></dt>
+<dd><p>Return the parameters of the optimizer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.grad_sync">
+<span class="sig-name descname"><span class="pre">grad_sync</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#MainParamsOptimizerWrapper.grad_sync"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.grad_sync" title="Permalink to this definition"></a></dt>
+<dd><p>A context manager to disable gradient synchronizations across data-parallel ranks.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.load_state_dict">
+<span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#MainParamsOptimizerWrapper.load_state_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.load_state_dict" title="Permalink to this definition"></a></dt>
+<dd><p>Load the state of the optimizer.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.param_groups">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">param_groups</span></span><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.param_groups" title="Permalink to this definition"></a></dt>
+<dd><p>Promote param_groups, so it can be retrieved or set via “optimizer_instance.param_groups.
+(for example, to adjust the learning rate)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.reload_model_params">
+<span class="sig-name descname"><span class="pre">reload_model_params</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#MainParamsOptimizerWrapper.reload_model_params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.reload_model_params" title="Permalink to this definition"></a></dt>
+<dd><p>Reload model params.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.state">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">state</span></span><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.state" title="Permalink to this definition"></a></dt>
+<dd><p>Promote state, so it can be retrieved or set via “optimizer_instance.state.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.state_dict">
+<span class="sig-name descname"><span class="pre">state_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#MainParamsOptimizerWrapper.state_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.state_dict" title="Permalink to this definition"></a></dt>
+<dd><p>Return the state of the optimizer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.step">
+<span class="sig-name descname"><span class="pre">step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#MainParamsOptimizerWrapper.step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.step" title="Permalink to this definition"></a></dt>
+<dd><p>Step the optimizer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.zero_grad">
+<span class="sig-name descname"><span class="pre">zero_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">set_to_none</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#MainParamsOptimizerWrapper.zero_grad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.zero_grad" title="Permalink to this definition"></a></dt>
+<dd><p>We only need to zero the model related parameters, i.e., float16_groups &amp; fp32_from_fp32_groups. We
+additionally zero fp32_from_float16_groups as a memory optimization to reduce fragmentation; in the case of
+set_to_none==True, the space used by this field can be safely deallocated at this point.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-mridc.core.optim.optimizers">
+<span id="mridc-core-optim-optimizers-module"></span><h2>mridc.core.optim.optimizers module<a class="headerlink" href="#module-mridc.core.optim.optimizers" title="Permalink to this headline"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizers.get_optimizer">
+<span class="sig-prename descclassname"><span class="pre">mridc.core.optim.optimizers.</span></span><span class="sig-name descname"><span class="pre">get_optimizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">functools.partial</span></span></span><a class="reference internal" href="_modules/mridc/core/optim/optimizers.html#get_optimizer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizers.get_optimizer" title="Permalink to this definition"></a></dt>
+<dd><p>Convenience method to obtain an Optimizer class and partially instantiate it with optimizer kwargs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>Name of the Optimizer in the registry.</em>) – </p></li>
+<li><p><strong>kwargs</strong> (<em>Optional kwargs of the optimizer used during instantiation.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>A partially instantiated Optimizer.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizers.parse_optimizer_args">
+<span class="sig-prename descclassname"><span class="pre">mridc.core.optim.optimizers.</span></span><span class="sig-name descname"><span class="pre">parse_optimizer_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">omegaconf.dictconfig.DictConfig</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">omegaconf.dictconfig.DictConfig</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/mridc/core/optim/optimizers.html#parse_optimizer_args"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizers.parse_optimizer_args" title="Permalink to this definition"></a></dt>
+<dd><p>Parses a list of strings, of the format “key=value” or “key2=val1,val2,…”
+into a dictionary of type {key=value, key2=[val1, val2], …}
+This dictionary is then used to instantiate the chosen Optimizer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>optimizer_name</strong> (<em>string name of the optimizer</em><em>, </em><em>used for auto resolution of params.</em>) – </p></li>
+<li><p><strong>optimizer_kwargs</strong> (<em>Either a list of strings in a specified format</em><em>, or </em><em>a dictionary. If a dictionary is provided</em><em>, </em><em>it</em>) – </p></li>
+<li><p><strong>value</strong> (<em>is assumed the dictionary is the final parsed</em>) – </p></li>
+<li><p><strong>provided</strong> (<em>and simply returned. If a list of strings is</em>) – </p></li>
+<li><p><strong>each</strong> – </p></li>
+<li><p><strong>dictionary.</strong> (<em>item in the list is parsed into a new</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>A dictionary of the parsed arguments.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizers.register_optimizer">
+<span class="sig-prename descclassname"><span class="pre">mridc.core.optim.optimizers.</span></span><span class="sig-name descname"><span class="pre">register_optimizer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.optim.optimizer.Optimizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mridc.core.conf.html#mridc.core.conf.optimizers.OptimizerParams" title="mridc.core.conf.optimizers.OptimizerParams"><span class="pre">mridc.core.conf.optimizers.OptimizerParams</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizers.html#register_optimizer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizers.register_optimizer" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if the optimizer name exists in the registry, and if it doesn’t, adds it.
+This allows custom optimizers to be added and called by name during instantiation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>Name of the optimizer. Will be used as key to retrieve the optimizer.</em>) – </p></li>
+<li><p><strong>optimizer</strong> (<em>Optimizer class.</em>) – </p></li>
+<li><p><strong>optimizer_params</strong> (<em>The parameters as a dataclass of the optimizer.</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-mridc.core.optim">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-mridc.core.optim" title="Permalink to this headline"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mridc.core.neural_types.html" class="btn btn-neutral float-left" title="mridc.core.neural_types package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mridc.core.utils.html" class="btn btn-neutral float-right" title="mridc.core.utils package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.core.neural_types.axes &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>mridc.core.neural_types.axes</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.core.neural_types.axes</h1><div class="highlight"><pre>
+<span></span><span class="c1"># encoding: utf-8</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="c1"># Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/neural_types/axes.py</span>
+
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;AxisKindAbstract&quot;</span><span class="p">,</span> <span class="s2">&quot;AxisKind&quot;</span><span class="p">,</span> <span class="s2">&quot;AxisType&quot;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="AxisKindAbstract"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.axes.AxisKindAbstract">[docs]</a><span class="k">class</span> <span class="nc">AxisKindAbstract</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This is an abstract Enum to represents what does varying axis dimension mean. In practice, you will almost always</span>
+<span class="sd">    use AxisKind Enum. This Enum should be inherited by your OWN Enum if you aren&#39;t satisfied with AxisKind. Then your</span>
+<span class="sd">    own Enum can be used instead of AxisKind.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="AxisKind"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.axes.AxisKind">[docs]</a><span class="k">class</span> <span class="nc">AxisKind</span><span class="p">(</span><span class="n">AxisKindAbstract</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This Enum represents what does varying axis dimension mean. For example, does this dimension correspond to width, \</span>
+<span class="sd">     batch, time, etc. The &quot;Dimension&quot; and &quot;Channel&quot; kinds are the same and used to represent a general axis. &quot;Any&quot; \</span>
+<span class="sd">     axis will accept any axis kind fed to it.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># TODO (wdika): change names of the enums</span>
+    <span class="n">Batch</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">Time</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">Dimension</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">Channel</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">Width</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">Height</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">Any</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">Sequence</span> <span class="o">=</span> <span class="mi">6</span>
+    <span class="n">FlowGroup</span> <span class="o">=</span> <span class="mi">7</span>
+    <span class="n">Singleton</span> <span class="o">=</span> <span class="mi">8</span>  <span class="c1"># Used to represent a axis that has size 1</span>
+
+<div class="viewcode-block" id="AxisKind.__repr__"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.axes.AxisKind.__repr__">[docs]</a>    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns short string representation of the AxisKind&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="AxisKind.__str__"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.axes.AxisKind.__str__">[docs]</a>    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns short string representation of the AxisKind&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="AxisKind.t_with_string"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.axes.AxisKind.t_with_string">[docs]</a>    <span class="k">def</span> <span class="nf">t_with_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;It checks if text is &#39;t_&lt;any string&gt;&#39;&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">text</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;t_&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">text</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">text</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="AxisKind.from_str"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.axes.AxisKind.from_str">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_str</span><span class="p">(</span><span class="n">label</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns AxisKind instance based on short string representation&quot;&quot;&quot;</span>
+        <span class="n">_label</span> <span class="o">=</span> <span class="n">label</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">_label</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;n&quot;</span><span class="p">,</span> <span class="s2">&quot;batch&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">AxisKind</span><span class="o">.</span><span class="n">Batch</span>
+        <span class="k">if</span> <span class="n">_label</span> <span class="o">==</span> <span class="s2">&quot;t&quot;</span> <span class="ow">or</span> <span class="n">_label</span> <span class="o">==</span> <span class="s2">&quot;time&quot;</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">_label</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">_label</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;t_&quot;</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="n">AxisKind</span><span class="o">.</span><span class="n">Time</span>
+        <span class="k">if</span> <span class="n">_label</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;d&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;channel&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">AxisKind</span><span class="o">.</span><span class="n">Dimension</span>
+        <span class="k">if</span> <span class="n">_label</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="s2">&quot;width&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">AxisKind</span><span class="o">.</span><span class="n">Width</span>
+        <span class="k">if</span> <span class="n">_label</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;h&quot;</span><span class="p">,</span> <span class="s2">&quot;height&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">AxisKind</span><span class="o">.</span><span class="n">Height</span>
+        <span class="k">if</span> <span class="n">_label</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;s&quot;</span><span class="p">,</span> <span class="s2">&quot;singleton&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">AxisKind</span><span class="o">.</span><span class="n">Singleton</span>
+        <span class="k">if</span> <span class="n">_label</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;seq&quot;</span><span class="p">,</span> <span class="s2">&quot;sequence&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">AxisKind</span><span class="o">.</span><span class="n">Sequence</span>
+        <span class="k">if</span> <span class="n">_label</span> <span class="o">==</span> <span class="s2">&quot;flowgroup&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">AxisKind</span><span class="o">.</span><span class="n">FlowGroup</span>
+        <span class="k">if</span> <span class="n">_label</span> <span class="o">==</span> <span class="s2">&quot;any&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">AxisKind</span><span class="o">.</span><span class="n">Any</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Can&#39;t create AxisKind from </span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="AxisType"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.axes.AxisType">[docs]</a><span class="k">class</span> <span class="nc">AxisType</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;This class represents axis semantics and (optionally) it&#39;s dimensionality</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    kind: what kind of axis it is? For example Batch, Height, etc.</span>
+<span class="sd">        AxisKindAbstract</span>
+<span class="sd">    size: specify if the axis should have a fixed size. By default, it is set to None and you typically do not want to</span>
+<span class="sd">    set it for Batch and Time.</span>
+<span class="sd">        (int, optional)</span>
+<span class="sd">    is_list: whether this is a list or a tensor axis.</span>
+<span class="sd">        (bool, default=False)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="n">AxisKindAbstract</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">is_list</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">is_list</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The axis can&#39;t be list and have a fixed size&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kind</span> <span class="o">=</span> <span class="n">kind</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="n">size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_list</span> <span class="o">=</span> <span class="n">is_list</span>
+
+<div class="viewcode-block" id="AxisType.__repr__"><a class="viewcode-back" href="../../../../mridc.core.neural_types.html#mridc.core.neural_types.axes.AxisType.__repr__">[docs]</a>    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns short string representation of the AxisType&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">representation</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kind</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">representation</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kind</span><span class="p">)</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_list</span><span class="p">:</span>
+            <span class="n">representation</span> <span class="o">+=</span> <span class="s2">&quot;_listdim&quot;</span>
+        <span class="k">return</span> <span class="n">representation</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>
