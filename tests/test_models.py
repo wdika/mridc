@@ -1,5 +1,6 @@
 # encoding: utf-8
 __author__ = "Dimitrios Karkalousos"
+
 # Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
 
 import numpy as np
@@ -57,7 +58,9 @@ def test_cirim(shape, cascades, center_fractions, accelerations):
     )
 
     with torch.no_grad():
-        y = torch.view_as_complex(next(cirim.inference(output, output, mask, accumulate_estimates=True))[0][-1])
+        y = torch.view_as_complex(
+            next(cirim.inference(output, output, mask, accumulate_estimates=True))[0][-1]
+        )  # type: ignore
 
     if y.shape[1:] != x.shape[2:4]:
         raise AssertionError

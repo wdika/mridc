@@ -252,7 +252,6 @@ def create_arg_parser():
     parser = argparse.ArgumentParser(description="PICS")
 
     parser.add_argument("data_path", type=pathlib.Path, help="Path to the data folder")
-    parser.add_argument("checkpoint", type=pathlib.Path, help="Path to the checkpoint file")
     parser.add_argument("out_dir", type=pathlib.Path, help="Path to the output folder")
     parser.add_argument("--sense_path", type=pathlib.Path, help="Path to the sense folder")
     parser.add_argument("--mask_path", type=pathlib.Path, help="Path to the mask folder")
@@ -296,7 +295,6 @@ def create_arg_parser():
     )
     parser.add_argument("--fft_type", type=str, default="orthogonal", help="Type of FFT to use")
     parser.add_argument("--progress_bar_refresh", type=int, default=10, help="Progress bar refresh rate")
-    parser.add_argument("--num_workers", type=int, default=4, help="Number of workers for the data loader")
     parser.add_argument(
         "--data_parallel", action="store_true", help="If set, use multiple GPUs using data parallelism"
     )

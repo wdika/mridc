@@ -1,23 +1,23 @@
 # encoding: utf-8
 __author__ = "Dimitrios Karkalousos"
+
 # Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
 
 import logging
 import os
-import yaml
 import random
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
-from xml.etree.ElementTree import Element
-from defusedxml.ElementTree import fromstring
 
 import h5py
 import numpy as np
 import torch
+import yaml
+from defusedxml.ElementTree import fromstring
 from torch.utils.data import Dataset
 
 
-def et_query(root: Element, qlist: Sequence[str], namespace: str = "https://www.ismrm.org/ISMRMRD") -> str:
+def et_query(root: str, qlist: Sequence[str], namespace: str = "https://www.ismrm.org/ISMRMRD") -> str:
     """
     Query an XML element for a list of attributes.
 
@@ -183,7 +183,7 @@ class SliceDataset(Dataset):
         # load dataset cache if we have and user wants to use it
         if self.dataset_cache_file.exists() and use_dataset_cache:
             with open(self.dataset_cache_file, "rb") as f:
-                dataset_cache = yaml.load(f)
+                dataset_cache = yaml.safe_load(f)
         else:
             dataset_cache = {}
 

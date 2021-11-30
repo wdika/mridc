@@ -7,8 +7,8 @@ import torch
 from torch import nn
 
 from mridc import ifft2c, complex_mul, complex_conj
-from .rim.rim_block import RIMBlock
 from .e2evn import SensitivityModel
+from .rim.rim_block import RIMBlock
 from ..data.transforms import center_crop_to_smallest
 
 

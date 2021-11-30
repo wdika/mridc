@@ -1,5 +1,6 @@
 # encoding: utf-8
 __author__ = "Dimitrios Karkalousos"
+
 # Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
 
 import argparse
@@ -11,7 +12,6 @@ import h5py
 import numpy as np
 import pandas as pd
 import torch
-
 from runstats import Statistics
 from skimage.filters import threshold_otsu
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity

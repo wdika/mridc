@@ -1,9 +1,8 @@
 # encoding: utf-8
 __author__ = "Dimitrios Karkalousos"
 
-import pytest
-import torch
 import numpy as np
+import pytest
 
 from mridc.data.subsample import (
     create_mask_for_mask_type,

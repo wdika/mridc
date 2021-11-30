@@ -1,5 +1,6 @@
 # encoding: utf-8
 __author__ = "Dimitrios Karkalousos"
+
 # Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
 
 from typing import Dict, Optional, Sequence, Tuple, Union, Any, List
@@ -372,7 +373,9 @@ class UnetDataTransform:
                 )
         else:
             masked_kspace = kspace
-            acc = torch.tensor([np.around(mask.size / mask.sum())]) if mask is not None else torch.tensor([1])  # type: ignore
+            acc = (
+                torch.tensor([np.around(mask.size / mask.sum())]) if mask is not None else torch.tensor([1])
+            )  # type: ignore
 
         # Cropping after masking.
         if self.crop_size is not None and not self.crop_before_masking:

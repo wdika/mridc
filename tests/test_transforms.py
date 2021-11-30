@@ -1,9 +1,9 @@
 # encoding: utf-8
 __author__ = "Dimitrios Karkalousos"
 
+import numpy as np
 import pytest
 import torch
-import numpy as np
 
 from mridc.data.transforms import (
     to_tensor,

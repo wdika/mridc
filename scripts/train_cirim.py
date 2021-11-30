@@ -733,7 +733,7 @@ def create_arg_parser():
         help="Number of filters the recurrent layers of for the model",
     )
     parser.add_argument(
-        "--recurrent_kernels", nargs="+", default=[1, 1, 0], help="Kernel size for the recurrent layers of the model"
+        "--recurrent_kernels", nargs="+", default=[3, 3, 3], help="Kernel size for the recurrent layers of the model"
     )
     parser.add_argument(
         "--recurrent_dilations", nargs="+", default=[1, 1, 0], help="Dilations for the recurrent layers of the model"

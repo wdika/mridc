@@ -124,7 +124,6 @@ def create_arg_parser():
     parser = argparse.ArgumentParser(description="ZERO-FILLED")
 
     parser.add_argument("data_path", type=pathlib.Path, help="Path to the data folder")
-    parser.add_argument("checkpoint", type=pathlib.Path, help="Path to the checkpoint file")
     parser.add_argument("out_dir", type=pathlib.Path, help="Path to the output folder")
     parser.add_argument("--sense_path", type=pathlib.Path, help="Path to the sense folder")
     parser.add_argument("--mask_path", type=pathlib.Path, help="Path to the mask folder")

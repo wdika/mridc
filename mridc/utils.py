@@ -1,5 +1,6 @@
 # encoding: utf-8
 __author__ = "Dimitrios Karkalousos"
+
 # Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
 
 from pathlib import Path

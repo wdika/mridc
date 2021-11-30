@@ -9,7 +9,7 @@ import pathlib
 import random
 import sys
 import time
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import torch
