@@ -22,6 +22,14 @@ This repo implements the following reconstruction methods:
 The CIRIM, the RIM, and the E2EVN target unrolled optimization by gradient descent. Thus, DC is implicitly enforced.
 Through cascades DC can be explicitly enforced by a designed term [1, 4].
 
+
+## Installation
+You can install mridc with pip:
+
+```bash
+pip install mridc
+```
+
 ## Usage
 
 Check on [scripts](scripts) how to train models and run a method for reconstruction.
