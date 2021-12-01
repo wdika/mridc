@@ -63,11 +63,7 @@ def run_zf(data_loader: DataLoader, fft_type: str, device: str, progress_bar_ref
     sys.stdout.write("\n")
     sys.stdout.flush()
 
-    reconstructions = {
-        fname: np.stack([pred for _, pred in sorted(slice_preds)]) for fname, slice_preds in output.items()
-    }
-
-    return reconstructions
+    return {fname: np.stack([pred for _, pred in sorted(slice_preds)]) for fname, slice_preds in output.items()}
 
 
 def main(args):
@@ -86,11 +82,14 @@ def main(args):
             sense_root=args.sense_path,
             challenge=args.challenge,
             transform=PhysicsInformedDataTransform(
-                mask_func=create_mask_for_mask_type(args.mask_type, args.center_fractions, args.accelerations),
+                mask_func=False
+                if args.no_mask
+                else create_mask_for_mask_type(args.mask_type, args.center_fractions, args.accelerations),
                 shift_mask=args.shift_mask,
                 normalize_inputs=args.normalize_inputs,
                 crop_size=args.crop_size,
                 crop_before_masking=args.crop_before_masking,
+                kspace_zero_filling_size=args.kspace_zero_filling_size,
                 fft_type=args.fft_type,
             ),
             sample_rate=args.sample_rate,
@@ -142,6 +141,11 @@ def create_arg_parser():
     parser.add_argument("--sample_rate", type=float, default=1.0, help="Sample rate for the data")
     parser.add_argument("--batch_size", type=int, default=1, help="Batch size for the data loader")
     parser.add_argument(
+        "--no_mask",
+        action="store_true",
+        help="Toggle to turn off masking. This can be used for prospectively undersampled data.",
+    )
+    parser.add_argument(
         "--mask_type",
         choices=("random", "gaussian2d", "equispaced"),
         default="gaussian2d",
@@ -156,8 +160,9 @@ def create_arg_parser():
     )
     parser.add_argument("--shift_mask", action="store_true", help="Shift the mask")
     parser.add_argument("--normalize_inputs", action="store_true", help="Normalize the inputs")
-    parser.add_argument("--crop_size", default=None, help="Size of the crop to apply to the input")
+    parser.add_argument("--crop_size", nargs="+", help="Size of the crop to apply to the input")
     parser.add_argument("--crop_before_masking", action="store_true", help="Crop before masking")
+    parser.add_argument("--kspace_zero_filling_size", nargs="+", help="Size of zero-filling in kspace")
     parser.add_argument("--fft_type", type=str, default="orthogonal", help="Type of FFT to use")
     parser.add_argument("--progress_bar_refresh", type=int, default=10, help="Progress bar refresh rate")
     parser.add_argument("--num_workers", type=int, default=4, help="Number of workers for the data loader")
