@@ -1,10 +1,12 @@
 # Data Consistency for Magnetic Resonance Imaging
 
 [![Build Status](https://app.travis-ci.com/wdika/mridc.svg?branch=main)](https://app.travis-ci.com/wdika/mridc)
+[![CodeQL](https://github.com/wdika/mridc/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/wdika/mridc/actions/workflows/codeql-analysis.yml)
 [![CircleCI](https://circleci.com/gh/wdika/mridc/tree/main.svg?style=svg)](https://circleci.com/gh/wdika/mridc/tree/main)
 [![codecov](https://codecov.io/gh/wdika/mridc/branch/main/graph/badge.svg?token=KPPQ33DOTF)](https://codecov.io/gh/wdika/mridc)
 [![DeepSource](https://deepsource.io/gh/wdika/mridc.svg/?label=active+issues&show_trend=true&token=txj87v43GA6vhpbSwPEUTQtX)](https://deepsource.io/gh/wdika/mridc/?ref=repository-badge)
 [![DeepSource](https://deepsource.io/gh/wdika/mridc.svg/?label=resolved+issues&show_trend=true&token=txj87v43GA6vhpbSwPEUTQtX)](https://deepsource.io/gh/wdika/mridc/?ref=repository-badge)
+<a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 
 ---
 
@@ -22,19 +24,27 @@ This repo implements the following reconstruction methods:
 The CIRIM, the RIM, and the E2EVN target unrolled optimization by gradient descent. Thus, DC is implicitly enforced.
 Through cascades DC can be explicitly enforced by a designed term [1, 4].
 
-
 ## Installation
+
 You can install mridc with pip:
 
+### Pip
 ```bash
 pip install mridc
 ```
 
+### From source
+```bash
+git clone https://github.com/wdika/mridc
+cd mridc
+./reinstall.sh
+```
+
 ## Usage
 
-Check on [scripts](scripts) how to train models and run a method for reconstruction.
+Check on [scripts](examples) how to train models and run a method for reconstruction.
 
-Check on [tools](tools) for preprocessing and evaluation tools.
+Check on [tools](mridc/collections/reconstruction/tools) for preprocessing and evaluation tools.
 
 Recommended public datasets to use with this repo:
 
@@ -56,16 +66,18 @@ Check CITATION.cff file or cite using the widget. Alternatively cite as
 
 ```BibTeX
 @misc{mridc,
-  author={Karkalousos, Dimitrios and Caan, Matthan},
-  title={MRIDC: Data Consistency for Magnetic Resonance Imaging},
-  year={2021},
-  url = {https://github.com/wdika/mridc},
+    author = {Karkalousos, Dimitrios and Caan, Matthan},
+    title = {MRIDC: Data Consistency for Magnetic Resonance Imaging},
+    year = {2021},
+    url = {https://github.com/wdika/mridc},
 }
 ```
 
 ## Bibliography
 
-[1] CIRIM
+[1] Karkalousos, D. et al. (2021) ‘Assessment of Data Consistency through Cascades of Independently Recurrent Inference
+Machines for fast and robust accelerated MRI reconstruction’. Available at: https://arxiv.org/abs/2111.15498v1 (
+Accessed: 1 December 2021).
 
 [2] Lønning, K. et al. (2019) ‘Recurrent inference machines for reconstructing heterogeneous MRI data’, Medical Image
 Analysis, 53, pp. 64–78. doi: 10.1016/j.media.2019.01.005.
