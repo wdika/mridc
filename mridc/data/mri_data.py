@@ -12,7 +12,7 @@ from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 import h5py
 import numpy as np
 import torch
-import yaml
+import yaml  # type: ignore
 from defusedxml.ElementTree import fromstring
 from torch.utils.data import Dataset
 
@@ -35,14 +35,13 @@ def et_query(root: str, qlist: Sequence[str], namespace: str = "https://www.ismr
     ns = {prefix: namespace}
 
     for el in qlist:
-        s = s + f"//{prefix}:{el}"
+        s += f"//{prefix}:{el}"
 
-    value = root.find(s, ns)
+    value = root.find(s, ns)  # type: ignore
     if value is None:
-        # raise RuntimeError("Element not found")
         return "0"
 
-    return str(value.text)
+    return str(value.text)  # type: ignore
 
 
 class CombinedSliceDataset(torch.utils.data.Dataset):
@@ -109,7 +108,7 @@ class CombinedSliceDataset(torch.utils.data.Dataset):
                 )
             )
 
-            self.examples = self.examples + self.datasets[-1].examples
+            self.examples += self.datasets[-1].examples
 
     def __len__(self):
         return sum(len(dataset) for dataset in self.datasets)
@@ -289,11 +288,6 @@ class SliceDataset(Dataset):
                         else sf["sense"][dataslice]
                     )
                     sensitivity_map = sensitivity_map.squeeze().astype(np.complex64)
-
-                    if sensitivity_map.shape[0] != kspace.shape[0]:
-                        # TODO: this applies for some computed fastMRI brain FLAIR sense maps. Needs to go.
-                        sensitivity_map = np.transpose(sensitivity_map, (2, 0, 1))
-
             else:
                 sensitivity_map = np.array([])
 
@@ -319,9 +313,26 @@ class SliceDataset(Dataset):
             attrs = dict(hf.attrs)
             attrs.update(metadata)
 
-        if self.transform is None:
-            sample = (kspace, sensitivity_map, mask, eta, target, attrs, fname.name, dataslice)
-        else:
-            sample = self.transform(kspace, sensitivity_map, mask, eta, target, attrs, fname.name, dataslice)
-
-        return sample
+        return (
+            (
+                kspace,
+                sensitivity_map,
+                mask,
+                eta,
+                target,
+                attrs,
+                fname.name,
+                dataslice,
+            )
+            if self.transform is None
+            else self.transform(
+                kspace,
+                sensitivity_map,
+                mask,
+                eta,
+                target,
+                attrs,
+                fname.name,
+                dataslice,
+            )
+        )

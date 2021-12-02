@@ -37,18 +37,17 @@ def load_model(
         Checkpoint, UNet model, optimizer.
     """
     checkpoint = torch.load(checkpoint_file, map_location=device)
+    arguments = checkpoint["args"]
 
     model = NormUnet(
-        in_chans=2,  # number of channels in input image
-        out_chans=2,  # number of channels in output image
-        chans=64,  # number of channels in intermediate layers
-        num_pools=2,  # number of pooling operations in the encoder/decoder
-        drop_prob=0.0,  # dropout probability
-        padding_size=11,  # padding size
-        normalize=True,  # normalize the input image
+        in_chans=arguments.in_chans,  # number of channels in input image
+        out_chans=arguments.out_chans,  # number of channels in output image
+        chans=arguments.chans,  # number of channels in intermediate layers
+        num_pools=arguments.num_pools,  # number of pooling operations in the encoder/decoder
+        drop_prob=arguments.drop_prob,  # dropout probability
+        padding_size=arguments.padding_size,  # padding size
+        normalize=arguments.normalize,  # normalize the input image
     ).to(device)
-
-    arguments = checkpoint["args"]
 
     if arguments.data_parallel:
         model = torch.nn.DataParallel(model)  # type: ignore
@@ -114,11 +113,7 @@ def run_unet(
     sys.stdout.write("\n")
     sys.stdout.flush()
 
-    reconstructions = {
-        fname: np.stack([pred for _, pred in sorted(slice_preds)]) for fname, slice_preds in output.items()
-    }
-
-    return reconstructions
+    return {fname: np.stack([pred for _, pred in sorted(slice_preds)]) for fname, slice_preds in output.items()}
 
 
 def main(args):
@@ -137,11 +132,14 @@ def main(args):
             sense_root=args.sense_path,
             challenge=args.challenge,
             transform=UnetDataTransform(
-                mask_func=create_mask_for_mask_type(args.mask_type, args.center_fractions, args.accelerations),
+                mask_func=False
+                if args.no_mask
+                else create_mask_for_mask_type(args.mask_type, args.center_fractions, args.accelerations),
                 shift_mask=args.shift_mask,
                 normalize_inputs=args.normalize_inputs,
                 crop_size=args.crop_size,
                 crop_before_masking=args.crop_before_masking,
+                kspace_zero_filling_size=args.kspace_zero_filling_size,
                 fft_type=args.fft_type,
                 output_type=args.output_type,
                 use_seed=False,
@@ -199,6 +197,11 @@ def create_arg_parser():
     parser.add_argument("--sample_rate", type=float, default=1.0, help="Sample rate for the data")
     parser.add_argument("--batch_size", type=int, default=1, help="Batch size for the data loader")
     parser.add_argument(
+        "--no_mask",
+        action="store_true",
+        help="Toggle to turn off masking. This can be used for prospectively undersampled data.",
+    )
+    parser.add_argument(
         "--mask_type",
         choices=("random", "gaussian2d", "equispaced"),
         default="gaussian2d",
@@ -213,8 +216,9 @@ def create_arg_parser():
     )
     parser.add_argument("--shift_mask", action="store_true", help="Shift the mask")
     parser.add_argument("--normalize_inputs", action="store_true", help="Normalize the inputs")
-    parser.add_argument("--crop_size", default=None, help="Size of the crop to apply to the input")
+    parser.add_argument("--crop_size", nargs="+", help="Size of the crop to apply to the input")
     parser.add_argument("--crop_before_masking", action="store_true", help="Crop before masking")
+    parser.add_argument("--kspace_zero_filling_size", nargs="+", help="Size of zero-filling in kspace")
     parser.add_argument(
         "--output_type", choices=("SENSE", "RSS"), default="SENSE", type=str, help="Type of output to save"
     )

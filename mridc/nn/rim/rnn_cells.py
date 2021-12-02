@@ -365,9 +365,7 @@ class ConvMGUCell(ConvMGUCellBase):
         f = torch.sigmoid(ih[0] + hh[0])
         c = torch.tanh(ih[1] + f * hh[1])
 
-        hy = c + f * (hx - c)
-
-        return hy
+        return c + f * (hx - c)
 
 
 class IndRNNCellBase(nn.Module):
@@ -406,7 +404,7 @@ class IndRNNCellBase(nn.Module):
             bias=bias,
         )
         self.hh = nn.Parameter(
-            nn.init.normal_(torch.empty(1, hidden_size, 1, 1), std=1.0 / (hidden_size * (1 + kernel_size ** 2)))
+            nn.init.normal_(torch.empty(1, hidden_size, 1, 1), std=1.0 / (hidden_size * (1 + kernel_size**2)))
         )
 
         self.reset_parameters()
@@ -420,7 +418,7 @@ class IndRNNCellBase(nn.Module):
         """
         self.ih.weight.data = self.orthotogonalize_weights(self.ih.weight.data)
 
-        nn.init.normal_(self.ih.weight, std=1.0 / (self.hidden_size * (1 + self.kernel_size ** 2)))
+        nn.init.normal_(self.ih.weight, std=1.0 / (self.hidden_size * (1 + self.kernel_size**2)))
 
         if self.bias is True:
             nn.init.zeros_(self.ih.bias)
