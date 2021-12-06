@@ -1,6 +1,7 @@
 # Data Consistency for Magnetic Resonance Imaging
 
 [![Build Status](https://app.travis-ci.com/wdika/mridc.svg?branch=main)](https://app.travis-ci.com/wdika/mridc)
+[![CodeQL](https://github.com/wdika/mridc/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/wdika/mridc/actions/workflows/codeql-analysis.yml)
 [![CircleCI](https://circleci.com/gh/wdika/mridc/tree/main.svg?style=svg)](https://circleci.com/gh/wdika/mridc/tree/main)
 [![codecov](https://codecov.io/gh/wdika/mridc/branch/main/graph/badge.svg?token=KPPQ33DOTF)](https://codecov.io/gh/wdika/mridc)
 [![DeepSource](https://deepsource.io/gh/wdika/mridc.svg/?label=active+issues&show_trend=true&token=txj87v43GA6vhpbSwPEUTQtX)](https://deepsource.io/gh/wdika/mridc/?ref=repository-badge)
