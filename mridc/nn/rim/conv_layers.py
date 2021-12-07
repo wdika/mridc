@@ -64,9 +64,12 @@ class ConvNonlinear(nn.Module):
             ValueError("Please specify a proper nonlinearity")
 
         self.padding = [
-            torch.nn.ReplicationPad1d(torch.div(dilation * (kernel_size - 1), 2, rounding_mode="trunc").item()),
-            torch.nn.ReplicationPad2d(torch.div(dilation * (kernel_size - 1), 2, rounding_mode="trunc").item()),
-            torch.nn.ReplicationPad3d(torch.div(dilation * (kernel_size - 1), 2, rounding_mode="trunc").item()),
+            torch.nn.ReplicationPad1d(
+                torch.div(dilation * (kernel_size - 1), 2, rounding_mode="trunc").item()),
+            torch.nn.ReplicationPad2d(
+                torch.div(dilation * (kernel_size - 1), 2, rounding_mode="trunc").item()),
+            torch.nn.ReplicationPad3d(
+                torch.div(dilation * (kernel_size - 1), 2, rounding_mode="trunc").item()),
         ][conv_dim - 1]
 
         self.conv_layer = self.conv_class(
@@ -87,7 +90,8 @@ class ConvNonlinear(nn.Module):
         Returns:
             None.
         """
-        torch.nn.init.kaiming_normal_(self.conv_layer.weight, nonlinearity="relu")
+        torch.nn.init.kaiming_normal_(
+            self.conv_layer.weight, nonlinearity="relu")
 
         if self.conv_layer.bias is not None:
             nn.init.zeros_(self.conv_layer.bias)
@@ -109,7 +113,8 @@ class ConvNonlinear(nn.Module):
             return nn.Conv2d
         if n_dim == 3:
             return nn.Conv3d
-        NotImplementedError("No convolution of this dimensionality implemented")
+        NotImplementedError(
+            "No convolution of this dimensionality implemented")
 
     def extra_repr(self):
         """
@@ -137,7 +142,8 @@ class ConvNonlinear(nn.Module):
         """
         if _input.size(1) != self.input_size:
             raise RuntimeError(
-                "input has inconsistent input_size: got {}, expected {}".format(_input.size(1), self.input_size)
+                "input has inconsistent input_size: got {}, expected {}".format(
+                    _input.size(1), self.input_size)
             )
 
     def forward(self, _input):

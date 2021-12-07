@@ -24,7 +24,8 @@ class ConvGRUCellBase(nn.Module):
             input_size,
             3 * hidden_size,
             kernel_size,
-            padding=torch.div(dilation * (kernel_size - 1), 2, rounding_mode="trunc").item(),
+            padding=torch.div(dilation * (kernel_size - 1),
+                              2, rounding_mode="trunc").item(),
             dilation=dilation,
             bias=bias,
         )
@@ -32,7 +33,8 @@ class ConvGRUCellBase(nn.Module):
             hidden_size,
             3 * hidden_size,
             kernel_size,
-            padding=torch.div(dilation * (kernel_size - 1), 2, rounding_mode="trunc").item(),
+            padding=torch.div(dilation * (kernel_size - 1),
+                              2, rounding_mode="trunc").item(),
             dilation=dilation,
             bias=False,
         )
@@ -83,7 +85,8 @@ class ConvGRUCellBase(nn.Module):
             return nn.Conv2d
         if n_dim == 3:
             return nn.Conv3d
-        NotImplementedError("No convolution of this dimensionality implemented")
+        NotImplementedError(
+            "No convolution of this dimensionality implemented")
 
     def extra_repr(self):
         """
@@ -111,7 +114,8 @@ class ConvGRUCellBase(nn.Module):
         """
         if _input.size(1) != self.input_size:
             raise RuntimeError(
-                "input has inconsistent input_size: got {}, expected {}".format(_input.size(1), self.input_size)
+                "input has inconsistent input_size: got {}, expected {}".format(
+                    _input.size(1), self.input_size)
             )
 
     def check_forward_hidden(self, _input, hx, hidden_label=""):
@@ -156,7 +160,8 @@ class ConvGRUCell(ConvGRUCellBase):
             dilation: The dilation of the convolutional kernel.
             bias: Whether or not to add a bias.
         """
-        super(ConvGRUCell, self).__init__(input_size, hidden_size, conv_dim, kernel_size, dilation, bias)
+        super(ConvGRUCell, self).__init__(input_size,
+                                          hidden_size, conv_dim, kernel_size, dilation, bias)
 
     def forward(self, _input, hx):
         """
@@ -211,7 +216,8 @@ class ConvMGUCellBase(nn.Module):
             input_size,
             2 * hidden_size,
             kernel_size,
-            padding=torch.div(dilation * (kernel_size - 1), 2, rounding_mode="trunc").item(),
+            padding=torch.div(dilation * (kernel_size - 1),
+                              2, rounding_mode="trunc").item(),
             dilation=dilation,
             bias=bias,
         )
@@ -219,7 +225,8 @@ class ConvMGUCellBase(nn.Module):
             hidden_size,
             2 * hidden_size,
             kernel_size,
-            padding=torch.div(dilation * (kernel_size - 1), 2, rounding_mode="trunc").item(),
+            padding=torch.div(dilation * (kernel_size - 1),
+                              2, rounding_mode="trunc").item(),
             dilation=dilation,
             bias=False,
         )
@@ -273,7 +280,8 @@ class ConvMGUCellBase(nn.Module):
             return nn.Conv2d
         if n_dim == 3:
             return nn.Conv3d
-        NotImplementedError("No convolution of this dimensionality implemented")
+        NotImplementedError(
+            "No convolution of this dimensionality implemented")
 
     def extra_repr(self):
         """
@@ -301,7 +309,8 @@ class ConvMGUCellBase(nn.Module):
         """
         if _input.size(1) != self.input_size:
             raise RuntimeError(
-                "input has inconsistent input_size: got {}, expected {}".format(_input.size(1), self.input_size)
+                "input has inconsistent input_size: got {}, expected {}".format(
+                    _input.size(1), self.input_size)
             )
 
     def check_forward_hidden(self, _input, hx, hidden_label=""):
@@ -346,7 +355,8 @@ class ConvMGUCell(ConvMGUCellBase):
             dilation: The dilation.
             bias: Whether to use a bias.
         """
-        super(ConvMGUCell, self).__init__(input_size, hidden_size, conv_dim, kernel_size, dilation, bias)
+        super(ConvMGUCell, self).__init__(input_size,
+                                          hidden_size, conv_dim, kernel_size, dilation, bias)
 
     def forward(self, _input, hx):
         """
@@ -401,12 +411,14 @@ class IndRNNCellBase(nn.Module):
             input_size,
             hidden_size,
             kernel_size,
-            padding=torch.div(dilation * (kernel_size - 1), 2, rounding_mode="trunc").item(),
+            padding=torch.div(dilation * (kernel_size - 1),
+                              2, rounding_mode="trunc").item(),
             dilation=dilation,
             bias=bias,
         )
         self.hh = nn.Parameter(
-            nn.init.normal_(torch.empty(1, hidden_size, 1, 1), std=1.0 / (hidden_size * (1 + kernel_size ** 2)))
+            nn.init.normal_(torch.empty(1, hidden_size, 1, 1),
+                            std=1.0 / (hidden_size * (1 + kernel_size ** 2)))
         )
 
         self.reset_parameters()
@@ -420,7 +432,8 @@ class IndRNNCellBase(nn.Module):
         """
         self.ih.weight.data = self.orthotogonalize_weights(self.ih.weight.data)
 
-        nn.init.normal_(self.ih.weight, std=1.0 / (self.hidden_size * (1 + self.kernel_size ** 2)))
+        nn.init.normal_(self.ih.weight, std=1.0 /
+                        (self.hidden_size * (1 + self.kernel_size ** 2)))
 
         if self.bias is True:
             nn.init.zeros_(self.ih.bias)
@@ -456,7 +469,8 @@ class IndRNNCellBase(nn.Module):
             return nn.Conv2d
         if n_dim == 3:
             return nn.Conv3d
-        NotImplementedError("No convolution of this dimensionality implemented")
+        NotImplementedError(
+            "No convolution of this dimensionality implemented")
 
     def extra_repr(self):
         """
@@ -484,7 +498,8 @@ class IndRNNCellBase(nn.Module):
         """
         if _input.size(1) != self.input_size:
             raise RuntimeError(
-                "input has inconsistent input_size: got {}, expected {}".format(_input.size(1), self.input_size)
+                "input has inconsistent input_size: got {}, expected {}".format(
+                    _input.size(1), self.input_size)
             )
 
     def check_forward_hidden(self, _input, hx, hidden_label=""):
@@ -527,7 +542,8 @@ class IndRNNCell(IndRNNCellBase):
             dilation: The spacing between the kernel points.
             bias: If ``False``, then the layer does not use bias weights `b_ih` and `b_hh`.
         """
-        super(IndRNNCell, self).__init__(input_size, hidden_size, conv_dim, kernel_size, dilation, bias)
+        super(IndRNNCell, self).__init__(input_size,
+                                         hidden_size, conv_dim, kernel_size, dilation, bias)
 
     def forward(self, _input, hx):
         """

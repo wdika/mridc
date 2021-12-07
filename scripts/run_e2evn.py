@@ -87,7 +87,8 @@ def run_e2evn(model: VarNet, data_loader: DataLoader, device: str, progress_bar_
 
     # loop over the data loader
     for i, data in enumerate(data_loader):
-        (masked_kspace, sensitivity_map, mask, _, target, fname, slice_num, _, _, _) = data
+        (masked_kspace, sensitivity_map, mask, _,
+         target, fname, slice_num, _, _, _) = data
         sensitivity_map = sensitivity_map.to(device)
         y = masked_kspace.to(device)
         m = mask.to(device)
@@ -110,7 +111,8 @@ def run_e2evn(model: VarNet, data_loader: DataLoader, device: str, progress_bar_
 
             # update the progress bar
             if i % progress_bar_refresh == 0:
-                sys.stdout.write("\r[{:5.2f}%]".format(100 * (i + 1) / len(data_loader)))
+                sys.stdout.write("\r[{:5.2f}%]".format(
+                    100 * (i + 1) / len(data_loader)))
                 sys.stdout.flush()
 
     sys.stdout.write("\n")
@@ -163,7 +165,8 @@ def main(args):
     init_start = time.perf_counter()
 
     print("Reconstructing...")
-    reconstructions = run_e2evn(model, data_loader, args.device, args.progress_bar_refresh)
+    reconstructions = run_e2evn(
+        model, data_loader, args.device, args.progress_bar_refresh)
 
     print("Saving...")
     save_reconstructions(reconstructions, args.out_dir)
@@ -180,11 +183,16 @@ def create_arg_parser():
     """
     parser = argparse.ArgumentParser(description="E2EVN")
 
-    parser.add_argument("data_path", type=pathlib.Path, help="Path to the data folder")
-    parser.add_argument("checkpoint", type=pathlib.Path, help="Path to the checkpoint file")
-    parser.add_argument("out_dir", type=pathlib.Path, help="Path to the output folder")
-    parser.add_argument("--sense_path", type=pathlib.Path, help="Path to the sense folder")
-    parser.add_argument("--mask_path", type=pathlib.Path, help="Path to the mask folder")
+    parser.add_argument("data_path", type=pathlib.Path,
+                        help="Path to the data folder")
+    parser.add_argument("checkpoint", type=pathlib.Path,
+                        help="Path to the checkpoint file")
+    parser.add_argument("out_dir", type=pathlib.Path,
+                        help="Path to the output folder")
+    parser.add_argument("--sense_path", type=pathlib.Path,
+                        help="Path to the sense folder")
+    parser.add_argument("--mask_path", type=pathlib.Path,
+                        help="Path to the mask folder")
     parser.add_argument(
         "--data-split",
         choices=["val", "test", "test_v2", "challenge"],
@@ -197,8 +205,10 @@ def create_arg_parser():
         default="multicoil",
         help="Which challenge to run",
     )
-    parser.add_argument("--sample_rate", type=float, default=1.0, help="Sample rate for the data")
-    parser.add_argument("--batch_size", type=int, default=1, help="Batch size for the data loader")
+    parser.add_argument("--sample_rate", type=float,
+                        default=1.0, help="Sample rate for the data")
+    parser.add_argument("--batch_size", type=int, default=1,
+                        help="Batch size for the data loader")
     parser.add_argument(
         "--no_mask",
         action="store_true",
@@ -217,18 +227,27 @@ def create_arg_parser():
     parser.add_argument(
         "--center_fractions", nargs="+", default=[0.7, 0.7], type=float, help="Number of center lines to use in mask"
     )
-    parser.add_argument("--shift_mask", action="store_true", help="Shift the mask")
-    parser.add_argument("--normalize_inputs", action="store_true", help="Normalize the inputs")
-    parser.add_argument("--crop_size", nargs="+", help="Size of the crop to apply to the input")
-    parser.add_argument("--crop_before_masking", action="store_true", help="Crop before masking")
-    parser.add_argument("--kspace_zero_filling_size", nargs="+", help="Size of zero-filling in kspace")
-    parser.add_argument("--fft_type", type=str, default="orthogonal", help="Type of FFT to use")
-    parser.add_argument("--progress_bar_refresh", type=int, default=10, help="Progress bar refresh rate")
-    parser.add_argument("--num_workers", type=int, default=4, help="Number of workers for the data loader")
+    parser.add_argument("--shift_mask", action="store_true",
+                        help="Shift the mask")
+    parser.add_argument("--normalize_inputs",
+                        action="store_true", help="Normalize the inputs")
+    parser.add_argument("--crop_size", nargs="+",
+                        help="Size of the crop to apply to the input")
+    parser.add_argument("--crop_before_masking",
+                        action="store_true", help="Crop before masking")
+    parser.add_argument("--kspace_zero_filling_size",
+                        nargs="+", help="Size of zero-filling in kspace")
+    parser.add_argument("--fft_type", type=str,
+                        default="orthogonal", help="Type of FFT to use")
+    parser.add_argument("--progress_bar_refresh", type=int,
+                        default=10, help="Progress bar refresh rate")
+    parser.add_argument("--num_workers", type=int, default=4,
+                        help="Number of workers for the data loader")
     parser.add_argument(
         "--data_parallel", action="store_true", help="If set, use multiple GPUs using data parallelism"
     )
-    parser.add_argument("--device", type=str, default="cuda", help="Which device to run on")
+    parser.add_argument("--device", type=str, default="cuda",
+                        help="Which device to run on")
 
     return parser
 
