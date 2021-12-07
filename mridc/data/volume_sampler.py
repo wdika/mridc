@@ -46,11 +46,13 @@ class VolumeSampler(Sampler):
         super().__init__(data_source)
         if num_replicas is None:
             if not dist.is_available():
-                raise RuntimeError("Requires distributed package to be available")
+                raise RuntimeError(
+                    "Requires distributed package to be available")
             num_replicas = dist.get_world_size()
         if rank is None:
             if not dist.is_available():
-                raise RuntimeError("Requires distributed package to be available")
+                raise RuntimeError(
+                    "Requires distributed package to be available")
             rank = dist.get_rank()
         self.dataset = dataset
         self.num_replicas = num_replicas
@@ -60,11 +62,13 @@ class VolumeSampler(Sampler):
         self.seed = seed
 
         # get all file names and split them based on number of processes
-        self.all_volume_names = sorted({str(example[0]) for example in self.dataset.examples})
+        self.all_volume_names = sorted(
+            {str(example[0]) for example in self.dataset.examples})
         self.all_volumes_split: List[List[str]] = []
         for rank_num in range(self.num_replicas):
             self.all_volumes_split.append(
-                [self.all_volume_names[i] for i in range(rank_num, len(self.all_volume_names), self.num_replicas)]
+                [self.all_volume_names[i] for i in range(
+                    rank_num, len(self.all_volume_names), self.num_replicas)]
             )
 
         # get slice indices for each file name

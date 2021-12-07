@@ -164,7 +164,7 @@ class NormUnet(nn.Module):
         Returns:
             Unpadded input tensor.
         """
-        return x[..., h_pad[0] : h_mult - h_pad[1], w_pad[0] : w_mult - w_pad[1]]
+        return x[..., h_pad[0]: h_mult - h_pad[1], w_pad[0]: w_mult - w_pad[1]]
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -306,7 +306,8 @@ class SensitivityModel(nn.Module):
         )  # force a symmetric center unless 1
         pad = (mask.shape[-2] - num_low_freqs + 1) // 2
 
-        x = transforms.batched_mask_center(masked_kspace, pad, pad + num_low_freqs, mask_type=self.mask_type)
+        x = transforms.batched_mask_center(
+            masked_kspace, pad, pad + num_low_freqs, mask_type=self.mask_type)
 
         # convert to image space
         x = ifft2c(x, self.fft_type)
@@ -382,7 +383,8 @@ class VarNet(nn.Module):
         self.cascades = nn.ModuleList(
             [
                 VarNetBlock(
-                    NormUnet(chans, pools, padding_size=unet_padding_size, normalize=normalize),
+                    NormUnet(chans, pools, padding_size=unet_padding_size,
+                             normalize=normalize),
                     fft_type=self.fft_type,
                     no_dc=self.no_dc,
                 )
@@ -414,19 +416,23 @@ class VarNet(nn.Module):
         Returns:
             Reconstructed image.
         """
-        sens_maps = self.sens_net(masked_kspace, mask) if self.use_sens_net and self.sens_net is not None else sense
+        sens_maps = self.sens_net(
+            masked_kspace, mask) if self.use_sens_net and self.sens_net is not None else sense
 
         pred_kspace = masked_kspace.clone()
         for _, cascade in enumerate(self.cascades):
             pred_kspace = cascade(pred_kspace, masked_kspace, mask, sens_maps)
 
         if self.output_type == "SENSE":
-            pred = torch.sum(complex_mul(ifft2c(pred_kspace, fft_type=self.fft_type), complex_conj(sens_maps)), 1)
+            pred = torch.sum(complex_mul(
+                ifft2c(pred_kspace, fft_type=self.fft_type), complex_conj(sens_maps)), 1)
             pred = pred[..., 0] + 1j * pred[..., 1]
         elif self.output_type == "RSS":
-            pred = rss(complex_abs(ifft2c(pred_kspace, fft_type=self.fft_type)), dim=1)
+            pred = rss(complex_abs(
+                ifft2c(pred_kspace, fft_type=self.fft_type)), dim=1)
         else:
-            raise NotImplementedError("Output type should be either SENSE or RSS.")
+            raise NotImplementedError(
+                "Output type should be either SENSE or RSS.")
 
         return pred
 
