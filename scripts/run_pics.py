@@ -59,6 +59,7 @@ class PICSDataTransform:
         crop_size: Optional[Union[Tuple, None]] = None,
         kspace_crop: bool = False,
         crop_before_masking: bool = True,
+        kspace_zero_filling_size: Optional[Tuple] = None,
         fft_type: str = "data",
         use_seed: bool = True,
     ):
@@ -69,6 +70,7 @@ class PICSDataTransform:
             crop_size: Size of crop.
             kspace_crop: Whether to crop kspace.
             crop_before_masking: Whether to crop before masking.
+            kspace_zero_filling_size: The size of padding in kspace -> zero filling.
             fft_type: Type of fft to use.
             use_seed: Whether to use seed.
         """
@@ -77,6 +79,7 @@ class PICSDataTransform:
 
         self.crop_size = crop_size
         self.crop_before_masking = crop_before_masking
+        self.kspace_zero_filling_size = kspace_zero_filling_size
         self.kspace_crop = kspace_crop
 
         self.fft_type = fft_type
@@ -113,6 +116,31 @@ class PICSDataTransform:
 
         kspace = to_tensor(kspace)
         sensitivity_map = to_tensor(sensitivity_map)
+
+        # Apply zero-filling on kspace
+        if self.kspace_zero_filling_size is not None and self.kspace_zero_filling_size != "":
+            # (padding_left,padding_right, padding_top,padding_bottom)
+            padding_top = abs(int(self.kspace_zero_filling_size[0]) - kspace.shape[1]) // 2
+            padding_bottom = padding_top
+            padding_left = abs(int(self.kspace_zero_filling_size[1]) - kspace.shape[2]) // 2
+            padding_right = padding_left
+
+            kspace = torch.view_as_complex(kspace)
+            kspace = F.pad(
+                kspace, pad=(padding_left, padding_right, padding_top, padding_bottom), mode="constant", value=0
+            )
+            kspace = torch.view_as_real(kspace)
+
+            sensitivity_map = fft2c(sensitivity_map, self.fft_type)
+            sensitivity_map = torch.view_as_complex(sensitivity_map)
+            sensitivity_map = F.pad(
+                sensitivity_map,
+                pad=(padding_left, padding_right, padding_top, padding_bottom),
+                mode="constant",
+                value=0,
+            )
+            sensitivity_map = torch.view_as_real(sensitivity_map)
+            sensitivity_map = ifft2c(sensitivity_map, self.fft_type)
 
         crop_size = torch.tensor([attrs["recon_size"][0], attrs["recon_size"][1]])
 
@@ -284,8 +312,9 @@ def create_arg_parser():
     )
     parser.add_argument("--shift_mask", action="store_true", help="Shift the mask")
     parser.add_argument("--normalize_inputs", action="store_true", help="Normalize the inputs")
-    parser.add_argument("--crop_size", default=None, help="Size of the crop to apply to the input")
+    parser.add_argument("--crop_size", nargs="+", help="Size of the crop to apply to the input")
     parser.add_argument("--crop_before_masking", action="store_true", help="Crop before masking")
+    parser.add_argument("--kspace_zero_filling_size", nargs="+", help="Size of zero-filling in kspace")
     parser.add_argument(
         "--num_iters", type=int, default=60, help="Number of iterations to run the reconstruction algorithm"
     )
@@ -320,6 +349,7 @@ if __name__ == "__main__":
             shift_mask=ARGS.shift_mask,
             crop_size=ARGS.crop_size,  # type: ignore
             crop_before_masking=ARGS.crop_before_masking,
+            kspace_zero_filling_size=ARGS.kspace_zero_filling_size,
             fft_type=ARGS.fft_type,
         ),
         challenge=ARGS.challenge,

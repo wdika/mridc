@@ -263,7 +263,7 @@ def evaluate(
                 eta = eta.to(args.device)
 
             if isinstance(masked_kspace, list):
-                for _, r in enumerate(masked_kspace):
+                for r in range(len(masked_kspace)):
                     y = masked_kspace[r].to(args.device)
                     m = mask[r].to(args.device)
                     acceleration = str(acc[r].item())
@@ -603,8 +603,8 @@ def main(args):
 
     if args.accelerations[0] != args.accelerations[1] or len(args.accelerations) > 2:
         mask_func: list = []
-        for _, acc in enumerate(args.accelerations):
-            mask_func += create_mask_for_mask_type(args.mask_type, args.center_fractions[acc], args.accelerations[acc])
+        for acc, cf in zip(args.accelerations, args.center_fractions):
+            mask_func.append(create_mask_for_mask_type(args.mask_type, [cf] * 2, [acc] * 2))
     else:
         mask_func = create_mask_for_mask_type(args.mask_type, args.center_fractions, args.accelerations)
 
@@ -614,6 +614,7 @@ def main(args):
         normalize_inputs=args.normalize_inputs,
         crop_size=args.crop_size,
         crop_before_masking=args.crop_before_masking,
+        kspace_zero_filling_size=args.kspace_zero_filling_size,
         fft_type=args.fft_type,
         use_seed=True,
     )
@@ -623,6 +624,7 @@ def main(args):
         normalize_inputs=args.normalize_inputs,
         crop_size=args.crop_size,
         crop_before_masking=args.crop_before_masking,
+        kspace_zero_filling_size=args.kspace_zero_filling_size,
         fft_type=args.fft_type,
     )
 
@@ -706,9 +708,10 @@ def create_arg_parser():
     )
     parser.add_argument("--shift_mask", action="store_true", help="Shift the mask")
     parser.add_argument("--normalize_inputs", action="store_true", help="Normalize the inputs")
-    parser.add_argument("--crop_size", default=None, help="Size of the crop to apply to the input")
+    parser.add_argument("--crop_size", nargs="+", help="Size of the crop to apply to the input")
     parser.add_argument("--crop_before_masking", action="store_true", help="Crop before masking")
-    parser.add_argument("--num_cascades", type=int, default=8, help="Number of cascades for the model")
+    parser.add_argument("--kspace_zero_filling_size", nargs="+", help="Size of zero-filling in kspace")
+    parser.add_argument("--num_cascades", type=int, default=1, help="Number of cascades for the model")
     parser.add_argument("--time_steps", type=int, default=8, help="Number of RIM steps")
     parser.add_argument("--recurrent_layer", type=str, default="IndRNN", help="Recurrent layer type")
     parser.add_argument(
@@ -744,9 +747,9 @@ def create_arg_parser():
     parser.add_argument("--depth", type=int, default=2, help="Depth of the model")
     parser.add_argument("--conv_dim", type=int, default=2, help="Dimension of the convolutional layers")
     parser.add_argument("--loss_fn", type=str, default="l1", help="Loss function to use")
-    parser.add_argument("--no_dc", action="store_true", help="Do not use DC component")
-    parser.add_argument("--keep_eta", action="store_true", help="Keep eta constant")
-    parser.add_argument("--use_sens_net", action="store_true", help="Use sensitivity net")
+    parser.add_argument("--no_dc", action="store_false", default=True, help="Do not use DC component")
+    parser.add_argument("--keep_eta", action="store_false", default=True, help="Keep eta constant")
+    parser.add_argument("--use_sens_net", action="store_true", default=False, help="Use sensitivity net")
     parser.add_argument("--sens_pools", type=int, default=4, help="Number of pools for the sensitivity net")
     parser.add_argument("--sens_chans", type=int, default=8, help="Number of channels for the sensitivity net")
     parser.add_argument("--sens_normalize", action="store_true", help="Normalize the sensitivity net")

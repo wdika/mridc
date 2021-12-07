@@ -30,7 +30,7 @@ class CIRIM(nn.Module):
         time_steps: int = 8,
         conv_dim: int = 2,
         loss_fn: Union[nn.Module, str] = "l1",
-        num_cascades: int = 4,
+        num_cascades: int = 1,
         no_dc: bool = False,
         keep_eta: bool = False,
         use_sens_net: bool = False,
@@ -115,10 +115,10 @@ class CIRIM(nn.Module):
 
         # Initialize the sensitivity network if use_sens_net is True
         self.use_sens_net = use_sens_net
-
-        self.sens_net = SensitivityModel(
-            sens_chans, sens_pools, fft_type=self.fft_type, mask_type=sens_mask_type, normalize=sens_normalize
-        )
+        if self.use_sens_net:
+            self.sens_net = SensitivityModel(
+                sens_chans, sens_pools, fft_type=self.fft_type, mask_type=sens_mask_type, normalize=sens_normalize
+            )
 
         self.loss_fn = loss_fn
 
@@ -218,13 +218,11 @@ class CIRIM(nn.Module):
                 ]
 
                 # Take average of all time-steps loss
-                # TODO: check if this line works, otherwise use sum(sum(l) / self.time_steps)
-                cascade_time_steps_loss.append(torch.stack(_loss, dim=0).sum(dim=0) / self.time_steps)
+                cascade_time_steps_loss.append(sum(sum(l) / self.time_steps))
 
         # Take average of all cascades loss
         if accumulate_loss:
-            # TODO: check if this line works, otherwise use sum(list(cascade_time_steps_loss)) / len(self.cascades)
-            loss = torch.stack(cascade_time_steps_loss, dim=0).mean(dim=0)
+            loss = sum(list(cascade_time_steps_loss)) / len(self.cascades)
             yield loss
         else:
             if isinstance(pred, list):

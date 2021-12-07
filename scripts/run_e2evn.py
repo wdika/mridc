@@ -24,16 +24,13 @@ torch.backends.cudnn.benchmark = False
 
 
 def load_model(
-    checkpoint_file: str, num_cascades: int, pools: int, chans: int, fft_type: str, device: str
+    checkpoint_file: str, fft_type: str, device: str
 ) -> Tuple[Any, Union[torch.nn.DataParallel, VarNet], torch.optim.Optimizer]:
     """
     Loads the model from the checkpoint file.
 
     Args:
         checkpoint_file: Path to the checkpoint file.
-        num_cascades: Number of cascades.
-        pools: Number of pools.
-        chans: Number of channels.
         fft_type: Type of FFT.
         device: cuda or cpu
 
@@ -41,22 +38,21 @@ def load_model(
         Checkpoint, E2EVN model, optimizer
     """
     checkpoint = torch.load(checkpoint_file, map_location=torch.device("cpu"))
+    arguments = checkpoint["args"]
 
     model = VarNet(
-        num_cascades=num_cascades,  # number of cascades
-        pools=pools,  # number of pools
-        chans=chans,  # number of channels
-        normalize=True,  # normalize input
-        use_sens_net=False,  # use sensitivity maps
-        sens_pools=4,  # number of pools in sensitivity maps
-        sens_chans=8,  # number of channels in sensitivity maps
-        sens_normalize=True,  # normalize sensitivity maps
-        output_type="SENSE",  # output type
+        num_cascades=arguments.num_cascades,  # number of cascades
+        pools=arguments.pools,  # number of pools
+        chans=arguments.chans,  # number of channels
+        normalize=arguments.normalize,  # normalize input
+        use_sens_net=arguments.use_sens_net,  # use sensitivity maps
+        sens_pools=arguments.sens_pools,  # number of pools in sensitivity maps
+        sens_chans=arguments.sens_chans,  # number of channels in sensitivity maps
+        sens_normalize=arguments.sens_normalize,  # normalize sensitivity maps
+        output_type=arguments.output_type,  # output type
         fft_type=fft_type,  # FFT type
-        no_dc=False,  # remove DC component
+        no_dc=arguments.no_dc,  # remove DC component
     ).to(device)
-
-    arguments = checkpoint["args"]
 
     if arguments.data_parallel:
         model = torch.nn.DataParallel(model)  # type: ignore
@@ -148,6 +144,7 @@ def main(args):
                 normalize_inputs=args.normalize_inputs,
                 crop_size=args.crop_size,
                 crop_before_masking=args.crop_before_masking,
+                kspace_zero_filling_size=args.kspace_zero_filling_size,
                 fft_type=args.fft_type,
             ),
             sample_rate=args.sample_rate,
@@ -159,7 +156,7 @@ def main(args):
         pin_memory=False,
     )
 
-    _, model, _ = load_model(args.checkpoint, args.num_cascades, args.pools, args.chans, args.fft_type, args.device)
+    _, model, _ = load_model(args.checkpoint, args.fft_type, args.device)
 
     init_start = time.perf_counter()
 
@@ -215,11 +212,9 @@ def create_arg_parser():
     )
     parser.add_argument("--shift_mask", action="store_true", help="Shift the mask")
     parser.add_argument("--normalize_inputs", action="store_true", help="Normalize the inputs")
-    parser.add_argument("--crop_size", default=None, help="Size of the crop to apply to the input")
+    parser.add_argument("--crop_size", nargs="+", help="Size of the crop to apply to the input")
     parser.add_argument("--crop_before_masking", action="store_true", help="Crop before masking")
-    parser.add_argument("--num_cascades", type=int, default=1, help="Number of cascades for the model")
-    parser.add_argument("--pools", type=int, default=2, help="Number of pools for the model")
-    parser.add_argument("--chans", type=int, default=14, help="Number of channels for the model")
+    parser.add_argument("--kspace_zero_filling_size", nargs="+", help="Size of zero-filling in kspace")
     parser.add_argument("--fft_type", type=str, default="orthogonal", help="Type of FFT to use")
     parser.add_argument("--progress_bar_refresh", type=int, default=10, help="Progress bar refresh rate")
     parser.add_argument("--num_workers", type=int, default=4, help="Number of workers for the data loader")

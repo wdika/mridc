@@ -91,6 +91,7 @@ def main(args):
                 normalize_inputs=args.normalize_inputs,
                 crop_size=args.crop_size,
                 crop_before_masking=args.crop_before_masking,
+                kspace_zero_filling_size=args.kspace_zero_filling_size,
                 fft_type=args.fft_type,
             ),
             sample_rate=args.sample_rate,
@@ -156,8 +157,9 @@ def create_arg_parser():
     )
     parser.add_argument("--shift_mask", action="store_true", help="Shift the mask")
     parser.add_argument("--normalize_inputs", action="store_true", help="Normalize the inputs")
-    parser.add_argument("--crop_size", default=None, help="Size of the crop to apply to the input")
+    parser.add_argument("--crop_size", nargs="+", help="Size of the crop to apply to the input")
     parser.add_argument("--crop_before_masking", action="store_true", help="Crop before masking")
+    parser.add_argument("--kspace_zero_filling_size", nargs="+", help="Size of zero-filling in kspace")
     parser.add_argument("--fft_type", type=str, default="orthogonal", help="Type of FFT to use")
     parser.add_argument("--progress_bar_refresh", type=int, default=10, help="Progress bar refresh rate")
     parser.add_argument("--num_workers", type=int, default=4, help="Number of workers for the data loader")

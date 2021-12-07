@@ -289,11 +289,6 @@ class SliceDataset(Dataset):
                         else sf["sense"][dataslice]
                     )
                     sensitivity_map = sensitivity_map.squeeze().astype(np.complex64)
-
-                    if sensitivity_map.shape[0] != kspace.shape[0]:
-                        # TODO: this applies for some computed fastMRI brain FLAIR sense maps. Needs to go.
-                        sensitivity_map = np.transpose(sensitivity_map, (2, 0, 1))
-
             else:
                 sensitivity_map = np.array([])
 

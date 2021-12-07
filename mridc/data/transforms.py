@@ -7,6 +7,7 @@ from typing import Dict, Optional, Sequence, Tuple, Union, Any, List
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 from numpy import ndarray
 from torch import Tensor
 
@@ -80,7 +81,7 @@ def apply_mask(
         mask[:, :, padding[1] :] = 0  # padding value inclusive on right of zeros
 
     if shift:
-        mask = torch.fft.fftshift(mask)
+        mask = torch.fft.fftshift(mask, dim=(1, 2))
 
     masked_data = data * mask + 0.0  # the + 0.0 removes the sign of the zeros
 
@@ -231,6 +232,7 @@ class UnetDataTransform:
         crop_size: Optional[Tuple] = None,
         kspace_crop: bool = False,
         crop_before_masking: bool = True,
+        kspace_zero_filling_size: Optional[Tuple] = None,
         normalize_inputs: bool = False,
         fft_type: str = "orthogonal",
         output_type: str = "SENSE",
@@ -244,6 +246,7 @@ class UnetDataTransform:
             crop_size: The size of the crop.
             kspace_crop: If True, the data will be cropped to the center of the image.
             crop_before_masking: If True, the data will be cropped before masking.
+            kspace_zero_filling_size: The size of padding in kspace -> zero filling.
             normalize_inputs: If True, the inputs will be normalized.
             fft_type: The type of FFT to use.
             output_type: The type of output to use.
@@ -255,6 +258,7 @@ class UnetDataTransform:
 
         self.crop_size = crop_size
         self.crop_before_masking = crop_before_masking
+        self.kspace_zero_filling_size = kspace_zero_filling_size
         self.kspace_crop = kspace_crop
 
         self.normalize_inputs = normalize_inputs
@@ -296,6 +300,31 @@ class UnetDataTransform:
         if sensitivity_map is not None and sensitivity_map.size != 0:
             sensitivity_map = to_tensor(sensitivity_map)
 
+        # Apply zero-filling on kspace
+        if self.kspace_zero_filling_size is not None and self.kspace_zero_filling_size != "":
+            # (padding_left,padding_right, padding_top,padding_bottom)
+            padding_top = abs(int(self.kspace_zero_filling_size[0]) - kspace.shape[1]) // 2
+            padding_bottom = padding_top
+            padding_left = abs(int(self.kspace_zero_filling_size[1]) - kspace.shape[2]) // 2
+            padding_right = padding_left
+
+            kspace = torch.view_as_complex(kspace)
+            kspace = F.pad(
+                kspace, pad=(padding_left, padding_right, padding_top, padding_bottom), mode="constant", value=0
+            )
+            kspace = torch.view_as_real(kspace)
+
+            sensitivity_map = fft2c(sensitivity_map, self.fft_type)
+            sensitivity_map = torch.view_as_complex(sensitivity_map)
+            sensitivity_map = F.pad(
+                sensitivity_map,
+                pad=(padding_left, padding_right, padding_top, padding_bottom),
+                mode="constant",
+                value=0,
+            )
+            sensitivity_map = torch.view_as_real(sensitivity_map)
+            sensitivity_map = ifft2c(sensitivity_map, self.fft_type)
+
         # TODO: add RSS target option
         target = torch.sum(complex_mul(ifft2c(kspace, fft_type=self.fft_type), complex_conj(sensitivity_map)), 0)
         target = torch.abs(target[..., 0] + 1j * target[..., 1])
@@ -310,8 +339,8 @@ class UnetDataTransform:
 
         if self.crop_size is not None:
             # Check for smallest size against the target shape.
-            h = self.crop_size[0] if self.crop_size[0] <= target.shape[0] else target.shape[0]
-            w = self.crop_size[1] if self.crop_size[1] <= target.shape[1] else target.shape[1]
+            h = int(self.crop_size[0]) if int(self.crop_size[0]) <= target.shape[0] else target.shape[0]
+            w = int(self.crop_size[1]) if int(self.crop_size[1]) <= target.shape[1] else target.shape[1]
 
             # Check for smallest size against the stored recon shape in metadata.
             if crop_size[0] != 0:
@@ -400,7 +429,7 @@ class UnetDataTransform:
             for y in masked_kspace:
                 imspace = (
                     ifft2c(y, fft_type=self.fft_type)
-                    if self.fft_type == "orthogonal"
+                    if self.fft_type in ("orthogonal", "orthogonal_norm_only")
                     else torch.view_as_real(torch.fft.ifftn(torch.view_as_complex(y), dim=[-2, -1], norm=None))
                 )
 
@@ -420,7 +449,7 @@ class UnetDataTransform:
         else:
             imspace = (
                 ifft2c(masked_kspace, fft_type=self.fft_type)
-                if self.fft_type == "orthogonal"
+                if self.fft_type in ("orthogonal", "orthogonal_norm_only")
                 else torch.view_as_real(torch.fft.ifftn(torch.view_as_complex(masked_kspace), dim=[-2, -1], norm=None))
             )
 
@@ -451,6 +480,7 @@ class PhysicsInformedDataTransform:
         crop_size: Optional[Tuple] = None,
         kspace_crop: bool = False,
         crop_before_masking: bool = True,
+        kspace_zero_filling_size: Optional[Tuple] = None,
         normalize_inputs: bool = False,
         fft_type: str = "orthogonal",
         use_seed: bool = True,
@@ -465,6 +495,7 @@ class PhysicsInformedDataTransform:
             crop_size: The size of the crop.
             kspace_crop: Whether to crop the kspace.
             crop_before_masking: Whether to crop before masking.
+            kspace_zero_filling_size: The size of padding in kspace -> zero filling.
             normalize_inputs: Whether to normalize the inputs.
             fft_type: The type of the FFT.
             use_seed: Whether to use the seed.
@@ -475,6 +506,7 @@ class PhysicsInformedDataTransform:
         self.crop_size = crop_size
         self.kspace_crop = kspace_crop
         self.crop_before_masking = crop_before_masking
+        self.kspace_zero_filling_size = kspace_zero_filling_size
         self.normalize_inputs = normalize_inputs
         self.fft_type = fft_type
         self.use_seed = use_seed
@@ -523,6 +555,31 @@ class PhysicsInformedDataTransform:
         if sensitivity_map is not None and sensitivity_map.size != 0:
             sensitivity_map = to_tensor(sensitivity_map)
 
+        # Apply zero-filling on kspace
+        if self.kspace_zero_filling_size is not None and self.kspace_zero_filling_size != "":
+            # (padding_left,padding_right, padding_top,padding_bottom)
+            padding_top = abs(int(self.kspace_zero_filling_size[0]) - kspace.shape[1]) // 2
+            padding_bottom = padding_top
+            padding_left = abs(int(self.kspace_zero_filling_size[1]) - kspace.shape[2]) // 2
+            padding_right = padding_left
+
+            kspace = torch.view_as_complex(kspace)
+            kspace = F.pad(
+                kspace, pad=(padding_left, padding_right, padding_top, padding_bottom), mode="constant", value=0
+            )
+            kspace = torch.view_as_real(kspace)
+
+            sensitivity_map = fft2c(sensitivity_map, self.fft_type)
+            sensitivity_map = torch.view_as_complex(sensitivity_map)
+            sensitivity_map = F.pad(
+                sensitivity_map,
+                pad=(padding_left, padding_right, padding_top, padding_bottom),
+                mode="constant",
+                value=0,
+            )
+            sensitivity_map = torch.view_as_real(sensitivity_map)
+            sensitivity_map = ifft2c(sensitivity_map, self.fft_type)
+
         if eta is not None and eta.size != 0:
             eta = to_tensor(eta)
         else:
@@ -543,8 +600,8 @@ class PhysicsInformedDataTransform:
 
         if self.crop_size is not None:
             # Check for smallest size against the target shape.
-            h = self.crop_size[0] if self.crop_size[0] <= target.shape[0] else target.shape[0]
-            w = self.crop_size[1] if self.crop_size[1] <= target.shape[1] else target.shape[1]
+            h = int(self.crop_size[0]) if int(self.crop_size[0]) <= target.shape[0] else target.shape[0]
+            w = int(self.crop_size[1]) if int(self.crop_size[1]) <= target.shape[1] else target.shape[1]
 
             # Check for smallest size against the stored recon shape in metadata.
             if crop_size[0] != 0:
@@ -664,7 +721,7 @@ class PhysicsInformedDataTransform:
             if isinstance(self.mask_func, list):
                 masked_kspaces = []
                 for y in masked_kspace:
-                    if self.fft_type == "orthogonal":
+                    if self.fft_type in ("orthogonal", "orthogonal_norm_only"):
                         imspace = ifft2c(y, fft_type=self.fft_type)
                         imspace = imspace / torch.max(torch.abs(imspace))
                         masked_kspaces.append(fft2c(imspace, fft_type=self.fft_type))
@@ -674,7 +731,7 @@ class PhysicsInformedDataTransform:
                         masked_kspaces.append(torch.view_as_real(torch.fft.fftn(imspace, dim=[-2, -1], norm=None)))
                 masked_kspace = masked_kspaces
             else:
-                if self.fft_type in ("data", "orthogonal_norm_only"):
+                if self.fft_type in ("orthogonal", "orthogonal_norm_only"):
                     imspace = ifft2c(masked_kspace, fft_type=self.fft_type)
                     imspace = imspace / torch.max(torch.abs(imspace))
                     masked_kspace = fft2c(imspace, fft_type=self.fft_type)

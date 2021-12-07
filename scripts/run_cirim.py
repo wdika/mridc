@@ -26,14 +26,13 @@ torch.backends.cudnn.benchmark = False
 
 
 def load_model(
-    checkpoint_file: str, num_cascades: int, fft_type: str, device: str
+    checkpoint_file: str, fft_type: str, device: str
 ) -> Tuple[Any, Union[torch.nn.DataParallel, CIRIM], torch.optim.Optimizer]:
     """
     Loads the model from the checkpoint file.
 
     Args:
         checkpoint_file: Path to the checkpoint file.
-        num_cascades: Number of cascades.
         fft_type: Type of the FFT.
         device: Device to use.
 
@@ -41,36 +40,35 @@ def load_model(
         Checkpoint, CIRIM model, optimizer.
     """
     checkpoint = torch.load(checkpoint_file, map_location=torch.device("cpu"))
+    arguments = checkpoint["args"]
 
     model = CIRIM(
-        num_cascades=num_cascades,  # number of unrolled iterations
-        time_steps=8,  # number of time steps
-        recurrent_layer="IndRNN",  # recurrent layer type
-        conv_filters=[64, 64, 2],  # number of filters in each conv layer
-        conv_kernels=[5, 3, 3],  # size of kernel in each conv layer
-        conv_dilations=[1, 2, 1],  # dilation in each conv layer
-        conv_bias=[True, True, False],  # bias in each conv layer
-        recurrent_filters=[64, 64, 0],  # number of filters in each recurrent layer
-        recurrent_kernels=[1, 1, 0],  # size of kernel in each recurrent layer
-        recurrent_dilations=[1, 1, 0],  # dilation in each recurrent layer
-        recurrent_bias=[True, True, False],  # bias in each recurrent layer
-        depth=2,  # number of cascades
-        conv_dim=2,  # dimensionality of input
-        no_dc=True,  # turn on/off DC component
-        keep_eta=True,  # keep the eta signal
-        use_sens_net=False,  # use the sensitivity network
-        sens_pools=4,  # number of pooling layers for sense est. U-Net
-        sens_chans=8,  # number of top-level channels for sense est. U-Net
-        sens_normalize=True,  # normalize the sensitivity maps
-        sens_mask_type="2D",  # type of mask for sensitivity maps
-        output_type="SENSE",  # type of output
+        num_cascades=arguments.num_cascades,  # number of unrolled iterations
+        time_steps=arguments.time_steps,  # number of time steps
+        recurrent_layer=arguments.recurrent_layer,  # recurrent layer type
+        conv_filters=arguments.conv_filters,  # number of filters in each conv layer
+        conv_kernels=arguments.conv_kernels,  # size of kernel in each conv layer
+        conv_dilations=arguments.conv_dilations,  # dilation in each conv layer
+        conv_bias=arguments.conv_bias,  # bias in each conv layer
+        recurrent_filters=arguments.recurrent_filters,  # number of filters in each recurrent layer
+        recurrent_kernels=arguments.recurrent_kernels,  # size of kernel in each recurrent layer
+        recurrent_dilations=arguments.recurrent_dilations,  # dilation in each recurrent layer
+        recurrent_bias=arguments.recurrent_bias,  # bias in each recurrent layer
+        depth=arguments.depth,  # number of cascades
+        conv_dim=arguments.conv_dim,  # dimensionality of input
+        no_dc=arguments.no_dc,  # turn on/off DC component
+        keep_eta=arguments.keep_eta,  # keep the eta signal
+        use_sens_net=arguments.use_sens_net,  # use the sensitivity network
+        sens_pools=arguments.sens_pools,  # number of pooling layers for sense est. U-Net
+        sens_chans=arguments.sens_chans,  # number of top-level channels for sense est. U-Net
+        sens_normalize=arguments.sens_normalize,  # normalize the sensitivity maps
+        sens_mask_type=arguments.sens_mask_type,  # type of mask for sensitivity maps
+        output_type=arguments.output_type,  # type of output
         fft_type=fft_type,  # type of FFT
     ).to(device)
 
     if "loss_fn.w" in checkpoint["model"]:
         del checkpoint["model"]["loss_fn.w"]
-
-    arguments = checkpoint["args"]
 
     if arguments.data_parallel:
         model = torch.nn.DataParallel(model)  # type: ignore
@@ -175,6 +173,7 @@ def main(args):
                 normalize_inputs=args.normalize_inputs,
                 crop_size=args.crop_size,
                 crop_before_masking=args.crop_before_masking,
+                kspace_zero_filling_size=args.kspace_zero_filling_size,
                 fft_type=args.fft_type,
             ),
             sample_rate=args.sample_rate,
@@ -187,7 +186,7 @@ def main(args):
     )
 
     # load the model
-    _, model, _ = load_model(args.checkpoint, args.num_cascades, args.fft_type, args.device)
+    _, model, _ = load_model(args.checkpoint, args.fft_type, args.device)
 
     init_start = time.perf_counter()
 
@@ -244,9 +243,9 @@ def create_arg_parser():
     )
     parser.add_argument("--shift_mask", action="store_true", help="Shift the mask")
     parser.add_argument("--normalize_inputs", action="store_true", help="Normalize the inputs")
-    parser.add_argument("--crop_size", default=None, help="Size of the crop to apply to the input")
+    parser.add_argument("--crop_size", nargs="+", help="Size of the crop to apply to the input")
     parser.add_argument("--crop_before_masking", action="store_true", help="Crop before masking")
-    parser.add_argument("--num_cascades", type=int, default=1, help="Number of cascades for the model")
+    parser.add_argument("--kspace_zero_filling_size", nargs="+", help="Size of zero-filling in kspace")
     parser.add_argument("--fft_type", type=str, default="orthogonal", help="Type of FFT to use")
     parser.add_argument("--progress_bar_refresh", type=int, default=10, help="Progress bar refresh rate")
     parser.add_argument("--num_workers", type=int, default=4, help="Number of workers for the data loader")
