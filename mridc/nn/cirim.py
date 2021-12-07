@@ -174,7 +174,8 @@ class CIRIM(nn.Module):
             hx: torch.Tensor, shape [batch_size, n_x, n_y, 2], estimated hx
             loss: torch.Tensor, shape [1], loss value
         """
-        sense = self.sens_net(masked_kspace, mask) if self.use_sens_net and self.sens_net is not None else sense
+        sense = self.sens_net(
+            masked_kspace, mask) if self.use_sens_net and self.sens_net is not None else sense
 
         pred = masked_kspace.clone()
 
@@ -206,7 +207,8 @@ class CIRIM(nn.Module):
                     target, output = center_crop_to_smallest(target, output)
 
                     loss = (
-                        self.loss_fn(output.unsqueeze(1), target.unsqueeze(1), data_range=max_value)  # type: ignore
+                        self.loss_fn(output.unsqueeze(1), target.unsqueeze(
+                            1), data_range=max_value)  # type: ignore
                         if "ssim" in str(self.loss_fn).lower()
                         else self.loss_fn(output, target)  # type: ignore
                     )
@@ -218,7 +220,8 @@ class CIRIM(nn.Module):
                 ]
 
                 # Take average of all time-steps loss
-                cascade_time_steps_loss.append(sum(sum(_loss) / self.time_steps))
+                cascade_time_steps_loss.append(
+                    sum(sum(_loss) / self.time_steps))
 
         # Take average of all cascades loss
         if accumulate_loss:
@@ -270,7 +273,8 @@ class CIRIM(nn.Module):
         -------
             pred: torch.Tensor, shape [batch_size, n_x, n_y, 2], predicted kspace data
         """
-        sense = self.sens_net(masked_kspace, mask) if self.use_sens_net and self.sens_net is not None else sense
+        sense = self.sens_net(
+            masked_kspace, mask) if self.use_sens_net and self.sens_net is not None else sense
 
         preds = []
 

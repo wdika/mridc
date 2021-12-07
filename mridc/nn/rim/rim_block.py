@@ -59,7 +59,8 @@ class RIMBlock(nn.Module):
             (conv_features, conv_k_size, conv_dilation, l_conv_bias, nonlinear),
             (rnn_features, rnn_k_size, rnn_dilation, rnn_bias, rnn_type),
         ) in zip(
-            zip(conv_filters, conv_kernels, conv_dilations, conv_bias, ["relu", "relu", None]),
+            zip(conv_filters, conv_kernels, conv_dilations,
+                conv_bias, ["relu", "relu", None]),
             zip(
                 recurrent_filters,
                 recurrent_kernels,
@@ -146,7 +147,8 @@ class RIMBlock(nn.Module):
         """
         if hx is None:
             hx = [
-                masked_kspace.new_zeros((masked_kspace.size(0), f, *masked_kspace.size()[2:-1]))
+                masked_kspace.new_zeros(
+                    (masked_kspace.size(0), f, *masked_kspace.size()[2:-1]))
                 for f in self.recurrent_filters
                 if f != 0
             ]
@@ -156,7 +158,8 @@ class RIMBlock(nn.Module):
 
         if eta is None or eta.ndim < 3:
             eta = (
-                torch.sum(complex_mul(ifft2c(pred, fft_type=self.fft_type), complex_conj(sense)), 1)
+                torch.sum(complex_mul(
+                    ifft2c(pred, fft_type=self.fft_type), complex_conj(sense)), 1)
                 if not keep_eta
                 else pred
             )
@@ -179,7 +182,8 @@ class RIMBlock(nn.Module):
         if self.no_dc:
             return eta, None
 
-        soft_dc = torch.where(mask, pred - masked_kspace, self.zero.to(masked_kspace)) * self.dc_weight
+        soft_dc = torch.where(mask, pred - masked_kspace,
+                              self.zero.to(masked_kspace)) * self.dc_weight
         current_kspace = [
             masked_kspace - soft_dc - fft2c(complex_mul(e.unsqueeze(1), sense), fft_type=self.fft_type) for e in eta
         ]

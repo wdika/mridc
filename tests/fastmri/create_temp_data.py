@@ -59,7 +59,8 @@ def create_temp_data(path):
                 num_slices = rg.integers(2, max_num_slices)
                 if "multicoil" in split:
                     num_coils = rg.integers(2, max_num_coils)
-                    enc_size = (num_slices, num_coils, encs[i][-2], encs[i][-1])
+                    enc_size = (num_slices, num_coils,
+                                encs[i][-2], encs[i][-1])
                     recon_size = (num_slices, recs[i][-2], recs[i][-1])
                 else:
                     enc_size = (num_slices, encs[i][-2], encs[i][-1])
@@ -68,7 +69,8 @@ def create_temp_data(path):
                 data = rg.normal(size=enc_size) + 1j * rg.normal(size=enc_size)
 
                 if split.split("_")[-1] in ("train", "val"):
-                    recon = np.absolute(rg.normal(size=recon_size)).astype(np.dtype("<f4"))
+                    recon = np.absolute(
+                        rg.normal(size=recon_size)).astype(np.dtype("<f4"))
                 else:
                     mask = rg.integers(0, 2, size=recon_size[-1]).astype(bool)
 
