@@ -46,8 +46,7 @@ class DataTransform:
         """
         num_low_freqs = attrs["num_low_frequency"] if self.retrieve_acc else None
         return (
-            tensor_to_complex_np(to_tensor(kspace).permute(
-                1, 2, 0, 3).unsqueeze(0).detach().cpu()),
+            tensor_to_complex_np(to_tensor(kspace).permute(1, 2, 0, 3).unsqueeze(0).detach().cpu()),
             fname,
             slice_num,
             num_low_freqs,
@@ -139,12 +138,9 @@ def create_arg_parser():
     """
     parser = argparse.ArgumentParser(description="ECALIB")
 
-    parser.add_argument("data_path", type=pathlib.Path,
-                        help="Path to the data folder")
-    parser.add_argument("out_dir", type=pathlib.Path,
-                        help="Path to the output folder")
-    parser.add_argument(
-        "--split", choices=["train", "val", "test", "challenge"], default="val", type=str)
+    parser.add_argument("data_path", type=pathlib.Path, help="Path to the data folder")
+    parser.add_argument("out_dir", type=pathlib.Path, help="Path to the output folder")
+    parser.add_argument("--split", choices=["train", "val", "test", "challenge"], default="val", type=str)
     parser.add_argument(
         "--num_procs", type=int, default=4, help="Number of processes. Set to 0 to disable multiprocessing."
     )

@@ -36,8 +36,7 @@ def fftc(
     if fft_type == "orthogonal":
         data = ifftshift(data, dim=[-3, -2])
 
-    data = torch.view_as_real(torch.fft.fft(
-        torch.view_as_complex(data), dim=fft_dim, norm=fft_normalization))
+    data = torch.view_as_real(torch.fft.fft(torch.view_as_complex(data), dim=fft_dim, norm=fft_normalization))
 
     if fft_type == "orthogonal":
         data = fftshift(data, dim=[-3, -2])
@@ -70,8 +69,7 @@ def fft2c(
     if fft_type == "orthogonal":
         data = ifftshift(data, dim=[-3, -2])
 
-    data = torch.view_as_real(torch.fft.fft2(
-        torch.view_as_complex(data), dim=fft_dim, norm=fft_normalization))
+    data = torch.view_as_real(torch.fft.fft2(torch.view_as_complex(data), dim=fft_dim, norm=fft_normalization))
 
     if fft_type == "orthogonal":
         data = fftshift(data, dim=[-3, -2])
@@ -107,8 +105,7 @@ def ifftc(
     if fft_type == "orthogonal":
         data = ifftshift(data, dim=[-3, -2])
 
-    data = torch.view_as_real(torch.fft.ifft(
-        torch.view_as_complex(data), dim=fft_dim, norm=fft_normalization))
+    data = torch.view_as_real(torch.fft.ifft(torch.view_as_complex(data), dim=fft_dim, norm=fft_normalization))
 
     if fft_type == "orthogonal":
         data = fftshift(data, dim=[-3, -2])
@@ -141,8 +138,7 @@ def ifft2c(
     if fft_type == "orthogonal":
         data = ifftshift(data, dim=[-3, -2])
 
-    data = torch.view_as_real(torch.fft.ifft2(
-        torch.view_as_complex(data), dim=fft_dim, norm=fft_normalization))
+    data = torch.view_as_real(torch.fft.ifft2(torch.view_as_complex(data), dim=fft_dim, norm=fft_normalization))
 
     if fft_type == "orthogonal":
         data = fftshift(data, dim=[-3, -2])
