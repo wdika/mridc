@@ -147,8 +147,8 @@ class PICSDataTransform:
 
         if self.crop_size is not None:
             # Check for smallest size against the target shape.
-            h = self.crop_size[0] if self.crop_size[0] <= target.shape[0] else target.shape[0]
-            w = self.crop_size[1] if self.crop_size[1] <= target.shape[1] else target.shape[1]
+            h = int(self.crop_size[0]) if int(self.crop_size[0]) <= target.shape[0] else target.shape[0]
+            w = int(self.crop_size[1]) if int(self.crop_size[1]) <= target.shape[1] else target.shape[1]
 
             # Check for smallest size against the stored recon shape in metadata.
             if crop_size[0] != 0:
@@ -299,6 +299,11 @@ def create_arg_parser():
     parser.add_argument("--sample_rate", type=float, default=1.0, help="Sample rate for the data")
     parser.add_argument("--batch_size", type=int, default=1, help="Batch size for the data loader")
     parser.add_argument(
+        "--no_mask",
+        action="store_true",
+        help="Toggle to turn off masking. This can be used for prospectively undersampled data.",
+    )
+    parser.add_argument(
         "--mask_type",
         choices=("random", "gaussian2d", "equispaced"),
         default="gaussian2d",
@@ -346,7 +351,9 @@ if __name__ == "__main__":
         root=ARGS.data_path,
         sense_root=ARGS.sense_path,
         transform=PICSDataTransform(
-            mask_func=create_mask_for_mask_type(ARGS.mask_type, ARGS.center_fractions, ARGS.accelerations),
+            mask_func=False
+            if args.no_mask
+            else create_mask_for_mask_type(ARGS.mask_type, ARGS.center_fractions, ARGS.accelerations),
             shift_mask=ARGS.shift_mask,
             crop_size=ARGS.crop_size,  # type: ignore
             crop_before_masking=ARGS.crop_before_masking,

@@ -86,7 +86,9 @@ def main(args):
             sense_root=args.sense_path,
             challenge=args.challenge,
             transform=PhysicsInformedDataTransform(
-                mask_func=create_mask_for_mask_type(args.mask_type, args.center_fractions, args.accelerations),
+                mask_func=False
+                if args.no_mask
+                else create_mask_for_mask_type(args.mask_type, args.center_fractions, args.accelerations),
                 shift_mask=args.shift_mask,
                 normalize_inputs=args.normalize_inputs,
                 crop_size=args.crop_size,
@@ -142,6 +144,11 @@ def create_arg_parser():
     )
     parser.add_argument("--sample_rate", type=float, default=1.0, help="Sample rate for the data")
     parser.add_argument("--batch_size", type=int, default=1, help="Batch size for the data loader")
+    parser.add_argument(
+        "--no_mask",
+        action="store_true",
+        help="Toggle to turn off masking. This can be used for prospectively undersampled data.",
+    )
     parser.add_argument(
         "--mask_type",
         choices=("random", "gaussian2d", "equispaced"),

@@ -75,7 +75,7 @@ class CIRIM(nn.Module):
         if recurrent_dilations is None:
             recurrent_dilations = [1, 1, 0]
         if recurrent_kernels is None:
-            recurrent_kernels = [3, 3, 0]
+            recurrent_kernels = [1, 1, 0]
         if recurrent_filters is None:
             recurrent_filters = [64, 64, 0]
         if conv_bias is None:
