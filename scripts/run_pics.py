@@ -352,7 +352,7 @@ if __name__ == "__main__":
         sense_root=ARGS.sense_path,
         transform=PICSDataTransform(
             mask_func=False
-            if args.no_mask
+            if ARGS.no_mask
             else create_mask_for_mask_type(ARGS.mask_type, ARGS.center_fractions, ARGS.accelerations),
             shift_mask=ARGS.shift_mask,
             crop_size=ARGS.crop_size,  # type: ignore
