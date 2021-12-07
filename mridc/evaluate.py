@@ -51,9 +51,7 @@ def ssim(gt: np.ndarray, pred: np.ndarray, maxval: np.ndarray = None) -> float:
 
     _ssim = 0
     for slice_num in range(gt.shape[0]):
-        _ssim = _ssim + \
-            structural_similarity(
-                gt[slice_num], pred[slice_num], data_range=maxval)
+        _ssim = _ssim + structural_similarity(gt[slice_num], pred[slice_num], data_range=maxval)
 
     return _ssim / gt.shape[0]
 
@@ -119,8 +117,7 @@ class Metrics:
         stddevs = self.stddevs()
         metric_names = sorted(list(means))
 
-        res = " ".join(
-            f"{name} = {means[name]:.4g} +/- {2 * stddevs[name]:.4g}" for name in metric_names) + "\n"
+        res = " ".join(f"{name} = {means[name]:.4g} +/- {2 * stddevs[name]:.4g}" for name in metric_names) + "\n"
 
         with open(self.output_path + "metrics.txt", "a") as output:
             output.write(f"{self.method}: {res}")
@@ -135,8 +132,7 @@ def evaluate(
     Evaluate the reconstruction.
     TODO: Refine this function.
     """
-    _metrics = Metrics(METRIC_FUNCS, output_path,
-                       method) if arguments.type == "mean_std" else {}
+    _metrics = Metrics(METRIC_FUNCS, output_path, method) if arguments.type == "mean_std" else {}
 
     for tgt_file in tqdm(arguments.target_path.iterdir()):
         if exists(arguments.predictions_path / tgt_file.name):
@@ -145,8 +141,7 @@ def evaluate(
             ) as recons:
 
                 if arguments.sense_path is not None:
-                    sense = to_tensor(
-                        h5py.File(arguments.sense_path / tgt_file.name, "r")["sensitivity_map"][()])
+                    sense = to_tensor(h5py.File(arguments.sense_path / tgt_file.name, "r")["sensitivity_map"][()])
 
                     # TODO: important! only applies for the computed fastMRI brain FLAIR sense maps
                     if "data/brain/sensitivities_maps/flair" in str(arguments.sense_path).lower():
@@ -161,8 +156,7 @@ def evaluate(
                             complex_mul(
                                 ifft2c(
                                     to_tensor(target["kspace"][()]),
-                                    fft_type="data" if "data" in str(
-                                        arguments.sense_path).lower() else "nofastmri",
+                                    fft_type="data" if "data" in str(arguments.sense_path).lower() else "nofastmri",
                                 ),
                                 complex_conj(sense),
                             ),
@@ -178,14 +172,10 @@ def evaluate(
 
                 if arguments.crop_size is not None:
                     crop_size = arguments.crop_size
-                    crop_size[0] = target.shape[-2] if target.shape[-2] < int(
-                        crop_size[0]) else int(crop_size[0])
-                    crop_size[1] = target.shape[-1] if target.shape[-1] < int(
-                        crop_size[1]) else int(crop_size[1])
-                    crop_size[0] = recons.shape[-2] if recons.shape[-2] < int(
-                        crop_size[0]) else int(crop_size[0])
-                    crop_size[1] = recons.shape[-1] if recons.shape[-1] < int(
-                        crop_size[1]) else int(crop_size[1])
+                    crop_size[0] = target.shape[-2] if target.shape[-2] < int(crop_size[0]) else int(crop_size[0])
+                    crop_size[1] = target.shape[-1] if target.shape[-1] < int(crop_size[1]) else int(crop_size[1])
+                    crop_size[0] = recons.shape[-2] if recons.shape[-2] < int(crop_size[0]) else int(crop_size[0])
+                    crop_size[1] = recons.shape[-1] if recons.shape[-1] < int(crop_size[1]) else int(crop_size[1])
 
                     target = center_crop(target, crop_size)
                     recons = center_crop(recons, crop_size)
@@ -193,8 +183,7 @@ def evaluate(
                 if mask_background:
                     for sl in range(target.shape[0]):
                         mask = convex_hull_image(
-                            np.where(np.abs(target[sl]) > threshold_otsu(
-                                np.abs(target[sl])), 1, 0)
+                            np.where(np.abs(target[sl]) > threshold_otsu(np.abs(target[sl])), 1, 0)
                         )
                         target[sl] = target[sl] * mask
                         recons[sl] = recons[sl] * mask
@@ -231,55 +220,41 @@ def evaluate(
                         _metrics["PARAMS"] = no_params
 
                         if not exists(arguments.output_path):
-                            pd.DataFrame(columns=_metrics.keys()).to_csv(
-                                arguments.output_path, index=False, mode="w")
-                        pd.DataFrame(_metrics).to_csv(
-                            arguments.output_path, index=False, header=False, mode="a")
+                            pd.DataFrame(columns=_metrics.keys()).to_csv(arguments.output_path, index=False, mode="w")
+                        pd.DataFrame(_metrics).to_csv(arguments.output_path, index=False, header=False, mode="a")
 
     return _metrics
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("target_path", type=pathlib.Path,
-                        help="Path to the ground truth data")
-    parser.add_argument("predictions_path", type=pathlib.Path,
-                        help="Path to reconstructions")
-    parser.add_argument("output_path", type=str,
-                        help="Path to save the metrics")
-    parser.add_argument("--sense_path", type=pathlib.Path,
-                        help="Path to the sense data")
+    parser = ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("target_path", type=pathlib.Path, help="Path to the ground truth data")
+    parser.add_argument("predictions_path", type=pathlib.Path, help="Path to reconstructions")
+    parser.add_argument("output_path", type=str, help="Path to save the metrics")
+    parser.add_argument("--sense_path", type=pathlib.Path, help="Path to the sense data")
     parser.add_argument(
         "--challenge",
         choices=["singlecoil", "multicoil", "multicoil_sense"],
         default="multicoil_sense",
         help="Which challenge",
     )
-    parser.add_argument("--crop_size", nargs="+",
-                        default=None, help="Set crop size.")
-    parser.add_argument("--method", type=str, required=True,
-                        help="Model's name to evaluate")
-    parser.add_argument("--acceleration", type=int,
-                        required=True, default=None)
+    parser.add_argument("--crop_size", nargs="+", default=None, help="Set crop size.")
+    parser.add_argument("--method", type=str, required=True, help="Model's name to evaluate")
+    parser.add_argument("--acceleration", type=int, required=True, default=None)
     parser.add_argument("--no_params", type=str, required=True, default=None)
     parser.add_argument(
         "--acquisition",
-        choices=["CORPD_FBK", "CORPDFS_FBK", "AXT1",
-                 "AXT1PRE", "AXT1POST", "AXT2", "AXFLAIR"],
+        choices=["CORPD_FBK", "CORPDFS_FBK", "AXT1", "AXT1PRE", "AXT1POST", "AXT2", "AXFLAIR"],
         default=None,
         help="If set, only volumes of the specified acquisition type are used "
         "for evaluation. By default, all volumes are included.",
     )
-    parser.add_argument("--mask_background", action="store_true",
-                        help="Toggle to mask background")
+    parser.add_argument("--mask_background", action="store_true", help="Toggle to mask background")
     parser.add_argument(
         "--type", choices=["mean_std", "all_slices"], default="mean_std", help="Toggle to mask background"
     )
-    parser.add_argument("--slice_start", type=int,
-                        help="Select to skip first slices")
-    parser.add_argument("--slice_end", type=int,
-                        help="Select to skip last slices")
+    parser.add_argument("--slice_start", type=int, help="Select to skip first slices")
+    parser.add_argument("--slice_end", type=int, help="Select to skip last slices")
 
     args = parser.parse_args()
 
