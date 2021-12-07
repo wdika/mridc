@@ -41,7 +41,8 @@ def test_cirim(shape, cascades, center_fractions, accelerations):
 
     outputs, masks = [], []
     for i in range(x.shape[0]):
-        output, mask, _ = transforms.apply_mask(x[i : i + 1], mask_func, seed=123)
+        output, mask, _ = transforms.apply_mask(
+            x[i: i + 1], mask_func, seed=123)
         outputs.append(output)
         masks.append(mask)
 
@@ -59,7 +60,8 @@ def test_cirim(shape, cascades, center_fractions, accelerations):
 
     with torch.no_grad():
         y = torch.view_as_complex(
-            next(cirim.inference(output, output, mask, accumulate_estimates=True))[0][-1]
+            next(cirim.inference(output, output, mask,
+                 accumulate_estimates=True))[0][-1]
         )  # type: ignore
 
     if y.shape[1:] != x.shape[2:4]:
@@ -68,7 +70,8 @@ def test_cirim(shape, cascades, center_fractions, accelerations):
 
 @pytest.mark.parametrize(
     "shape, out_chans, chans",
-    [([1, 1, 32, 16], 5, 1), ([5, 1, 15, 12], 10, 32), ([3, 2, 13, 18], 1, 16), ([1, 2, 17, 19], 3, 8)],
+    [([1, 1, 32, 16], 5, 1), ([5, 1, 15, 12], 10, 32),
+     ([3, 2, 13, 18], 1, 16), ([1, 2, 17, 19], 3, 8)],
 )
 def test_unet(shape, out_chans, chans):
     """
@@ -86,7 +89,8 @@ def test_unet(shape, out_chans, chans):
 
     num_chans = x.shape[1]
 
-    unet = Unet(in_chans=num_chans, out_chans=out_chans, chans=chans, num_pool_layers=2)
+    unet = Unet(in_chans=num_chans, out_chans=out_chans,
+                chans=chans, num_pool_layers=2)
 
     y = unet(x)
 
@@ -122,14 +126,16 @@ def test_varnet(shape, chans, center_fractions, accelerations, mask_center):
     x = create_input(shape)
     outputs, masks = [], []
     for i in range(x.shape[0]):
-        output, mask, _ = transforms.apply_mask(x[i : i + 1], mask_func, seed=123)
+        output, mask, _ = transforms.apply_mask(
+            x[i: i + 1], mask_func, seed=123)
         outputs.append(output)
         masks.append(mask)
 
     output = torch.cat(outputs)
     mask = torch.cat(masks)
 
-    varnet = VarNet(num_cascades=2, sens_chans=4, sens_pools=2, chans=chans, pools=2, use_sens_net=True)
+    varnet = VarNet(num_cascades=2, sens_chans=4, sens_pools=2,
+                    chans=chans, pools=2, use_sens_net=True)
 
     y = varnet(output, np.array([]), mask.byte())
 

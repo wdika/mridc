@@ -121,9 +121,11 @@ class PICSDataTransform:
         # Apply zero-filling on kspace
         if self.kspace_zero_filling_size is not None and self.kspace_zero_filling_size != "":
             # (padding_left,padding_right, padding_top,padding_bottom)
-            padding_top = abs(int(self.kspace_zero_filling_size[0]) - kspace.shape[1]) // 2
+            padding_top = abs(
+                int(self.kspace_zero_filling_size[0]) - kspace.shape[1]) // 2
             padding_bottom = padding_top
-            padding_left = abs(int(self.kspace_zero_filling_size[1]) - kspace.shape[2]) // 2
+            padding_left = abs(
+                int(self.kspace_zero_filling_size[1]) - kspace.shape[2]) // 2
             padding_right = padding_left
 
             kspace = torch.view_as_complex(kspace)
@@ -143,12 +145,15 @@ class PICSDataTransform:
             sensitivity_map = torch.view_as_real(sensitivity_map)
             sensitivity_map = ifft2c(sensitivity_map, self.fft_type)
 
-        crop_size = torch.tensor([attrs["recon_size"][0], attrs["recon_size"][1]])
+        crop_size = torch.tensor(
+            [attrs["recon_size"][0], attrs["recon_size"][1]])
 
         if self.crop_size is not None:
             # Check for smallest size against the target shape.
-            h = int(self.crop_size[0]) if int(self.crop_size[0]) <= target.shape[0] else target.shape[0]
-            w = int(self.crop_size[1]) if int(self.crop_size[1]) <= target.shape[1] else target.shape[1]
+            h = int(self.crop_size[0]) if int(
+                self.crop_size[0]) <= target.shape[0] else target.shape[0]
+            w = int(self.crop_size[1]) if int(
+                self.crop_size[1]) <= target.shape[1] else target.shape[1]
 
             # Check for smallest size against the stored recon shape in metadata.
             if crop_size[0] != 0:
@@ -160,7 +165,8 @@ class PICSDataTransform:
             # crop_size = torch.tensor([self.crop_size[0], self.crop_size[1]])
 
             if sensitivity_map is not None and sensitivity_map.size != 0:
-                sensitivity_map = complex_center_crop(sensitivity_map, self.crop_size)
+                sensitivity_map = complex_center_crop(
+                    sensitivity_map, self.crop_size)
 
         # Cropping before masking will maintain the shape of original kspace intact for masking.
         if self.crop_size is not None and self.crop_before_masking:
@@ -174,7 +180,8 @@ class PICSDataTransform:
 
         if self.mask_func:
             seed = None if not self.use_seed else tuple(map(ord, fname))
-            masked_kspace, _, _ = apply_mask(kspace, self.mask_func, seed, (0,), shift=self.shift_mask)
+            masked_kspace, _, _ = apply_mask(
+                kspace, self.mask_func, seed, (0,), shift=self.shift_mask)
         else:
             masked_kspace = kspace
 
@@ -184,13 +191,16 @@ class PICSDataTransform:
                 complex_center_crop(masked_kspace, self.crop_size)
                 if self.kspace_crop
                 else fft2c(
-                    complex_center_crop(ifft2c(masked_kspace, fft_type=self.fft_type), self.crop_size),
+                    complex_center_crop(
+                        ifft2c(masked_kspace, fft_type=self.fft_type), self.crop_size),
                     fft_type=self.fft_type,
                 )
             )
 
-        masked_kspace = tensor_to_complex_np(masked_kspace.permute(1, 2, 0, 3).unsqueeze(0).cpu())
-        sensitivity_map = tensor_to_complex_np(sensitivity_map.permute(1, 2, 0, 3).unsqueeze(0).cpu())
+        masked_kspace = tensor_to_complex_np(
+            masked_kspace.permute(1, 2, 0, 3).unsqueeze(0).cpu())
+        sensitivity_map = tensor_to_complex_np(
+            sensitivity_map.permute(1, 2, 0, 3).unsqueeze(0).cpu())
 
         return masked_kspace, sensitivity_map, target, fname, slice_num
 
@@ -238,7 +248,8 @@ def run_pics(idx):
     start_time = time.perf_counter()
 
     logging.info(f"{fname} {slice_num}")
-    prediction = cs_total_variation(ARGS, masked_kspace, sensitivity_map, target)
+    prediction = cs_total_variation(
+        ARGS, masked_kspace, sensitivity_map, target)
     logging.info(f"Done in {time.perf_counter() - start_time:.4f}s")
 
     return fname, slice_num, prediction
@@ -280,10 +291,14 @@ def create_arg_parser():
     """
     parser = argparse.ArgumentParser(description="PICS")
 
-    parser.add_argument("data_path", type=pathlib.Path, help="Path to the data folder")
-    parser.add_argument("out_dir", type=pathlib.Path, help="Path to the output folder")
-    parser.add_argument("--sense_path", type=pathlib.Path, help="Path to the sense folder")
-    parser.add_argument("--mask_path", type=pathlib.Path, help="Path to the mask folder")
+    parser.add_argument("data_path", type=pathlib.Path,
+                        help="Path to the data folder")
+    parser.add_argument("out_dir", type=pathlib.Path,
+                        help="Path to the output folder")
+    parser.add_argument("--sense_path", type=pathlib.Path,
+                        help="Path to the sense folder")
+    parser.add_argument("--mask_path", type=pathlib.Path,
+                        help="Path to the mask folder")
     parser.add_argument(
         "--data-split",
         choices=["val", "test", "test_v2", "challenge"],
@@ -296,8 +311,10 @@ def create_arg_parser():
         default="multicoil",
         help="Which challenge to run",
     )
-    parser.add_argument("--sample_rate", type=float, default=1.0, help="Sample rate for the data")
-    parser.add_argument("--batch_size", type=int, default=1, help="Batch size for the data loader")
+    parser.add_argument("--sample_rate", type=float,
+                        default=1.0, help="Sample rate for the data")
+    parser.add_argument("--batch_size", type=int, default=1,
+                        help="Batch size for the data loader")
     parser.add_argument(
         "--no_mask",
         action="store_true",
@@ -316,24 +333,33 @@ def create_arg_parser():
     parser.add_argument(
         "--center_fractions", nargs="+", default=[0.7, 0.7], type=float, help="Number of center lines to use in mask"
     )
-    parser.add_argument("--shift_mask", action="store_true", help="Shift the mask")
-    parser.add_argument("--normalize_inputs", action="store_true", help="Normalize the inputs")
-    parser.add_argument("--crop_size", nargs="+", help="Size of the crop to apply to the input")
-    parser.add_argument("--crop_before_masking", action="store_true", help="Crop before masking")
-    parser.add_argument("--kspace_zero_filling_size", nargs="+", help="Size of zero-filling in kspace")
+    parser.add_argument("--shift_mask", action="store_true",
+                        help="Shift the mask")
+    parser.add_argument("--normalize_inputs",
+                        action="store_true", help="Normalize the inputs")
+    parser.add_argument("--crop_size", nargs="+",
+                        help="Size of the crop to apply to the input")
+    parser.add_argument("--crop_before_masking",
+                        action="store_true", help="Crop before masking")
+    parser.add_argument("--kspace_zero_filling_size",
+                        nargs="+", help="Size of zero-filling in kspace")
     parser.add_argument(
         "--num_iters", type=int, default=60, help="Number of iterations to run the reconstruction algorithm"
     )
-    parser.add_argument("--reg_wt", type=float, default=0.005, help="Regularization weight parameter")
+    parser.add_argument("--reg_wt", type=float, default=0.005,
+                        help="Regularization weight parameter")
     parser.add_argument(
         "--num_procs", type=int, default=16, help="Number of processes. Set to 0 to disable multiprocessing."
     )
-    parser.add_argument("--fft_type", type=str, default="orthogonal", help="Type of FFT to use")
-    parser.add_argument("--progress_bar_refresh", type=int, default=10, help="Progress bar refresh rate")
+    parser.add_argument("--fft_type", type=str,
+                        default="orthogonal", help="Type of FFT to use")
+    parser.add_argument("--progress_bar_refresh", type=int,
+                        default=10, help="Progress bar refresh rate")
     parser.add_argument(
         "--data_parallel", action="store_true", help="If set, use multiple GPUs using data parallelism"
     )
-    parser.add_argument("--device", type=str, default="cuda", help="Which device to run on")
+    parser.add_argument("--device", type=str, default="cuda",
+                        help="Which device to run on")
 
     return parser
 

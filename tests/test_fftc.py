@@ -25,7 +25,8 @@ def test_orthogonal_fft2(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = fft2c(x, fft_type="orthogonal", fft_normalization="ortho").numpy()
+    out_torch = fft2c(x, fft_type="orthogonal",
+                      fft_normalization="ortho").numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)
@@ -50,7 +51,8 @@ def test_non_orthogonal_fft2(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = fft2c(x, fft_type="non_orthogonal", fft_normalization="ortho").numpy()
+    out_torch = fft2c(x, fft_type="non_orthogonal",
+                      fft_normalization="ortho").numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)
@@ -73,7 +75,8 @@ def test_orthogonal_fft2_backward_normalization(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = fft2c(x, fft_type="orthogonal", fft_normalization="backward").numpy()
+    out_torch = fft2c(x, fft_type="orthogonal",
+                      fft_normalization="backward").numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)
@@ -98,7 +101,8 @@ def test_orthogonal_fft2_forward_normalization(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = fft2c(x, fft_type="orthogonal", fft_normalization="forward").numpy()
+    out_torch = fft2c(x, fft_type="orthogonal",
+                      fft_normalization="forward").numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)
@@ -123,7 +127,8 @@ def test_orthogonal_ifft2(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = ifft2c(x, fft_type="orthogonal", fft_normalization="ortho").numpy()
+    out_torch = ifft2c(x, fft_type="orthogonal",
+                       fft_normalization="ortho").numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)
@@ -148,7 +153,8 @@ def test_non_orthogonal_ifft2(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = ifft2c(x, fft_type="non_orthogonal", fft_normalization="ortho").numpy()
+    out_torch = ifft2c(x, fft_type="non_orthogonal",
+                       fft_normalization="ortho").numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)
@@ -171,7 +177,8 @@ def test_orthogonal_ifft2_backward_normalization(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = ifft2c(x, fft_type="orthogonal", fft_normalization="backward").numpy()
+    out_torch = ifft2c(x, fft_type="orthogonal",
+                       fft_normalization="backward").numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)
@@ -196,7 +203,8 @@ def test_orthogonal_ifft2_forward_normalization(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = ifft2c(x, fft_type="orthogonal", fft_normalization="forward").numpy()
+    out_torch = ifft2c(x, fft_type="orthogonal",
+                       fft_normalization="forward").numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)
