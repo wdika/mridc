@@ -201,7 +201,7 @@ def evaluate(
             max_value = max_value.to(args.device)
 
             if isinstance(masked_kspace, list):
-                for r in range(len(masked_kspace)):
+                for r, _ in enumerate(masked_kspace):
                     y = masked_kspace[r].to(args.device)
                     m = mask[r].to(args.device)
                     acceleration = str(acc[r].item())
