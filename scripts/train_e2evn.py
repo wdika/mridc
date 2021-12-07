@@ -90,8 +90,7 @@ def train_epoch(
         target, output = center_crop_to_smallest(target, output)
 
         loss = (
-            loss_fn(output.unsqueeze(1), target.unsqueeze(
-                1), data_range=max_value)
+            loss_fn(output.unsqueeze(1), target.unsqueeze(1), data_range=max_value)
             if "ssim" in str(loss_fn).lower()
             else loss_fn(output, target)
         )
@@ -100,8 +99,7 @@ def train_epoch(
         optimizer.step()
 
         avg_loss = 0.99 * avg_loss + 0.01 * loss.item() if i > 0 else loss.item()
-        writer.add_scalar(f"Loss_{acceleration}x",
-                          loss.item(), global_step + i)
+        writer.add_scalar(f"Loss_{acceleration}x", loss.item(), global_step + i)
         writer.add_scalar("Total_Loss", avg_loss, global_step + i)
 
         if args.device == "cuda":
@@ -139,8 +137,7 @@ def train_epoch(
 
             is_new_best = -_val_loss < best_dev_loss  # type: ignore
             best_dev_loss = min(best_dev_loss, _val_loss)  # type: ignore
-            save_model(args, args.exp_dir, iteration, model,
-                       optimizer, best_dev_loss, is_new_best)
+            save_model(args, args.exp_dir, iteration, model, optimizer, best_dev_loss, is_new_best)
 
         if args.exit_after_checkpoint:
             writer.close()
@@ -216,12 +213,10 @@ def evaluate(
 
                     if "ssim" in str(loss_fn).lower():
                         val_losses[acceleration] = (
-                            loss_fn(target.unsqueeze(1), output.unsqueeze(
-                                1), data_range=max_value).cpu().numpy()
+                            loss_fn(target.unsqueeze(1), output.unsqueeze(1), data_range=max_value).cpu().numpy()
                         )
                     else:
-                        val_losses[acceleration] = loss_fn(
-                            target.unsqueeze(1), output.unsqueeze(1)).cpu().numpy()
+                        val_losses[acceleration] = loss_fn(target.unsqueeze(1), output.unsqueeze(1)).cpu().numpy()
 
                     mse_losses[acceleration] = mse(target_np, output_np)
                     nmse_losses[acceleration] = nmse(target_np, output_np)
@@ -239,12 +234,10 @@ def evaluate(
 
                 if "ssim" in str(loss_fn).lower():
                     val_losses[acceleration] = (
-                        loss_fn(target.unsqueeze(1), output.unsqueeze(
-                            1), data_range=max_value).cpu().numpy()
+                        loss_fn(target.unsqueeze(1), output.unsqueeze(1), data_range=max_value).cpu().numpy()
                     )
                 else:
-                    val_losses[acceleration] = loss_fn(
-                        target.unsqueeze(1), output.unsqueeze(1)).cpu().numpy()
+                    val_losses[acceleration] = loss_fn(target.unsqueeze(1), output.unsqueeze(1)).cpu().numpy()
 
                 mse_losses[acceleration] = mse(target_np, output_np)
                 nmse_losses[acceleration] = nmse(target_np, output_np)
@@ -252,8 +245,7 @@ def evaluate(
                 ssim_losses[acceleration] = ssim(target_np, output_np)
 
             if args.device == "cuda":
-                memory_allocated.append(
-                    torch.cuda.max_memory_allocated() * 1e-6)
+                memory_allocated.append(torch.cuda.max_memory_allocated() * 1e-6)
                 torch.cuda.reset_peak_memory_stats()
                 torch.cuda.empty_cache()
 
@@ -269,8 +261,7 @@ def evaluate(
             psnr_loss[acc] = np.mean(psnr_losses[acc])
             ssim_loss[acc] = np.mean(ssim_losses[acc])
 
-            writer.add_scalar(
-                f"Val_{str(loss_fn)}_{acc}x", val_loss[acc], epoch)
+            writer.add_scalar(f"Val_{str(loss_fn)}_{acc}x", val_loss[acc], epoch)
             writer.add_scalar(f"Val_MSE_{acc}x", mse_loss[acc], epoch)
             writer.add_scalar(f"Val_NMSE_{acc}x", nmse_loss[acc], epoch)
             writer.add_scalar(f"Val_PSNR_{acc}x", psnr_loss[acc], epoch)
@@ -416,11 +407,9 @@ def main(args):
     if args.accelerations[0] != args.accelerations[1] or len(args.accelerations) > 2:
         mask_func: list = []
         for acc, cf in zip(args.accelerations, args.center_fractions):
-            mask_func.append(create_mask_for_mask_type(
-                args.mask_type, [cf] * 2, [acc] * 2))
+            mask_func.append(create_mask_for_mask_type(args.mask_type, [cf] * 2, [acc] * 2))
     else:
-        mask_func = create_mask_for_mask_type(
-            args.mask_type, args.center_fractions, args.accelerations)
+        mask_func = create_mask_for_mask_type(args.mask_type, args.center_fractions, args.accelerations)
 
     train_transform = PhysicsInformedDataTransform(
         mask_func=mask_func,
@@ -442,10 +431,8 @@ def main(args):
         fft_type=args.fft_type,
     )
 
-    train_loader, val_loader, display_loader = create_training_loaders(
-        args, train_transform, val_transform)
-    scheduler = torch.optim.lr_scheduler.StepLR(
-        optimizer, args.lr_step_size, args.lr_gamma)
+    train_loader, val_loader, display_loader = create_training_loaders(args, train_transform, val_transform)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, args.lr_step_size, args.lr_gamma)
 
     if args.loss_fn == "ssim":
         val_loss_fn = SSIMLoss()
@@ -490,15 +477,12 @@ def create_arg_parser():
     """
     parser = argparse.ArgumentParser(description="E2EVN")
 
-    parser.add_argument("data_path", type=pathlib.Path,
-                        help="Path to the data folder")
+    parser.add_argument("data_path", type=pathlib.Path, help="Path to the data folder")
     parser.add_argument(
         "exp_dir", type=pathlib.Path, default="checkpoints", help="Path where model and results should be saved"
     )
-    parser.add_argument("--sense_path", type=pathlib.Path,
-                        help="Path to the sense folder")
-    parser.add_argument("--mask_path", type=pathlib.Path,
-                        help="Path to the mask folder")
+    parser.add_argument("--sense_path", type=pathlib.Path, help="Path to the sense folder")
+    parser.add_argument("--mask_path", type=pathlib.Path, help="Path to the mask folder")
     parser.add_argument(
         "--data-split",
         choices=["val", "test", "test_v2", "challenge"],
@@ -511,8 +495,7 @@ def create_arg_parser():
         default="multicoil",
         help="Which challenge to run",
     )
-    parser.add_argument("--sample_rate", type=float,
-                        default=1.0, help="Sample rate for the data")
+    parser.add_argument("--sample_rate", type=float, default=1.0, help="Sample rate for the data")
     parser.add_argument(
         "--mask_type",
         choices=("random", "gaussian2d", "equispaced"),
@@ -526,78 +509,49 @@ def create_arg_parser():
     parser.add_argument(
         "--center_fractions", nargs="+", default=[0.7, 0.7], type=float, help="Number of center lines to use in mask"
     )
-    parser.add_argument("--shift_mask", action="store_true",
-                        help="Shift the mask")
-    parser.add_argument("--normalize_inputs",
-                        action="store_true", help="Normalize the inputs")
-    parser.add_argument("--crop_size", nargs="+",
-                        help="Size of the crop to apply to the input")
-    parser.add_argument("--crop_before_masking",
-                        action="store_true", help="Crop before masking")
-    parser.add_argument("--kspace_zero_filling_size",
-                        nargs="+", help="Size of zero-filling in kspace")
-    parser.add_argument("--num_cascades", type=int, default=12,
-                        help="Number of cascades for the model")
-    parser.add_argument("--pools", type=int, default=2,
-                        help="Number of pools for the model")
-    parser.add_argument("--chans", type=int, default=12,
-                        help="Number of channels for the model")
-    parser.add_argument("--unet_padding_size", type=int,
-                        default=11, help="Padding size for the unet")
-    parser.add_argument("--normalize", action="store_true",
-                        help="Normalize the inputs")
-    parser.add_argument("--no_dc", action="store_true",
-                        default=False, help="Do not use DC component")
-    parser.add_argument("--use_sens_net", action="store_true",
-                        default=False, help="Use sensitivity net")
-    parser.add_argument("--sens_pools", type=int, default=4,
-                        help="Number of pools for the sensitivity net")
-    parser.add_argument("--sens_chans", type=int, default=8,
-                        help="Number of channels for the sensitivity net")
-    parser.add_argument("--sens_normalize", action="store_true",
-                        help="Normalize the sensitivity net")
+    parser.add_argument("--shift_mask", action="store_true", help="Shift the mask")
+    parser.add_argument("--normalize_inputs", action="store_true", help="Normalize the inputs")
+    parser.add_argument("--crop_size", nargs="+", help="Size of the crop to apply to the input")
+    parser.add_argument("--crop_before_masking", action="store_true", help="Crop before masking")
+    parser.add_argument("--kspace_zero_filling_size", nargs="+", help="Size of zero-filling in kspace")
+    parser.add_argument("--num_cascades", type=int, default=12, help="Number of cascades for the model")
+    parser.add_argument("--pools", type=int, default=2, help="Number of pools for the model")
+    parser.add_argument("--chans", type=int, default=12, help="Number of channels for the model")
+    parser.add_argument("--unet_padding_size", type=int, default=11, help="Padding size for the unet")
+    parser.add_argument("--normalize", action="store_true", help="Normalize the inputs")
+    parser.add_argument("--no_dc", action="store_true", default=False, help="Do not use DC component")
+    parser.add_argument("--use_sens_net", action="store_true", default=False, help="Use sensitivity net")
+    parser.add_argument("--sens_pools", type=int, default=4, help="Number of pools for the sensitivity net")
+    parser.add_argument("--sens_chans", type=int, default=8, help="Number of channels for the sensitivity net")
+    parser.add_argument("--sens_normalize", action="store_true", help="Normalize the sensitivity net")
     parser.add_argument(
         "--sens_mask_type", choices=["1D", "2D"], default="2D", help="Type of mask to use for the sensitivity net"
     )
-    parser.add_argument(
-        "--output_type", choices=["SENSE", "RSS"], default="SENSE", help="Type of output to use")
-    parser.add_argument("--fft_type", type=str,
-                        default="orthogonal", help="Type of FFT to use")
-    parser.add_argument("--batch_size", default=1,
-                        type=int, help="Mini batch size")
-    parser.add_argument("--num_epochs", type=int, default=50,
-                        help="Number of training epochs")
-    parser.add_argument("--num_workers", type=int, default=4,
-                        help="Number of workers for data loading")
+    parser.add_argument("--output_type", choices=["SENSE", "RSS"], default="SENSE", help="Type of output to use")
+    parser.add_argument("--fft_type", type=str, default="orthogonal", help="Type of FFT to use")
+    parser.add_argument("--batch_size", default=1, type=int, help="Mini batch size")
+    parser.add_argument("--num_epochs", type=int, default=50, help="Number of training epochs")
+    parser.add_argument("--num_workers", type=int, default=4, help="Number of workers for data loading")
     parser.add_argument(
         "--optimizer", type=str, default="Adam", help="Optimizer to use choose between" "['Adam', 'SGD', 'RMSProp']"
     )
-    parser.add_argument("--lr", type=float, default=0.001,
-                        help="Learning rate")
-    parser.add_argument("--lr_step_size", type=int, default=40,
-                        help="Period of learning rate decay")
-    parser.add_argument("--lr_gamma", type=float, default=0.1,
-                        help="Multiplicative factor of learning rate decay")
-    parser.add_argument("--weight_decay", type=float, default=0.0,
-                        help="Strength of weight decay regularization")
-    parser.add_argument("--report_interval", type=int,
-                        default=150, help="Period of loss reporting")
+    parser.add_argument("--lr", type=float, default=0.001, help="Learning rate")
+    parser.add_argument("--lr_step_size", type=int, default=40, help="Period of learning rate decay")
+    parser.add_argument("--lr_gamma", type=float, default=0.1, help="Multiplicative factor of learning rate decay")
+    parser.add_argument("--weight_decay", type=float, default=0.0, help="Strength of weight decay regularization")
+    parser.add_argument("--report_interval", type=int, default=150, help="Period of loss reporting")
     parser.add_argument(
         "--resume",
         action="store_true",
         help='If set, resume the training from a previous model checkpoint. "--checkpoint" should be set with this',
     )
-    parser.add_argument("--checkpoint", type=str,
-                        help='Path to an existing checkpoint. Used along with "--resume"')
-    parser.add_argument("--exit_after_checkpoint", action="store_true",
-                        help="If set, exit after loading a checkpoint")
-    parser.add_argument("--seed", default=42, type=int,
-                        help="Seed for random number generators")
+    parser.add_argument("--checkpoint", type=str, help='Path to an existing checkpoint. Used along with "--resume"')
+    parser.add_argument("--exit_after_checkpoint", action="store_true", help="If set, exit after loading a checkpoint")
+    parser.add_argument("--seed", default=42, type=int, help="Seed for random number generators")
     parser.add_argument(
         "--data_parallel", action="store_true", help="If set, use multiple GPUs using data parallelism"
     )
-    parser.add_argument("--device", type=str, default="cuda",
-                        help="Which device to run on")
+    parser.add_argument("--device", type=str, default="cuda", help="Which device to run on")
 
     return parser
 

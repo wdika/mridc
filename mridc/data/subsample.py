@@ -51,8 +51,7 @@ class MaskFunc:
             values are provided, then one of these is chosen uniformly each time.
         """
         if not len(center_fractions) == len(accelerations):
-            raise ValueError(
-                "Number of center fractions should match number of accelerations")
+            raise ValueError("Number of center fractions should match number of accelerations")
 
         self.center_fractions = center_fractions
         self.accelerations = accelerations
@@ -130,18 +129,15 @@ class RandomMaskFunc(MaskFunc):
 
             # create the mask
             num_low_freqs = int(round(num_cols * center_fraction))
-            prob = (num_cols / acceleration - num_low_freqs) / \
-                (num_cols - num_low_freqs)
+            prob = (num_cols / acceleration - num_low_freqs) / (num_cols - num_low_freqs)
             mask = self.rng.uniform(size=num_cols) < prob  # type: ignore
-            pad = torch.div((num_cols - num_low_freqs + 1),
-                            2, rounding_mode="trunc").item()
-            mask[pad: pad + num_low_freqs] = True
+            pad = torch.div((num_cols - num_low_freqs + 1), 2, rounding_mode="trunc").item()
+            mask[pad : pad + num_low_freqs] = True
 
             # reshape the mask
             mask_shape = [1 for _ in shape]
             mask_shape[-2] = num_cols
-            mask = torch.from_numpy(mask.reshape(
-                *mask_shape).astype(np.float32))
+            mask = torch.from_numpy(mask.reshape(*mask_shape).astype(np.float32))
 
         return mask, acceleration
 
@@ -200,13 +196,11 @@ class EquispacedMaskFunc(MaskFunc):
 
             # create the mask
             mask = np.zeros(num_cols, dtype=np.float32)
-            pad = torch.div((num_cols - num_low_freqs + 1),
-                            2, rounding_mode="trunc").item()
-            mask[pad: pad + num_low_freqs] = True  # type: ignore
+            pad = torch.div((num_cols - num_low_freqs + 1), 2, rounding_mode="trunc").item()
+            mask[pad : pad + num_low_freqs] = True  # type: ignore
 
             # determine acceleration rate by adjusting for the number of low frequencies
-            adjusted_accel = (acceleration * (num_low_freqs - num_cols)
-                              ) / (num_low_freqs * acceleration - num_cols)
+            adjusted_accel = (acceleration * (num_low_freqs - num_cols)) / (num_low_freqs * acceleration - num_cols)
             offset = self.rng.randint(0, round(adjusted_accel))
 
             accel_samples = np.arange(offset, num_cols - 1, adjusted_accel)
@@ -216,8 +210,7 @@ class EquispacedMaskFunc(MaskFunc):
             # reshape the mask
             mask_shape = [1 for _ in shape]
             mask_shape[-2] = num_cols
-            mask = torch.from_numpy(mask.reshape(
-                *mask_shape).astype(np.float32))
+            mask = torch.from_numpy(mask.reshape(*mask_shape).astype(np.float32))
 
         return mask, acceleration
 
@@ -266,8 +259,7 @@ class Gaussian1DMaskFunc(MaskFunc):
         mask = self.gaussian_kspace()
         mask[tuple(self.gaussian_coordinates())] = 1.0
 
-        mask = np.fft.ifftshift(np.fft.ifftshift(
-            np.fft.ifftshift(mask, axes=0), axes=0), axes=(0, 1))
+        mask = np.fft.ifftshift(np.fft.ifftshift(np.fft.ifftshift(mask, axes=0), axes=0), axes=(0, 1))
 
         if half_scan_percentage != 0:
             mask[: int(np.round(mask.shape[0] * half_scan_percentage)), :] = 0.0
@@ -283,8 +275,7 @@ class Gaussian1DMaskFunc(MaskFunc):
         """
         scaled = int(self.shape[0] * self.scale)
         center = np.ones((scaled, self.shape[1]))
-        top_scaled = torch.div(
-            (self.shape[0] - scaled), 2, rounding_mode="trunc").item()
+        top_scaled = torch.div((self.shape[0] - scaled), 2, rounding_mode="trunc").item()
         bottom_scaled = self.shape[0] - scaled - top_scaled
         top = np.zeros((top_scaled, self.shape[1]))
         btm = np.zeros((bottom_scaled, self.shape[1]))
@@ -299,8 +290,7 @@ class Gaussian1DMaskFunc(MaskFunc):
         """
         n_sample = int(self.shape[0] / self.acceleration)
         kernel = self.gaussian_kernel()
-        idxs = np.random.choice(
-            range(self.shape[0]), size=n_sample, replace=False, p=kernel)
+        idxs = np.random.choice(range(self.shape[0]), size=n_sample, replace=False, p=kernel)
         xsamples = np.concatenate([np.tile(i, self.shape[1]) for i in idxs])
         ysamples = np.concatenate([range(self.shape[1]) for _ in idxs])
         return xsamples, ysamples
@@ -383,8 +373,7 @@ class Gaussian2DMaskFunc(MaskFunc):
         a, b = self.scale * self.shape[0], self.scale * self.shape[1]
         afocal, bfocal = self.shape[0] / 2, self.shape[1] / 2
         xx, yy = np.mgrid[: self.shape[0], : self.shape[1]]
-        ellipse = np.power((xx - afocal) / a, 2) + \
-            np.power((yy - bfocal) / b, 2)
+        ellipse = np.power((xx - afocal) / a, 2) + np.power((yy - bfocal) / b, 2)
         return (ellipse < 1).astype(float)
 
     def gaussian_coordinates(self):
@@ -397,8 +386,7 @@ class Gaussian2DMaskFunc(MaskFunc):
         n_sample = int(self.shape[0] * self.shape[1] / self.acceleration)
         cartesian_prod = list(np.ndindex(self.shape))
         kernel = self.gaussian_kernel()
-        idxs = np.random.choice(
-            range(len(cartesian_prod)), size=n_sample, replace=False, p=kernel.flatten())
+        idxs = np.random.choice(range(len(cartesian_prod)), size=n_sample, replace=False, p=kernel.flatten())
         return list(zip(*list(map(cartesian_prod.__getitem__, idxs))))
 
     def gaussian_kernel(self):

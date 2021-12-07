@@ -75,8 +75,7 @@ def create_arg_parser():
     parser = ArgumentParser()
 
     parser.add_argument("data_path", type=Path, help="Path to the data")
-    parser.add_argument("output_path", type=Path,
-                        help="Path to save the reconstructions to")
+    parser.add_argument("output_path", type=Path, help="Path to save the reconstructions to")
 
     return parser
 
