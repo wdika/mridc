@@ -218,7 +218,7 @@ class CIRIM(nn.Module):
                 ]
 
                 # Take average of all time-steps loss
-                cascade_time_steps_loss.append(sum(sum(_loss) / self.time_steps))
+                cascade_time_steps_loss.append(sum(sum(_loss) / self.time_steps))  # type: ignore
 
         # Take average of all cascades loss
         if accumulate_loss:

@@ -37,12 +37,12 @@ def et_query(root: str, qlist: Sequence[str], namespace: str = "https://www.ismr
     for el in qlist:
         s = s + f"//{prefix}:{el}"
 
-    value = root.find(s, ns)
+    value = root.find(s, ns)  # type: ignore
     if value is None:
         # raise RuntimeError("Element not found")
         return "0"
 
-    return str(value.text)
+    return str(value.text)  # type: ignore
 
 
 class CombinedSliceDataset(torch.utils.data.Dataset):

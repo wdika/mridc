@@ -353,7 +353,7 @@ if __name__ == "__main__":
         transform=PICSDataTransform(
             mask_func=False
             if ARGS.no_mask
-            else create_mask_for_mask_type(ARGS.mask_type, ARGS.center_fractions, ARGS.accelerations),
+            else create_mask_for_mask_type(ARGS.mask_type, ARGS.center_fractions, ARGS.accelerations),  # type: ignore
             shift_mask=ARGS.shift_mask,
             crop_size=ARGS.crop_size,  # type: ignore
             crop_before_masking=ARGS.crop_before_masking,

@@ -1,19 +1,18 @@
 name: Close Stale Issues
 on:
   schedule:
-  - cron: "0 0 * * *"
+    - cron: "0 0 * * *"
 jobs:
   stale:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/stale@v4.0.0
-      with:
-        # Number of days of inactivity before an issue becomes stale
-        daysUntilStale: 60
-        # Number of days of inactivity before a stale issue is closed
-        daysUntilClose: 7
-        # Label to use when marking an issue as stale
-        staleLabel: wontfix
-        # Comment to post when marking an issue as stale. Set to `false` to disable
-        stale-issue-message: 'This issue has been automatically marked as stale because it has not had recent activity. It will be closed if no further activity occurs. Thank you for your contributions.'
-
+      - uses: actions/stale@v4.0.0
+        with:
+          # Number of days of inactivity before an issue becomes stale
+          daysUntilStale: 60
+          # Number of days of inactivity before a stale issue is closed
+          daysUntilClose: 7
+          # Label to use when marking an issue as stale
+          staleLabel: wontfix
+          # Comment to post when marking an issue as stale. Set to `false` to disable
+          stale-issue-message: 'This issue has been automatically marked as stale because it has not had recent activity. It will be closed if no further activity occurs. Thank you for your contributions.'

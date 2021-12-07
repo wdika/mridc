@@ -23,8 +23,8 @@ This repo implements the following reconstruction methods:
 The CIRIM, the RIM, and the E2EVN target unrolled optimization by gradient descent. Thus, DC is implicitly enforced.
 Through cascades DC can be explicitly enforced by a designed term [1, 4].
 
-
 ## Installation
+
 You can install mridc with pip:
 
 ```bash
@@ -57,16 +57,18 @@ Check CITATION.cff file or cite using the widget. Alternatively cite as
 
 ```BibTeX
 @misc{mridc,
-  author={Karkalousos, Dimitrios and Caan, Matthan},
-  title={MRIDC: Data Consistency for Magnetic Resonance Imaging},
-  year={2021},
-  url = {https://github.com/wdika/mridc},
+    author = {Karkalousos, Dimitrios and Caan, Matthan},
+    title = {MRIDC: Data Consistency for Magnetic Resonance Imaging},
+    year = {2021},
+    url = {https://github.com/wdika/mridc},
 }
 ```
 
 ## Bibliography
 
-[1] Karkalousos, D. et al. (2021) ‘Assessment of Data Consistency through Cascades of Independently Recurrent Inference Machines for fast and robust accelerated MRI reconstruction’. Available at: https://arxiv.org/abs/2111.15498v1 (Accessed: 1 December 2021).
+[1] Karkalousos, D. et al. (2021) ‘Assessment of Data Consistency through Cascades of Independently Recurrent Inference
+Machines for fast and robust accelerated MRI reconstruction’. Available at: https://arxiv.org/abs/2111.15498v1 (
+Accessed: 1 December 2021).
 
 [2] Lønning, K. et al. (2019) ‘Recurrent inference machines for reconstructing heterogeneous MRI data’, Medical Image
 Analysis, 53, pp. 64–78. doi: 10.1016/j.media.2019.01.005.
