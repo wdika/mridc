@@ -1,6 +1,7 @@
 # ! /usr/bin/python
 # -*- coding: utf-8 -*-
 import sys
+
 __author__ = "Dimitrios Karkalousos"
 
 import os
@@ -61,6 +62,7 @@ install_requires = _load_requirements("requirements.txt")
 
 class StyleCommand(distutils_cmd.Command):
     """Run code style checkers."""
+
     __ISORT_BASE = (
         "isort "
         # These two lines makes isort compatible with black.
