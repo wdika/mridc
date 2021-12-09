@@ -1,5 +1,6 @@
 # ! /usr/bin/python
 # -*- coding: utf-8 -*-
+import sys
 __author__ = "Dimitrios Karkalousos"
 
 import os
@@ -60,8 +61,6 @@ install_requires = _load_requirements("requirements.txt")
 
 class StyleCommand(distutils_cmd.Command):
     """Run code style checkers."""
-
-    __LINE_WIDTH = 119
     __ISORT_BASE = (
         "isort "
         # These two lines makes isort compatible with black.
@@ -115,10 +114,10 @@ class StyleCommand(distutils_cmd.Command):
             self._pass()
         else:
             self._fail()
-            exit(isort_return if isort_return != 0 else black_return)
+            sys.exit(isort_return if isort_return != 0 else black_return)
 
     def finalize_options(self):
-        pass
+        raise NotImplementedError()
 
 
 ###############################################################################
