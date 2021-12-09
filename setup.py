@@ -61,6 +61,7 @@ install_requires = _load_requirements("requirements.txt")
 
 class StyleCommand(distutils_cmd.Command):
     """Run code style checkers."""
+
     __LINE_WIDTH = 119
     __ISORT_BASE = (
         "isort "
