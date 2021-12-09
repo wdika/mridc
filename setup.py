@@ -16,19 +16,18 @@ import setuptools
 
 spec = importlib.util.spec_from_file_location("package_info", "mridc/package_info.py")
 package_info = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(package_info)  # type: ignore
 
-__contact_emails__ = package_info.__contact_emails__
-__contact_names__ = package_info.__contact_names__
-__description__ = package_info.__description__
-__download_url__ = package_info.__download_url__
-__homepage__ = package_info.__homepage__
-__keywords__ = package_info.__keywords__
-__license__ = package_info.__license__
-__package_name__ = package_info.__package_name__
-__repository_url__ = package_info.__repository_url__
-__version__ = package_info.__version__
-
-spec.loader.exec_module(package_info)
+__contact_emails__ = package_info.__contact_emails__  # type: ignore
+__contact_names__ = package_info.__contact_names__  # type: ignore
+__description__ = package_info.__description__  # type: ignore
+__download_url__ = package_info.__download_url__  # type: ignore
+__homepage__ = package_info.__homepage__  # type: ignore
+__keywords__ = package_info.__keywords__  # type: ignore
+__license__ = package_info.__license__  # type: ignore
+__package_name__ = package_info.__package_name__  # type: ignore
+__repository_url__ = package_info.__repository_url__  # type: ignore
+__version__ = package_info.__version__  # type: ignore
 
 
 with open("README.md", "r", encoding="utf-8") as fh:
@@ -62,7 +61,7 @@ install_requires = _load_requirements("requirements.txt")
 
 class StyleCommand(distutils_cmd.Command):
     """Run code style checkers."""
-
+    __LINE_WIDTH = 119
     __ISORT_BASE = (
         "isort "
         # These two lines makes isort compatible with black.
