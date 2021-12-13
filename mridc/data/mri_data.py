@@ -12,7 +12,7 @@ from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 import h5py
 import numpy as np
 import torch
-import yaml
+import yaml  # type: ignore
 from defusedxml.ElementTree import fromstring
 from torch.utils.data import Dataset
 

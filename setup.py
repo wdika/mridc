@@ -15,7 +15,7 @@ import setuptools
 
 
 spec = importlib.util.spec_from_file_location("package_info", "mridc/package_info.py")
-package_info = importlib.util.module_from_spec(spec)
+package_info = importlib.util.module_from_spec(spec)  # type: ignore
 spec.loader.exec_module(package_info)  # type: ignore
 
 __contact_emails__ = package_info.__contact_emails__  # type: ignore
