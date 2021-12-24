@@ -115,7 +115,7 @@ class NamedTimer:
         """
         Return list of all active named timers
         """
-        return [k for k, v in self.timers.items() if ("start" in v)]
+        return [k for k, v in self.timers.items() if "start" in v]
 
     def get(self, name=""):
         """
@@ -133,6 +133,6 @@ class NamedTimer:
         """
         fn = self._reduction_fn
 
-        data = {k: fn(v["dt"]) for k, v in self.timers.items() if ("dt" in v)}
+        data = {k: fn(v["dt"]) for k, v in self.timers.items() if "dt" in v}
 
         return data
