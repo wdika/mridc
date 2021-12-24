@@ -295,10 +295,6 @@ class FastMRISliceDataset(Dataset):
             else:
                 sensitivity_map = np.array([])
 
-            if sensitivity_map.shape != kspace.shape:
-                # if sensitivity map dims are permuted, reshape them as kspace shape.
-                sensitivity_map = sensitivity_map.reshape(kspace.shape)
-
             if "mask" in hf:
                 mask = np.asarray(hf["mask"])
 
