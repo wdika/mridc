@@ -290,7 +290,7 @@ class SensitivityModel(nn.Module):
 
     @staticmethod
     def get_pad_and_num_low_freqs(
-            mask: torch.Tensor, num_low_frequencies: Optional[int] = None
+        mask: torch.Tensor, num_low_frequencies: Optional[int] = None
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         if num_low_frequencies is None or num_low_frequencies == 0:
             # get low frequency line locations and mask them out
@@ -329,20 +329,14 @@ class SensitivityModel(nn.Module):
             Normalized UNet output tensor.
         """
         if self.mask_center:
-            pad, num_low_freqs = self.get_pad_and_num_low_freqs(
-                mask, num_low_frequencies
-            )
-            masked_kspace = batched_mask_center(
-                masked_kspace, pad, pad + num_low_freqs, mask_type=self.mask_type
-            )
+            pad, num_low_freqs = self.get_pad_and_num_low_freqs(mask, num_low_frequencies)
+            masked_kspace = batched_mask_center(masked_kspace, pad, pad + num_low_freqs, mask_type=self.mask_type)
 
         # convert to image space
         images, batches = self.chans_to_batch_dim(ifft2c(masked_kspace))
 
         # estimate sensitivities
-        return self.divide_root_sum_of_squares(
-            self.batch_chans_to_chan_dim(self.norm_unet(images), batches)
-        )
+        return self.divide_root_sum_of_squares(self.batch_chans_to_chan_dim(self.norm_unet(images), batches))
 
 
 class VarNet(nn.Module):
