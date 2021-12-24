@@ -2,8 +2,7 @@
 __author__ = "Dimitrios Karkalousos"
 
 # Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
-
-from mridc.data.mri_data import SliceDataset, CombinedSliceDataset
+from mridc.collections.recon.data.mri_data import FastMRICombinedSliceDataset, FastMRISliceDataset
 
 
 def test_slice_datasets(fastmri_mock_dataset, monkeypatch):
@@ -32,11 +31,11 @@ def test_slice_datasets(fastmri_mock_dataset, monkeypatch):
         """
         return metadata[str(fname)]
 
-    monkeypatch.setattr(SliceDataset, "_retrieve_metadata", retrieve_metadata_mock)
+    monkeypatch.setattr(FastMRISliceDataset, "_retrieve_metadata", retrieve_metadata_mock)
 
     for challenge in ("multicoil", "singlecoil"):
         for split in ("train", "val", "test", "challenge"):
-            dataset = SliceDataset(knee_path / f"{challenge}_{split}", transform=None, challenge=challenge)
+            dataset = FastMRISliceDataset(knee_path / f"{challenge}_{split}", transform=None, challenge=challenge)
 
             if len(dataset) <= 0:
                 raise AssertionError
@@ -47,7 +46,7 @@ def test_slice_datasets(fastmri_mock_dataset, monkeypatch):
 
     for challenge in ("multicoil",):
         for split in ("train", "val", "test", "challenge"):
-            dataset = SliceDataset(brain_path / f"{challenge}_{split}", transform=None, challenge=challenge)
+            dataset = FastMRISliceDataset(brain_path / f"{challenge}_{split}", transform=None, challenge=challenge)
 
             if len(dataset) <= 0:
                 raise AssertionError
@@ -83,15 +82,15 @@ def test_combined_slice_dataset(fastmri_mock_dataset, monkeypatch):
         """
         return metadata[str(fname)]
 
-    monkeypatch.setattr(SliceDataset, "_retrieve_metadata", retrieve_metadata_mock)
+    monkeypatch.setattr(FastMRISliceDataset, "_retrieve_metadata", retrieve_metadata_mock)
 
     roots = [knee_path / "multicoil_train", knee_path / "multicoil_val"]
     challenges = ["multicoil", "multicoil"]
     transforms = [None, None]
 
-    dataset1 = SliceDataset(root=roots[0], challenge=challenges[0], transform=transforms[0])
-    dataset2 = SliceDataset(root=roots[1], challenge=challenges[1], transform=transforms[1])
-    comb_dataset = CombinedSliceDataset(roots=roots, challenges=challenges, transforms=transforms)
+    dataset1 = FastMRISliceDataset(root=roots[0], challenge=challenges[0], transform=transforms[0])
+    dataset2 = FastMRISliceDataset(root=roots[1], challenge=challenges[1], transform=transforms[1])
+    comb_dataset = FastMRICombinedSliceDataset(roots=roots, challenges=challenges, transforms=transforms)
 
     if len(comb_dataset) != len(dataset1) + len(dataset2):
         raise AssertionError
@@ -104,9 +103,9 @@ def test_combined_slice_dataset(fastmri_mock_dataset, monkeypatch):
     challenges = ["multicoil", "multicoil"]
     transforms = [None, None]
 
-    dataset1 = SliceDataset(root=roots[0], challenge=challenges[0], transform=transforms[0])
-    dataset2 = SliceDataset(root=roots[1], challenge=challenges[1], transform=transforms[1])
-    comb_dataset = CombinedSliceDataset(roots=roots, challenges=challenges, transforms=transforms)
+    dataset1 = FastMRISliceDataset(root=roots[0], challenge=challenges[0], transform=transforms[0])
+    dataset2 = FastMRISliceDataset(root=roots[1], challenge=challenges[1], transform=transforms[1])
+    comb_dataset = FastMRICombinedSliceDataset(roots=roots, challenges=challenges, transforms=transforms)
 
     if len(comb_dataset) != len(dataset1) + len(dataset2):
         raise AssertionError
@@ -142,11 +141,11 @@ def test_slice_dataset_with_transform(fastmri_mock_dataset, monkeypatch):
         """
         return metadata[str(fname)]
 
-    monkeypatch.setattr(SliceDataset, "_retrieve_metadata", retrieve_metadata_mock)
+    monkeypatch.setattr(FastMRISliceDataset, "_retrieve_metadata", retrieve_metadata_mock)
 
     for challenge in ("multicoil", "singlecoil"):
         for split in ("train", "val", "test", "challenge"):
-            dataset = SliceDataset(knee_path / f"{challenge}_{split}", transform=None, challenge=challenge)
+            dataset = FastMRISliceDataset(knee_path / f"{challenge}_{split}", transform=None, challenge=challenge)
 
             if len(dataset) <= 0:
                 raise AssertionError
@@ -157,7 +156,7 @@ def test_slice_dataset_with_transform(fastmri_mock_dataset, monkeypatch):
 
     for challenge in ("multicoil",):
         for split in ("train", "val", "test", "challenge"):
-            dataset = SliceDataset(brain_path / f"{challenge}_{split}", transform=None, challenge=challenge)
+            dataset = FastMRISliceDataset(brain_path / f"{challenge}_{split}", transform=None, challenge=challenge)
 
             if len(dataset) <= 0:
                 raise AssertionError
@@ -193,15 +192,15 @@ def test_combined_slice_dataset_with_transform(fastmri_mock_dataset, monkeypatch
         """
         return metadata[str(fname)]
 
-    monkeypatch.setattr(SliceDataset, "_retrieve_metadata", retrieve_metadata_mock)
+    monkeypatch.setattr(FastMRISliceDataset, "_retrieve_metadata", retrieve_metadata_mock)
 
     roots = [knee_path / "multicoil_train", knee_path / "multicoil_val"]
     challenges = ["multicoil", "multicoil"]
     transforms = [None, None]
 
-    dataset1 = SliceDataset(root=roots[0], challenge=challenges[0], transform=transforms[0])
-    dataset2 = SliceDataset(root=roots[1], challenge=challenges[1], transform=transforms[1])
-    comb_dataset = CombinedSliceDataset(roots=roots, challenges=challenges, transforms=transforms)
+    dataset1 = FastMRISliceDataset(root=roots[0], challenge=challenges[0], transform=transforms[0])
+    dataset2 = FastMRISliceDataset(root=roots[1], challenge=challenges[1], transform=transforms[1])
+    comb_dataset = FastMRICombinedSliceDataset(roots=roots, challenges=challenges, transforms=transforms)
 
     if len(comb_dataset) != len(dataset1) + len(dataset2):
         raise AssertionError
@@ -214,9 +213,9 @@ def test_combined_slice_dataset_with_transform(fastmri_mock_dataset, monkeypatch
     challenges = ["multicoil", "multicoil"]
     transforms = [None, None]
 
-    dataset1 = SliceDataset(root=roots[0], challenge=challenges[0], transform=transforms[0])
-    dataset2 = SliceDataset(root=roots[1], challenge=challenges[1], transform=transforms[1])
-    comb_dataset = CombinedSliceDataset(roots=roots, challenges=challenges, transforms=transforms)
+    dataset1 = FastMRISliceDataset(root=roots[0], challenge=challenges[0], transform=transforms[0])
+    dataset2 = FastMRISliceDataset(root=roots[1], challenge=challenges[1], transform=transforms[1])
+    comb_dataset = FastMRICombinedSliceDataset(roots=roots, challenges=challenges, transforms=transforms)
 
     if len(comb_dataset) != len(dataset1) + len(dataset2):
         raise AssertionError
@@ -252,10 +251,10 @@ def test_slice_dataset_with_transform_and_challenge(fastmri_mock_dataset, monkey
         """
         return metadata[str(fname)]
 
-    monkeypatch.setattr(SliceDataset, "_retrieve_metadata", retrieve_metadata_mock)
+    monkeypatch.setattr(FastMRISliceDataset, "_retrieve_metadata", retrieve_metadata_mock)
 
     for split in ("train", "val", "test", "challenge"):
-        dataset = SliceDataset(knee_path / f"multicoil_{split}", transform=None, challenge="multicoil")
+        dataset = FastMRISliceDataset(knee_path / f"multicoil_{split}", transform=None, challenge="multicoil")
 
         if len(dataset) <= 0:
             raise AssertionError
@@ -265,7 +264,7 @@ def test_slice_dataset_with_transform_and_challenge(fastmri_mock_dataset, monkey
             raise AssertionError
 
     for split in ("train", "val", "test", "challenge"):
-        dataset = SliceDataset(brain_path / f"multicoil_{split}", transform=None, challenge="multicoil")
+        dataset = FastMRISliceDataset(brain_path / f"multicoil_{split}", transform=None, challenge="multicoil")
 
         if len(dataset) <= 0:
             raise AssertionError
@@ -301,15 +300,15 @@ def test_combined_slice_dataset_with_transform_and_challenge(fastmri_mock_datase
         """
         return metadata[str(fname)]
 
-    monkeypatch.setattr(SliceDataset, "_retrieve_metadata", retrieve_metadata_mock)
+    monkeypatch.setattr(FastMRISliceDataset, "_retrieve_metadata", retrieve_metadata_mock)
 
     roots = [knee_path / "multicoil_train", knee_path / "multicoil_val"]
     challenges = ["multicoil", "multicoil"]
     transforms = [None, None]
 
-    dataset1 = SliceDataset(root=roots[0], challenge=challenges[0], transform=transforms[0])
-    dataset2 = SliceDataset(root=roots[1], challenge=challenges[1], transform=transforms[1])
-    comb_dataset = CombinedSliceDataset(roots=roots, challenges=challenges, transforms=transforms)
+    dataset1 = FastMRISliceDataset(root=roots[0], challenge=challenges[0], transform=transforms[0])
+    dataset2 = FastMRISliceDataset(root=roots[1], challenge=challenges[1], transform=transforms[1])
+    comb_dataset = FastMRICombinedSliceDataset(roots=roots, challenges=challenges, transforms=transforms)
 
     if len(comb_dataset) != len(dataset1) + len(dataset2):
         raise AssertionError
@@ -322,9 +321,9 @@ def test_combined_slice_dataset_with_transform_and_challenge(fastmri_mock_datase
     challenges = ["multicoil", "multicoil"]
     transforms = [None, None]
 
-    dataset1 = SliceDataset(root=roots[0], challenge=challenges[0], transform=transforms[0])
-    dataset2 = SliceDataset(root=roots[1], challenge=challenges[1], transform=transforms[1])
-    comb_dataset = CombinedSliceDataset(roots=roots, challenges=challenges, transforms=transforms)
+    dataset1 = FastMRISliceDataset(root=roots[0], challenge=challenges[0], transform=transforms[0])
+    dataset2 = FastMRISliceDataset(root=roots[1], challenge=challenges[1], transform=transforms[1])
+    comb_dataset = FastMRICombinedSliceDataset(roots=roots, challenges=challenges, transforms=transforms)
 
     if len(comb_dataset) != len(dataset1) + len(dataset2):
         raise AssertionError

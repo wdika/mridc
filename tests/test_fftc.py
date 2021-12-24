@@ -7,8 +7,8 @@ import numpy as np
 import pytest
 import torch
 
-from mridc.data.transforms import tensor_to_complex_np, complex_abs
-from mridc.fft import fft2c, ifft2c, roll, fftshift, ifftshift
+from mridc.collections.common.parts.fft import fft2c, fftshift, ifft2c, ifftshift, roll
+from mridc.collections.common.parts.utils import complex_abs, tensor_to_complex_np
 from tests.fastmri.conftest import create_input
 
 

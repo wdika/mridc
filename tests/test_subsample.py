@@ -4,12 +4,12 @@ __author__ = "Dimitrios Karkalousos"
 import numpy as np
 import pytest
 
-from mridc.data.subsample import (
-    create_mask_for_mask_type,
+from mridc.collections.recon.data.subsample import (
     EquispacedMaskFunc,
     Gaussian1DMaskFunc,
     Gaussian2DMaskFunc,
     RandomMaskFunc,
+    create_mask_for_mask_type,
 )
 
 
