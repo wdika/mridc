@@ -127,9 +127,17 @@ class UnetDataTransform:
             sensitivity_map = ifft2c(sensitivity_map, self.fft_type)
 
         # TODO: add RSS target option
-        target = torch.sum(complex_mul(ifft2c(kspace, fft_type=self.fft_type), complex_conj(sensitivity_map)), 0)
-        target = torch.abs(target[..., 0] + 1j * target[..., 1])
-        target = target / torch.max(target)
+        if sensitivity_map is not None and sensitivity_map.size != 0:
+            target = torch.sum(complex_mul(ifft2c(kspace, fft_type=self.fft_type), complex_conj(sensitivity_map)), 0)
+            target = torch.view_as_complex(target)
+        elif target is not None and target.size != 0:
+            target = to_tensor(target)
+        elif "target" in attrs or "target_rss" in attrs:
+            target = torch.tensor(attrs["target"])
+        else:
+            raise ValueError("No target found")
+
+        target = torch.abs(target / torch.max(torch.abs(target)))
 
         seed = None if not self.use_seed else tuple(map(ord, fname))
         acq_start = attrs["padding_left"] if "padding_left" in attrs else 0
@@ -392,8 +400,16 @@ class PhysicsInformedDataTransform:
             eta = torch.tensor([])
 
         # TODO: add RSS target option
-        target = torch.sum(complex_mul(ifft2c(kspace, fft_type=self.fft_type), complex_conj(sensitivity_map)), 0)
-        target = torch.view_as_complex(target)
+        if sensitivity_map is not None and sensitivity_map.size != 0:
+            target = torch.sum(complex_mul(ifft2c(kspace, fft_type=self.fft_type), complex_conj(sensitivity_map)), 0)
+            target = torch.view_as_complex(target)
+        elif target is not None and target.size != 0:
+            target = to_tensor(target)
+        elif "target" in attrs or "target_rss" in attrs:
+            target = torch.tensor(attrs["target"])
+        else:
+            raise ValueError("No target found")
+
         target = torch.abs(target / torch.max(torch.abs(target)))
 
         seed = None if not self.use_seed else tuple(map(ord, fname))

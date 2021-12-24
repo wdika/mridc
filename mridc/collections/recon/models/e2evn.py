@@ -4,7 +4,7 @@ __author__ = "Dimitrios Karkalousos"
 # Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
 
 import math
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -186,6 +186,7 @@ class NormUnet(nn.Module):
             x, mean, std = self.norm(x)
 
         x, pad_sizes = self.pad(x)
+
         x = self.unet(x)
         x = self.unpad(x, *pad_sizes)
 
@@ -198,7 +199,7 @@ class NormUnet(nn.Module):
 
 class SensitivityModel(nn.Module):
     """
-    TODO: move this to a separate file.
+    TODO: appears to be broken. Also, move this to a separate file.
     Model for learning sensitivity estimation from k-space data.
 
     This model applies an IFFT to multichannel k-space data and then a U-Net to the coil images to estimate coil
@@ -215,6 +216,7 @@ class SensitivityModel(nn.Module):
         mask_type: str = "2D",  # TODO: make this generalizable
         fft_type: str = "orthogonal",
         normalize: bool = True,
+        mask_center: bool = True,
     ):
         """
         Initialize the model.
@@ -228,6 +230,7 @@ class SensitivityModel(nn.Module):
             mask_type : Type of mask to use.
             fft_type : Type of FFT to use.
             normalize : Whether to normalize the data.
+            mask_center: Whether to mask the center of the sensitivity map.
         """
         super().__init__()
 
@@ -237,6 +240,8 @@ class SensitivityModel(nn.Module):
         self.norm_unet = NormUnet(
             chans, num_pools, in_chans=in_chans, out_chans=out_chans, drop_prob=drop_prob, normalize=normalize
         )
+
+        self.mask_center = mask_center
 
     @staticmethod
     def chans_to_batch_dim(x: torch.Tensor) -> Tuple[torch.Tensor, int]:
@@ -283,40 +288,61 @@ class SensitivityModel(nn.Module):
         """
         return x / rss_complex(x, dim=1).unsqueeze(-1).unsqueeze(1)
 
-    def forward(self, masked_kspace: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def get_pad_and_num_low_freqs(
+            mask: torch.Tensor, num_low_frequencies: Optional[int] = None
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        if num_low_frequencies is None or num_low_frequencies == 0:
+            # get low frequency line locations and mask them out
+            squeezed_mask = mask[:, 0, 0, :, 0].to(torch.int8)
+            cent = squeezed_mask.shape[1] // 2
+            # running argmin returns the first non-zero
+            left = torch.argmin(squeezed_mask[:, :cent].flip(1), dim=1)
+            right = torch.argmin(squeezed_mask[:, cent:], dim=1)
+            num_low_frequencies_tensor = torch.max(
+                2 * torch.min(left, right), torch.ones_like(left)
+            )  # force a symmetric center unless 1
+        else:
+            num_low_frequencies_tensor = num_low_frequencies * torch.ones(
+                mask.shape[0], dtype=mask.dtype, device=mask.device
+            )
+
+        pad = (mask.shape[-2] - num_low_frequencies_tensor + 1) // 2
+
+        return pad, num_low_frequencies_tensor
+
+    def forward(
+        self,
+        masked_kspace: torch.Tensor,
+        mask: torch.Tensor,
+        num_low_frequencies: Optional[int] = None,
+    ) -> torch.Tensor:
         """
         Forward pass of the model.
 
         Args:
             masked_kspace: Masked k-space data.
             mask: Mask to apply to the k-space data.
+            num_low_frequencies: Number of low frequencies to use.
 
         Returns:
             Normalized UNet output tensor.
         """
-        # get low frequency line locations and mask them out
-        squeezed_mask = mask[:, 0, 0, :, 0]
-        cent = squeezed_mask.shape[1] // 2
-        # running argmin returns the first non-zero
-        left = torch.argmin(squeezed_mask[:, :cent].flip(1), dim=1)
-        right = torch.argmin(squeezed_mask[:, cent:], dim=1)
-        num_low_freqs = torch.max(
-            2 * torch.min(left, right), torch.ones_like(left)
-        )  # force a symmetric center unless 1
-        pad = (mask.shape[-2] - num_low_freqs + 1) // 2
-
-        x = batched_mask_center(masked_kspace, pad, pad + num_low_freqs, mask_type=self.mask_type)
+        if self.mask_center:
+            pad, num_low_freqs = self.get_pad_and_num_low_freqs(
+                mask, num_low_frequencies
+            )
+            masked_kspace = batched_mask_center(
+                masked_kspace, pad, pad + num_low_freqs, mask_type=self.mask_type
+            )
 
         # convert to image space
-        x = ifft2c(x, self.fft_type)
-        x, b = self.chans_to_batch_dim(x)
+        images, batches = self.chans_to_batch_dim(ifft2c(masked_kspace))
 
         # estimate sensitivities
-        x = self.norm_unet(x)
-        x = self.batch_chans_to_chan_dim(x, b)
-        x = self.divide_root_sum_of_squares(x)
-
-        return x
+        return self.divide_root_sum_of_squares(
+            self.batch_chans_to_chan_dim(self.norm_unet(images), batches)
+        )
 
 
 class VarNet(nn.Module):
