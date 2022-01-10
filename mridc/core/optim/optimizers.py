@@ -15,6 +15,7 @@ from torch.optim import adadelta, adagrad, adamax, rmsprop, rprop
 from torch.optim.optimizer import Optimizer
 
 from mridc.core.conf.optimizers import OptimizerParams, get_optimizer_config, register_optimizer_params
+from mridc.core.optim.adafactor import Adafactor
 from mridc.core.optim.novograd import Novograd
 from mridc.utils.model_utils import maybe_update_config_version
 
@@ -28,6 +29,7 @@ AVAILABLE_OPTIMIZERS = {
     "rmsprop": rmsprop.RMSprop,
     "rprop": rprop.Rprop,
     "novograd": Novograd,
+    "adafactor": Adafactor,
 }
 
 __all__ = ["get_optimizer", "register_optimizer", "parse_optimizer_args"]
