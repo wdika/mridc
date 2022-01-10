@@ -88,10 +88,11 @@ class SquareRootConstantPolicy(_LRScheduler):
     def __init__(
         self, optimizer, *, constant_steps=None, constant_ratio=None, max_steps=None, min_lr=0.0, last_epoch=-1
     ):
-        assert not (
-            constant_steps is not None and constant_ratio is not None
-        ), "Either use particular number of step or ratio"
-        assert constant_ratio is None or max_steps is not None, "If there is a ratio, there should be a total steps"
+        if constant_steps is not None and constant_ratio is not None:
+            raise AssertionError("Either use particular number of step or ratio")
+
+        if not (constant_ratio is None or max_steps is not None):
+            raise AssertionError("If there is a ratio, there should be a total steps")
 
         # It is necessary to assign all attributes *before* __init__,
         # as class is wrapped by an inner class.
@@ -411,9 +412,9 @@ class CosineAnnealing(WarmupAnnealHoldPolicy):
     def _get_warmup_lr(self, step):
         if self.constant_steps is None or self.constant_steps == 0:
             return super()._get_warmup_lr(step)
-        else:
-            # Use linear warmup for the initial part.
-            return self._get_linear_warmup_with_cosine_annealing_lr(step)
+
+        # Use linear warmup for the initial part.
+        return self._get_linear_warmup_with_cosine_annealing_lr(step)
 
     def _get_constant_lr(self, step):
         # Only called when constant_steps is not None and not 0.

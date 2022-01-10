@@ -43,7 +43,7 @@ def hydra_runner(
             args = get_args_parser()
 
             # Parse arguments in order to retrieve overrides
-            parsed_args = args.parse_args()  # type: Namespace
+            parsed_args: Namespace = args.parse_args()
 
             # Get overriding args in dot string format
             overrides = parsed_args.overrides  # type: list

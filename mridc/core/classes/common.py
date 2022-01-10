@@ -398,7 +398,7 @@ class Typing(ABC):
 
 class Serialization(ABC):
     @classmethod
-    def from_config_dict(cls, config: "DictConfig", trainer: Optional["Trainer"] = None):
+    def from_config_dict(cls, config: "DictConfig", trainer: Optional[Trainer] = None):
         """Instantiates object using DictConfig-based configuration"""
         # Resolve the config dict
         if _HAS_HYDRA:
@@ -498,7 +498,7 @@ class Serialization(ABC):
     def _inspect_signature_for_trainer(cls, check_cls):
         if hasattr(check_cls, "__init__"):
             signature = inspect.signature(check_cls.__init__)
-            return "trainer" in signature.parameters
+            return Trainer in signature.parameters
         return False
 
 
@@ -512,10 +512,10 @@ class FileIO(ABC):
         cls,
         restore_path: str,
         override_config_path: Optional[str] = None,
-        map_location: Optional["torch.device"] = None,
+        map_location: Optional[torch.device] = None,
         strict: bool = True,
         return_config: bool = False,
-        trainer: Optional["Trainer"] = None,
+        trainer: Optional[Trainer] = None,
         save_restore_connector: SaveRestoreConnector = None,
     ):
         """Restores module/model with weights"""
@@ -621,10 +621,10 @@ class Model(Typing, Serialization, FileIO, ABC):  # type: ignore
         model_name: str,
         refresh_cache: bool = False,
         override_config_path: Optional[str] = None,
-        map_location: Optional["torch.device"] = None,
+        map_location: Optional[torch.device] = None,
         strict: bool = True,
         return_config: bool = False,
-        trainer: Optional["Trainer"] = None,
+        trainer: Optional[Trainer] = None,
         save_restore_connector: SaveRestoreConnector = None,
     ):
         """

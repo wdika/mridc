@@ -91,15 +91,18 @@ class Adafactor(Optimizer):
             param_scale = max(param_group["eps"][1], param_state["RMS"])
         return param_scale * rel_step_sz
 
-    def _get_options(self, param_group, param_shape):
+    @staticmethod
+    def _get_options(param_group, param_shape):
         factored = len(param_shape) >= 2
         use_first_moment = param_group["beta1"] is not None
         return factored, use_first_moment
 
-    def _rms(self, tensor):
+    @staticmethod
+    def _rms(tensor):
         return tensor.norm(2) / (tensor.numel() ** 0.5)
 
-    def _approx_sq_grad(self, exp_avg_sq_row, exp_avg_sq_col):
+    @staticmethod
+    def _approx_sq_grad(exp_avg_sq_row, exp_avg_sq_col):
         r_factor = (exp_avg_sq_row / exp_avg_sq_row.mean(dim=-1, keepdim=True)).rsqrt_().unsqueeze(-1)
         c_factor = exp_avg_sq_col.unsqueeze(-2).rsqrt()
         return torch.mul(r_factor, c_factor)
@@ -126,7 +129,7 @@ class Adafactor(Optimizer):
                 state = self.state[p]
                 grad_shape = grad.shape
 
-                factored, use_first_moment = self._get_options(group, grad_shape)
+                factored, use_first_moment = _get_options(group, grad_shape)
                 # State Initialization
                 if len(state) == 0:
                     state["step"] = 0
@@ -155,7 +158,7 @@ class Adafactor(Optimizer):
                     p_data_fp32 = p_data_fp32.float()
 
                 state["step"] += 1
-                state["RMS"] = self._rms(p_data_fp32)
+                state["RMS"] = _rms(p_data_fp32)
                 group["lr"] = self._get_lr(group, state)
 
                 beta2t = 1.0 - math.pow(state["step"], group["decay_rate"])
@@ -168,7 +171,7 @@ class Adafactor(Optimizer):
                     exp_avg_sq_col.mul_(beta2t).add_(update.mean(dim=-2), alpha=1.0 - beta2t)
 
                     # Approximation of exponential moving average of square of gradient
-                    update = self._approx_sq_grad(exp_avg_sq_row, exp_avg_sq_col)
+                    update = _approx_sq_grad(exp_avg_sq_row, exp_avg_sq_col)
                     update.mul_(grad)
                 else:
                     exp_avg_sq = state["exp_avg_sq"]
@@ -176,7 +179,7 @@ class Adafactor(Optimizer):
                     exp_avg_sq.mul_(beta2t).add_(update, alpha=1.0 - beta2t)
                     update = exp_avg_sq.rsqrt().mul_(grad)
 
-                update.div_((self._rms(update) / group["clip_threshold"]).clamp_(min=1.0))
+                update.div_((_rms(update) / group["clip_threshold"]).clamp_(min=1.0))
                 update.mul_(group["lr"])
 
                 if use_first_moment:

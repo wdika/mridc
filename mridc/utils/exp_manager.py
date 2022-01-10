@@ -153,7 +153,7 @@ class TimingCallback(Callback):
         self._on_batch_end("train_backward_timing", pl_module)
 
 
-def exp_manager(trainer: "Trainer", cfg: Optional[Union[DictConfig, Dict]] = None) -> Optional[Path]:
+def exp_manager(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None) -> Optional[Path]:
     """
     exp_manager is a helper function used to manage folders for experiments. It follows the pytorch lightning paradigm
     of exp_dir/model_or_experiment_name/version. If the lightning trainer has a logger, exp_manager will get exp_dir,
@@ -334,7 +334,7 @@ def exp_manager(trainer: "Trainer", cfg: Optional[Union[DictConfig, Dict]] = Non
     return log_dir
 
 
-def error_checks(trainer: "Trainer", cfg: Optional[Union[DictConfig, Dict]] = None):
+def error_checks(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None):
     """
     Checks that the passed trainer is compliant with MRIDC and exp_manager's passed configuration. Checks that:
         - Throws error when hydra has changed the working directory. This causes issues with lightning's DDP
@@ -369,7 +369,7 @@ def error_checks(trainer: "Trainer", cfg: Optional[Union[DictConfig, Dict]] = No
 
 
 def check_resume(
-    trainer: "Trainer",
+    trainer: Trainer,
     log_dir: str,
     resume_past_end: bool = False,
     resume_ignore_no_checkpoint: bool = False,
@@ -449,7 +449,7 @@ def check_resume(
 
 
 def check_explicit_log_dir(
-    trainer: "Trainer", explicit_log_dir: List[Union[Path, str]], exp_dir: str, name: str, version: str
+    trainer: Trainer, explicit_log_dir: List[Union[Path, str]], exp_dir: str, name: str, version: str
 ) -> Tuple[Path, str, str, str]:
     """Checks that the passed arguments are compatible with explicit_log_dir.
     Returns:
@@ -478,7 +478,7 @@ def check_explicit_log_dir(
 
 
 def get_log_dir(
-    trainer: "Trainer",
+    trainer: Trainer,
     exp_dir: str = None,
     name: str = None,
     version: str = None,
@@ -596,7 +596,7 @@ class LoggerList(_LoggerCollection):
 
 
 def configure_loggers(
-    trainer: "Trainer",
+    trainer: Trainer,
     exp_dir: List[Union[Path, str]],
     name: str,
     version: str,
@@ -795,7 +795,7 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
                 logging.info(f"Tried to remove checkpoint: {filepath} but failed.")
 
 
-def configure_checkpointing(trainer: "Trainer", log_dir: Path, name: str, resume: bool, params: "DictConfig"):
+def configure_checkpointing(trainer: Trainer, log_dir: Path, name: str, resume: bool, params: "DictConfig"):
     """Adds ModelCheckpoint to trainer. Raises CheckpointMisconfigurationError if trainer already has a ModelCheckpoint
     callback or if trainer.weights_save_path was passed to Trainer.
     """
