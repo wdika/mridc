@@ -883,7 +883,6 @@ class StatelessTimer(Timer):
         test_duration = self.time_elapsed(RunningStage.TESTING)
         total_duration = train_duration + validation_duration + test_duration
         should_stop = total_duration >= self._duration
-        # should_stop = trainer.training_type_plugin.broadcast(should_stop)
         should_stop = trainer.training_type_plugin.reduce_boolean_decision(should_stop)
         trainer.should_stop = trainer.should_stop or should_stop
         if should_stop and self._verbose:

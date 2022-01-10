@@ -9,7 +9,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-# import torch.utils.data as pt_data
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch.nn import L1Loss
@@ -261,7 +260,6 @@ class CIRIM(ModelPT, ABC):
         y, mask, _ = self.process_inputs(y, mask)
         etas = self.forward(y, sensitivity_maps, mask, None, None, target, 1.0)
 
-        # acc = r if r != 0 else acc
 
         if self.accumulate_estimates:
             try:

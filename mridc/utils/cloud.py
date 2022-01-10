@@ -27,7 +27,6 @@ def maybe_download_from_cloud(url, filename, subfolder=None, cache_dir=None, ref
         If successful - absolute local path to the downloaded file
         else - empty string
     """
-    # try:
     if cache_dir is None:
         cache_location = Path.joinpath(Path.home(), ".cache/torch/mridc")
     else:

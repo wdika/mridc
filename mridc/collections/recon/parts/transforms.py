@@ -103,7 +103,6 @@ class UnetDataTransform:
 
         # Apply zero-filling on kspace
         if self.kspace_zero_filling_size is not None and self.kspace_zero_filling_size != "":
-            # (padding_left,padding_right, padding_top,padding_bottom)
             padding_top = abs(int(self.kspace_zero_filling_size[0]) - kspace.shape[1]) // 2
             padding_bottom = padding_top
             padding_left = abs(int(self.kspace_zero_filling_size[1]) - kspace.shape[2]) // 2
@@ -371,7 +370,6 @@ class PhysicsInformedDataTransform:
 
         # Apply zero-filling on kspace
         if self.kspace_zero_filling_size is not None and self.kspace_zero_filling_size not in ("", "None"):
-            # (padding_left,padding_right, padding_top,padding_bottom)
             padding_top = abs(int(self.kspace_zero_filling_size[0]) - kspace.shape[1]) // 2
             padding_bottom = padding_top
             padding_left = abs(int(self.kspace_zero_filling_size[1]) - kspace.shape[2]) // 2

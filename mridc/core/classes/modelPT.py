@@ -334,7 +334,6 @@ class ModelPT(LightningModule, Model):
         # Set some placeholder overridden by helper method
         self._val_dl_idx = 0
         self.validation_names = None
-        # self._validation_dl = None  # type: ignore
 
         # preserve config
         self._update_dataset_config(dataset_name="validation", config=val_data_config)
