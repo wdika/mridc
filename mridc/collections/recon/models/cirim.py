@@ -260,7 +260,6 @@ class CIRIM(ModelPT, ABC):
         y, mask, _ = self.process_inputs(y, mask)
         etas = self.forward(y, sensitivity_maps, mask, None, None, target, 1.0)
 
-
         if self.accumulate_estimates:
             try:
                 etas = next(etas)
