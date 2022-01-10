@@ -19,10 +19,7 @@ def check_color_support():
         bool: True if the terminal supports color, False otherwise.
     """
     # Colors can be forced with an env variable
-    if not sys.platform.lower().startswith("win") and get_envbool(MRIDC_ENV_VARNAME_ENABLE_COLORING, False):
-        return True
-    else:
-        return False
+    return bool(not sys.platform.lower().startswith("win") and get_envbool(MRIDC_ENV_VARNAME_ENABLE_COLORING, False))
 
 
 def to_unicode(value):

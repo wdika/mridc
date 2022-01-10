@@ -552,22 +552,19 @@ class ModelPT(LightningModule, Model):
         """Return the training dataloader."""
         if self._train_dl is not None:
             return self._train_dl
-        else:
-            return None
+        return None
 
     def val_dataloader(self):
         """Return the validation dataloader."""
         if self._validation_dl is not None:
             return self._validation_dl
-        else:
-            return None
+        return None
 
     def test_dataloader(self):
         """Return the test dataloader."""
         if self._test_dl is not None:
             return self._test_dl
-        else:
-            return None
+        return None
 
     def validation_epoch_end(
         self, outputs: Union[List[Dict[str, torch.Tensor]], List[List[Dict[str, torch.Tensor]]]]
