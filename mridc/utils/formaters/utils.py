@@ -21,6 +21,8 @@ def check_color_support():
     # Colors can be forced with an env variable
     if not sys.platform.lower().startswith("win") and get_envbool(MRIDC_ENV_VARNAME_ENABLE_COLORING, False):
         return True
+    else:
+        return False
 
 
 def to_unicode(value):

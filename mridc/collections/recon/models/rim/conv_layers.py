@@ -105,11 +105,12 @@ class ConvNonlinear(nn.Module):
         """
         if n_dim == 1:
             return nn.Conv1d
-        if n_dim == 2:
+        elif n_dim == 2:
             return nn.Conv2d
-        if n_dim == 3:
+        elif n_dim == 3:
             return nn.Conv3d
-        NotImplementedError("No convolution of this dimensionality implemented")
+        else:
+            raise ValueError("Convolution of: {} dims is not implemented".format(n_dim))
 
     def extra_repr(self):
         """

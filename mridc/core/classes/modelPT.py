@@ -397,7 +397,8 @@ class ModelPT(LightningModule, Model):
                 # If config is still None, or internal config has no Optim, return without instantiation
         if optim_config is None:
             logging.info("No optimizer config provided, therefore no optimizer was created")
-            return
+            return None
+
         # Preserve the configuration
         if not isinstance(optim_config, DictConfig):
             optim_config = OmegaConf.create(optim_config)
@@ -544,22 +545,29 @@ class ModelPT(LightningModule, Model):
 
         if self._scheduler is None:
             return self._optimizer
+
         return [self._optimizer], [self._scheduler]
 
     def train_dataloader(self):
         """Return the training dataloader."""
         if self._train_dl is not None:
             return self._train_dl
+        else:
+            return None
 
     def val_dataloader(self):
         """Return the validation dataloader."""
         if self._validation_dl is not None:
             return self._validation_dl
+        else:
+            return None
 
     def test_dataloader(self):
         """Return the test dataloader."""
         if self._test_dl is not None:
             return self._test_dl
+        else:
+            return None
 
     def validation_epoch_end(
         self, outputs: Union[List[Dict[str, torch.Tensor]], List[List[Dict[str, torch.Tensor]]]]
