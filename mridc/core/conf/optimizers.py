@@ -195,7 +195,7 @@ def register_optimizer_params(name: str, optimizer_params: OptimizerParams):
 
 def get_optimizer_config(
     name: str, **kwargs: Optional[Dict[str, Any]]
-) -> Union[dict[str, Optional[dict[str, Any]]], partial]:
+) -> Union[Dict[str, Optional[Dict[str, Any]]], partial]:
     """
     Convenience method to obtain a OptimizerParams class and partially instantiate it with optimizer kwargs.
     Args:

@@ -18,11 +18,11 @@ import torch
 from hydra.core.hydra_config import HydraConfig
 from hydra.utils import get_original_cwd
 from omegaconf import DictConfig, OmegaConf, open_dict
+from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
-from pytorch_lightning.callbacks.timer import Interval, Timer
+from pytorch_lightning.callbacks.timer import Timer
 from pytorch_lightning.loggers import LoggerCollection as _LoggerCollection, TensorBoardLogger, WandbLogger
 from pytorch_lightning.plugins.training_type.ddp import DDPPlugin
-from pytorch_lightning.trainer import Trainer
 from pytorch_lightning.trainer.states import RunningStage
 from pytorch_lightning.utilities.distributed import rank_zero_info
 
@@ -110,9 +110,7 @@ class ExpManagerConfig:
 
 
 class TimingCallback(Callback):
-    """
-    Logs execution time of train/val/test steps
-    """
+    """Logs execution time of train/val/test steps"""
 
     def __init__(self, timer_kwargs=None):
         if timer_kwargs is None:
@@ -870,10 +868,10 @@ class StatelessTimer(Timer):
     """Extension of PTL timers to be per run."""
 
     def on_save_checkpoint(self, trainer, pl_module, checkpoint) -> None:
-        return
+        pass
 
     def on_load_checkpoint(self, trainer, pl_module, callback_state) -> None:
-        return
+        pass
 
     def _check_time_remaining(self, trainer) -> None:
         # Default timer only checks for train time exceeding max_time, this includes time for all stages.

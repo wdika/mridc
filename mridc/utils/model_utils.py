@@ -424,9 +424,7 @@ def maybe_update_config_version(cfg: "DictConfig"):
 
 
 def import_class_by_path(path: str):
-    """
-    Recursive import of class by path string.
-    """
+    """Recursive import of class by path string."""
     paths = path.split(".")
     path = ".".join(paths[:-1])
     class_name = paths[-1]

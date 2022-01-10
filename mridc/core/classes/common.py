@@ -3,7 +3,9 @@ __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/classes/common.py
 import hydra
+import torch
 from omegaconf import DictConfig, OmegaConf
+from pytorch_lightning import Trainer
 
 import mridc.utils
 from mridc.core.connectors.save_restore_connector import SaveRestoreConnector
@@ -23,10 +25,7 @@ from enum import Enum
 from functools import total_ordering
 from pathlib import Path
 from typing import Dict, List, Optional, Union
-
-import torch
 import wrapt
-from pytorch_lightning.trainer import Trainer
 
 _HAS_HYDRA = True
 

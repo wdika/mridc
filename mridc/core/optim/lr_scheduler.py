@@ -144,7 +144,7 @@ class WarmupHoldPolicy(WarmupPolicy):
             return [initial_lr * lr_val for initial_lr in self.base_lrs]
 
         # Hold phase
-        if (step >= self.warmup_steps) and (step < self.hold_steps):
+        if self.hold_steps < step >= self.warmup_steps:
             return self.base_lrs
 
         if step > self.max_steps:

@@ -489,7 +489,7 @@ class PhysicsInformedDataTransform:
             else:
                 masked_kspace, mask, acc = apply_mask(
                     kspace,
-                    self.mask_func[0],
+                    self.mask_func[0],  # type: ignore
                     seed,
                     (acq_start, acq_end),
                     shift=self.shift_mask,

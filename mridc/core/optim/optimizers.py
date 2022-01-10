@@ -50,7 +50,7 @@ def parse_optimizer_args(
     Returns:
         A dictionary
     """
-    kwargs: dict[Any, Any] = {}
+    kwargs: Dict[Any, Any] = {}
 
     if optimizer_kwargs is None:
         return kwargs

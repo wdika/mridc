@@ -322,11 +322,11 @@ class Exportable(ABC):
     @staticmethod
     def _extract_dynamic_axes(name: str, ntype: NeuralType):
         """
-        Implement this method to provide dynamic axes id for ONNX export.
-        By default, this method will extract BATCH and TIME dimension ids from each provided input/output name argument.
-        For example, if module/model accepts argument named "input_signal" with type corresponding to [Batch, Time, Dim]
-        shape, then the returned result should contain "input_signal" -> [0, 1] because Batch and Time are dynamic axes
-        as they can change from call to call during inference.
+        Implement this method to provide dynamic axes id for ONNX export. By default, this method will extract BATCH
+        and TIME dimension ids from each provided input/output name argument. For example, if module/model accepts
+        argument named "input_signal" with type corresponding to [Batch, Time, Dim] shape, then the returned result
+        should contain "input_signal" -> [0, 1] because Batch and Time are dynamic axes as they can change from call
+        to call during inference.
         Args:
             name: Name of input or output parameter
             ntype: Corresponding Neural Type
@@ -351,9 +351,7 @@ class Exportable(ABC):
         replace_for_export(self, replace_1D_2D)  # type: ignore
 
     def _export_teardown(self):
-        """
-        Override this method for any teardown code after export.
-        """
+        """Override this method for any teardown code after export."""
         raise NotImplementedError()
 
     def _wrap_forward_method(self):
@@ -404,7 +402,5 @@ class Exportable(ABC):
         return os.path.join(path, filename)
 
     def forward(self, *inputs, **kwargs):
-        """
-        Override this method to implement forward pass.
-        """
+        """Override this method to implement forward pass."""
         raise NotImplementedError

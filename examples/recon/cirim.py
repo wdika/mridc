@@ -11,7 +11,7 @@ from mridc.utils import logging
 from mridc.utils.exp_manager import exp_manager
 
 
-@hydra_runner(config_path="conf", config_name="base_cirim_run")
+@hydra_runner(config_path="conf", config_name="base_cirim_train")
 def main(cfg: DictConfig) -> None:
     logging.info(f"Config: {OmegaConf.to_yaml(cfg)}")
 

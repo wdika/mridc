@@ -4,7 +4,7 @@ __author__ = "Dimitrios Karkalousos"
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/utils/metaclasses.py
 
 import threading
-from typing import Any
+from typing import Any, Dict
 
 
 class Singleton(type):
@@ -13,7 +13,7 @@ class Singleton(type):
     """
 
     # List of instances - one per class.
-    __instances: dict[Any, Any] = {}
+    __instances: Dict[Any, Any] = {}
     # Lock used for accessing the instance.
     __lock = threading.Lock()
 

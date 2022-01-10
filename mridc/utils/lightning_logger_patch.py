@@ -5,11 +5,11 @@ __author__ = "Dimitrios Karkalousos"
 
 import logging as _logging
 from logging.handlers import MemoryHandler
-from typing import Any
+from typing import Any, Dict
 
 import pytorch_lightning as pl
 
-HANDLERS: dict[Any, Any] = {}
+HANDLERS: Dict[Any, Any] = {}
 PATCHED = False
 
 
@@ -30,9 +30,9 @@ def add_memory_handlers_to_pl_logger():
 def add_filehandlers_to_pl_logger(all_log_file, err_log_file):
     """
     Adds two filehandlers to pytorch_lightning's logger. Called in mridc.utils.exp_manager(). The first filehandler
-    logs all messages to all_log_file while the second filehandler logs all WARNING and higher messages to err_log_file.
-    If "memory_err" and "memory_all" exist in HANDLERS, then those buffers are flushed to err_log_file and all_log_file
-    respectively, and then closed.
+    logs all messages to all_log_file while the second filehandler logs all WARNING and higher messages to
+    err_log_file. If "memory_err" and "memory_all" exist in HANDLERS, then those buffers are flushed to err_log_file
+    and all_log_file respectively, and then closed.
     """
     HANDLERS["file"] = _logging.FileHandler(all_log_file)
     pl._logger.addHandler(HANDLERS["file"])

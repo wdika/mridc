@@ -17,9 +17,7 @@ class NeuralModule(Module, Typing, Serialization, FileIO, ABC):
 
     @property
     def num_weights(self):
-        """
-        Utility property that returns the total number of parameters of NeuralModule.
-        """
+        """Utility property that returns the total number of parameters of NeuralModule."""
         num: int = 0
         for p in self.parameters():
             if p.requires_grad:
@@ -32,21 +30,16 @@ class NeuralModule(Module, Typing, Serialization, FileIO, ABC):
         Returns:
             A tuple sample of valid input data.
         """
-        return
 
     def freeze(self) -> None:
-        r"""
-        Freeze all params for inference.
-        """
+        r"""Freeze all params for inference."""
         for param in self.parameters():
             param.requires_grad = False
 
         self.eval()
 
     def unfreeze(self) -> None:
-        """
-        Unfreeze all parameters for training.
-        """
+        """Unfreeze all parameters for training."""
         for param in self.parameters():
             param.requires_grad = True
 
@@ -54,9 +47,7 @@ class NeuralModule(Module, Typing, Serialization, FileIO, ABC):
 
     @contextmanager
     def as_frozen(self):
-        """
-        Context manager which temporarily freezes a module, yields control and finally unfreezes the module.
-        """
+        """Context manager which temporarily freezes a module, yields control and finally unfreezes the module."""
         self.freeze()
 
         try:

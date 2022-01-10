@@ -1030,9 +1030,7 @@ class ModelPT(LightningModule, Model):
 
     @property
     def num_weights(self):
-        """
-        Utility property that returns the total number of parameters of the Model.
-        """
+        """Utility property that returns the total number of parameters of the Model."""
         num: int = 0
         for p in self.parameters():
             if p.requires_grad:

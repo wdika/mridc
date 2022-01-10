@@ -98,11 +98,6 @@ class PolynomialHoldDecayAnnealingParams(WarmupSchedulerParams):
     cycle: bool = False
 
 
-"""
-Pytorch Optimizers
-"""
-
-
 @dataclass
 class StepLRParams(SchedulerParams):
     """Config for StepLR."""

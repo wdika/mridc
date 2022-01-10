@@ -105,4 +105,6 @@ trainer:
 
 exp_manager:
   name: ???
+  create_tensorboard_logger: true
+  create_wandb_logger: false
   files_to_copy: []

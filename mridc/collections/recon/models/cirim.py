@@ -3,14 +3,13 @@ __author__ = "Dimitrios Karkalousos"
 
 import math
 from abc import ABC
-from collections import defaultdict
-from pathlib import Path
-from typing import Any, Dict, Generator, Optional, Union
+from typing import Dict, Generator, Optional, Union
 
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.utils.data as pt_data
+
+# import torch.utils.data as pt_data
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch.nn import L1Loss
@@ -19,7 +18,7 @@ from torch.utils.data import DataLoader
 from mridc.collections.common.losses.ssim import SSIMLoss
 from mridc.collections.common.parts.fft import ifft2c
 from mridc.collections.common.parts.rnn_utils import rnn_weights_init
-from mridc.collections.common.parts.utils import coil_combination, save_reconstructions
+from mridc.collections.common.parts.utils import coil_combination
 from mridc.collections.recon.data.mri_data import FastMRISliceDataset
 from mridc.collections.recon.data.subsample import create_mask_for_mask_type
 from mridc.collections.recon.models.e2evn import SensitivityModel
@@ -28,9 +27,6 @@ from mridc.collections.recon.parts.transforms import PhysicsInformedDataTransfor
 from mridc.collections.recon.parts.utils import center_crop_to_smallest
 from mridc.core.classes.common import typecheck
 from mridc.core.classes.modelPT import ModelPT
-
-
-from mridc.utils import logging
 from mridc.utils.model_utils import convert_model_config_to_dict_config, maybe_update_config_version
 
 __all__ = ["CIRIM"]
@@ -73,7 +69,7 @@ class CIRIM(ModelPT, ABC):
         self.fft_type = cirim_cfg_dict.get("fft_type")
         self.num_cascades = cirim_cfg_dict.get("num_cascades")
 
-        self.cirim = nn.ModuleList(
+        self.model = nn.ModuleList(
             [
                 RIMBlock(
                     recurrent_layer=cirim_cfg_dict.get("recurrent_layer"),
@@ -114,7 +110,7 @@ class CIRIM(ModelPT, ABC):
 
         # initialize weights if not using pretrained encoder
         if not cirim_cfg_dict.get("pretrained", False):
-            self.cirim.apply(lambda module: rnn_weights_init(module, std_init_range))
+            self.model.apply(lambda module: rnn_weights_init(module, std_init_range))
 
         self.train_loss_fn = SSIMLoss() if cirim_cfg_dict.get("loss_fn") == "ssim" else L1Loss()
         self.eval_loss_fn = SSIMLoss() if cirim_cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
@@ -154,7 +150,7 @@ class CIRIM(ModelPT, ABC):
         estimation = y.clone()
 
         cascades_etas = []
-        for i, cascade in enumerate(self.cirim):
+        for i, cascade in enumerate(self.model):
             # Forward pass through the cascades
             estimation, hx = cascade(
                 estimation, y, sensitivity_maps, mask, eta, hx, sigma, keep_eta=False if i == 0 else self.keep_eta
@@ -200,7 +196,7 @@ class CIRIM(ModelPT, ABC):
                     x * torch.logspace(-1, 0, steps=self.time_steps).to(time_steps_loss[0]) for x in time_steps_loss
                 ]
                 cascades_loss.append(sum(sum(_loss) / self.time_steps))
-            yield sum(list(cascades_loss)) / len(self.cirim)
+            yield sum(list(cascades_loss)) / len(self.model)
         else:
             return loss_fn(target, eta)
 
@@ -261,7 +257,7 @@ class CIRIM(ModelPT, ABC):
 
     def validation_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict:
         """Validation step for the CIRIM."""
-        y, sensitivity_maps, mask, eta, target, fname, slice_num, acc, max_value, _ = batch
+        y, sensitivity_maps, mask, _, target, fname, slice_num, _, _, _ = batch
         y, mask, _ = self.process_inputs(y, mask)
         etas = self.forward(y, sensitivity_maps, mask, None, None, target, 1.0)
 
@@ -296,7 +292,7 @@ class CIRIM(ModelPT, ABC):
 
     def test_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> dict:
         """Test step for the CIRIM."""
-        y, sensitivity_maps, mask, eta, target, fname, slice_num, _, max_value, _ = batch
+        y, sensitivity_maps, mask, _, target, fname, slice_num, _, _, _ = batch
         y, mask, _ = self.process_inputs(y, mask)
         etas = self.forward(y, sensitivity_maps, mask, None, None, target, 1.0)
 

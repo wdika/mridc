@@ -99,10 +99,8 @@ class ElementType(ABC):
 
 
 class VoidType(ElementType):
-    """Void-like type which is compatible with everything.
-    It is a good practice to use this type only as necessary.
-    For example, when you need template-like functionality.
-    """
+    """Void-like type which is compatible with everything. It is a good practice to use this type only as necessary.
+    For example, when you need template-like functionality."""
 
     def compare(cls, second: abc.ABCMeta) -> NeuralTypeComparisonResult:
         return NeuralTypeComparisonResult.SAME
@@ -165,15 +163,12 @@ class Index(ElementType):
 
 
 class Target(ElementType):
-    """
-    Type representing an element being a target value.
-    """
+    """Type representing an element being a target value."""
 
 
 class ReconstructionTarget(Target):
-    """
-    Type representing an element being target value in the reconstruction task, i.e. identifier of a desired class.
-    """
+    """Type representing an element being target value in the reconstruction task, i.e. identifier of a desired
+    class."""
 
 
 class ImageValue(ElementType):
@@ -181,9 +176,7 @@ class ImageValue(ElementType):
 
 
 class NormalizedImageValue(ImageValue):
-    """
-    Type representing an element/value of a single image channel normalized to <0-1> range,
-    """
+    """Type representing an element/value of a single image channel normalized to <0-1> range."""
 
 
 class ImageFeatureValue(ImageValue):
@@ -195,9 +188,7 @@ class StringType(ElementType):
 
 
 class StringLabel(StringType):
-    """
-    Type representing an label being a string with class name (e.g. the "hamster" class in CIFAR100).
-    """
+    """Type representing an label being a string with class name (e.g. the "hamster" class in CIFAR100)."""
 
 
 class BoolType(ElementType):

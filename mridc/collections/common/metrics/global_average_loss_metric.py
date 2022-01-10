@@ -1,7 +1,8 @@
 # encoding: utf-8
 __author__ = "Dimitrios Karkalousos"
 
-# Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/collections/common/metrics/global_average_loss_metric.py
+# Taken and adapted from:
+# https://github.com/NVIDIA/NeMo/blob/main/nemo/collections/common/metrics/global_average_loss_metric.py
 
 import torch
 from torchmetrics import Metric
@@ -12,7 +13,8 @@ __all__ = ["GlobalAverageLossMetric"]
 class GlobalAverageLossMetric(Metric):
     """
     This class is for averaging loss across multiple processes if a distributed backend is used. True average is
-    computed not running average. It does not accumulate gradients so the averaged loss cannot be used for optimization.
+    computed not running average. It does not accumulate gradients so the averaged loss cannot be used for
+    optimization.
     If ``take_avg_loss`` is ``True``, the :meth:`update` method ``loss`` argument has to be a mean loss. If
     ``take_avg_loss`` is ``False`` then the :meth:`update` method ``loss`` argument has to be a sum of losses.
     See :doc:`PyTorch Lightning Metrics<pytorch-lightning:metrics>` for the metric usage instruction.
@@ -45,8 +47,8 @@ class GlobalAverageLossMetric(Metric):
         Args:
             loss: A float zero dimensional ``torch.Tensor`` which is either sum or average of losses for processed
                 examples. See ``take_avg_loss`` parameter of :meth:`__init__`.
-            num_measurements: An integer zero dimensional ``torch.Tensor`` which contains a number of loss measurements.
-                The sum or mean of the results of these measurements are in the ``loss`` parameter.
+            num_measurements: An integer zero dimensional ``torch.Tensor`` which contains a number of loss
+                measurements. The sum or mean of the results of these measurements are in the ``loss`` parameter.
         """
         if self.take_avg_loss:
             self.loss_sum += loss.detach() * num_measurements
@@ -55,9 +57,7 @@ class GlobalAverageLossMetric(Metric):
         self.num_measurements += num_measurements
 
     def compute(self):
-        """
-        Returns mean loss.
-        """
+        """Returns mean loss."""
         if self.num_measurements.eq(0):
             return torch.tensor(float("nan"))
         return self.loss_sum / self.num_measurements

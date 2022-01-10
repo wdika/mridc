@@ -112,9 +112,7 @@ class NamedTimer:
         self.timers[name] = timer_data
 
     def active_timers(self):
-        """
-        Return list of all active named timers
-        """
+        """Return list of all active named timers"""
         return [k for k, v in self.timers.items() if "start" in v]
 
     def get(self, name=""):
@@ -128,9 +126,7 @@ class NamedTimer:
         return self._reduction_fn(dt_list)
 
     def export(self):
-        """
-        Exports a dictionary with average/all dt per named timer
-        """
+        """Exports a dictionary with average/all dt per named timer"""
         fn = self._reduction_fn
 
         data = {k: fn(v["dt"]) for k, v in self.timers.items() if "dt" in v}

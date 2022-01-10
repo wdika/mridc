@@ -151,7 +151,8 @@ class SaveRestoreConnector:
         Example:
             To convert the .mridc tarfile into a single Model level PyTorch checkpoint
             ::
-            state_dict = mridc.collections.asr.models.EncDecCTCModel.extract_state_dict_from('asr.mridc', './asr_ckpts')
+            state_dict = mridc.collections.asr.models.EncDecCTCModel.extract_state_dict_from('asr.mridc',
+            './asr_ckpts')
             To restore a model from a Model level checkpoint
             ::
             model = mridc.collections.asr.models.EncDecCTCModel(cfg)  # or any other method of restoration
