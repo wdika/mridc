@@ -91,22 +91,6 @@ class Adafactor(Optimizer):
             param_scale = max(param_group["eps"][1], param_state["RMS"])
         return param_scale * rel_step_sz
 
-    @staticmethod
-    def _get_options(param_group, param_shape):
-        factored = len(param_shape) >= 2
-        use_first_moment = param_group["beta1"] is not None
-        return factored, use_first_moment
-
-    @staticmethod
-    def _rms(tensor):
-        return tensor.norm(2) / (tensor.numel() ** 0.5)
-
-    @staticmethod
-    def _approx_sq_grad(exp_avg_sq_row, exp_avg_sq_col):
-        r_factor = (exp_avg_sq_row / exp_avg_sq_row.mean(dim=-1, keepdim=True)).rsqrt_().unsqueeze(-1)
-        c_factor = exp_avg_sq_col.unsqueeze(-2).rsqrt()
-        return torch.mul(r_factor, c_factor)
-
     def step(self, closure=None):
         """Performs a single optimization step.
         Args:
@@ -196,3 +180,19 @@ class Adafactor(Optimizer):
                     p.data.copy_(p_data_fp32)
 
         return loss
+
+    @staticmethod
+    def _get_options(param_group, param_shape):
+        factored = len(param_shape) >= 2
+        use_first_moment = param_group["beta1"] is not None
+        return factored, use_first_moment
+
+    @staticmethod
+    def _rms(tensor):
+        return tensor.norm(2) / (tensor.numel() ** 0.5)
+
+    @staticmethod
+    def _approx_sq_grad(exp_avg_sq_row, exp_avg_sq_col):
+        r_factor = (exp_avg_sq_row / exp_avg_sq_row.mean(dim=-1, keepdim=True)).rsqrt_().unsqueeze(-1)
+        c_factor = exp_avg_sq_col.unsqueeze(-2).rsqrt()
+        return torch.mul(r_factor, c_factor)
