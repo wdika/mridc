@@ -10,6 +10,8 @@ class MRIDCBaseException(Exception):
 
 
 class LightningNotInstalledException(MRIDCBaseException):
+    """Exception for when lightning is not installed"""
+
     def __init__(self, obj):
         message = (
             f" You are trying to use {obj} without installing all of pytorch_lightning, hydra, and "
@@ -19,6 +21,8 @@ class LightningNotInstalledException(MRIDCBaseException):
 
 
 class CheckInstall:
+    """Class to check if a package is installed."""
+
     def __init__(self, *args, **kwargs):
         raise LightningNotInstalledException(self)
 

@@ -124,7 +124,6 @@ class Exportable(ABC):
         check_tolerance=0.01,
     ):
         """Exports the Neural Module to a file."""
-
         my_args = locals()
         del my_args["self"]
 
@@ -201,7 +200,6 @@ class Exportable(ABC):
         self, output, output_example, input_list, input_dict, input_names, output_names, check_tolerance, check_trace
     ):
         """Verifies the exported model can be read and is valid."""
-
         onnx_model = onnx.load(output)
         onnx.checker.check_model(onnx_model, full_check=True)
         test_runtime = check_trace
@@ -220,7 +218,6 @@ class Exportable(ABC):
         onnx_model, input_list, input_dict, input_names, output_names, output_example, output, check_tolerance
     ):
         """Verifies the exported model can be run on a test input."""
-
         try:
             import onnxruntime
         except (ImportError, ModuleNotFoundError):
@@ -258,7 +255,6 @@ class Exportable(ABC):
         verbose,
     ):
         """Exports the model to ONNX."""
-
         if jitted_model is None:
             jitted_model = self
 
@@ -280,7 +276,7 @@ class Exportable(ABC):
         )
 
     def _get_dynamic_axes(self, dynamic_axes, input_names, output_names, use_dynamic_axes):
-        """dynamic axis is a mapping from input/output_name => list of "dynamic" indices"""
+        """Dynamic axis is a mapping from input/output_name => list of "dynamic" indices"""
         if dynamic_axes is None and use_dynamic_axes:
             dynamic_axes = get_input_dynamic_axes(self.input_module, input_names)  # type: ignore
             dynamic_axes = {

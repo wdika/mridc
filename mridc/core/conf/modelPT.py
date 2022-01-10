@@ -64,6 +64,8 @@ class MRIDCConfig:
 
 
 class ModelConfigBuilder:
+    """Builder for the ModelConfig class."""
+
     def __init__(self, model_cfg: ModelConfig):
         """
         Base class for any Model Config Builder.
@@ -133,10 +135,11 @@ class ModelConfigBuilder:
         self.model_cfg.test_ds = cfg
 
     def set_optim(self, cfg: OptimizerParams, sched_cfg: Optional[SchedulerParams] = None):
+        """Set the optimizer configuration."""
+
         @dataclass
         class WrappedOptimConfig(OptimConfig, cfg.__class__):  # type: ignore
             """A wrapper class for the OptimizerParams dataclass."""
-            pass
 
         # Setup optim
         optim_name = cfg.__class__.__name__.replace("Params", "").lower()
@@ -147,7 +150,6 @@ class ModelConfigBuilder:
             @dataclass
             class WrappedSchedConfig(SchedConfig, sched_cfg.__class__):  # type: ignore
                 """A wrapper class for the SchedulerParams dataclass."""
-                pass
 
             # Setup scheduler
             sched_name = sched_cfg.__class__.__name__.replace("Params", "")
@@ -162,7 +164,7 @@ class ModelConfigBuilder:
         raise NotImplementedError()
 
     def build(self) -> ModelConfig:
-        """validate config"""
+        """Validate config"""
         self._finalize_cfg()
 
         return self.model_cfg

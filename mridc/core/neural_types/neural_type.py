@@ -55,8 +55,10 @@ class NeuralType:
         self.optional = optional
 
     def compare(self, second) -> NeuralTypeComparisonResult:
-        """Performs neural type comparison of self with second. When you chain two modules' inputs/outputs via
-        __call__ method, this comparison will be called to ensure neural type compatibility."""
+        """
+        Performs neural type comparison of self with second. When you chain two modules' inputs/outputs via __call__
+        method, this comparison will be called to ensure neural type compatibility.
+        """
         # First, handle dimensionality
         axes_a = self.axes
         axes_b = second.axes
@@ -105,7 +107,7 @@ class NeuralType:
 
     @staticmethod
     def __check_sanity(axes):
-        """check that list come before any tensor dimension"""
+        """Check that list come before any tensor dimension"""
         are_strings = True
         for axis in axes:
             if not isinstance(axis, str):

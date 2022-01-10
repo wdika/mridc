@@ -119,10 +119,14 @@ class BaseFormatter(logging.Formatter):
 
 
 class BaseMRIDCFormatter(BaseFormatter):
+    """Base formatter for MRIDC logs."""
+
     DEFAULT_FORMAT = "%(color)s[MRIDC %(levelname)1.1s %(asctime)s %(module)s:%(lineno)d]%(end_color)s %(message)s"
 
 
 class DebugMRIDCFormatter(BaseFormatter):
+    """Debug formatter for MRIDC logs."""
+
     DEFAULT_FORMAT = (
         "%(color)s[MRIDC %(levelname)1.1s %(asctime)s %(module)s:%(lineno)d rank:%(rank)s]%(end_color)s %(message)s"
     )

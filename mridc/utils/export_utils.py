@@ -121,6 +121,7 @@ def simple_replace(BaseT: Type[nn.Module], DestT: Type[nn.Module]) -> Callable[[
     """
 
     def expansion_fn(mod: nn.Module) -> Optional[nn.Module]:
+        """Swap function to replace BaseT module with DestT"""
         if not isinstance(mod, BaseT):
             return None
         args = [getattr(mod, name, None) for name in mod.__constants__]

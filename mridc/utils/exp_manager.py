@@ -57,6 +57,7 @@ class CheckpointMisconfigurationError(MRIDCBaseException):
 @dataclass
 class CallbackParams:
     """Parameters for a callback"""
+
     filepath: Optional[str] = None  # Deprecated
     dirpath: Optional[str] = None  # If None, exp_manager will attempt to handle the filepath
     filename: Optional[str] = None  # If None, exp_manager will attempt to handle the filepath
@@ -77,6 +78,7 @@ class CallbackParams:
 @dataclass
 class StepTimingParams:
     """Parameters for the step timing callback."""
+
     reduction: Optional[str] = "mean"
     # if True torch.cuda.synchronize() is called on start/stop
     sync_cuda: Optional[bool] = False
@@ -87,6 +89,7 @@ class StepTimingParams:
 @dataclass
 class ExpManagerConfig:
     """Configuration for the experiment manager."""
+
     # Log dir creation parameters
     explicit_log_dir: Optional[str] = None
     exp_dir: Optional[str] = None
@@ -948,15 +951,12 @@ class StatelessTimer(Timer):
 
     def on_save_checkpoint(self, trainer, pl_module, checkpoint) -> None:
         """Override to not save the state of the timer."""
-        pass  # no-op
 
     def on_load_checkpoint(self, trainer, pl_module, callback_state) -> None:
         """Override to not load the state of the timer."""
-        pass  # no-op
 
     def _check_time_remaining(self, trainer) -> None:
         """Override to not check the time remaining."""
-
         # Default timer only checks for train time exceeding max_time, this includes time for all stages.
         train_duration = self.time_elapsed(RunningStage.TRAINING)
         validation_duration = self.time_elapsed(RunningStage.VALIDATING)

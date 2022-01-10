@@ -64,6 +64,7 @@ def set_numba_compat_strictness(strict: bool):
 
 @contextlib.contextmanager
 def with_numba_compat_strictness(strict: bool):
+    """Context manager to temporarily set numba cuda compatibility strictness."""
     initial_strictness = is_numba_compat_strict()
     set_numba_compat_strictness(strict=strict)
     yield

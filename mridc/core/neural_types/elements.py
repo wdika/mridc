@@ -54,18 +54,22 @@ class ElementType(ABC):
 
     @property
     def type_parameters(self) -> Dict:
-        """Override this property to parametrize your type. For example, you can specify 'storage' type such as
-        float, int, bool with 'dtype' keyword. Another example, is if you want to represent a signal with a
-        particular property (say, sample frequency), then you can put sample_freq->value in there.
-        When two types are compared their type_parameters must match."""
+        """
+        Override this property to parametrize your type. For example, you can specify 'storage' type such as float,
+        int, bool with 'dtype' keyword. Another example, is if you want to represent a signal with a particular
+        property (say, sample frequency), then you can put sample_freq->value in there. When two types are compared
+        their type_parameters must match."
+        """
         return {}
 
     @property
     def fields(self) -> Optional[Tuple]:
-        """This should be used to logically represent tuples/structures. For example, if you want to represent a
-        bounding box (x, y, width, height) you can put a tuple with names ('x', y', 'w', 'h') in here.
-        Under the hood this should be converted to the last tensor dimension of fixed size = len(fields).
-        When two types are compared their fields must match."""
+        """
+        This should be used to logically represent tuples/structures. For example, if you want to represent a bounding
+        box (x, y, width, height) you can put a tuple with names ('x', y', 'w', 'h') in here. Under the hood this
+        should be converted to the last tensor dimension of fixed size = len(fields). When two types are compared their
+         fields must match.
+        """
         return None
 
     def compare(self, second) -> NeuralTypeComparisonResult:
@@ -108,7 +112,7 @@ class VoidType(ElementType):
     """
 
     def compare(cls, second: abc.ABCMeta) -> NeuralTypeComparisonResult:
-        """VoidType is compatible with everything"""
+        """Void type is compatible with everything."""
         return NeuralTypeComparisonResult.SAME
 
 
@@ -176,8 +180,10 @@ class Target(ElementType):
 
 
 class ReconstructionTarget(Target):
-    """Type representing an element being target value in the reconstruction task, i.e. identifier of a desired
-    class."""
+    """
+    Type representing an element being target value in the reconstruction task, i.e. identifier of a desired
+    class.
+    """
 
 
 class ImageValue(ElementType):

@@ -14,7 +14,7 @@ from mridc.core.neural_types.neural_type import NeuralType
 from mridc.utils import logging
 from mridc.utils.cloud import maybe_download_from_cloud
 
-"""Interfaces common to all Neural Modules and Models."""
+# Interfaces common to all Neural Modules and Models.
 import hashlib
 import inspect
 import traceback
@@ -207,10 +207,8 @@ class Typing(ABC):
                 # Perform recursive neural type check for homogeneous elements
                 elif isinstance(value, (list, tuple)):
                     for _, val in enumerate(value):
-                        """
-                        This initiates a DFS, tracking the depth count as it goes along the nested structure.
-                        Initial depth is 1 as we consider the current loop to be the 1st step inside the nest.
-                        """
+                        # This initiates a DFS, tracking the depth count as it goes along the nested structure.
+                        # Initial depth is 1 as we consider the current loop to be the 1st step inside the nest.
                         self.__check_neural_type(val, metadata, depth=1, name=key)
 
     def _attach_and_validate_output_types(self, out_objects, ignore_collections=False, output_types=None):
@@ -323,6 +321,7 @@ class Typing(ABC):
                     self.__attach_neural_type(res, metadata, depth=0, name=out_types_list[ind][0])
 
     def __check_neural_type(self, obj, metadata, depth, name=None):
+        """Checks if the object is of the correct type, and attaches the correct NeuralType."""
         if isinstance(obj, (tuple, list)):
             for elem in obj:
                 self.__check_neural_type(elem, metadata, depth + 1, name=name)
@@ -362,6 +361,7 @@ class Typing(ABC):
                 )
 
     def __attach_neural_type(self, obj, metadata, depth, name=None):
+        """Attach NeuralType to the object."""
         if isinstance(obj, (tuple, list)):
             for elem in obj:
                 self.__attach_neural_type(elem, metadata, depth=depth + 1, name=name)
@@ -397,6 +397,8 @@ class Typing(ABC):
 
 
 class Serialization(ABC):
+    """Base class for serialization."""
+
     @classmethod
     def from_config_dict(cls, config: "DictConfig", trainer: Optional[Trainer] = None):
         """Instantiates object using DictConfig-based configuration"""
@@ -496,6 +498,7 @@ class Serialization(ABC):
 
     @classmethod
     def _inspect_signature_for_trainer(cls, check_cls):
+        """Inspects the signature of the class to see if it accepts a trainer argument."""
         if hasattr(check_cls, "__init__"):
             signature = inspect.signature(check_cls.__init__)
             return Trainer in signature.parameters
@@ -503,6 +506,8 @@ class Serialization(ABC):
 
 
 class FileIO(ABC):
+    """Base class for file IO."""
+
     def save_to(self, save_path: str):
         """Saves module/model with weights"""
         raise NotImplementedError()
@@ -553,6 +558,8 @@ class FileIO(ABC):
 @total_ordering
 @dataclass
 class PretrainedModelInfo:
+    """Class to store information about a pretrained model."""
+
     pretrained_model_name: str
     description: str
     location: str
@@ -699,6 +706,8 @@ class Model(Typing, Serialization, FileIO, ABC):  # type: ignore
 
 
 class typecheck:
+    """Decorator to check the type of the input arguments."""
+
     class TypeState(Enum):
         """
         Placeholder to denote the default value of type information provided.
@@ -803,12 +812,14 @@ class typecheck:
 
     @staticmethod
     def set_typecheck_enabled(enabled: bool = True):
+        """Set the global typecheck flag."""
         global _TYPECHECK_ENABLED
         _TYPECHECK_ENABLED = enabled
 
     @staticmethod
     @contextmanager
     def disable_checks():
+        """Temporarily disable type checks."""
         typecheck.set_typecheck_enabled(enabled=False)
         try:
             yield

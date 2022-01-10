@@ -96,6 +96,7 @@ class Adafactor(Optimizer):
 
     def step(self, closure=None):
         """Performs a single optimization step.
+
         Args:
             closure (callable, optional): A closure that reevaluates the model and returns the loss.
         """
@@ -198,8 +199,10 @@ class Adafactor(Optimizer):
 
     @staticmethod
     def _approx_sq_grad(exp_avg_sq_row, exp_avg_sq_col):
-        """Compute the square of the gradient, but approximate the sqrt using the exponential moving average of the
-        squared gradient."""
+        """
+        Compute the square of the gradient, but approximate the sqrt using the exponential moving average of the
+        squared gradient.
+        """
         r_factor = (exp_avg_sq_row / exp_avg_sq_row.mean(dim=-1, keepdim=True)).rsqrt_().unsqueeze(-1)
         c_factor = exp_avg_sq_col.unsqueeze(-2).rsqrt()
         return torch.mul(r_factor, c_factor)

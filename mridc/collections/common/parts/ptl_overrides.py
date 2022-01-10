@@ -8,7 +8,8 @@ from pytorch_lightning.plugins.precision.native_amp import NativeMixedPrecisionP
 
 
 class MRIDCNativeMixedPrecisionPlugin(NativeMixedPrecisionPlugin):
+    """Native Mixed Precision Plugin for MRIDC."""
+
     def __init__(self, init_scale: float = 2 ** 32, growth_interval: int = 1000) -> None:
         super().__init__(precision=16)
-
         self.scaler = torch.cuda.amp.GradScaler(init_scale=init_scale, growth_interval=growth_interval)

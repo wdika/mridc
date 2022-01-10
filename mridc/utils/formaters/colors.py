@@ -61,8 +61,9 @@ def clear_line(mode=2):
 
 
 class AnsiCodes:
+    """ANSI color codes."""
+
     def __init__(self):
-        """ANSI color codes."""
         # the subclasses declare class attributes which are numbers.
         # Upon instantiation we define instance attributes, which are the same
         # as the class attributes but wrapped with the ANSI escape sequence
@@ -73,6 +74,8 @@ class AnsiCodes:
 
 
 class AnsiCursor:
+    """ANSI cursor codes."""
+
     @staticmethod
     def UP(n=1):
         """
@@ -142,6 +145,7 @@ class AnsiCursor:
 
 class AnsiFore(AnsiCodes):
     """ANSI color codes for foreground text."""
+
     BLACK = 30
     RED = 31
     GREEN = 32
@@ -165,6 +169,7 @@ class AnsiFore(AnsiCodes):
 
 class AnsiBack(AnsiCodes):
     """ANSI color codes for background text."""
+
     BLACK = 40
     RED = 41
     GREEN = 42
@@ -188,6 +193,7 @@ class AnsiBack(AnsiCodes):
 
 class AnsiStyle(AnsiCodes):
     """ANSI color codes for text styles."""
+
     BRIGHT = 1
     DIM = 2
     NORMAL = 22

@@ -59,6 +59,8 @@ class ArtifactPathType(Enum):
 
 @dataclass(init=False)
 class ArtifactItem:
+    """ArtifactItem is a dataclass that holds the information of an artifact."""
+
     path: str
     path_type: ArtifactPathType
     hashed_path: Optional[str] = None

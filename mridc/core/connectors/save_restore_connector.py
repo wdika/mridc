@@ -22,6 +22,8 @@ from mridc.utils.get_rank import is_global_rank_zero
 
 
 class SaveRestoreConnector:
+    """This class is used to save and restore the model state."""
+
     def __init__(self) -> None:
         self._model_config_yaml = "model_config.yaml"
         self._model_weights_ckpt = "model_weights.ckpt"
@@ -345,8 +347,10 @@ class SaveRestoreConnector:
 
     @staticmethod
     def _update_artifact_paths(model, path2yaml_file):
-        """This method is called by ModelPT.save_to() and ModelPT.load_from() to update the artifact paths in the
-        model."""
+        """
+        This method is called by ModelPT.save_to() and ModelPT.load_from() to update the artifact paths in the
+        model.
+        """
         if model.artifacts is not None and len(model.artifacts) > 0:
             conf = OmegaConf.load(path2yaml_file)
             for conf_path, item in model.artifacts.items():

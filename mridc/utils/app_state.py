@@ -13,6 +13,7 @@ from mridc.utils.metaclasses import Singleton
 @dataclass()
 class ModelMetadataRegistry:
     """A registry for model metadata."""
+
     guid: str
     gidx: int
     restoration_path: Optional[str] = None
@@ -20,6 +21,7 @@ class ModelMetadataRegistry:
 
 class AppState(metaclass=Singleton):
     """A singleton class that holds the state of the application."""
+
     def __init__(self):
         """Initializes the AppState class."""
         # method call lock

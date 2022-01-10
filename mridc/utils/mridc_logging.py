@@ -21,11 +21,15 @@ from mridc.utils.metaclasses import Singleton
 
 
 class LogMode(enum.IntEnum):
+    """Enum for the different logging modes."""
+
     EACH = 0  # Log the message each time
     ONCE = 1  # Log the message only once. The same message will not be logged again.
 
 
 class Logger(metaclass=Singleton):
+    """Singleton class for logging."""
+
     # Level 0
     NOTSET = _logging.NOTSET
 
@@ -179,9 +183,11 @@ class Logger(metaclass=Singleton):
             del self._handlers["memory_all"]
 
     def add_err_file_handler(self, log_file):
-        """Add a FileHandler to logger that logs all WARNING and higher messages to a file. If the logger had a
+        """
+        Add a FileHandler to logger that logs all WARNING and higher messages to a file. If the logger had a
         MemoryHandler at self._handlers["memory_err"], those buffered messages are flushed to the new file, and the
-        MemoryHandler is closed."""
+        MemoryHandler is closed.
+        """
         if self._logger is None:
             raise RuntimeError("Impossible to set handlers if the Logger is not predefined")
 

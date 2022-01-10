@@ -16,7 +16,6 @@ def is_global_rank_zero():
     # If not set by pytorch, we need to determine node_rank
     def get_node_rank():
         """Helper function to determine the node rank"""
-
         # Use an equivalent of pytorch lightning's determine_ddp_node_rank()
         _node_rank = 0
         # First check if running on a slurm cluster
