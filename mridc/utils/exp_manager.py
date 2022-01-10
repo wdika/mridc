@@ -350,9 +350,8 @@ def error_checks(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None
     if trainer.logger is not None and (cfg.create_tensorboard_logger or cfg.create_wandb_logger):  # type: ignore
         raise LoggerMisconfigurationError(
             "The pytorch lightning trainer that was passed to exp_manager contained a logger, and either "
-            f"create_tensorboard_logger: {cfg.create_tensorboard_logger} or create_wandb_logger: "  # type: ignore
-            f"{cfg.create_wandb_logger} was set to True. These can only be used if trainer does not already have a"
-            " logger."
+            "create_tensorboard_logger or create_wandb_logger was set to True. These can only be used if trainer does "
+            "not already have a logger."
         )
 
     if trainer.num_nodes > 1 and not check_slurm(trainer):  # type: ignore
