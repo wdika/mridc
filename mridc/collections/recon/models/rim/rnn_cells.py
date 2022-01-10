@@ -269,12 +269,11 @@ class ConvMGUCellBase(nn.Module):
         """
         if n_dim == 1:
             return nn.Conv1d
-        elif n_dim == 2:
+        if n_dim == 2:
             return nn.Conv2d
-        elif n_dim == 3:
+        if n_dim == 3:
             return nn.Conv3d
-        else:
-            raise ValueError("Convolution of: {} dims is not implemented".format(n_dim))
+        raise ValueError("Convolution of: {} dims is not implemented".format(n_dim))
 
     def extra_repr(self):
         """
