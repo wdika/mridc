@@ -45,9 +45,11 @@ class ElementType(ABC):
     """Abstract class defining semantics of the tensor elements. We are relying on Python for inheritance checking"""
 
     def __str__(self):
+        """Override this method to provide a human readable representation of the type"""
         return self.__doc__
 
     def __repr__(self):
+        """Override this method to provide a human readable representation of the type"""
         return self.__class__.__name__
 
     @property
@@ -67,6 +69,7 @@ class ElementType(ABC):
         return None
 
     def compare(self, second) -> NeuralTypeComparisonResult:
+        """Override this method to provide a comparison between two types."""
         # First, check general compatibility
         first_t = type(self)
         second_t = type(second)
@@ -99,10 +102,13 @@ class ElementType(ABC):
 
 
 class VoidType(ElementType):
-    """Void-like type which is compatible with everything. It is a good practice to use this type only as necessary.
-    For example, when you need template-like functionality."""
+    """
+    Void-like type which is compatible with everything. It is a good practice to use this type only as necessary.
+    For example, when you need template-like functionality.
+    """
 
     def compare(cls, second: abc.ABCMeta) -> NeuralTypeComparisonResult:
+        """VoidType is compatible with everything"""
         return NeuralTypeComparisonResult.SAME
 
 
@@ -124,7 +130,9 @@ class LossType(ElementType):
 
 
 class MRISignal(ElementType):
-    """Element type to represent encoded representation returned by the mri model
+    """
+    Element type to represent encoded representation returned by the mri model
+
     Args:
         freq (int): sampling frequency of a signal. Note that two signals will only be the same if their
         freq is the same.
@@ -135,6 +143,7 @@ class MRISignal(ElementType):
 
     @property
     def type_parameters(self):
+        """Returns the type parameters of the element type."""
         return self._params
 
 
@@ -216,8 +225,10 @@ class NormalDistributionSamplesType(ProbabilityDistributionSamplesType):
 
 
 class SequenceToSequenceAlignmentType(ElementType):
-    """Class to represent the alignment from seq-to-seq attention outputs. Generally a mapping from encoder time steps
-    to decoder time steps."""
+    """
+    Class to represent the alignment from seq-to-seq attention outputs. Generally a mapping from encoder time steps
+    to decoder time steps.
+    """
 
 
 class NormalDistributionMeanType(ElementType):

@@ -9,8 +9,7 @@ __all__ = ["NeuralTypeComparisonResult"]
 
 
 class NeuralTypeComparisonResult(Enum):
-    """The result of comparing two neural type objects for compatibility.
-    When comparing A.compare_to(B):"""
+    """The result of comparing two neural type objects for compatibility. When comparing A.compare_to(B)."""
 
     SAME = 0
     LESS = 1  # A is B

@@ -72,6 +72,7 @@ def _get_env(key, default=None, coerce=lambda x: x, required=False):
 
 # standard type coercion functions
 def _bool(value):
+    """Return env var cast as boolean."""
     if isinstance(value, bool):
         return value
 
@@ -79,26 +80,32 @@ def _bool(value):
 
 
 def _int(value):
+    """Return env var cast as integer."""
     return int(value)
 
 
 def _float(value):
+    """Return env var cast as float."""
     return float(value)
 
 
 def _decimal(value):
+    """Return env var cast as Decimal."""
     return decimal.Decimal(value)
 
 
 def _dict(value):
+    """Return env var as a dict."""
     return json.loads(value)
 
 
 def _datetime(value):
+    """Return env var as a datetime."""
     return parser.parse(value)
 
 
 def _date(value):
+    """Return env var as a date."""
     return parser.parse(value).date()
 
 

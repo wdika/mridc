@@ -10,17 +10,18 @@ __all__ = ["AxisKindAbstract", "AxisKind", "AxisType"]
 
 
 class AxisKindAbstract(Enum):
-    """This is an abstract Enum to represents what does varying axis dimension mean.
-    In practice, you will almost always use AxisKind Enum. This Enum should be inherited by
-    your OWN Enum if you aren't satisfied with AxisKind. Then your own Enum can be used
-    instead of AxisKind."""
+    """
+    This is an abstract Enum to represents what does varying axis dimension mean. In practice, you will almost always
+    use AxisKind Enum. This Enum should be inherited by your OWN Enum if you aren't satisfied with AxisKind. Then your
+    own Enum can be used instead of AxisKind.
+    """
 
 
 class AxisKind(AxisKindAbstract):
-    """This Enum represents what does varying axis dimension mean.
-    For example, does this dimension correspond to width, batch, time, etc.
-    The "Dimension" and "Channel" kinds are the same and used to represent
-    a general axis. "Any" axis will accept any axis kind fed to it.
+    """
+    This Enum represents what does varying axis dimension mean. For example, does this dimension correspond to width,
+    batch, time, etc. The "Dimension" and "Channel" kinds are the same and used to represent a general axis. "Any" axis
+     will accept any axis kind fed to it.
     """
 
     # TODO (wdika): change names of the enums
@@ -36,13 +37,15 @@ class AxisKind(AxisKindAbstract):
     Singleton = 8  # Used to represent a axis that has size 1
 
     def __repr__(self):
+        """Returns short string representation of the AxisKind"""
         return self.__str__()
 
     def __str__(self):
+        """Returns short string representation of the AxisKind"""
         return str(self.name).lower()
 
     def t_with_string(self, text):
-        # it checks if text is "t_<any string>"
+        """it checks if text is 't_<any string>'"""
         return text.startswith("t_") and text.endswith("_") and text[2:-1] == self.__str__()
 
     @staticmethod
@@ -87,6 +90,7 @@ class AxisType:
         self.is_list = is_list
 
     def __repr__(self):
+        """Returns short string representation of the AxisType"""
         if self.size is None:
             representation = str(self.kind)
         else:

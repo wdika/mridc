@@ -10,6 +10,7 @@ __all__ = ["Novograd"]
 
 
 def _check_valid_opt_params(lr, eps, betas):
+    """Check if the given learning rate and epsilon are valid."""
     if lr < 0:
         raise ValueError(f"Invalid learning rate: {lr}")
     if eps < 0:

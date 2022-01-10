@@ -33,6 +33,16 @@ class WarmupPolicy(_LRScheduler):
     """
 
     def __init__(self, optimizer, *, warmup_steps=None, warmup_ratio=None, max_steps=None, min_lr=0.0, last_epoch=-1):
+        """
+
+        Args:
+            optimizer (): optimizer
+            warmup_steps (): Number of training steps in warmup stage
+            warmup_ratio (): Ratio of warmup steps to total steps
+            max_steps (): Total number of steps while training or `None` for infinite training
+            min_lr (): Minimum learning rate
+            last_epoch (): Last epoch
+        """
         if warmup_steps is not None and warmup_ratio is not None:
             raise AssertionError("Either use particular number of step or ratio")
         if not (warmup_ratio is None or max_steps is not None):
@@ -52,6 +62,7 @@ class WarmupPolicy(_LRScheduler):
         super().__init__(optimizer, last_epoch)
 
     def get_lr(self):
+        """Get learning rate at current step."""
         if not self._get_lr_called_within_step:
             warnings.warn(
                 "To get the last learning rate computed by the scheduler, please use `get_last_lr()`.", UserWarning
@@ -68,6 +79,7 @@ class WarmupPolicy(_LRScheduler):
         return self._get_lr(step)
 
     def _get_warmup_lr(self, step):
+        """Linear warmup"""
         lr_val = (step + 1) / (self.warmup_steps + 1)
         return [initial_lr * lr_val for initial_lr in self.base_lrs]
 
@@ -88,6 +100,16 @@ class SquareRootConstantPolicy(_LRScheduler):
     def __init__(
         self, optimizer, *, constant_steps=None, constant_ratio=None, max_steps=None, min_lr=0.0, last_epoch=-1
     ):
+        """
+
+        Args:
+            optimizer (): optimizer
+            constant_steps (): Number of training steps in constant stage
+            constant_ratio (): Ratio of constant steps to total steps
+            max_steps (): Total number of steps while training or `None` for infinite training
+            min_lr (): Minimum learning rate
+            last_epoch (): Last epoch
+        """
         if constant_steps is not None and constant_ratio is not None:
             raise AssertionError("Either use particular number of step or ratio")
 
@@ -109,6 +131,7 @@ class SquareRootConstantPolicy(_LRScheduler):
         super().__init__(optimizer, last_epoch)
 
     def get_lr(self):
+        """Get learning rate at current step."""
         if not self._get_lr_called_within_step:
             warnings.warn(
                 "To get the last learning rate computed by the scheduler, please use `get_last_lr()`.", UserWarning
@@ -187,6 +210,7 @@ class WarmupHoldPolicy(WarmupPolicy):
         )
 
     def get_lr(self):
+        """Get learning rate at current step."""
         if not self._get_lr_called_within_step:
             warnings.warn(
                 "To get the last learning rate computed by the scheduler, " "please use `get_last_lr()`.", UserWarning
@@ -264,6 +288,7 @@ class WarmupAnnealHoldPolicy(_LRScheduler):
         super().__init__(optimizer, last_epoch)
 
     def get_lr(self):
+        """Get learning rate at current step."""
         if not self._get_lr_called_within_step:
             warnings.warn(
                 "To get the last learning rate computed by the scheduler, please use `get_last_lr()`.", UserWarning
@@ -286,10 +311,12 @@ class WarmupAnnealHoldPolicy(_LRScheduler):
         return self._get_lr(step)
 
     def _get_warmup_lr(self, step):
+        """Get learning rate at warmup stage."""
         lr_val = (step + 1) / (self.warmup_steps + 1)
         return [initial_lr * lr_val for initial_lr in self.base_lrs]
 
     def _get_constant_lr(self, step):
+        """Get learning rate at constant stage."""
         return [self.min_lr for _ in self.base_lrs]
 
     def _get_lr(self, step):
@@ -298,6 +325,7 @@ class WarmupAnnealHoldPolicy(_LRScheduler):
 
 
 def _sqrt_annealing(initial_lr, step, max_steps, min_lr):
+    """Anneal learning rate by sqrt."""
     mult = ((max_steps - step) / max_steps) ** 0.5
     out_lr = initial_lr * mult
     out_lr = max(out_lr, min_lr)
@@ -305,6 +333,7 @@ def _sqrt_annealing(initial_lr, step, max_steps, min_lr):
 
 
 def _square_annealing(initial_lr, step, max_steps, min_lr):
+    """Anneal learning rate by square."""
     mult = ((max_steps - step) / max_steps) ** 2
     out_lr = initial_lr * mult
     out_lr = max(out_lr, min_lr)
@@ -312,12 +341,14 @@ def _square_annealing(initial_lr, step, max_steps, min_lr):
 
 
 def _cosine_annealing(initial_lr, step, max_steps, min_lr):
+    """Anneal learning rate by cosine."""
     mult = 0.5 * (1 + math.cos(math.pi * step / max_steps))
     out_lr = (initial_lr - min_lr) * mult + min_lr
     return out_lr
 
 
 def _linear_warmup_with_cosine_annealing(max_lr, warmup_steps, step, decay_steps, min_lr):
+    """Anneal learning rate by linear warmup and cosine annealing."""
     if max_lr <= min_lr:
         raise AssertionError
     # Use linear warmup for the initial part.
@@ -344,6 +375,7 @@ def _linear_warmup_with_cosine_annealing(max_lr, warmup_steps, step, decay_steps
 
 
 def _poly_decay(initial_lr, step, decay_steps, power, min_lr, cycle):
+    """Polynomial decay of learning rate."""
     if cycle:
         multiplier = 1.0 if step == 0 else math.ceil(step / decay_steps)
         decay_steps *= multiplier
@@ -356,10 +388,13 @@ def _poly_decay(initial_lr, step, decay_steps, power, min_lr, cycle):
 
 
 class SquareAnnealing(WarmupPolicy):
+    """Anneal learning rate by square."""
+
     def __init__(self, optimizer, *, max_steps, min_lr=1e-5, last_epoch=-1, **kwargs):
         super().__init__(optimizer=optimizer, max_steps=max_steps, last_epoch=last_epoch, min_lr=min_lr, **kwargs)
 
     def _get_lr(self, step):
+        """Get learning rate at current step."""
         new_lrs = [
             _square_annealing(
                 initial_lr=initial_lr,
@@ -373,10 +408,13 @@ class SquareAnnealing(WarmupPolicy):
 
 
 class SquareRootAnnealing(WarmupPolicy):
+    """Anneal learning rate by square root."""
+
     def __init__(self, optimizer, *, max_steps, min_lr=0, last_epoch=-1, **kwargs):
         super().__init__(optimizer=optimizer, max_steps=max_steps, last_epoch=last_epoch, min_lr=min_lr, **kwargs)
 
     def _get_lr(self, step):
+        """Get learning rate at current step."""
         new_lrs = [
             _sqrt_annealing(initial_lr=initial_lr, step=step, max_steps=self.max_steps, min_lr=self.min_lr)
             for initial_lr in self.base_lrs
@@ -385,10 +423,13 @@ class SquareRootAnnealing(WarmupPolicy):
 
 
 class CosineAnnealing(WarmupAnnealHoldPolicy):
+    """Anneal learning rate by cosine."""
+
     def __init__(self, optimizer, *, max_steps, min_lr=0, last_epoch=-1, **kwargs):
         super().__init__(optimizer=optimizer, max_steps=max_steps, last_epoch=last_epoch, min_lr=min_lr, **kwargs)
 
     def _get_lr(self, step):
+        """Get learning rate at current step."""
         for initial_lr in self.base_lrs:
             if initial_lr < self.min_lr:
                 raise ValueError(
@@ -410,6 +451,7 @@ class CosineAnnealing(WarmupAnnealHoldPolicy):
         return new_lrs
 
     def _get_warmup_lr(self, step):
+        """Get the warmup learning rate for the given step."""
         if self.constant_steps is None or self.constant_steps == 0:
             return super()._get_warmup_lr(step)
 
@@ -417,11 +459,11 @@ class CosineAnnealing(WarmupAnnealHoldPolicy):
         return self._get_linear_warmup_with_cosine_annealing_lr(step)
 
     def _get_constant_lr(self, step):
-        # Only called when constant_steps is not None and not 0.
+        """Only called when constant_steps is not None and not 0."""
         return self._get_linear_warmup_with_cosine_annealing_lr(step)
 
     def _get_linear_warmup_with_cosine_annealing_lr(self, step):
-        # Cosine Schedule, slightly different warmup schedule + constant LR at the end.
+        """Cosine Schedule, slightly different warmup schedule + constant LR at the end."""
         new_lrs = [
             _linear_warmup_with_cosine_annealing(
                 max_lr=self.base_lrs[0],
@@ -436,6 +478,8 @@ class CosineAnnealing(WarmupAnnealHoldPolicy):
 
 
 class NoamAnnealing(_LRScheduler):
+    """Noam learning rate annealing."""
+
     def __init__(
         self, optimizer, *, d_model, warmup_steps=None, warmup_ratio=None, max_steps=None, min_lr=0.0, last_epoch=-1
     ):
@@ -459,6 +503,7 @@ class NoamAnnealing(_LRScheduler):
         super().__init__(optimizer, last_epoch)
 
     def get_lr(self):
+        """Get learning rate at current step."""
         if not self._get_lr_called_within_step:
             warnings.warn(
                 "To get the last learning rate computed by the scheduler, please use `get_last_lr()`.", UserWarning
@@ -479,6 +524,7 @@ class NoamAnnealing(_LRScheduler):
         return new_lrs
 
     def _noam_annealing(self, initial_lr, step):
+        """Noam learning rate annealing."""
         mult = self._normalize * min(step ** (-0.5), step * (self.warmup_steps ** (-1.5)))
         out_lr = initial_lr * mult
         if step > self.warmup_steps:
@@ -487,10 +533,13 @@ class NoamAnnealing(_LRScheduler):
 
 
 class WarmupAnnealing(WarmupPolicy):
+    """Warmup learning rate annealing."""
+
     def __init__(self, optimizer, *, max_steps, last_epoch=-1, min_lr=0.0, **kwargs):
         super().__init__(optimizer=optimizer, max_steps=max_steps, last_epoch=last_epoch, min_lr=min_lr, **kwargs)
 
     def _get_lr(self, step):
+        """Get learning rate at current step."""
         delta_lr = self.base_lrs[0] - self.min_lr
         mult = (step - self.warmup_steps) / (self.max_steps - self.warmup_steps)
         out_lr = [self.min_lr + (1 - mult) * delta_lr for _ in self.base_lrs]
@@ -499,24 +548,32 @@ class WarmupAnnealing(WarmupPolicy):
 
 
 class InverseSquareRootAnnealing(WarmupPolicy):
+    """Inverse square root learning rate annealing."""
+
     def __init__(self, optimizer, *, max_steps, last_epoch=-1, min_lr=0.0, **kwargs):
         super().__init__(optimizer=optimizer, max_steps=max_steps, **kwargs, last_epoch=last_epoch, min_lr=min_lr)
 
     def _get_lr(self, step):
+        """Get learning rate at current step."""
         denom = ((step + 1) / (self.warmup_steps + 1)) ** 0.5
         out_lr = [initial_lr / denom for initial_lr in self.base_lrs]
         return out_lr
 
 
 class T5InverseSquareRootAnnealing(SquareRootConstantPolicy):
+    """Inverse square root learning rate annealing."""
+
     def __init__(self, optimizer, *, max_steps, last_epoch=-1, min_lr=0.0, **kwargs):
         super().__init__(optimizer=optimizer, max_steps=max_steps, **kwargs, last_epoch=last_epoch, min_lr=min_lr)
 
     def _get_lr(self, step):
+        """Get learning rate at current step."""
         return [1 / (step ** 0.5) for _ in self.base_lrs]
 
 
 class PolynomialDecayAnnealing(WarmupPolicy):
+    """Polynomial decay learning rate annealing."""
+
     def __init__(self, optimizer, *, max_steps, min_lr=0.0, power=1.0, cycle=False, last_epoch=-1, **kwargs):
         self.power = power
         self.cycle = cycle
@@ -524,6 +581,7 @@ class PolynomialDecayAnnealing(WarmupPolicy):
         super().__init__(optimizer=optimizer, max_steps=max_steps, last_epoch=last_epoch, min_lr=min_lr, **kwargs)
 
     def _get_lr(self, step):
+        """Get learning rate at current step."""
         new_lrs = [
             _poly_decay(
                 initial_lr,
@@ -539,6 +597,8 @@ class PolynomialDecayAnnealing(WarmupPolicy):
 
 
 class PolynomialHoldDecayAnnealing(WarmupHoldPolicy):
+    """Polynomial decay learning rate annealing."""
+
     def __init__(self, optimizer, *, max_steps, min_lr=0.0, power=1.0, cycle=False, last_epoch=-1, **kwargs):
         self.power = power
         self.cycle = cycle
@@ -546,6 +606,7 @@ class PolynomialHoldDecayAnnealing(WarmupHoldPolicy):
         super().__init__(optimizer=optimizer, max_steps=max_steps, last_epoch=last_epoch, min_lr=min_lr, **kwargs)
 
     def _get_lr(self, step):
+        """Get learning rate at current step."""
         new_lrs = [
             _poly_decay(
                 initial_lr,
@@ -838,6 +899,7 @@ def prepare_lr_scheduler(
 def compute_max_steps(
     max_epochs, accumulate_grad_batches, limit_train_batches, num_workers, num_samples, batch_size, drop_last
 ):
+    """Compute effective max_steps from the provided parameters."""
     _round = math.floor if drop_last else math.ceil
 
     sampler_num_samples = math.ceil(num_samples / max(1, num_workers))

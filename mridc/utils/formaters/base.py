@@ -60,6 +60,15 @@ class BaseFormatter(logging.Formatter):
             self._normal = ForegroundColors.RESET
 
     def format(self, record):
+        """
+        Formats a record.
+
+        Args:
+            record (): The record to format.
+
+        Returns:
+            (str): The formatted record.
+        """
         try:
             message = record.getMessage()
             if not isinstance(message, str):

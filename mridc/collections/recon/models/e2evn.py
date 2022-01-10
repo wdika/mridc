@@ -292,6 +292,16 @@ class SensitivityModel(nn.Module):
     def get_pad_and_num_low_freqs(
         mask: torch.Tensor, num_low_frequencies: Optional[int] = None
     ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Get the padding to apply to the input to make it square and the number of low frequencies to keep.
+
+        Args:
+            mask (): Mask to use.
+            num_low_frequencies (): Number of low frequencies to keep. If None, keep all.
+
+        Returns:
+            Tuple of the padding and the number of low frequencies to keep.
+        """
         if num_low_frequencies is None or num_low_frequencies == 0:
             # get low frequency line locations and mask them out
             squeezed_mask = mask[:, 0, 0, :, 0].to(torch.int8)

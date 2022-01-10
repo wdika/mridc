@@ -77,6 +77,7 @@ class ConcatDataset(IterableDataset, ABC):
                 self.length += len(dataset)
 
     def get_iterable(self, dataset):
+        """Returns an iterable dataset."""
         if isinstance(dataset, IterableDataset):
             return dataset.__iter__()
         indices = np.arange(len(dataset))
@@ -85,6 +86,7 @@ class ConcatDataset(IterableDataset, ABC):
         return iter(indices)
 
     def __iter__(self):
+        """Returns an iterator over the dataset."""
         worker_info = pt_data.get_worker_info()
         if worker_info is None:
             max_elements = self.length
@@ -126,10 +128,12 @@ class ConcatDataset(IterableDataset, ABC):
                 n -= 1
 
     def __len__(self):
+        """Returns the number of elements in the dataset."""
         return self.length
 
     @staticmethod
     def temperature_generator(datasets, **kwargs):
+        """Generates indices for sampling with temperature."""
         temp = kwargs.get("temperature")
         if not temp:
             raise ValueError("Temperature generator expects a 'temperature' keyword argument.")
@@ -149,6 +153,7 @@ class ConcatDataset(IterableDataset, ABC):
 
     @staticmethod
     def round_robin_generator(datasets, **kwargs):
+        """Generates indices in a round-robin fashion."""
         num = len(datasets)
         while True:
             for i in range(num):
@@ -156,6 +161,7 @@ class ConcatDataset(IterableDataset, ABC):
 
     @staticmethod
     def random_generator(datasets, **kwargs):
+        """Generates random indices."""
         p = kwargs.get("p")
         if not p:
             raise ValueError("Random generator expects a 'p' keyowrd argument for sampling probabilities.")

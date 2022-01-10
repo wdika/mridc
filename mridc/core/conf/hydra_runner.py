@@ -83,12 +83,15 @@ def hydra_runner(
             # Wrap a callable object with name `parse_args`
             # This is to mimic the ArgParser.parse_args() API.
             class _argparse_wrapper:
+                """Wrapper for ArgParser.parse_args()."""
+
                 def __init__(self, arg_parser):
                     self.arg_parser = arg_parser
                     self._actions = arg_parser._actions
 
                 @staticmethod
                 def parse_args(args=None, namespace=None):
+                    """Parse arguments."""
                     return parsed_args
 
                     # no return value from run_hydra() as it may sometime actually run the task_function

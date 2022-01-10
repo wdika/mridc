@@ -97,6 +97,7 @@ class NeuralType:
             )
 
     def __eq__(self, other):
+        """Checks if two NeuralTypes are equal."""
         if isinstance(other, NeuralType):
             return self.compare(other)
 
@@ -104,7 +105,7 @@ class NeuralType:
 
     @staticmethod
     def __check_sanity(axes):
-        # check that list come before any tensor dimension
+        """check that list come before any tensor dimension"""
         are_strings = True
         for axis in axes:
             if not isinstance(axis, str):
@@ -174,6 +175,7 @@ class NeuralType:
         return 3
 
     def __repr__(self):
+        """Returns string representation of NeuralType."""
         if self.axes is not None:
             axes = str(self.axes)
         else:
@@ -198,8 +200,7 @@ class NeuralTypeError(Exception):
 
 
 class NeuralPortNameMismatchError(NeuralTypeError):
-    """Exception raised when neural module is called with incorrect port
-    names."""
+    """Exception raised when neural module is called with incorrect port names."""
 
     def __init__(self, input_port_name):
         super().__init__()
@@ -207,8 +208,7 @@ class NeuralPortNameMismatchError(NeuralTypeError):
 
 
 class NeuralPortNmTensorMismatchError(NeuralTypeError):
-    """Exception raised when a port is fed with a NmTensor of incompatible
-    type."""
+    """Exception raised when a port is fed with a NmTensor of incompatible type."""
 
     def __init__(self, class_name, port_name, first_type, second_type, type_compatibility):
         super().__init__()

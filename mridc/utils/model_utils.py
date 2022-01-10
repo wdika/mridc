@@ -328,6 +328,18 @@ def resolve_test_dataloaders(model: "ModelPT"):
 
 @wrapt.decorator
 def wrap_training_step(wrapped, instance: LightningModule, args, kwargs):
+    """
+    Wraps the training step of the LightningModule.
+
+    Args:
+        wrapped (): The wrapped function.
+        instance (): The LightningModule instance.
+        args (): The arguments passed to the wrapped function.
+        kwargs (): The keyword arguments passed to the wrapped function.
+
+    Returns:
+        The return value of the wrapped function.
+    """
     output_dict = wrapped(*args, **kwargs)
 
     if isinstance(output_dict, dict) and output_dict is not None and "log" in output_dict:
@@ -447,6 +459,16 @@ def resolve_subclass_pretrained_model_info(base_class) -> Union[List[PretrainedM
     list_of_models = set()
 
     def recursive_subclass_walk(cls):
+        """
+        Recursively traverses the inheritance graph of subclasses to extract all pretrained model info.
+
+        Args:
+            cls (): The class to be traversed.
+
+        Returns:
+            A list of unique pretrained model infos belonging to all of the inherited subclasses of
+            this baseclass.
+        """
         for subclass in cls.__subclasses__():
             # step into its immediate subclass
             recursive_subclass_walk(subclass)

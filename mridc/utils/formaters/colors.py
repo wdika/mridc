@@ -9,23 +9,60 @@ BEL = "\007"
 
 
 def code_to_chars(code):
+    """
+    Convert ANSI color code to a string of characters.
+
+    Args:
+        code (): ANSI color code.
+
+    Returns:
+        str: String of characters.
+    """
     return CSI + str(code) + "m"
 
 
 def set_title(title):
+    """
+    Set terminal title.
+
+    Args:
+        title (): Title.
+
+    Returns:
+        str: String of characters.
+    """
     return OSC + "2;" + title + BEL
 
 
 def clear_screen(mode=2):
+    """
+    Clear terminal screen.
+
+    Args:
+        mode (): Mode.
+
+    Returns:
+        str: String of characters.
+    """
     return CSI + str(mode) + "J"
 
 
 def clear_line(mode=2):
+    """
+    Clear terminal line.
+
+    Args:
+        mode (): Mode.
+
+    Returns:
+        str: String of characters.
+    """
     return CSI + str(mode) + "K"
 
 
 class AnsiCodes:
     def __init__(self):
+        """ANSI color codes."""
         # the subclasses declare class attributes which are numbers.
         # Upon instantiation we define instance attributes, which are the same
         # as the class attributes but wrapped with the ANSI escape sequence
@@ -38,26 +75,73 @@ class AnsiCodes:
 class AnsiCursor:
     @staticmethod
     def UP(n=1):
+        """
+        Move the cursor up n lines.
+
+        Args:
+            n (): Number of lines.
+
+        Returns:
+            str: String of characters.
+        """
         return CSI + str(n) + "A"
 
     @staticmethod
     def DOWN(n=1):
+        """
+        Move the cursor down n lines.
+
+        Args:
+            n (): Number of lines.
+
+        Returns:
+            str: String of characters.
+        """
         return CSI + str(n) + "B"
 
     @staticmethod
     def FORWARD(n=1):
+        """
+        Move the cursor forward n characters.
+
+        Args:
+            n (): Number of characters.
+
+        Returns:
+            str: String of characters.
+        """
         return CSI + str(n) + "C"
 
     @staticmethod
     def BACK(n=1):
+        """
+        Move the cursor back n characters.
+
+        Args:
+            n (): Number of characters.
+
+        Returns:
+            str: String of characters.
+        """
         return CSI + str(n) + "D"
 
     @staticmethod
     def POS(x=1, y=1):
+        """
+        Position the cursor.
+
+        Args:
+            x (): X position.
+            y (): Y position.
+
+        Returns:
+            str: String of characters.
+        """
         return CSI + str(y) + ";" + str(x) + "H"
 
 
 class AnsiFore(AnsiCodes):
+    """ANSI color codes for foreground text."""
     BLACK = 30
     RED = 31
     GREEN = 32
@@ -80,6 +164,7 @@ class AnsiFore(AnsiCodes):
 
 
 class AnsiBack(AnsiCodes):
+    """ANSI color codes for background text."""
     BLACK = 40
     RED = 41
     GREEN = 42
@@ -102,6 +187,7 @@ class AnsiBack(AnsiCodes):
 
 
 class AnsiStyle(AnsiCodes):
+    """ANSI color codes for text styles."""
     BRIGHT = 1
     DIM = 2
     NORMAL = 22

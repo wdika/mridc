@@ -201,6 +201,7 @@ class CIRIM(ModelPT, ABC):
 
     @staticmethod
     def process_inputs(y, mask):
+        """Process the inputs to the network."""
         if isinstance(y, list):
             r = np.random.randint(len(y))
             y = y[r]
@@ -260,7 +261,6 @@ class CIRIM(ModelPT, ABC):
         y, mask, _ = self.process_inputs(y, mask)
         etas = self.forward(y, sensitivity_maps, mask, None, None, target, 1.0)
 
-
         if self.accumulate_estimates:
             try:
                 etas = next(etas)
@@ -316,6 +316,8 @@ class CIRIM(ModelPT, ABC):
         return {}
 
     def log_image(self, name, image):
+        """Log an image."""
+        # TODO: Add support for wandb logging
         self.logger.experiment.add_image(name, image, global_step=self.global_step)
 
     def validation_epoch_end(self, outputs):

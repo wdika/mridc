@@ -276,6 +276,17 @@ class SaveRestoreConnector:
         return return_path
 
     def _handle_artifacts(self, model, mridc_file_folder):
+        """
+        This method is called by ModelPT.save_to() and ModelPT.load_from()
+        It will handle all artifacts and save them to the mridc file.
+
+        Args:
+            model (): ModelPT object to register artifact for.
+            mridc_file_folder (): Path to the mridc file.
+
+        Returns:
+            None
+        """
         tarfile_artifacts = []
         app_state = AppState()
         for conf_path, artiitem in model.artifacts.items():
@@ -334,6 +345,8 @@ class SaveRestoreConnector:
 
     @staticmethod
     def _update_artifact_paths(model, path2yaml_file):
+        """This method is called by ModelPT.save_to() and ModelPT.load_from() to update the artifact paths in the
+        model."""
         if model.artifacts is not None and len(model.artifacts) > 0:
             conf = OmegaConf.load(path2yaml_file)
             for conf_path, item in model.artifacts.items():
@@ -346,12 +359,16 @@ class SaveRestoreConnector:
 
     @staticmethod
     def _inject_model_parallel_rank_for_ckpt(dirname, basename):
+        """This method is called by ModelPT.save_to() and ModelPT.load_from() to inject the parallel rank of the
+        process into the checkpoint file name.
+        """
         app_state = AppState()
         model_weights = os.path.join(dirname, f"mp_rank_{app_state.model_parallel_rank:02}", basename)
         return model_weights
 
     @staticmethod
     def _make_mridc_file_from_folder(filename, source_dir):
+        """This method is called by ModelPT.save_to() and ModelPT.load_from() to create a mridc file from a folder."""
         dirname = os.path.dirname(filename)
         os.makedirs(dirname, exist_ok=True)
         with tarfile.open(filename, "w:gz") as tar:
@@ -359,6 +376,7 @@ class SaveRestoreConnector:
 
     @staticmethod
     def _unpack_mridc_file(path2file: str, out_folder: str) -> str:
+        """This method is called by ModelPT.save_to() and ModelPT.load_from() to unpack a mridc file."""
         if not os.path.exists(path2file):
             raise FileNotFoundError(f"{path2file} does not exist")
         tar = tarfile.open(path2file, "r:gz")
@@ -368,24 +386,30 @@ class SaveRestoreConnector:
 
     @staticmethod
     def _save_state_dict_to_disk(state_dict, filepath):
+        """This method is called by ModelPT.save_to() and ModelPT.load_from() to save the state dict to disk."""
         torch.save(state_dict, filepath)
 
     @staticmethod
     def _load_state_dict_from_disk(model_weights, map_location=None):
+        """This method is called by ModelPT.save_to() and ModelPT.load_from() to load the state dict from disk."""
         return torch.load(model_weights, map_location=map_location)
 
     @property
     def model_config_yaml(self) -> str:
+        """This property is used to get the path to the model config yaml file."""
         return self._model_config_yaml
 
     @model_config_yaml.setter
     def model_config_yaml(self, path: str):
+        """This property is used to set the path to the model config yaml file."""
         self._model_config_yaml = path
 
     @property
     def model_weights_ckpt(self) -> str:
+        """This property is used to get the path to the model weights ckpt file."""
         return self._model_weights_ckpt
 
     @model_weights_ckpt.setter
     def model_weights_ckpt(self, path: str):
+        """This property is used to set the path to the model weights ckpt file."""
         self._model_weights_ckpt = path

@@ -126,7 +126,8 @@ class Logger(metaclass=Singleton):
             pass
 
     def add_stream_handlers(self, formatter=BaseMRIDCFormatter):
-        """Add StreamHandler that log to stdout and stderr to the logger. INFO and lower logs are streamed to stdout
+        """
+        Add StreamHandler that log to stdout and stderr to the logger. INFO and lower logs are streamed to stdout
         while WARNING and higher are streamed to stderr. If the MRIDC_ENV_VARNAME_REDIRECT_LOGS_TO_STDERR environment
         variable is set, all logs are sent to stderr instead.
         """
@@ -159,9 +160,11 @@ class Logger(metaclass=Singleton):
         self.add_stream_handlers(formatter=formatter)
 
     def add_file_handler(self, log_file):
-        """Add a FileHandler to logger that logs all messages to a file. If the logger had a MemoryHandler at
+        """
+        Add a FileHandler to logger that logs all messages to a file. If the logger had a MemoryHandler at
         self._handlers["memory_all"], those buffered messages are flushed to the new file, and the MemoryHandler is
-        closed."""
+        closed.
+        """
         if self._logger is None:
             raise RuntimeError("Impossible to set handlers if the Logger is not predefined")
 
@@ -328,6 +331,16 @@ class Logger(metaclass=Singleton):
         self.warning("%s", s)
 
     def _logged_once(self, msg, mode):
+        """
+        Returns True if the given message has been logged at least once in the given mode.
+
+        Args:
+            msg (): The message to check.
+            mode (): The mode to check.
+
+        Returns:
+            True if the message has been logged at least once in the given mode.
+        """
         PREFIX_LEN = 12
         if mode == LogMode.ONCE:
             if msg[PREFIX_LEN:] in self.once_logged:

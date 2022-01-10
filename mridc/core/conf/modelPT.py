@@ -121,17 +121,21 @@ class ModelConfigBuilder:
         self.optim_cfg = None
 
     def set_train_ds(self, cfg: Optional[DatasetConfig] = None):
+        """Set the training dataset configuration."""
         self.model_cfg.train_ds = cfg
 
     def set_validation_ds(self, cfg: Optional[DatasetConfig] = None):
+        """Set the validation dataset configuration."""
         self.model_cfg.validation_ds = cfg
 
     def set_test_ds(self, cfg: Optional[DatasetConfig] = None):
+        """Set the test dataset configuration."""
         self.model_cfg.test_ds = cfg
 
     def set_optim(self, cfg: OptimizerParams, sched_cfg: Optional[SchedulerParams] = None):
         @dataclass
         class WrappedOptimConfig(OptimConfig, cfg.__class__):  # type: ignore
+            """A wrapper class for the OptimizerParams dataclass."""
             pass
 
         # Setup optim
@@ -142,6 +146,7 @@ class ModelConfigBuilder:
 
             @dataclass
             class WrappedSchedConfig(SchedConfig, sched_cfg.__class__):  # type: ignore
+                """A wrapper class for the SchedulerParams dataclass."""
                 pass
 
             # Setup scheduler
@@ -153,10 +158,11 @@ class ModelConfigBuilder:
         self.model_cfg.optim = wrapped_cfg
 
     def _finalize_cfg(self):
+        """Finalize the model configuration."""
         raise NotImplementedError()
 
     def build(self) -> ModelConfig:
-        # validate config
+        """validate config"""
         self._finalize_cfg()
 
         return self.model_cfg

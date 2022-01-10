@@ -12,6 +12,12 @@ from mridc.utils.env_var_parsing import get_envbool
 
 
 def check_color_support():
+    """
+    Returns True if the terminal supports color, False otherwise.
+
+    Returns:
+        bool: True if the terminal supports color, False otherwise.
+    """
     # Colors can be forced with an env variable
     if not sys.platform.lower().startswith("win") and get_envbool(MRIDC_ENV_VARNAME_ENABLE_COLORING, False):
         return True

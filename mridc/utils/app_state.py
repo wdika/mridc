@@ -12,13 +12,16 @@ from mridc.utils.metaclasses import Singleton
 
 @dataclass()
 class ModelMetadataRegistry:
+    """A registry for model metadata."""
     guid: str
     gidx: int
     restoration_path: Optional[str] = None
 
 
 class AppState(metaclass=Singleton):
+    """A singleton class that holds the state of the application."""
     def __init__(self):
+        """Initializes the AppState class."""
         # method call lock
         self.__lock = Lock()
 
@@ -239,17 +242,19 @@ class AppState(metaclass=Singleton):
 
     @property
     def model_restore_path(self):
+        """Returns the model_restore_path set by exp_manager."""
         restore_path = self._all_model_restore_paths[-1] if len(self._all_model_restore_paths) > 0 else None
         return restore_path
 
     @model_restore_path.setter
     def model_restore_path(self, path):
+        """Sets the model_restore_path property."""
         with self.__lock:
             self._model_restore_path = path
             self._all_model_restore_paths.append(path)
 
     def register_model_guid(self, guid: str, restoration_path: Optional[str] = None):
-        # Maps a guid to its restore path (None or last absolute path)
+        """Maps a guid to its restore path (None or last absolute path)."""
         with self.__lock:
             if guid in self._model_guid_map:
                 idx = self._model_guid_map[guid].gidx
@@ -258,27 +263,31 @@ class AppState(metaclass=Singleton):
             self._model_guid_map[guid] = ModelMetadataRegistry(guid, idx, restoration_path=restoration_path)
 
     def reset_model_guid_registry(self):
-        # Reset the guid mapping
+        """Resets the model guid registry."""
         with self.__lock:
             self._model_guid_map.clear()
 
     def get_model_metadata_from_guid(self, guid) -> ModelMetadataRegistry:
-        # Returns the global model idx and restoration path
+        """Returns the global model idx and restoration path."""
         metadata = self._model_guid_map[guid]
         return metadata
 
     @property
     def is_model_being_restored(self) -> bool:
+        """Returns whether a model is being restored."""
         return self._is_model_being_restored
 
     @is_model_being_restored.setter
     def is_model_being_restored(self, is_restored: bool):
+        """Sets whether a model is being restored."""
         self._is_model_being_restored = is_restored
 
     @property
     def mridc_file_folder(self) -> str:
+        """Returns the mridc_file_folder set by exp_manager."""
         return self._mridc_file_folder
 
     @mridc_file_folder.setter
     def mridc_file_folder(self, path: str):
+        """Sets the mridc_file_folder property."""
         self._mridc_file_folder = path

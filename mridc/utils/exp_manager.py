@@ -56,6 +56,7 @@ class CheckpointMisconfigurationError(MRIDCBaseException):
 
 @dataclass
 class CallbackParams:
+    """Parameters for a callback"""
     filepath: Optional[str] = None  # Deprecated
     dirpath: Optional[str] = None  # If None, exp_manager will attempt to handle the filepath
     filename: Optional[str] = None  # If None, exp_manager will attempt to handle the filepath
@@ -75,6 +76,7 @@ class CallbackParams:
 
 @dataclass
 class StepTimingParams:
+    """Parameters for the step timing callback."""
     reduction: Optional[str] = "mean"
     # if True torch.cuda.synchronize() is called on start/stop
     sync_cuda: Optional[bool] = False
@@ -84,6 +86,7 @@ class StepTimingParams:
 
 @dataclass
 class ExpManagerConfig:
+    """Configuration for the experiment manager."""
     # Log dir creation parameters
     explicit_log_dir: Optional[str] = None
     exp_dir: Optional[str] = None
@@ -113,11 +116,13 @@ class TimingCallback(Callback):
     """Logs execution time of train/val/test steps"""
 
     def __init__(self, timer_kwargs=None):
+        """Initialize TimingCallback"""
         if timer_kwargs is None:
             timer_kwargs = {}
         self.timer = timers.NamedTimer(**timer_kwargs)
 
     def _on_batch_start(self, name):
+        """Called at the beginning of each batch"""
         # reset only if we do not return mean of a sliding window
         if self.timer.buffer_size <= 0:
             self.timer.reset(name)
@@ -125,31 +130,40 @@ class TimingCallback(Callback):
         self.timer.start(name)
 
     def _on_batch_end(self, name, pl_module):
+        """Called at the end of each batch"""
         self.timer.stop(name)
         pl_module.log(name, self.timer[name], on_step=True, on_epoch=False)
 
     def on_train_batch_start(self, trainer, pl_module, batch, batch_idx, **kwargs):
+        """Called at the beginning of each training batch"""
         self._on_batch_start("train_step_timing")
 
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, **kwargs):
+        """Logs the time taken by the training batch"""
         self._on_batch_end("train_step_timing", pl_module)
 
     def on_validation_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
+        """Logs the time taken by the validation batch"""
         self._on_batch_start("validation_step_timing")
 
     def on_validation_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
+        """Logs the time taken by the validation step"""
         self._on_batch_end("validation_step_timing", pl_module)
 
     def on_test_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
+        """Logs execution time of test steps"""
         self._on_batch_start("test_step_timing")
 
     def on_test_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
+        """Logs execution time of test steps"""
         self._on_batch_end("test_step_timing", pl_module)
 
     def on_before_backward(self, trainer, pl_module, loss):
+        """Logs the time taken for backward pass"""
         self._on_batch_start("train_backward_timing")
 
     def on_after_backward(self, trainer, pl_module):
+        """Note: this is called after the optimizer step"""
         self._on_batch_end("train_backward_timing", pl_module)
 
 
@@ -587,10 +601,12 @@ class LoggerList(_LoggerCollection):
 
     @property
     def name(self) -> str:
+        """The name of the experiment."""
         return self._mridc_name
 
     @property
     def version(self) -> str:
+        """The version of the experiment. If the logger was created with a version, this will be the version."""
         return self._mridc_version
 
 
@@ -651,6 +667,16 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
         model_parallel_size=None,
         **kwargs,
     ):
+        """
+
+        Args:
+            always_save_mridc (): (Default value = False)
+            save_best_model (): (Default value = False)
+            postfix (): (Default value = ".mridc")
+            n_resume (): (Default value = False)
+            model_parallel_size (): (Default value = None)
+            **kwargs (): (Default value = {})
+        """
         # Parse and store "extended" parameters: save_best model and postfix.
         self.always_save_mridc = always_save_mridc
         self.save_best_model = save_best_model
@@ -672,6 +698,7 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
             self.mridc_topk_check_previous_run()
 
     def mridc_topk_check_previous_run(self):
+        """Check if there are previous runs with the same topk value."""
         self.best_k_models = {}
         self.kth_best_model_path = ""
         self.best_model_score = None
@@ -716,12 +743,32 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
 
     @staticmethod
     def _uninject_mp_rank(filepath):
+        """
+        Injects the rank of the current process into the checkpoint filepath.
+
+        Args:
+            filepath (): Path to the checkpoint file.
+
+        Returns:
+            str: Path to the checkpoint file with the rank of the current process injected.
+        """
         dirname = os.path.dirname(os.path.dirname(filepath))
         basename = os.path.basename(filepath)
         filepath = os.path.join(dirname, basename)
         return filepath
 
     def on_save_checkpoint(self, trainer, pl_module, checkpoint):
+        """
+        Override the default on_save_checkpoint to save the best model if needed.
+
+        Args:
+            trainer (): The trainer object.
+            pl_module (): The LightningModule object.
+            checkpoint (): The checkpoint object.
+
+        Returns:
+            None
+        """
         output = super().on_save_checkpoint(trainer, pl_module, checkpoint)
         if not self.always_save_mridc:
             return output
@@ -758,6 +805,16 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
         return output
 
     def on_train_end(self, trainer, pl_module):
+        """
+        This is called at the end of training.
+
+        Args:
+            trainer (): the trainer object
+            pl_module (): the pl_module object
+
+        Returns:
+            None
+        """
         if trainer.fast_dev_run:
             return None
 
@@ -777,6 +834,15 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
         pl_module.save_to(save_path=os.path.join(self.dirpath, self.prefix + self.postfix))
 
     def _del_model_without_trainer(self, filepath: str) -> None:
+        """
+        Delete a model without a trainer.
+
+        Args:
+            filepath (): path to the model to delete
+
+        Returns:
+            None
+        """
         app_state = AppState()
         if app_state.model_parallel_size is not None and app_state.model_parallel_size > 1:
             # filepath needs to be updated to include mp_rank
@@ -861,6 +927,16 @@ def configure_checkpointing(trainer: Trainer, log_dir: Path, name: str, resume: 
 
 
 def check_slurm(trainer):
+    """
+    Checks if the trainer is running on a slurm cluster. If so, it will check if the trainer is running on the master
+    node. If it is not, it will exit.
+
+    Args:
+        trainer (): The trainer to check.
+
+    Returns:
+        bool: True if the trainer is running on the master node, False otherwise.
+    """
     try:
         return trainer.accelerator_connector.is_slurm_managing_tasks
     except AttributeError:
@@ -871,12 +947,16 @@ class StatelessTimer(Timer):
     """Extension of PTL timers to be per run."""
 
     def on_save_checkpoint(self, trainer, pl_module, checkpoint) -> None:
-        pass
+        """Override to not save the state of the timer."""
+        pass  # no-op
 
     def on_load_checkpoint(self, trainer, pl_module, callback_state) -> None:
-        pass
+        """Override to not load the state of the timer."""
+        pass  # no-op
 
     def _check_time_remaining(self, trainer) -> None:
+        """Override to not check the time remaining."""
+
         # Default timer only checks for train time exceeding max_time, this includes time for all stages.
         train_duration = self.time_elapsed(RunningStage.TRAINING)
         validation_duration = self.time_elapsed(RunningStage.VALIDATING)

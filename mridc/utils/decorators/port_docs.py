@@ -51,11 +51,13 @@ def _normalize_docstring(docstring):
 
 
 def add_port_docs(wrapped=None, instance=None, value=""):
+    """Adds port documentation to the wrapped function."""
     if wrapped is None:
         return functools.partial(add_port_docs, value=value)
 
     @wrapt.decorator
     def wrapper(wrapped, instance=None, args=None, kwargs=None):
+        """Wrapper function."""
         return wrapped(*args, **kwargs)
 
     decorated = wrapper(wrapped)

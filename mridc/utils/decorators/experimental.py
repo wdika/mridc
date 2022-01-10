@@ -14,6 +14,7 @@ def experimental(cls):
     """
 
     def wrapped(x):
+        """Wrapper function."""
         logging.warning(
             f"Module {x} is experimental, not ready for production and is not fully supported. Use at your own risk."
         )

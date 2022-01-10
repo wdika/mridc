@@ -36,6 +36,22 @@ class ModelPT(LightningModule, Model):
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
         """
         Base class from which all mridc models should inherit
+
+        Internal global flags that determine core functionality of ModelPT.
+        _MODEL_IS_RESTORED:
+            This flag determines the context of the model - whether the model is currently being
+            restored or not.
+            -   When set, it can be assumed that the model's will disable all automatic methods -
+                setup_training_data(), setup_validation/test_data() and their multi equivalents.
+            -   If a model is being restored from a archive file (tarfile), it can be assumed that
+                under this context, the cwd is *inside* the tarfile itself.
+        _MODEL_RESTORE_PATH:
+            A string path to a a file from which the model is being restored.
+            This file can either be a PyTorch Lightning Checkpoint, or a archive (tarfile) that contains
+            artifact objects.
+            If it is an archive file, during restoration, the cwd will be temporarily moved to inside the
+            archive itself.
+
         Args:
             cfg (DictConfig):  configuration object.
                 The cfg object should have (optionally) the following sub-configs:
@@ -52,22 +68,6 @@ class ModelPT(LightningModule, Model):
             )
         super().__init__()
 
-        """
-        Internal global flags that determine core functionality of ModelPT.
-        _MODEL_IS_RESTORED:
-            This flag determines the context of the model - whether the model is currently being
-            restored or not.
-            -   When set, it can be assumed that the model's will disable all automatic methods -
-                setup_training_data(), setup_validation/test_data() and their multi equivalents.
-            -   If a model is being restored from a archive file (tarfile), it can be assumed that
-                under this context, the cwd is *inside* the tarfile itself.
-        _MODEL_RESTORE_PATH:
-            A string path to a a file from which the model is being restored.
-            This file can either be a PyTorch Lightning Checkpoint, or a archive (tarfile) that contains
-            artifact objects.
-            If it is an archive file, during restoration, the cwd will be temporarily moved to inside the
-            archive itself.
-        """
         # set global vars in AppState
         app_state = AppState()
 
@@ -141,6 +141,7 @@ class ModelPT(LightningModule, Model):
         self._training_step = mridc.utils.model_utils.wrap_training_step(self.training_step)  # type: ignore
 
     def __init_subclass__(cls) -> None:
+        """This method is called when a subclass is created."""
         cls._save_restore_connector = SaveRestoreConnector()
 
     def register_artifact(self, config_path: str, src: str, verify_src_exists: bool = True):
@@ -194,9 +195,10 @@ class ModelPT(LightningModule, Model):
             save_path: Path to .mridc file where model instance should be saved
         """
 
-        def maybe_make_save_dir(path: "Path"):
-            if not path.parent.exists():
-                path.parent.mkdir(parents=True)
+        def maybe_make_save_dir(_path: "Path"):
+            """Creates directory if it does not exist"""
+            if not _path.parent.exists():
+                _path.parent.mkdir(parents=True)
 
         save_path = Path(save_path).expanduser().resolve()  # type: ignore
         app_state = AppState()
@@ -537,6 +539,7 @@ class ModelPT(LightningModule, Model):
         return self._optimizer, self._scheduler
 
     def configure_optimizers(self):
+        """Configure optimizers and schedulers for training."""
         self.setup_optimization()
 
         if self._scheduler is None:
@@ -544,14 +547,17 @@ class ModelPT(LightningModule, Model):
         return [self._optimizer], [self._scheduler]
 
     def train_dataloader(self):
+        """Return the training dataloader."""
         if self._train_dl is not None:
             return self._train_dl
 
     def val_dataloader(self):
+        """Return the validation dataloader."""
         if self._validation_dl is not None:
             return self._validation_dl
 
     def test_dataloader(self):
+        """Return the test dataloader."""
         if self._test_dl is not None:
             return self._test_dl
 
@@ -1064,16 +1070,19 @@ class ModelPT(LightningModule, Model):
 
     @staticmethod
     def _is_model_being_restored() -> bool:
+        """Checks if the model is being restored from a checkpoint."""
         app_state = AppState()
         return app_state.is_model_being_restored
 
     @staticmethod
     def _set_model_restore_state(is_being_restored: bool, folder: str = None):
+        """Sets the state of the model to be restored."""
         app_state = AppState()
         app_state.is_model_being_restored = is_being_restored
         app_state.mridc_file_folder = str(folder)
 
     def _set_model_guid(self):
+        """Sets the model guid."""
         if not hasattr(self, "model_guid"):
             appstate = AppState()
 
@@ -1089,6 +1098,7 @@ class ModelPT(LightningModule, Model):
 
     @classmethod
     def update_save_restore_connector(cls, save_restore_connector):
+        """Update the save_restore_connector of the model."""
         if hasattr(cls, "_save_restore_connector"):
             cls._save_restore_connector = save_restore_connector
         else:

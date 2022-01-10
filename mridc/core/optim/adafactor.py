@@ -75,13 +75,16 @@ class Adafactor(Optimizer):
 
     @property
     def supports_memory_efficient_fp16(self):
+        """Whether optimizer supports memory efficient fp16"""
         return True
 
     @property
     def supports_flat_params(self):
+        """Whether the optimizer supports flat parameters."""
         return False
 
     def _get_lr(self, param_group, param_state):
+        """Returns the learning rate for the current layer."""
         rel_step_sz = param_group["lr"]
         if param_group["relative_step"]:
             min_step = 1e-6 * param_state["step"] if param_group["warmup_init"] else self.min_step
@@ -183,16 +186,20 @@ class Adafactor(Optimizer):
 
     @staticmethod
     def _get_options(param_group, param_shape):
+        """Returns the options for the current layer."""
         factored = len(param_shape) >= 2
         use_first_moment = param_group["beta1"] is not None
         return factored, use_first_moment
 
     @staticmethod
     def _rms(tensor):
+        """Compute the root mean square of a tensor."""
         return tensor.norm(2) / (tensor.numel() ** 0.5)
 
     @staticmethod
     def _approx_sq_grad(exp_avg_sq_row, exp_avg_sq_col):
+        """Compute the square of the gradient, but approximate the sqrt using the exponential moving average of the
+        squared gradient."""
         r_factor = (exp_avg_sq_row / exp_avg_sq_row.mean(dim=-1, keepdim=True)).rsqrt_().unsqueeze(-1)
         c_factor = exp_avg_sq_col.unsqueeze(-2).rsqrt()
         return torch.mul(r_factor, c_factor)

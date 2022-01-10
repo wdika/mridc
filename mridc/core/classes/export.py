@@ -31,6 +31,7 @@ _EXT_DICT = {".pt": ExportFormat.TORCHSCRIPT, ".ts": ExportFormat.TORCHSCRIPT, "
 
 
 def get_input_names(self):
+    """Returns a list of input names for the Neural Module"""
     if not hasattr(self, "input_types"):
         raise NotImplementedError("For export to work you must define input_types")
     input_names = list(self.input_types.keys())
@@ -38,6 +39,7 @@ def get_input_names(self):
 
 
 def get_output_names(self):
+    """Returns a list of output names for the Neural Module"""
     if not hasattr(self, "output_types"):
         raise NotImplementedError("For export to work you must define output_types")
     output_names = list(self.output_types.keys())
@@ -45,6 +47,7 @@ def get_output_names(self):
 
 
 def get_input_dynamic_axes(self, input_names):
+    """Returns a dictionary of dynamic axes for the Neural Module"""
     dynamic_axes = defaultdict(list)
     for name in input_names:
         if name in self.input_types:
@@ -53,6 +56,7 @@ def get_input_dynamic_axes(self, input_names):
 
 
 def get_output_dynamic_axes(self, output_names):
+    """Returns a dictionary of dynamic axes for the Neural Module"""
     dynamic_axes = defaultdict(list)
     for name in output_names:
         if name in self.output_types:
@@ -61,6 +65,7 @@ def get_output_dynamic_axes(self, output_names):
 
 
 def to_onnxrt_input(input_names, input_list, input_dict):
+    """Converts a list of inputs to a list of ONNX inputs"""
     odict = {}
     for k, v in input_dict.items():
         odict[k] = v.cpu().numpy()
@@ -73,6 +78,7 @@ def to_onnxrt_input(input_names, input_list, input_dict):
 
 
 def unpack_nested_neural_type(neural_type):
+    """Unpacks a nested NeuralType into a list of NeuralTypes"""
     if type(neural_type) in (list, tuple):
         return unpack_nested_neural_type(neural_type[0])
     return neural_type
@@ -83,6 +89,7 @@ class Exportable(ABC):
 
     @staticmethod
     def get_format(filename: str):
+        """Returns the format of the file"""
         _, ext = os.path.splitext(filename)
         try:
             return _EXT_DICT[ext]
@@ -91,10 +98,12 @@ class Exportable(ABC):
 
     @property
     def input_module(self):
+        """Returns the input module"""
         return self
 
     @property
     def output_module(self):
+        """Returns the output module"""
         return self
 
     def export(
@@ -114,6 +123,8 @@ class Exportable(ABC):
         dynamic_axes=None,
         check_tolerance=0.01,
     ):
+        """Exports the Neural Module to a file."""
+
         my_args = locals()
         del my_args["self"]
 
@@ -189,6 +200,8 @@ class Exportable(ABC):
     def _verify_onnx_export(
         self, output, output_example, input_list, input_dict, input_names, output_names, check_tolerance, check_trace
     ):
+        """Verifies the exported model can be read and is valid."""
+
         onnx_model = onnx.load(output)
         onnx.checker.check_model(onnx_model, full_check=True)
         test_runtime = check_trace
@@ -206,6 +219,8 @@ class Exportable(ABC):
     def _verify_runtime(
         onnx_model, input_list, input_dict, input_names, output_names, output_example, output, check_tolerance
     ):
+        """Verifies the exported model can be run on a test input."""
+
         try:
             import onnxruntime
         except (ImportError, ModuleNotFoundError):
@@ -242,6 +257,8 @@ class Exportable(ABC):
         onnx_opset_version,
         verbose,
     ):
+        """Exports the model to ONNX."""
+
         if jitted_model is None:
             jitted_model = self
 
@@ -263,7 +280,7 @@ class Exportable(ABC):
         )
 
     def _get_dynamic_axes(self, dynamic_axes, input_names, output_names, use_dynamic_axes):
-        # dynamic axis is a mapping from input/output_name => list of "dynamic" indices
+        """dynamic axis is a mapping from input/output_name => list of "dynamic" indices"""
         if dynamic_axes is None and use_dynamic_axes:
             dynamic_axes = get_input_dynamic_axes(self.input_module, input_names)  # type: ignore
             dynamic_axes = {
@@ -273,6 +290,7 @@ class Exportable(ABC):
         return dynamic_axes
 
     def _export_torchscript(self, jitted_model, output, input_dict, input_list, check_trace, check_tolerance, verbose):
+        """Exports the model to TorchScript."""
         if jitted_model is None:
             jitted_model = torch.jit.trace_module(
                 self,  # type: ignore
@@ -290,6 +308,7 @@ class Exportable(ABC):
 
     @staticmethod
     def _try_jit_compile_model(module, try_script):
+        """Attempts to compile the model."""
         jitted_model = None
         if try_script:
             try:
@@ -299,6 +318,7 @@ class Exportable(ABC):
         return jitted_model
 
     def _set_eval(self, set_eval):
+        """Sets the model to eval mode."""
         if set_eval:
             self.freeze()
             self.input_module.freeze()
@@ -355,6 +375,7 @@ class Exportable(ABC):
         raise NotImplementedError()
 
     def _wrap_forward_method(self):
+        """Wraps the forward method to handle dynamic axes."""
         old_forward_method = None
 
         if hasattr(type(self), "forward_for_export"):
@@ -368,6 +389,7 @@ class Exportable(ABC):
 
     @staticmethod
     def _setup_input_example(input_example):
+        """Sets up input example for export."""
         input_list = list(input_example)
         input_dict = {}
         # process possible kwargs
@@ -377,9 +399,11 @@ class Exportable(ABC):
         return input_list, input_dict
 
     def _get_input_example(self):
+        """Gets input example for export."""
         return self.input_module.input_example()
 
     def _process_input_names(self):
+        """Processes input names for export."""
         input_names = get_input_names(self.input_module)  # type: ignore
         # remove unnecessary inputs for input_ports
         for name in self.disabled_deployment_input_names:
@@ -388,6 +412,7 @@ class Exportable(ABC):
         return input_names
 
     def _process_output_names(self):
+        """Processes output names for export."""
         output_names = get_output_names(self.output_module)  # type: ignore
         # remove unnecessary inputs for input_ports
         for name in self.disabled_deployment_output_names:
@@ -397,6 +422,7 @@ class Exportable(ABC):
 
     @staticmethod
     def _augment_output_filename(output, prepend: str):
+        """Augments output filename with prepend string."""
         path, filename = os.path.split(output)
         filename = f"{prepend}-{filename}"
         return os.path.join(path, filename)
