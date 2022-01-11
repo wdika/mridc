@@ -17,7 +17,7 @@ __all__ = [
     "center_crop_to_smallest",
 ]
 
-from mridc.collections.recon.data.subsample import MaskFunc
+from mridc.collections.reconstruction.data.subsample import MaskFunc
 
 
 def apply_mask(

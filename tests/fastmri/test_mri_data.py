@@ -2,7 +2,7 @@
 __author__ = "Dimitrios Karkalousos"
 
 # Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
-from mridc.collections.recon.data.mri_data import FastMRICombinedSliceDataset, FastMRISliceDataset
+from mridc.collections.reconstruction.data.mri_data import FastMRICombinedSliceDataset, FastMRISliceDataset
 
 
 def test_slice_datasets(fastmri_mock_dataset, monkeypatch):

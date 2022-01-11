@@ -135,6 +135,22 @@ def complex_abs_sq(data: torch.Tensor) -> torch.Tensor:
     return (data ** 2).sum(dim=-1)
 
 
+def check_stacked_complex(data: torch.Tensor) -> torch.Tensor:
+    """
+    Check if tensor is stacked complex (real & imag parts stacked along last dim) and convert it to a combined complex
+    tensor.
+
+    Args:
+        data: A complex valued tensor, where the size of the final dimension might be 2.
+
+    Returns:
+        A complex valued tensor.
+    """
+    if data.shape[-1] == 2:
+        return torch.view_as_complex(data)
+    return data
+
+
 def rss(data: torch.Tensor, dim: int = 0) -> torch.Tensor:
     """
     Compute the Root Sum of Squares (RSS).
@@ -169,15 +185,21 @@ def rss_complex(data: torch.Tensor, dim: int = 0) -> torch.Tensor:
 
 def sense(data: torch.Tensor, sensitivity_maps: torch.Tensor, dim: int = 0) -> torch.Tensor:
     """
-    Sensitivities encoding coil combination.
+    SENSitivity Encoding (SENSE) transform  [1].
+
+    References
+    ----------
+
+    .. [1] Pruessmann KP, Weiger M, Scheidegger MB, Boesiger P. SENSE: Sensitivity encoding for fast MRI.
+    Magn Reson Med 1999; 42:952-962.
 
     Args:
         data: The input tensor
         sensitivity_maps: The sensitivity maps
-        dim: The dimensions along which to apply the sense transform
+        dim: The coil dimension
 
     Returns:
-        SENSE coil combination.
+        A coil-combined image.
     """
     return complex_mul(data, complex_conj(sensitivity_maps)).sum(dim)
 

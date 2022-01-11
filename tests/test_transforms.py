@@ -6,7 +6,7 @@ import pytest
 import torch
 
 from mridc.collections.common.parts.utils import tensor_to_complex_np, to_tensor
-from mridc.collections.recon.parts.utils import center_crop, center_crop_to_smallest, complex_center_crop
+from mridc.collections.reconstruction.parts.utils import center_crop, center_crop_to_smallest, complex_center_crop
 
 
 @pytest.mark.parametrize("x", [(np.zeros([1, 320, 320]).astype(np.complex64))])

@@ -4,7 +4,7 @@ __author__ = "Dimitrios Karkalousos"
 import numpy as np
 import pytest
 
-from mridc.collections.recon.data.subsample import (
+from mridc.collections.reconstruction.data.subsample import (
     EquispacedMaskFunc,
     Gaussian1DMaskFunc,
     Gaussian2DMaskFunc,

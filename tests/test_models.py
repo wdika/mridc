@@ -8,11 +8,11 @@ import pytest
 import torch
 from omegaconf import OmegaConf
 
-from mridc.collections.recon.data.subsample import RandomMaskFunc
-from mridc.collections.recon.models.cirim import CIRIM
-from mridc.collections.recon.models.e2evn import VarNet
-from mridc.collections.recon.models.unet import Unet
-from mridc.collections.recon.parts import transforms
+from mridc.collections.reconstruction.data.subsample import RandomMaskFunc
+from mridc.collections.reconstruction.models.cirim import CIRIM
+from mridc.collections.reconstruction.models.e2evn import VarNet
+from mridc.collections.reconstruction.models.unet import Unet
+from mridc.collections.reconstruction.parts import transforms
 from tests.fastmri.conftest import create_input
 
 

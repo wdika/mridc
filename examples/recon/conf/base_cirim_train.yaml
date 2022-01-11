@@ -1,13 +1,13 @@
 pretrained: false
-checkpoint: ???
+checkpoint: None
 mode: train
 
 model:
   model_name: CIRIM
   recurrent_layer: IndRNN
   conv_filters:
-  - 64
-  - 64
+  - 128
+  - 128
   - 2
   conv_kernels:
   - 5
@@ -22,8 +22,8 @@ model:
   - true
   - false
   recurrent_filters:
-  - 64
-  - 64
+  - 128
+  - 128
   - 0
   recurrent_kernels:
   - 1
@@ -71,14 +71,14 @@ model:
       center_fractions:
       - 0.7
       - 0.7
-      scale: 1e-10
+      scale: 0.02
       shift_mask: true
       use_seed: true
     normalize_inputs: true
     crop_size: None
     crop_before_masking: true
     kspace_zero_filling_size: None
-    sample_rate: 0.1
+    sample_rate: 1
     batch_size: 1
     shuffle: true
     num_workers: 8
@@ -98,14 +98,14 @@ model:
       center_fractions:
       - 0.7
       - 0.7
-      scale: 1e-10
+      scale: 0.02
       shift_mask: true
       use_seed: false
     normalize_inputs: true
     crop_size: None
     crop_before_masking: true
     kspace_zero_filling_size: None
-    sample_rate: 0.1
+    sample_rate: 1
     batch_size: 1
     shuffle: false
     num_workers: 8
@@ -113,18 +113,17 @@ model:
     pin_memory: false
 
   optim:
-    name: novograd
+    name: adam
     lr: 0.001
     betas:
     - 0.9
     - 0.98
     weight_decay: 0.0
     sched:
-      name: PolynomialHoldDecayAnnealing
+      name: InverseSquareRootAnnealing
       min_lr: 0.0
       last_epoch: -1
       warmup_ratio: 0.1
-      cycle: true
 
 trainer:
   strategy: ddp
@@ -140,6 +139,5 @@ trainer:
 
 exp_manager:
   name: ???
+  files_to_copy: [ ]
   create_tensorboard_logger: true
-  create_wandb_logger: false
-  files_to_copy: []

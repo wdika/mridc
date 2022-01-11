@@ -597,6 +597,7 @@ class ModelPT(LightningModule, Model):
                 self.log_dict(output_dict.pop("log"), on_epoch=True)  # type: ignore
 
             return output_dict
+
         output_dict = {"log": {}}
 
         # The output is a list of list of dicts, outer list corresponds to dataloader idx
@@ -687,6 +688,7 @@ class ModelPT(LightningModule, Model):
                 self.log_dict(output_dict.pop("log"), on_epoch=True)  # type: ignore
 
             return output_dict
+
         output_dict = {"log": {}}
 
         # The output is a list of list of dicts, outer list corresponds to dataloader idx

@@ -15,8 +15,8 @@ __all__ = ["UnetDataTransform", "PhysicsInformedDataTransform"]
 
 from mridc.collections.common.parts.fft import fft2c, ifft2c
 from mridc.collections.common.parts.utils import complex_abs, complex_conj, complex_mul, rss, to_tensor
-from mridc.collections.recon.data.subsample import MaskFunc
-from mridc.collections.recon.parts.utils import apply_mask, center_crop, complex_center_crop
+from mridc.collections.reconstruction.data.subsample import MaskFunc
+from mridc.collections.reconstruction.parts.utils import apply_mask, center_crop, complex_center_crop
 
 
 class UnetDataTransform:

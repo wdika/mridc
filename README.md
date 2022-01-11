@@ -36,7 +36,7 @@ pip install mridc
 
 Check on [scripts](examples) how to train models and run a method for reconstruction.
 
-Check on [tools](mridc/collections/recon/tools) for preprocessing and evaluation tools.
+Check on [tools](mridc/collections/reconstruction/tools) for preprocessing and evaluation tools.
 
 Recommended public datasets to use with this repo:
 
