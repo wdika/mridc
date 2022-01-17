@@ -10,6 +10,9 @@ from typing import Dict, Optional, Tuple
 import h5py
 import numpy as np
 import torch
+
+# TODO: Currently environment path variables need to be exported every time to find bart, otherwise it throws an
+#  import error. Need to fix this.
 import bart
 
 from omegaconf import DictConfig, OmegaConf
@@ -131,11 +134,9 @@ class PICS(ModelPT, ABC):
 
     def setup_training_data(self, train_data_config: Optional[DictConfig]):
         """Pass the setup of the training data."""
-        pass
 
     def setup_validation_data(self, val_data_config: Optional[DictConfig]):
         """Pass the setup of the validation data."""
-        pass
 
     def setup_test_data(self, test_data_config: Optional[DictConfig]):
         """Setup the test data."""

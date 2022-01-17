@@ -118,11 +118,9 @@ class ZF(ModelPT, ABC):
 
     def setup_training_data(self, train_data_config: Optional[DictConfig]):
         """Pass the setup of the training data."""
-        pass
 
     def setup_validation_data(self, val_data_config: Optional[DictConfig]):
         """Pass the setup of the validation data."""
-        pass
 
     def setup_test_data(self, test_data_config: Optional[DictConfig]):
         """Setup the test data."""

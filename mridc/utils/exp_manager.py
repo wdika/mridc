@@ -72,6 +72,7 @@ class CallbackParams:
     postfix: str = ".mridc"
     save_best_model: bool = False
     always_save_mridc: bool = False
+    save_mridc_on_train_end: Optional[bool] = True  # Automatically save .mridc file during on_train_end hook
     model_parallel_size: Optional[int] = None
 
 
@@ -83,7 +84,7 @@ class StepTimingParams:
     # if True torch.cuda.synchronize() is called on start/stop
     sync_cuda: Optional[bool] = False
     # if positive, defines the size of a sliding window for computing mean
-    buffer_size: Optional[int] = -1
+    buffer_size: Optional[int] = 1
 
 
 @dataclass
@@ -664,6 +665,7 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
     def __init__(
         self,
         always_save_mridc=False,
+        save_mridc_on_train_end=True,
         save_best_model=False,
         postfix=".mridc",
         n_resume=False,
@@ -674,6 +676,7 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
 
         Args:
             always_save_mridc (): (Default value = False)
+            save_mridc_on_train_end (): (Default value = True)
             save_best_model (): (Default value = False)
             postfix (): (Default value = ".mridc")
             n_resume (): (Default value = False)
@@ -682,7 +685,15 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
         """
         # Parse and store "extended" parameters: save_best model and postfix.
         self.always_save_mridc = always_save_mridc
+        self.save_mridc_on_train_end = save_mridc_on_train_end
         self.save_best_model = save_best_model
+        if self.save_best_model and not self.save_mridc_on_train_end:
+            logging.warning(
+                (
+                    "Found save_best_model is True and save_mridc_on_train_end is False. "
+                    "Set save_mridc_on_train_end to True to automatically save the best model."
+                )
+            )
         self.postfix = postfix
         self.previous_best_path = ""
         self.model_parallel_size = model_parallel_size
@@ -834,7 +845,8 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
             else:
                 trainer.checkpoint_connector.restore(self.best_model_path)
 
-        pl_module.save_to(save_path=os.path.join(self.dirpath, self.prefix + self.postfix))
+        if self.save_mridc_on_train_end:
+            pl_module.save_to(save_path=os.path.join(self.dirpath, self.prefix + self.postfix))
 
     def _del_model_without_trainer(self, filepath: str) -> None:
         """

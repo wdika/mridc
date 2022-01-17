@@ -14,6 +14,8 @@ __all__ = [
     "MRISignal",
     "RecurrentsType",
     "LabelsType",
+    "LogprobsType",
+    "ProbsType",
     "LossType",
     "RegressionValuesType",
     "CategoricalValuesType",
@@ -127,6 +129,14 @@ class RecurrentsType(ElementType):
 
 class LengthsType(ElementType):
     """Element type representing lengths of something"""
+
+
+class ProbsType(ElementType):
+    """Element type to represent probabilities. For example, outputs of softmax layers."""
+
+
+class LogprobsType(ElementType):
+    """Element type to represent log-probabilities. For example, outputs of log softmax layers."""
 
 
 class LossType(ElementType):
