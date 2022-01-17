@@ -24,12 +24,18 @@ class NeuralModule(Module, Typing, Serialization, FileIO, ABC):
                 num += p.numel()
         return num
 
-    def input_example(self):
+    def input_example(self, max_batch=None, max_dim=None):
         """
         Override this method if random inputs won't work
+
+        Args:
+            max_batch: Maximum batch size to generate
+            max_dim: Maximum dimension to generate
+
         Returns:
             A tuple sample of valid input data.
         """
+        return None
 
     def freeze(self) -> None:
         r"""Freeze all params for inference."""

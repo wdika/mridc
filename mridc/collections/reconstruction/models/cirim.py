@@ -186,7 +186,9 @@ class CIRIM(ModelPT, ABC):
         if "ssim" in str(set_loss_fn).lower():
             max_value = np.array(torch.max(torch.abs(target)).item()).astype(np.float32)
             loss_fn = lambda x, y: set_loss_fn(
-                x.unsqueeze(dim=1), torch.abs(y / torch.max(torch.abs(y))).unsqueeze(dim=1), data_range=max_value
+                x.unsqueeze(dim=1),
+                torch.abs(y / torch.max(torch.abs(y))).unsqueeze(dim=1),
+                data_range=torch.tensor(max_value).unsqueeze(dim=0).to(x.device),
             )
         else:
             loss_fn = lambda x, y: set_loss_fn(x, torch.abs(y / torch.max(torch.abs(y))))
@@ -312,11 +314,11 @@ class CIRIM(ModelPT, ABC):
         key = f"{name}_images_idx_{slice_num}"  # type: ignore
         output = torch.abs(etas).detach().cpu()
         target = torch.abs(target).detach().cpu()
-        output = output / output.max()  # type: ignore
+        _output = output / output.max()  # type: ignore
         target = target / target.max()  # type: ignore
-        error = torch.abs(target - output)
+        error = torch.abs(target - _output)
         self.log_image(f"{key}/target", target)
-        self.log_image(f"{key}/reconstruction", output)
+        self.log_image(f"{key}/reconstruction", _output)
         self.log_image(f"{key}/error", error)
 
         return name, slice_num, output
@@ -337,7 +339,7 @@ class CIRIM(ModelPT, ABC):
             reconstructions[fname].append((slice_num, output))
 
         for fname in reconstructions:
-            reconstructions[fname] = np.stack([out for _, out in sorted(reconstructions[fname])])
+            reconstructions[fname] = np.abs(np.stack([out for _, out in sorted(reconstructions[fname])]))
 
         out_dir = Path(os.path.join(self.logger.log_dir, "reconstructions"))
         out_dir.mkdir(exist_ok=True, parents=True)

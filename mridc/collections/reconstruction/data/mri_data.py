@@ -316,6 +316,9 @@ class FastMRISliceDataset(Dataset):
             attrs = dict(hf.attrs)
             attrs.update(metadata)
 
+        if sensitivity_map.shape != kspace.shape:
+            sensitivity_map = np.transpose(sensitivity_map, (2, 0, 1))
+
         if self.transform is None:
             sample = (kspace, sensitivity_map, mask, eta, target, attrs, fname.name, dataslice)
         else:

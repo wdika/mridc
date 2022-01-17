@@ -7,31 +7,18 @@ from mridc.utils.env_var_parsing import get_envint
 
 def is_global_rank_zero():
     """Helper function to determine if the current process is global_rank 0 (the main process)"""
-    # Try to get the pytorch RANK env var
-    # RANK is set by torch.distributed.launch
+    # Try to get the pytorch RANK env var RANK is set by torch.distributed.launch
     rank = get_envint("RANK", None)
-    if rank:
+    if rank is not None:
         return rank == 0
 
-    # If not set by pytorch, we need to determine node_rank
-    def get_node_rank():
-        """Helper function to determine the node rank"""
-        # Use an equivalent of pytorch lightning's determine_ddp_node_rank()
-        _node_rank = 0
-        # First check if running on a slurm cluster
-        num_slurm_tasks = get_envint("SLURM_NTASKS", 0)
-        if num_slurm_tasks > 0:
-            _node_rank = get_envint("SLURM_NODEID", 0)
-        else:
-            node_rank_env = get_envint("NODE_RANK", None)
-            group_rank = get_envint("GROUP_RANK", None)
-            if group_rank:
-                _node_rank = group_rank
-            # Take from NODE_RANK whenever available
-            if node_rank_env:
-                _node_rank = node_rank_env
-        return _node_rank
+    # Try to get the SLURM global rank env var SLURM_PROCID is set by SLURM
+    slurm_rank = get_envint("SLURM_PROCID", None)
+    if slurm_rank is not None:
+        return slurm_rank == 0
 
-    node_rank = get_node_rank()
+    # if neither pytorch and SLURM env vars are set check NODE_RANK/GROUP_RANK and LOCAL_RANK env vars assume
+    # global_rank is zero if undefined
+    node_rank = get_envint("NODE_RANK", get_envint("GROUP_RANK", 0))
     local_rank = get_envint("LOCAL_RANK", 0)
     return node_rank == 0 and local_rank == 0

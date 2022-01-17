@@ -427,9 +427,9 @@ def create_mask_for_mask_type(
     Returns:
         A MaskFunc object.
     """
-    if mask_type_str == "random":
+    if mask_type_str == "random1d":
         return RandomMaskFunc(center_fractions, accelerations)
-    if mask_type_str == "equispaced":
+    if mask_type_str == "equispaced1d":
         return EquispacedMaskFunc(center_fractions, accelerations)
     if mask_type_str == "gaussian1d":
         return Gaussian1DMaskFunc(center_fractions, accelerations)
