@@ -6,6 +6,7 @@ import contextlib
 from typing import Optional, Sequence, Tuple, Union
 
 import numpy as np
+from numpy import linalg as LA
 import torch
 from numpy import ndarray
 
@@ -591,7 +592,7 @@ class Poisson2DMaskFunc(MaskFunc):
         center_y = int((self.shape[1] - 1) / 2)
 
         X, Y = np.indices(self.shape)
-        radius = int(image_shape[0] * self.scale)
+        radius = int(self.shape[0] * self.scale)
         circle_image = ((X - center_x) ** 2 + (Y - center_y) ** 2) < radius ** 2  # type: bool
 
         return circle_image
