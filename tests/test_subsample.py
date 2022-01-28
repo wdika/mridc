@@ -13,6 +13,7 @@ from mridc.data.subsample import (
     RandomMaskFunc,
 )
 
+
 @pytest.mark.parametrize(
     "mask_type, center_fractions, accelerations, expected_mask_func, x, seed, half_scan_percentage",
     [("random", [0.08, 0.04], [4, 8], RandomMaskFunc, np.array([1, 320, 320]), None, 0)],
@@ -169,11 +170,11 @@ def test_create_mask_for_gaussian2d_type(
     if not accelerations[0] <= acc <= accelerations[1]:
         raise AssertionError
 
+
 @pytest.mark.parametrize(
     "mask_type, center_fractions, accelerations, expected_mask_func, x, seed, half_scan_percentage, scale",
     [("poisson2d", [0.7, 0.7], [4, 10], Poisson2DMaskFunc, np.array([1, 320, 320, 1]), None, 0, 0.02)],
 )
-
 def test_create_mask_for_poisson2d_type(
     mask_type, center_fractions, accelerations, expected_mask_func, x, seed, half_scan_percentage, scale
 ):
