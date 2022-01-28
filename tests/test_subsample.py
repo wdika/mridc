@@ -114,11 +114,8 @@ def test_create_mask_for_gaussian1d_type(
     Returns:
         None
     """
-    print("1")
     mask_func = create_mask_for_mask_type(mask_type, center_fractions, accelerations)
-    print("1")
     mask, acc = mask_func(x, seed, half_scan_percentage, scale)
-    print("1")
     mask = mask.squeeze(0).numpy()
 
     if not isinstance(mask_func, expected_mask_func):
@@ -181,7 +178,7 @@ def test_create_mask_for_poisson2d_type(
     mask_type, center_fractions, accelerations, expected_mask_func, x, seed, half_scan_percentage, scale
 ):
     """
-    Test that the function returns gaussian 2D masks
+    Test that the function returns poisson 2D masks
 
     Args:
         mask_type: The type of mask to be created
@@ -198,7 +195,7 @@ def test_create_mask_for_poisson2d_type(
     """
     mask_func = create_mask_for_mask_type(mask_type, center_fractions, accelerations)
 
-    mask, acc = mask_func(x, seed, scale)
+    mask, acc = mask_func(x, seed, half_scan_percentage, scale)
     mask = mask.squeeze(0).squeeze(-1).numpy()
 
     if not isinstance(mask_func, expected_mask_func):

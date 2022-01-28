@@ -6,9 +6,8 @@ import contextlib
 from typing import Optional, Sequence, Tuple, Union
 
 import numpy as np
-from numpy import linalg as LA
+from numpy import linalg as LA, ndarray
 import torch
-from numpy import ndarray
 
 
 @contextlib.contextmanager
@@ -466,8 +465,9 @@ class Poisson2DMaskFunc(MaskFunc):
         return (torch.from_numpy(mask.astype(np.float32)).unsqueeze(0).unsqueeze(-1), acceleration)
 
     def poisson_disc2d(self):
-        k=10
-        centerscale = self.scale
+        """"Calculate the Poisson mask in 2D."""
+        # Amount of tries before discarding a reference point for new samples
+        k = 10
 
         pattern_shape = (self.shape[0] - 1, self.shape[1] - 1)
 
@@ -497,9 +497,7 @@ class Poisson2DMaskFunc(MaskFunc):
             return int(pt[0] // a), int(pt[1] // a)
 
         def mark_neighbours(idx):
-            """
-            Add sample index to the cells within r(point) range of the point.
-            """
+            """Add sample index to the cells within r(point) range of the point."""
             coords = samples[idx]
             if idx in cells[get_cell_coords(coords)]:
                 # This point is already marked on the grid, so we can skip
@@ -515,14 +513,11 @@ class Poisson2DMaskFunc(MaskFunc):
             xx, yy = np.meshgrid(xvals, yvals, sparse=False)
             pts = np.vstack((xx.ravel(), yy.ravel())).T
             pts = pts[dist(pts[:, 0], pts[:, 1])]
-            [cells[get_cell_coords(pt)].append(idx) for pt in pts]
+            cells[get_cell_coords(pt)].append(idx) for pt in pts
 
         def point_valid(pt):
-            """
-    		Is pt a valid point to emit as a sample?
-            It must be no closer than r from any other point:
-            check the points
-    		"""
+            """Is pt a valid point to emit as a sample? It must be no closer than r from any other point: check the
+            points."""
             rx = calc_r(pt)
             if rx < 1:
                 if LA.norm(pt - center) < self.scale * width:
@@ -541,12 +536,9 @@ class Poisson2DMaskFunc(MaskFunc):
             return True
 
         def get_point(k, refpt):
-            """
-            	Try to find a candidate point relative to refpt to emit in the sample.
-    		We draw up to k points from the annulus of inner radius r, outer
-    		radius 2r around the reference point, refpt. If none of
-    		them are suitable return False. Otherwise, return the pt.
-    		"""
+            """Try to find a candidate point relative to refpt to emit in the sample. We draw up to k points from the
+            annulus of inner radius r, outer radius 2r around the reference point, refpt. If none of them are suitable
+            return False. Otherwise, return the pt."""
             i = 0
             rx = calc_r(refpt)
             while i < k:
@@ -595,12 +587,7 @@ class Poisson2DMaskFunc(MaskFunc):
         return poisson_pattern
 
     def centered_circle(self):
-        """
-        Description: creates a boolean centered circle image with a pre-defined radius
-        :param image_shape: shape of the desired image
-        :param radius: radius of the desired circle
-        :return: circle image. It is a boolean image
-        """
+        """Creates a boolean centered circle image using the scale as a radius."""
         center_x = int((self.shape[0] - 1) / 2)
         center_y = int((self.shape[1] - 1) / 2)
 
