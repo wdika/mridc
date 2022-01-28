@@ -547,6 +547,9 @@ class PhysicsInformedDataTransform:
                         imspace = ifft2c(y, fft_type=self.fft_type)
                         imspace = imspace / torch.max(torch.abs(imspace))
                         masked_kspaces.append(fft2c(imspace, fft_type=self.fft_type))
+                    elif self.fft_type == "fft_norm_only":
+                        imspace = ifft2c(y, fft_type=self.fft_type)
+                        masked_kspaces.append(fft2c(imspace, fft_type=self.fft_type))
                     else:
                         imspace = torch.fft.ifftn(torch.view_as_complex(y), dim=[-2, -1], norm=None)
                         imspace = imspace / torch.max(torch.abs(imspace))
@@ -557,6 +560,8 @@ class PhysicsInformedDataTransform:
                     imspace = ifft2c(masked_kspace, fft_type=self.fft_type)
                     imspace = imspace / torch.max(torch.abs(imspace))
                     masked_kspace = fft2c(imspace, fft_type=self.fft_type)
+                elif self.fft_type == "fft_norm_only":
+                    masked_kspace = fft2c(ifft2c(masked_kspace, fft_type=self.fft_type), fft_type=self.fft_type)
                 else:
                     imspace = torch.fft.ifftn(torch.view_as_complex(masked_kspace), dim=[-2, -1], norm=None)
                     imspace = imspace / torch.max(torch.abs(imspace))

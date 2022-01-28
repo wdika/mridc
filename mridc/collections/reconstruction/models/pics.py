@@ -95,13 +95,13 @@ class PICS(ModelPT, ABC):
             .numpy()
         )
 
-        output = self.forward(y, sensitivity_maps, target)
-        output = torch.fft.fftshift(torch.from_numpy(output), dim=(-2, -1)).unsqueeze(0)
+        prediction = self.forward(y, sensitivity_maps, target)
+        prediction = torch.fft.fftshift(torch.from_numpy(prediction), dim=(-2, -1)).unsqueeze(0)
 
         slice_num = int(slice_num)
         name = str(fname[0])  # type: ignore
         key = f"{name}_images_idx_{slice_num}"  # type: ignore
-        output = torch.abs(output).detach().cpu()
+        output = torch.abs(prediction).detach().cpu()
         target = torch.abs(target).detach().cpu()
         output = output / output.max()  # type: ignore
         target = target / target.max()  # type: ignore
@@ -110,7 +110,7 @@ class PICS(ModelPT, ABC):
         self.log_image(f"{key}/reconstruction", output)
         self.log_image(f"{key}/error", error)
 
-        return name, slice_num, output
+        return name, slice_num, prediction.detach().cpu().numpy()
 
     def log_image(self, name, image):
         """Log an image."""

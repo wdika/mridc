@@ -21,7 +21,7 @@ from torch.utils.data import DataLoader
 from mridc.collections.common.losses.ssim import SSIMLoss
 from mridc.collections.common.parts.fft import ifft2c
 from mridc.collections.common.parts.rnn_utils import rnn_weights_init
-from mridc.collections.common.parts.utils import coil_combination
+from mridc.collections.common.parts.utils import coil_combination, complex_conj, complex_mul
 from mridc.collections.reconstruction.data.mri_data import FastMRISliceDataset
 from mridc.collections.reconstruction.data.subsample import create_mask_for_mask_type
 from mridc.collections.reconstruction.models.e2evn import SensitivityModel
@@ -168,11 +168,13 @@ class CIRIM(ModelPT, ABC):
         if self.accumulate_estimates:
             yield cascades_etas
         else:
+            # TODO: this won't work, yield works unconditionally
             return self.process_intermediate_eta(estimation, sensitivity_maps, target).detach()
 
-    def process_intermediate_eta(self, eta, sensitivity_maps, target):
+    def process_intermediate_eta(self, eta, sensitivity_maps, target, do_coil_combination=False):
         """Process the intermediate eta to be used in the loss function."""
-        if not self.no_dc:
+        # Take the last time step of the eta
+        if not self.no_dc or do_coil_combination:
             eta = ifft2c(eta, fft_type=self.fft_type)
             eta = coil_combination(eta, sensitivity_maps, method=self.output_type, dim=1)
         eta = torch.view_as_complex(eta)
@@ -219,7 +221,6 @@ class CIRIM(ModelPT, ABC):
     def training_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
         """
         Training step for the CIRIM.
-
         Args:
             batch: A dictionary of the form {
                 'y': subsampled kspace,
@@ -231,7 +232,6 @@ class CIRIM(ModelPT, ABC):
                 'sigma': sigma
                 }
             batch_idx: The index of the batch.
-
         Returns:
             A dictionary of the form {
                 'loss': loss value,
@@ -248,7 +248,7 @@ class CIRIM(ModelPT, ABC):
             except StopIteration:
                 pass
 
-            train_loss = sum(self.process_loss(target, etas, set_loss_fn=self.train_loss_fn))
+            train_loss = sum(self.process_loss(target, etas, set_loss_fn=self.eval_loss_fn))
         else:
             train_loss = self.process_loss(target, etas, set_loss_fn=self.train_loss_fn)
 
@@ -298,30 +298,34 @@ class CIRIM(ModelPT, ABC):
         """Test step for the CIRIM."""
         y, sensitivity_maps, mask, _, target, fname, slice_num, _, _, _ = batch
         y, mask, _ = self.process_inputs(y, mask)
-        etas = self.forward(y, sensitivity_maps, mask, None, None, target, 1.0)
+        prediction = self.forward(y, sensitivity_maps, mask, None, None, target, 1.0)
 
         if self.accumulate_estimates:
             try:
-                etas = next(etas)
+                prediction = next(prediction)
             except StopIteration:
                 pass
 
-        if isinstance(etas, list):
-            etas = etas[-1][-1]
+        if isinstance(prediction, list):
+            prediction = prediction[-1][-1]
 
         slice_num = int(slice_num)
         name = str(fname[0])  # type: ignore
         key = f"{name}_images_idx_{slice_num}"  # type: ignore
-        output = torch.abs(etas).detach().cpu()
+
+        output = torch.abs(prediction).detach().cpu()
+        output = output / output.max()  # type: ignore
+
         target = torch.abs(target).detach().cpu()
-        _output = output / output.max()  # type: ignore
         target = target / target.max()  # type: ignore
-        error = torch.abs(target - _output)
+
+        error = torch.abs(target - output)
+
         self.log_image(f"{key}/target", target)
-        self.log_image(f"{key}/reconstruction", _output)
+        self.log_image(f"{key}/reconstruction", output)
         self.log_image(f"{key}/error", error)
 
-        return name, slice_num, output
+        return name, slice_num, prediction.detach().cpu().numpy()
 
     def log_image(self, name, image):
         """Log an image."""
@@ -339,7 +343,8 @@ class CIRIM(ModelPT, ABC):
             reconstructions[fname].append((slice_num, output))
 
         for fname in reconstructions:
-            reconstructions[fname] = np.abs(np.stack([out for _, out in sorted(reconstructions[fname])]))
+            # reconstructions[fname] = np.abs(np.stack([out for _, out in sorted(reconstructions[fname])]))
+            reconstructions[fname] = np.stack([out for _, out in sorted(reconstructions[fname])])
 
         out_dir = Path(os.path.join(self.logger.log_dir, "reconstructions"))
         out_dir.mkdir(exist_ok=True, parents=True)

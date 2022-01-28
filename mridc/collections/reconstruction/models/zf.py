@@ -80,12 +80,12 @@ class ZF(ModelPT, ABC):
     def test_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Tuple[str, int, torch.Tensor]:
         """Test step for PICS."""
         y, sensitivity_maps, _, _, target, fname, slice_num, _, _, _ = batch
-        output = self.forward(y, sensitivity_maps)
+        prediction = self.forward(y, sensitivity_maps)
 
         slice_num = int(slice_num)
         name = str(fname[0])  # type: ignore
         key = f"{name}_images_idx_{slice_num}"  # type: ignore
-        output = torch.abs(output).detach().cpu()
+        output = torch.abs(prediction).detach().cpu()
         target = torch.abs(target).detach().cpu()
         output = output / output.max()  # type: ignore
         target = target / target.max()  # type: ignore
@@ -94,7 +94,7 @@ class ZF(ModelPT, ABC):
         self.log_image(f"{key}/reconstruction", output)
         self.log_image(f"{key}/error", error)
 
-        return name, slice_num, output
+        return name, slice_num, prediction.detach().cpu().numpy()
 
     def log_image(self, name, image):
         """Log an image."""
