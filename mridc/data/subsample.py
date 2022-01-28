@@ -407,6 +407,7 @@ class Gaussian2DMaskFunc(MaskFunc):
         kernel = kernel / kernel.sum()
         return kernel
 
+
 class Poisson2DMaskFunc(MaskFunc):
     """
     Creates a 2D sub-sampling mask of a given shape.
@@ -450,10 +451,58 @@ class Poisson2DMaskFunc(MaskFunc):
         self.acceleration = acceleration
         self.scale = scale
 
-        rfactor = [21.22, 20.32, 19.06, 18.22, 17.41, 16.56, 15.86, 15.12, 14.42, 13.88, 13.17, 12.76, 12.21,
-                        11.72, 11.09, 10.68, 10.35, 10.02, 9.61, 9.22, 9.03, 8.66, 8.28, 8.1, 7.74, 7.62, 7.32, 7.04,
-                        6.94, 6.61, 6.5, 6.27, 6.15, 5.96, 5.83, 5.59, 5.46, 5.38, 5.15, 5.05, 4.9, 4.86, 4.67, 4.56,
-                        4.52, 4.41, 4.31, 4.21, 4.11, 3.99]
+        rfactor = [
+            21.22,
+            20.32,
+            19.06,
+            18.22,
+            17.41,
+            16.56,
+            15.86,
+            15.12,
+            14.42,
+            13.88,
+            13.17,
+            12.76,
+            12.21,
+            11.72,
+            11.09,
+            10.68,
+            10.35,
+            10.02,
+            9.61,
+            9.22,
+            9.03,
+            8.66,
+            8.28,
+            8.1,
+            7.74,
+            7.62,
+            7.32,
+            7.04,
+            6.94,
+            6.61,
+            6.5,
+            6.27,
+            6.15,
+            5.96,
+            5.83,
+            5.59,
+            5.46,
+            5.38,
+            5.15,
+            5.05,
+            4.9,
+            4.86,
+            4.67,
+            4.56,
+            4.52,
+            4.41,
+            4.31,
+            4.21,
+            4.11,
+            3.99,
+        ]
         self.r = min(range(len(rfactor)), key=lambda i: abs(rfactor[i] - self.acceleration)) + 40
 
         pattern1 = self.poisson_disc2d()
@@ -466,13 +515,12 @@ class Poisson2DMaskFunc(MaskFunc):
         return (torch.from_numpy(mask.astype(np.float32)).unsqueeze(0).unsqueeze(-1), acceleration)
 
     def poisson_disc2d(self):
-        k=10
+        k = 10
         centerscale = self.scale
 
         pattern_shape = (self.shape[0] - 1, self.shape[1] - 1)
 
-        center = np.array([1.0 * pattern_shape[0] / 2,
-                           1.0 * pattern_shape[1] / 2])
+        center = np.array([1.0 * pattern_shape[0] / 2, 1.0 * pattern_shape[1] / 2])
         width, height = pattern_shape
 
         # Cell side length (equal to r_min)
@@ -519,10 +567,10 @@ class Poisson2DMaskFunc(MaskFunc):
 
         def point_valid(pt):
             """
-    		Is pt a valid point to emit as a sample?
+                Is pt a valid point to emit as a sample?
             It must be no closer than r from any other point:
             check the points
-    		"""
+            """
             rx = calc_r(pt)
             if rx < 1:
                 if LA.norm(pt - center) < self.scale * width:
@@ -542,11 +590,11 @@ class Poisson2DMaskFunc(MaskFunc):
 
         def get_point(k, refpt):
             """
-            	Try to find a candidate point relative to refpt to emit in the sample.
-    		We draw up to k points from the annulus of inner radius r, outer
-    		radius 2r around the reference point, refpt. If none of
-    		them are suitable return False. Otherwise, return the pt.
-    		"""
+            Try to find a candidate point relative to refpt to emit in the sample.
+            We draw up to k points from the annulus of inner radius r, outer
+            radius 2r around the reference point, refpt. If none of
+            them are suitable return False. Otherwise, return the pt.
+            """
             i = 0
             rx = calc_r(refpt)
             while i < k:
@@ -589,8 +637,7 @@ class Poisson2DMaskFunc(MaskFunc):
         samples = np.rint(np.array(samples)).astype(int)
         samples = np.unique(samples[:, 0] + 1j * samples[:, 1])
         samples = np.column_stack((samples.real, samples.imag)).astype(int)
-        poisson_pattern = np.zeros((pattern_shape[0] + 1, \
-                                    pattern_shape[1] + 1), dtype=bool)
+        poisson_pattern = np.zeros((pattern_shape[0] + 1, pattern_shape[1] + 1), dtype=bool)
         poisson_pattern[samples[:, 0], samples[:, 1]] = True
         return poisson_pattern
 
@@ -609,6 +656,7 @@ class Poisson2DMaskFunc(MaskFunc):
         circle_image = ((X - center_x) ** 2 + (Y - center_y) ** 2) < radius ** 2  # type: bool
 
         return circle_image
+
 
 def create_mask_for_mask_type(
     mask_type_str: str, center_fractions: Sequence[float], accelerations: Sequence[int]
