@@ -413,13 +413,19 @@ class Poisson2DMaskFunc(MaskFunc):
 
     For autocalibration purposes, data points near the k-space center will be fully sampled within an ellipse of which
     the half-axes will set to the set scale % of the fully sampled region. The remaining points will be sampled
-    according to a Poisson distribution.
+    according to a (variable density) Poisson distribution.
+
+    For a given acceleration factor to be accurate, the scale for the fully sampled center should remain at the default
+    0.02. A predefined list is used to convert the acceleration factor to the appropriate r parameter needed for the
+    variable density calculation. This list has been made to accomodate acceleration factors of 4 up to 21, rounding off
+    to the nearest one available. As such, acceleration factors outside this range cannot be used.
     """
 
     def __call__(
         self,
         shape: Union[Sequence[int], ndarray],
         seed: Optional[Union[int, Tuple[int, ...]]] = None,
+        half_scan_percentage: Optional[float] = 0.0,
         scale: float = 0.02,
     ) -> Tuple[torch.Tensor, int]:
         """
@@ -438,6 +444,9 @@ class Poisson2DMaskFunc(MaskFunc):
         self.shape = shape[1:-1]
 
         _, acceleration = self.choose_acceleration()
+        if acceleration > 21.5 or acceleration < 3.5:
+            raise ValueError("this is not implemented")
+
         self.acceleration = acceleration
         self.scale = scale
 
@@ -445,11 +454,15 @@ class Poisson2DMaskFunc(MaskFunc):
                         11.72, 11.09, 10.68, 10.35, 10.02, 9.61, 9.22, 9.03, 8.66, 8.28, 8.1, 7.74, 7.62, 7.32, 7.04,
                         6.94, 6.61, 6.5, 6.27, 6.15, 5.96, 5.83, 5.59, 5.46, 5.38, 5.15, 5.05, 4.9, 4.86, 4.67, 4.56,
                         4.52, 4.41, 4.31, 4.21, 4.11, 3.99]
-
         self.r = min(range(len(rfactor)), key=lambda i: abs(rfactor[i] - self.acceleration)) + 40
+
         pattern1 = self.poisson_disc2d()
         pattern2 = self.centered_circle()
         mask = np.logical_or(pattern1, pattern2)
+
+        if half_scan_percentage != 0:
+            mask[: int(np.round(mask.shape[0] * half_scan_percentage)), :] = 0.0
+
         return (torch.from_numpy(mask.astype(np.float32)).unsqueeze(0).unsqueeze(-1), acceleration)
 
     def poisson_disc2d(self):
