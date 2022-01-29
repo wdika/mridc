@@ -515,7 +515,6 @@ class Poisson2DMaskFunc(MaskFunc):
 
     def poisson_disc2d(self):
         """Creates a 2D Poisson disc pattern."""
-
         # Amount of tries before discarding a reference point for new samples
         k = 10
 
@@ -564,7 +563,7 @@ class Poisson2DMaskFunc(MaskFunc):
             xvals = xvals[(xvals >= 0) & (xvals <= width)]
             yvals = yvals[(yvals >= 0) & (yvals <= height)]
 
-            dist = lambda x, y: np.sqrt((coords[0] - x) ** 2 + (coords[1] - y) ** 2) < rx
+            dist = lambda x, y: np.sqrt((coords[0] - x) ** 2 + (coords[1] - y) ** 2) < rx  # type: ignore
             xx, yy = np.meshgrid(xvals, yvals, sparse=False)
 
             # Mark the points in the grid
@@ -596,9 +595,11 @@ class Poisson2DMaskFunc(MaskFunc):
             return True
 
         def get_point(k, refpt):
-            """Try to find a candidate point relative to refpt to emit in the sample. We draw up to k points from the
+            """
+            Try to find a candidate point relative to refpt to emit in the sample. We draw up to k points from the
             annulus of inner radius r, outer radius 2r around the reference point, refpt. If none of them are suitable
-            return False. Otherwise, return the pt."""
+            return False. Otherwise, return the pt.
+            """
             i = 0
             rx = calc_r(refpt)
             while i < k:
