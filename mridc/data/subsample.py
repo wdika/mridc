@@ -6,8 +6,8 @@ import contextlib
 from typing import Optional, Sequence, Tuple, Union
 
 import numpy as np
-from numpy import linalg as LA, ndarray
 import torch
+from numpy import linalg as LA, ndarray
 
 
 @contextlib.contextmanager
@@ -406,6 +406,7 @@ class Gaussian2DMaskFunc(MaskFunc):
         kernel = kernel / kernel.sum()
         return kernel
 
+
 class Poisson2DMaskFunc(MaskFunc):
     """
     Creates a 2D sub-sampling mask of a given shape.
@@ -416,8 +417,8 @@ class Poisson2DMaskFunc(MaskFunc):
 
     For a given acceleration factor to be accurate, the scale for the fully sampled center should remain at the default
     0.02. A predefined list is used to convert the acceleration factor to the appropriate r parameter needed for the
-    variable density calculation. This list has been made to accomodate acceleration factors of 4 up to 21, rounding off
-    to the nearest one available. As such, acceleration factors outside this range cannot be used.
+    variable density calculation. This list has been made to accommodate acceleration factors of 4 up to 21, rounding
+    off to the nearest one available. As such, acceleration factors outside this range cannot be used.
     """
 
     def __call__(
@@ -449,10 +450,58 @@ class Poisson2DMaskFunc(MaskFunc):
         self.acceleration = acceleration
         self.scale = scale
 
-        rfactor = [21.22, 20.32, 19.06, 18.22, 17.41, 16.56, 15.86, 15.12, 14.42, 13.88, 13.17, 12.76, 12.21,
-                        11.72, 11.09, 10.68, 10.35, 10.02, 9.61, 9.22, 9.03, 8.66, 8.28, 8.1, 7.74, 7.62, 7.32, 7.04,
-                        6.94, 6.61, 6.5, 6.27, 6.15, 5.96, 5.83, 5.59, 5.46, 5.38, 5.15, 5.05, 4.9, 4.86, 4.67, 4.56,
-                        4.52, 4.41, 4.31, 4.21, 4.11, 3.99]
+        rfactor = [
+            21.22,
+            20.32,
+            19.06,
+            18.22,
+            17.41,
+            16.56,
+            15.86,
+            15.12,
+            14.42,
+            13.88,
+            13.17,
+            12.76,
+            12.21,
+            11.72,
+            11.09,
+            10.68,
+            10.35,
+            10.02,
+            9.61,
+            9.22,
+            9.03,
+            8.66,
+            8.28,
+            8.1,
+            7.74,
+            7.62,
+            7.32,
+            7.04,
+            6.94,
+            6.61,
+            6.5,
+            6.27,
+            6.15,
+            5.96,
+            5.83,
+            5.59,
+            5.46,
+            5.38,
+            5.15,
+            5.05,
+            4.9,
+            4.86,
+            4.67,
+            4.56,
+            4.52,
+            4.41,
+            4.31,
+            4.21,
+            4.11,
+            3.99,
+        ]
         self.r = min(range(len(rfactor)), key=lambda i: abs(rfactor[i] - self.acceleration)) + 40
 
         pattern1 = self.poisson_disc2d()
@@ -465,14 +514,16 @@ class Poisson2DMaskFunc(MaskFunc):
         return (torch.from_numpy(mask.astype(np.float32)).unsqueeze(0).unsqueeze(-1), acceleration)
 
     def poisson_disc2d(self):
-        """"Calculate the Poisson mask in 2D."""
+        """Creates a 2D Poisson disc pattern."""
+
         # Amount of tries before discarding a reference point for new samples
         k = 10
 
+        # Amount of samples to be drawn
         pattern_shape = (self.shape[0] - 1, self.shape[1] - 1)
 
-        center = np.array([1.0 * pattern_shape[0] / 2,
-                           1.0 * pattern_shape[1] / 2])
+        # Initialize the pattern
+        center = np.array([1.0 * pattern_shape[0] / 2, 1.0 * pattern_shape[1] / 2])
         width, height = pattern_shape
 
         # Cell side length (equal to r_min)
@@ -480,11 +531,12 @@ class Poisson2DMaskFunc(MaskFunc):
 
         # Number of cells in the x- and y-directions of the grid
         nx, ny = int(width / a), int(height / a)
+
         # A list of coordinates in the grid of cells
         coords_list = [(ix, iy) for ix in range(nx + 1) for iy in range(ny + 1)]
-        # Initilalize the dictionary of cells: each key is a cell's coordinates, the
-        # corresponding value is the index of that cell's point's that might cause
-        # conflict when adding a new point.
+
+        # Initialize the dictionary of cells: each key is a cell's coordinates, the corresponding value is the index
+        # of that cell's point's that might cause conflict when adding a new point.
         cells = {coords: [] for coords in coords_list}
         centernorm = LA.norm(center)
 
@@ -502,36 +554,44 @@ class Poisson2DMaskFunc(MaskFunc):
             if idx in cells[get_cell_coords(coords)]:
                 # This point is already marked on the grid, so we can skip
                 return
+
+            # Mark the point on the grid
             rx = calc_r(coords)
             xvals = np.arange(coords[0] - rx, coords[0] + rx)
             yvals = np.arange(coords[1] - rx, coords[1] + rx)
 
+            # Get the coordinates of the cells that the point falls in
             xvals = xvals[(xvals >= 0) & (xvals <= width)]
             yvals = yvals[(yvals >= 0) & (yvals <= height)]
 
             dist = lambda x, y: np.sqrt((coords[0] - x) ** 2 + (coords[1] - y) ** 2) < rx
             xx, yy = np.meshgrid(xvals, yvals, sparse=False)
+
+            # Mark the points in the grid
             pts = np.vstack((xx.ravel(), yy.ravel())).T
             pts = pts[dist(pts[:, 0], pts[:, 1])]
-            cells[get_cell_coords(pt)].append(idx) for pt in pts
+
+            return [cells[get_cell_coords(pt)].append(idx) for pt in pts]
 
         def point_valid(pt):
-            """Is pt a valid point to emit as a sample? It must be no closer than r from any other point: check the
-            points."""
+            """Check if the point is valid."""
             rx = calc_r(pt)
             if rx < 1:
                 if LA.norm(pt - center) < self.scale * width:
                     return False
                 rx = 1
+
+            # Get the coordinates of the cells that the point falls in
             neighbour_idxs = cells[get_cell_coords(pt)]
             for n in neighbour_idxs:
                 n_coords = samples[n]
-                # rn = calc_r(n_coords)
+
                 # Squared distance between or candidate point, pt, and this nearby_pt.
                 distance = np.sqrt((n_coords[0] - pt[0]) ** 2 + (n_coords[1] - pt[1]) ** 2)
                 if distance < rx:
                     # The points are too close, so pt is not a candidate.
                     return False
+
             # All points tested: if we're here, pt is
             return True
 
@@ -550,6 +610,7 @@ class Poisson2DMaskFunc(MaskFunc):
                 if point_valid(pt):
                     return pt
                 i += 1
+
             # We failed to find a suitable point in the vicinity of refpt.
             return False
 
@@ -558,14 +619,16 @@ class Poisson2DMaskFunc(MaskFunc):
         samples = [pt]
         cursample = 0
         mark_neighbours(0)
-        # Set active, in the sense that we're going to look for more points
-        # in its neighbourhood.
+
+        # Set active, in the sense that we're going to look for more points in its neighbourhood.
         active = [0]
+
         # As long as there are points in the active list, keep trying to find samples.
         while active:
             # choose a random "reference" point from the active list.
             idx = np.random.choice(active)
             refpt = samples[idx]
+
             # Try to pick a new point relative to the reference point.
             pt = get_point(k, refpt)
             if pt:
@@ -575,15 +638,16 @@ class Poisson2DMaskFunc(MaskFunc):
                 active.append(cursample)
                 mark_neighbours(cursample)
             else:
-                # We had to give up looking for valid points near refpt, so remove it
-                # from the list of "active" points.
+                # We had to give up looking for valid points near refpt, so remove it from the list of "active" points.
                 active.remove(idx)
+
         samples = np.rint(np.array(samples)).astype(int)
         samples = np.unique(samples[:, 0] + 1j * samples[:, 1])
         samples = np.column_stack((samples.real, samples.imag)).astype(int)
-        poisson_pattern = np.zeros((pattern_shape[0] + 1, \
-                                    pattern_shape[1] + 1), dtype=bool)
+
+        poisson_pattern = np.zeros((pattern_shape[0] + 1, pattern_shape[1] + 1), dtype=bool)
         poisson_pattern[samples[:, 0], samples[:, 1]] = True
+
         return poisson_pattern
 
     def centered_circle(self):
@@ -596,6 +660,7 @@ class Poisson2DMaskFunc(MaskFunc):
         circle_image = ((X - center_x) ** 2 + (Y - center_y) ** 2) < radius ** 2  # type: bool
 
         return circle_image
+
 
 def create_mask_for_mask_type(
     mask_type_str: str, center_fractions: Sequence[float], accelerations: Sequence[int]
