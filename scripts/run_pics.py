@@ -157,7 +157,6 @@ class PICSDataTransform:
                 w = w if w <= crop_size[1] else crop_size[1]
 
             self.crop_size = (h, w)
-            # crop_size = torch.tensor([self.crop_size[0], self.crop_size[1]])
 
             if sensitivity_map is not None and sensitivity_map.size != 0:
                 sensitivity_map = complex_center_crop(sensitivity_map, self.crop_size)

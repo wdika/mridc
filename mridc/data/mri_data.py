@@ -39,7 +39,6 @@ def et_query(root: str, qlist: Sequence[str], namespace: str = "https://www.ismr
 
     value = root.find(s, ns)  # type: ignore
     if value is None:
-        # raise RuntimeError("Element not found")
         return "0"
 
     return str(value.text)  # type: ignore
