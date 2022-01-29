@@ -40,7 +40,7 @@ model:
   depth: 2
   time_steps: 8
   conv_dim: 2
-  num_cascades: 1
+  num_cascades: 8
   no_dc: true
   keep_eta: true
   output_type: SENSE
@@ -59,17 +59,15 @@ model:
   num_log_images: 16
 
   train_ds:
-    data_path: ???
+    data_path: /data/projects/recon/data/private/3T_T1_3D_Brains/h5/multicoil_train/
     dataset_type: FastMRI
     challenge: multicoil
     fft_type: orthogonal_norm_only
     mask_args:
       type: gaussian2d
       accelerations:
-      - 12
-      - 14
+      - 20
       center_fractions:
-      - 0.7
       - 0.7
       scale: 0.02
       shift_mask: true
@@ -86,17 +84,15 @@ model:
     pin_memory: false
 
   validation_ds:
-    data_path: ???
+    data_path: /data/projects/recon/data/private/3T_T1_3D_Brains/h5/multicoil_val/
     dataset_type: FastMRI
     challenge: multicoil
     fft_type: orthogonal_norm_only
     mask_args:
       type: gaussian2d
       accelerations:
-      - 12
-      - 14
+      - 20
       center_fractions:
-      - 0.7
       - 0.7
       scale: 0.02
       shift_mask: true
@@ -138,6 +134,13 @@ trainer:
   max_steps: -1
 
 exp_manager:
-  name: ???
+  name: /data/projects/recon/other/dkarkalousos/projects/mridc/experiments/T1_20x_FC_NOZF_CIRIM_8C_128F_l1/
   files_to_copy: [ ]
   create_tensorboard_logger: true
+#  create_wandb_logger: true
+#  wandb_logger_kwargs:
+#    name: wdika
+#    project: T1_20x_FC_NOZF_CIRIM_8C_128F_l1
+#    dir: /data/projects/recon/other/dkarkalousos/projects/mridc/experiments/T1_20x_FC_NOZF_CIRIM_8C_128F_l1/wandb_logs/
+#    sync_tensorboard: true
+#

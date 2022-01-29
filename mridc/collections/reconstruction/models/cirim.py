@@ -313,6 +313,33 @@ class CIRIM(ModelPT, ABC):
         name = str(fname[0])  # type: ignore
         key = f"{name}_images_idx_{slice_num}"  # type: ignore
 
+        # mask = torch.abs(torch.fft.fftshift(mask, dim=(-3, -2))).squeeze(1).squeeze(-1)
+        # # mask = torch.abs(mask).squeeze(1).squeeze(-1)
+        # mask, _ = center_crop_to_smallest(mask, target)
+        # mask = mask.detach().cpu()  # TODO: works only for 2D
+        # mask = mask / mask.max()  # type: ignore
+        #
+        # output = torch.abs(etas).detach().cpu()
+        # _output = output / output.max()  # type: ignore
+        #
+        # from skimage.util import random_noise
+        # from skimage import filters
+        # from skimage.morphology import convex_hull_image
+        # noise_output = random_noise(_output, mode='gaussian', var=1e-4)[0]
+        # noise_output = noise_output * convex_hull_image(np.where(noise_output > filters.threshold_otsu(noise_output), 1, 0))
+        # noise_output = np.expand_dims(noise_output, axis=0)
+
+        # m = mask.squeeze().detach().cpu().numpy()
+        # acc = str(np.round(m.size/m.sum(), 2))
+
+        # zf = torch.abs(
+        #     torch.view_as_complex(complex_mul(ifft2c(y, fft_type=self.fft_type), complex_conj(sensitivity_maps)).sum(1))
+        # ).detach().cpu()
+        # zf = zf / zf.max()  # type: ignore
+
+        # self.log_image(f"{key}/mask_{acc}x", m)
+        # self.log_image(f"{key}/zf", zf)
+
         output = torch.abs(prediction).detach().cpu()
         output = output / output.max()  # type: ignore
 
@@ -324,6 +351,8 @@ class CIRIM(ModelPT, ABC):
         self.log_image(f"{key}/target", target)
         self.log_image(f"{key}/reconstruction", output)
         self.log_image(f"{key}/error", error)
+        # self.log_image(f"{key}/noise_reconstruction", noise_output)
+        # self.log_image(f"{key}/noise_error", torch.abs(target - noise_output))
 
         return name, slice_num, prediction.detach().cpu().numpy()
 
