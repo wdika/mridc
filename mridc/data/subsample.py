@@ -563,7 +563,7 @@ class Poisson2DMaskFunc(MaskFunc):
             xvals = xvals[(xvals >= 0) & (xvals <= width)]
             yvals = yvals[(yvals >= 0) & (yvals <= height)]
 
-            dist = lambda x, y: np.sqrt((coords[0] - x) ** 2 + (coords[1] - y) ** 2) < rx  # type: ignore
+            dist = lambda x, y: np.sqrt((coords[0] - x) ** 2 + (coords[1] - y) ** 2) < rx
             xx, yy = np.meshgrid(xvals, yvals, sparse=False)
 
             # Mark the points in the grid
