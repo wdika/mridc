@@ -47,7 +47,7 @@ def deprecated(wrapped=None, version=None, explanation=None):
             The decorated function.
         """
         # Check if we already warned about that function.
-        if _wrapped.__name__ not in _PRINTED_WARNING.keys():
+        if _wrapped.__name__ not in _PRINTED_WARNING:
             # Add to list so we won't print it again.
             _PRINTED_WARNING[_wrapped.__name__] = True
 
