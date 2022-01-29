@@ -116,7 +116,7 @@ def test_create_mask_for_gaussian1d_type(
         None
     """
     mask_func = create_mask_for_mask_type(mask_type, center_fractions, accelerations)
-    
+
     mask, acc = mask_func(x, seed, half_scan_percentage, scale)
     mask = mask.squeeze(0).numpy()
 
