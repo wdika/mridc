@@ -59,7 +59,7 @@ model:
   num_log_images: 16
 
   train_ds:
-    data_path: /data/projects/recon/data/private/3T_T1_3D_Brains/h5/multicoil_train/
+    data_path: ???
     dataset_type: FastMRI
     challenge: multicoil
     fft_type: orthogonal_norm_only
@@ -84,7 +84,7 @@ model:
     pin_memory: false
 
   validation_ds:
-    data_path: /data/projects/recon/data/private/3T_T1_3D_Brains/h5/multicoil_val/
+    data_path: ???
     dataset_type: FastMRI
     challenge: multicoil
     fft_type: orthogonal_norm_only
@@ -134,13 +134,6 @@ trainer:
   max_steps: -1
 
 exp_manager:
-  name: /data/projects/recon/other/dkarkalousos/projects/mridc/experiments/T1_20x_FC_NOZF_CIRIM_8C_128F_l1/
+  name: ???
   files_to_copy: [ ]
   create_tensorboard_logger: true
-#  create_wandb_logger: true
-#  wandb_logger_kwargs:
-#    name: wdika
-#    project: T1_20x_FC_NOZF_CIRIM_8C_128F_l1
-#    dir: /data/projects/recon/other/dkarkalousos/projects/mridc/experiments/T1_20x_FC_NOZF_CIRIM_8C_128F_l1/wandb_logs/
-#    sync_tensorboard: true
-#

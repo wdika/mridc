@@ -9,7 +9,7 @@ model:
   num_log_images: 16
 
   test_ds:
-    data_path: /data/projects/recon/data/private/STAIRS/proc/Rothschild/20210806_1102_followup_stroke/4RIM/proc/
+    data_path: ???
     dataset_type: FastMRI
     challenge: multicoil
     fft_type: fft_norm_only
@@ -41,7 +41,7 @@ trainer:
   max_steps: -1
 
 exp_manager:
-  name: /data/projects/recon/other/dkarkalousos/projects/mridc/reconstructions/STAIRS/20210806_1102_followup_stroke/zf/
+  name: ???
   create_tensorboard_logger: true
   create_wandb_logger: false
   files_to_copy: []

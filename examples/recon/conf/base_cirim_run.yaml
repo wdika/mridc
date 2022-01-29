@@ -1,5 +1,5 @@
 pretrained: true
-checkpoint: /data/projects/recon/other/dkarkalousos/projects/mridc/experiments/T1_20x_FC_NOZF_CIRIM_4C_128F_l1/--val_loss=0.0348-epoch=181.ckpt
+checkpoint: ???
 mode: test
 
 model:
@@ -59,7 +59,7 @@ model:
   num_log_images: 16
 
   test_ds:
-    data_path: /data/projects/recon/data/private/STAIRS/proc/ST_122965/flair20x/4RIM/proc
+    data_path: ???
     dataset_type: FastMRI
     challenge: multicoil
     fft_type: orthogonal_norm_only
@@ -104,7 +104,7 @@ trainer:
   max_steps: -1
 
 exp_manager:
-  name: /data/projects/recon/other/dkarkalousos/projects/mridc/reconstructions/ST_122965/flair20x/CIRIM_4C_128F_l1_T1_30x_FC_NOZF_orthogonal_norm_only
+  name: ???
   create_tensorboard_logger: true
   create_wandb_logger: false
   files_to_copy: []
