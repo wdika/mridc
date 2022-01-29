@@ -21,7 +21,7 @@ from torch.utils.data import DataLoader
 from mridc.collections.common.losses.ssim import SSIMLoss
 from mridc.collections.common.parts.fft import ifft2c
 from mridc.collections.common.parts.rnn_utils import rnn_weights_init
-from mridc.collections.common.parts.utils import coil_combination, complex_conj, complex_mul
+from mridc.collections.common.parts.utils import coil_combination
 from mridc.collections.reconstruction.data.mri_data import FastMRISliceDataset
 from mridc.collections.reconstruction.data.subsample import create_mask_for_mask_type
 from mridc.collections.reconstruction.models.e2evn import SensitivityModel
@@ -343,7 +343,6 @@ class CIRIM(ModelPT, ABC):
             reconstructions[fname].append((slice_num, output))
 
         for fname in reconstructions:
-            # reconstructions[fname] = np.abs(np.stack([out for _, out in sorted(reconstructions[fname])]))
             reconstructions[fname] = np.stack([out for _, out in sorted(reconstructions[fname])])
 
         out_dir = Path(os.path.join(self.logger.log_dir, "reconstructions"))
