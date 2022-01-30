@@ -117,9 +117,7 @@ class MasterOptimizerWrapper(torch.optim.Optimizer):
                     "which is supposed to be accumulated after grad op."
                 )
             if not contiguous_grad_bucket:
-                raise AssertionError(
-                    "currently async_grad_allreduce is supported only " "with async_grad_allreduce."
-                )
+                raise AssertionError("currently async_grad_allreduce is supported only " "with async_grad_allreduce.")
 
         self._fp32_grad_accum = fp32_grad_accum
         self._contiguous_grad_bucket = contiguous_grad_bucket
