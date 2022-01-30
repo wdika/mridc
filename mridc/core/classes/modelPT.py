@@ -839,7 +839,7 @@ class ModelPT(LightningModule, Model):
             logging.info(
                 f"The following parameters were excluded from loading from {load_from_string} : {excluded_param_names}"
             )
-            logging.info(f"Make sure that this is what you wanted!")
+            logging.info("Make sure that this is what you wanted!")
 
     @rank_zero_only
     def maybe_init_from_pretrained_checkpoint(self, cfg: OmegaConf, map_location: str = "cpu"):
@@ -884,7 +884,6 @@ class ModelPT(LightningModule, Model):
                     # Restore checkpoint into current model
                     self.load_state_dict(restored_model.state_dict(), strict=False)
                     logging.info(f"Model checkpoint restored from mridc file with path : `{model_path}`")
-                    del restored_model
                 elif isinstance(cfg.init_from_mridc_model, (DictConfig, dict)):  # type: ignore
                     model_load_dict = cfg.init_from_mridc_model  # type: ignore
                     for model_load_cfg in model_load_dict.values():
@@ -900,8 +899,6 @@ class ModelPT(LightningModule, Model):
                         self.load_part_of_state_dict(
                             restored_model.state_dict(), include, exclude, f"mridc file with path `{model_path}`"
                         )
-
-                        del restored_model
                 else:
                     raise TypeError("Invalid type: init_from_mridc_model is not a string or a dict!")
 
@@ -932,7 +929,7 @@ class ModelPT(LightningModule, Model):
                     self.load_state_dict(restored_model.state_dict(), strict=False)
                     logging.info(f"Model checkpoint restored from pretrained checkpoint with name : `{model_name}`")
                 elif isinstance(cfg.init_from_pretrained_model, dict):  # type: ignore
-                    del restored_model
+                    pass
                 elif isinstance(cfg.init_from_pretrained_model, (DictConfig, dict)):  # type: ignore
                     model_load_dict = cfg.init_from_pretrained_model  # type: ignore
                     for model_load_cfg in model_load_dict.values():
@@ -951,8 +948,6 @@ class ModelPT(LightningModule, Model):
                             exclude,
                             f"pretrained checkpoint with name `{model_name}`",
                         )
-
-                        del restored_model
                 else:
                     raise TypeError("Invalid type: init_from_pretrained_model is not a string or a dict!")
 
@@ -968,7 +963,6 @@ class ModelPT(LightningModule, Model):
                     logging.info(
                         f"Model checkpoint restored from pytorch lightning checkpoint with path : `{ckpt_path}`"
                     )
-                    del ckpt
                 elif isinstance(cfg.init_from_ptl_ckpt, (DictConfig, dict)):  # type: ignore
                     model_load_dict = cfg.init_from_ptl_ckpt  # type: ignore
                     for model_load_cfg in model_load_dict.values():
@@ -982,7 +976,6 @@ class ModelPT(LightningModule, Model):
                         self.load_part_of_state_dict(
                             ckpt["state_dict"], include, exclude, f"nemo file with path `{model_path}`"
                         )
-                        del ckpt
                 else:
                     raise TypeError("Invalid type: init_from_ptl_ckpt is not a string or a dict!")
 

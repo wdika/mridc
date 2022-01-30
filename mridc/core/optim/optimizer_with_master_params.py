@@ -49,7 +49,7 @@ def _multi_tensor_copy_this_to_that(this, that, overflow_buf):
             that_.copy_(this_)
 
 
-class GradBucket(object):
+class GradBucket:
     """Persistent buffer for main gradients that remains allocated between training iterations."""
 
     def __init__(self, numel):
@@ -71,7 +71,8 @@ class GradBucket(object):
     def get(self, shape, start_index):
         """Return a tensor with the input `shape` as a view into the 1-D data starting at `start_index`."""
         end_index = start_index + shape.numel()
-        assert end_index <= self.numel, "requested tensor is out of the buffer range."
+        if end_index > self.numel:
+            raise AssertionError("requested tensor is out of the buffer range.")
         buffer_tensor = self.data[start_index:end_index]
         buffer_tensor = buffer_tensor.view(shape)
         return buffer_tensor
@@ -104,17 +105,21 @@ class MasterOptimizerWrapper(torch.optim.Optimizer):
             logging.warning("Apex was not found. Using model parallel models will error out.")
 
         self.optimizer = optimizer
-        assert self.optimizer, "no optimizer is provided."
+        if not self.optimizer:
+            raise AssertionError("no optimizer is provided.")
         if contiguous_grad_bucket:
-            assert fp32_grad_accum, "contiguous gradient buffer assumes using fp32 grad."
+            if not fp32_grad_accum:
+                raise AssertionError("contiguous gradient buffer assumes using fp32 grad.")
         if async_grad_allreduce:
-            assert fp32_grad_accum, (
-                "async allreduce applies to master gradients only, "
-                "which is supposed to be accumulated after grad op."
-            )
-            assert contiguous_grad_bucket, (
-                "currently async_grad_allreduce is supported only " "with async_grad_allreduce."
-            )
+            if not fp32_grad_accum:
+                raise AssertionError(
+                    "async allreduce applies to master gradients only, "
+                    "which is supposed to be accumulated after grad op."
+                )
+            if not contiguous_grad_bucket:
+                raise AssertionError(
+                    "currently async_grad_allreduce is supported only " "with async_grad_allreduce."
+                )
 
         self._fp32_grad_accum = fp32_grad_accum
         self._contiguous_grad_bucket = contiguous_grad_bucket
