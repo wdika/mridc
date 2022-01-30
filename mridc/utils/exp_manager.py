@@ -771,6 +771,19 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
         filepath = os.path.join(dirname, basename)
         return filepath
 
+    # TODO: remove _save_last_checkpoint after fix https://github.com/PyTorchLightning/pytorch-lightning/issues/11451
+    def _save_last_checkpoint(self, trainer, monitor_candidates) -> None:
+        """Save the last checkpoint."""
+        if not self.save_last:
+            return
+
+        filepath = self.format_checkpoint_name(monitor_candidates, self.CHECKPOINT_NAME_LAST)
+        if self.last_model_path and self.last_model_path != filepath:
+            trainer.training_type_plugin.remove_checkpoint(self.last_model_path)
+
+        self.last_model_path: Union[Any, str] = filepath
+        trainer.save_checkpoint(filepath, self.save_weights_only)
+
     def on_save_checkpoint(self, trainer, pl_module, checkpoint):
         """
         Override the default on_save_checkpoint to save the best model if needed.

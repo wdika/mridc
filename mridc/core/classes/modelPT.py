@@ -810,6 +810,37 @@ class ModelPT(LightningModule, Model):
         """
         return self.test_names[dataloader_idx]  # type: ignore
 
+    def load_part_of_state_dict(self, state_dict, include, exclude, load_from_string):
+        """Load part of the state dict."""
+        excluded_param_names = []
+        # create dict
+        dict_to_load = {}
+        for k, v in state_dict.items():
+            should_add = False
+            # if any string in include is present, should add
+            for p in include:
+                if p in k:
+                    should_add = True
+                    break
+            # except for if any string from exclude is present
+            for e in exclude:
+                if e in k:
+                    excluded_param_names.append(k)
+                    should_add = False
+                    break
+            if should_add:
+                dict_to_load[k] = v
+
+        # Restore checkpoint part into current model
+        self.load_state_dict(dict_to_load, strict=False)  # type: ignore
+        logging.info(f"Model checkpoint partially restored from {load_from_string}")
+
+        if len(excluded_param_names) > 0:
+            logging.info(
+                f"The following parameters were excluded from loading from {load_from_string} : {excluded_param_names}"
+            )
+            logging.info(f"Make sure that this is what you wanted!")
+
     @rank_zero_only
     def maybe_init_from_pretrained_checkpoint(self, cfg: OmegaConf, map_location: str = "cpu"):
         """
@@ -844,51 +875,116 @@ class ModelPT(LightningModule, Model):
 
         if "init_from_mridc_model" in cfg and cfg.init_from_mridc_model is not None:  # type: ignore
             with open_dict(cfg):  # type: ignore
-                # Restore model
-                model_path = cfg.pop("init_from_mridc_model")  # type: ignore
-                restored_model = self.restore_from(
-                    model_path, map_location=map_location, strict=cfg.get("init_strict", True)  # type: ignore
-                )
+                if isinstance(cfg.init_from_mridc_model, str):  # type: ignore
+                    model_path = cfg.init_from_mridc_model  # type: ignore
+                    # Restore model
+                    restored_model = self.restore_from(
+                        model_path, map_location=map_location, strict=cfg.get("init_strict", True)  # type: ignore
+                    )
+                    # Restore checkpoint into current model
+                    self.load_state_dict(restored_model.state_dict(), strict=False)
+                    logging.info(f"Model checkpoint restored from mridc file with path : `{model_path}`")
+                    del restored_model
+                elif isinstance(cfg.init_from_mridc_model, (DictConfig, dict)):  # type: ignore
+                    model_load_dict = cfg.init_from_mridc_model  # type: ignore
+                    for model_load_cfg in model_load_dict.values():
+                        model_path = model_load_cfg.path
+                        # Restore model
+                        restored_model = self.restore_from(
+                            model_path, map_location=map_location, strict=cfg.get("init_strict", True)  # type: ignore
+                        )
 
-                # Restore checkpoint into current model
-                self.load_state_dict(restored_model.state_dict(), strict=False)
-                logging.info(f"Model checkpoint restored from mridc file with path : `{model_path}`")
+                        include = model_load_cfg.pop("include", [""])
+                        exclude = model_load_cfg.pop("exclude", [])
+
+                        self.load_part_of_state_dict(
+                            restored_model.state_dict(), include, exclude, f"mridc file with path `{model_path}`"
+                        )
+
+                        del restored_model
+                else:
+                    raise TypeError("Invalid type: init_from_mridc_model is not a string or a dict!")
 
         if "init_from_pretrained_model" in cfg and cfg.init_from_pretrained_model is not None:  # type: ignore
             with open_dict(cfg):  # type: ignore
                 # Restore model
-                model_name = cfg.pop("init_from_pretrained_model")  # type: ignore
+                if isinstance(cfg.init_from_pretrained_model, str):  # type: ignore
+                    model_name = cfg.pop("init_from_pretrained_model")  # type: ignore
 
-                # Check if model is being resumed or not - only works if `Trainer` is attached to model
-                if hasattr(self, "trainer") and self.trainer is not None:
-                    trainer = self.trainer
-                    if (
-                        hasattr(trainer, "resume_from_checkpoint")
-                        and trainer.checkpoint_connector.resume_checkpoint_path is not None
-                    ):
-                        logging.info(
-                            "Model training is being resumed via Pytorch Lightning.\n"
-                            "Initialization from pretrained model (via cloud) will be skipped."
+                    # Check if model is being resumed or not - only works if `Trainer` is attached to model
+                    if hasattr(self, "trainer") and self.trainer is not None:
+                        trainer = self.trainer
+                        if (
+                            hasattr(trainer, "resume_from_checkpoint")
+                            and trainer.checkpoint_connector.resume_checkpoint_path is not None
+                        ):
+                            logging.info(
+                                "Model training is being resumed via Pytorch Lightning.\n"
+                                "Initialization from pretrained model (via cloud) will be skipped."
+                            )
+                            return
+
+                    restored_model = self.from_pretrained(
+                        model_name, map_location=map_location, strict=cfg.get("init_strict", True)  # type: ignore
+                    )
+
+                    # Restore checkpoint into current model
+                    self.load_state_dict(restored_model.state_dict(), strict=False)
+                    logging.info(f"Model checkpoint restored from pretrained checkpoint with name : `{model_name}`")
+                elif isinstance(cfg.init_from_pretrained_model, dict):  # type: ignore
+                    del restored_model
+                elif isinstance(cfg.init_from_pretrained_model, (DictConfig, dict)):  # type: ignore
+                    model_load_dict = cfg.init_from_pretrained_model  # type: ignore
+                    for model_load_cfg in model_load_dict.values():
+                        model_name = model_load_cfg.name
+                        # Restore model
+                        restored_model = self.from_pretrained(
+                            model_name, map_location=map_location, strict=cfg.get("init_strict", True)  # type: ignore
                         )
-                        return
 
-                restored_model = self.from_pretrained(
-                    model_name, map_location=map_location, strict=cfg.get("init_strict", True)  # type: ignore
-                )
+                        include = model_load_cfg.pop("include", [""])
+                        exclude = model_load_cfg.pop("exclude", [])
 
-                # Restore checkpoint into current model
-                self.load_state_dict(restored_model.state_dict(), strict=False)
-                logging.info(f"Model checkpoint restored from pretrained checkpoint with name : `{model_name}`")
+                        self.load_part_of_state_dict(
+                            restored_model.state_dict(),
+                            include,
+                            exclude,
+                            f"pretrained checkpoint with name `{model_name}`",
+                        )
+
+                        del restored_model
+                else:
+                    raise TypeError("Invalid type: init_from_pretrained_model is not a string or a dict!")
 
         if "init_from_ptl_ckpt" in cfg and cfg.init_from_ptl_ckpt is not None:  # type: ignore
             with open_dict(cfg):  # type: ignore
-                # Restore checkpoint
-                ckpt_path = cfg.pop("init_from_ptl_ckpt")  # type: ignore
-                ckpt = torch.load(ckpt_path, map_location=map_location)
+                if isinstance(cfg.init_from_ptl_ckpt, str):  # type: ignore
+                    # Restore checkpoint
+                    ckpt_path = cfg.pop("init_from_ptl_ckpt")  # type: ignore
+                    ckpt = torch.load(ckpt_path, map_location=map_location)
 
-                # Restore checkpoint into current model
-                self.load_state_dict(ckpt["state_dict"], strict=False)
-                logging.info(f"Model checkpoint restored from pytorch lightning checkpoint with path : `{ckpt_path}`")
+                    # Restore checkpoint into current model
+                    self.load_state_dict(ckpt["state_dict"], strict=False)
+                    logging.info(
+                        f"Model checkpoint restored from pytorch lightning checkpoint with path : `{ckpt_path}`"
+                    )
+                    del ckpt
+                elif isinstance(cfg.init_from_ptl_ckpt, (DictConfig, dict)):  # type: ignore
+                    model_load_dict = cfg.init_from_ptl_ckpt  # type: ignore
+                    for model_load_cfg in model_load_dict.values():
+                        ckpt_path = model_load_cfg.path
+                        # Restore model
+                        ckpt = torch.load(ckpt_path, map_location=map_location)
+
+                        include = model_load_cfg.pop("include", [""])
+                        exclude = model_load_cfg.pop("exclude", [])
+
+                        self.load_part_of_state_dict(
+                            ckpt["state_dict"], include, exclude, f"nemo file with path `{model_path}`"
+                        )
+                        del ckpt
+                else:
+                    raise TypeError("Invalid type: init_from_ptl_ckpt is not a string or a dict!")
 
     def teardown(self, stage: str):
         """
