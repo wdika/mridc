@@ -107,9 +107,8 @@ class MasterOptimizerWrapper(torch.optim.Optimizer):
         self.optimizer = optimizer
         if not self.optimizer:
             raise AssertionError("no optimizer is provided.")
-        if contiguous_grad_bucket:
-            if not fp32_grad_accum:
-                raise AssertionError("contiguous gradient buffer assumes using fp32 grad.")
+        if contiguous_grad_bucket and not fp32_grad_accum:
+            raise AssertionError("contiguous gradient buffer assumes using fp32 grad.")
         if async_grad_allreduce:
             if not fp32_grad_accum:
                 raise AssertionError(
