@@ -311,7 +311,7 @@ class Gaussian1DMaskFunc(MaskFunc):
         for fwhm, kern_len in zip(self.full_width_half_maximum, self.shape):
             sigma = fwhm / np.sqrt(8 * np.log(2))
             x = np.linspace(-1.0, 1.0, kern_len)
-            g = np.exp(-(x**2 / (2 * sigma**2)))
+            g = np.exp(-(x ** 2 / (2 * sigma ** 2)))
             kernel = g
             break
         kernel = kernel / kernel.sum()
@@ -405,7 +405,7 @@ class Gaussian2DMaskFunc(MaskFunc):
         for fwhm, kern_len in zip(self.full_width_half_maximum, self.shape):
             sigma = fwhm / np.sqrt(8 * np.log(2))
             x = np.linspace(-1.0, 1.0, kern_len)
-            g = np.exp(-(x**2 / (2 * sigma**2)))
+            g = np.exp(-(x ** 2 / (2 * sigma ** 2)))
             kernels.append(g)
         kernel = np.sqrt(np.outer(kernels[0], kernels[1]))
         kernel = kernel / kernel.sum()
@@ -663,7 +663,7 @@ class Poisson2DMaskFunc(MaskFunc):
 
         X, Y = np.indices(self.shape)
         radius = int(self.shape[0] * self.scale)
-        circle_image = ((X - center_x) ** 2 + (Y - center_y) ** 2) < radius**2  # type: bool
+        circle_image = ((X - center_x) ** 2 + (Y - center_y) ** 2) < radius ** 2  # type: bool
 
         return circle_image
 

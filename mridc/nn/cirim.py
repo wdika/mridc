@@ -198,7 +198,7 @@ class CIRIM(nn.Module):
                         if self.output_type == "SENSE":
                             p = complex_mul(p, complex_conj(sense)).sum(dim=1)
                         elif self.output_type == "RSS":
-                            p = torch.sqrt((p**2).sum(dim=1))
+                            p = torch.sqrt((p ** 2).sum(dim=1))
                         else:
                             raise ValueError("Output type not supported.")
 
@@ -235,7 +235,7 @@ class CIRIM(nn.Module):
                 if self.output_type == "SENSE":
                     pred = complex_mul(pred, complex_conj(sense)).sum(dim=1)
                 elif self.output_type == "RSS":
-                    pred = torch.sqrt((pred**2).sum(dim=1))
+                    pred = torch.sqrt((pred ** 2).sum(dim=1))
                 else:
                     raise ValueError("Output type not supported.")
 
@@ -288,7 +288,7 @@ class CIRIM(nn.Module):
                     if self.output_type == "SENSE":
                         p = complex_mul(p, complex_conj(sense)).sum(dim=1)
                     elif self.output_type == "RSS":
-                        p = torch.sqrt((p**2).sum(dim=1))
+                        p = torch.sqrt((p ** 2).sum(dim=1))
                     else:
                         raise ValueError("Output type not supported.")
 
