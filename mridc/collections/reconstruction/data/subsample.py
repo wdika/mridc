@@ -568,7 +568,10 @@ class Poisson2DMaskFunc(MaskFunc):
             xvals = xvals[(xvals >= 0) & (xvals <= width)]
             yvals = yvals[(yvals >= 0) & (yvals <= height)]
 
-            dist = lambda x, y: np.sqrt((coords[0] - x) ** 2 + (coords[1] - y) ** 2) < rx
+            def dist(x, y):
+                """Calculate the distance between the point and the cell."""
+                return np.sqrt((coords[0] - x) ** 2 + (coords[1] - y) ** 2) < rx
+
             xx, yy = np.meshgrid(xvals, yvals, sparse=False)
 
             # Mark the points in the grid

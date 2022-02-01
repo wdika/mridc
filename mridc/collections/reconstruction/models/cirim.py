@@ -72,7 +72,7 @@ class CIRIM(ModelPT, ABC):
         self.fft_type = cirim_cfg_dict.get("fft_type")
         self.num_cascades = cirim_cfg_dict.get("num_cascades")
 
-        self.cirim = nn.ModuleList(
+        self.cirim = nn.ModuleList(  # type: ignore
             [
                 RIMBlock(
                     recurrent_layer=cirim_cfg_dict.get("recurrent_layer"),
@@ -187,13 +187,20 @@ class CIRIM(ModelPT, ABC):
 
         if "ssim" in str(set_loss_fn).lower():
             max_value = np.array(torch.max(torch.abs(target)).item()).astype(np.float32)
-            loss_fn = lambda x, y: set_loss_fn(
-                x.unsqueeze(dim=1),
-                torch.abs(y / torch.max(torch.abs(y))).unsqueeze(dim=1),
-                data_range=torch.tensor(max_value).unsqueeze(dim=0).to(x.device),
-            )
+
+            def loss_fn(x, y):
+                """Calculate the ssim loss."""
+                return set_loss_fn(
+                    x.unsqueeze(dim=1),
+                    torch.abs(y / torch.max(torch.abs(y))).unsqueeze(dim=1),
+                    data_range=torch.tensor(max_value).unsqueeze(dim=0).to(x.device),
+                )
+
         else:
-            loss_fn = lambda x, y: set_loss_fn(x, torch.abs(y / torch.max(torch.abs(y))))
+
+            def loss_fn(x, y):
+                """Calculate other loss."""
+                return set_loss_fn(x, torch.abs(y / torch.max(torch.abs(y))))
 
         if self.accumulate_estimates:
             cascades_loss = []

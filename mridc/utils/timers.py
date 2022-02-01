@@ -49,7 +49,10 @@ class NamedTimer:
     @property
     def _reduction_fn(self):
         if self._reduction == "none":
-            fn = lambda x: x
+
+            def fn(x):
+                return x
+
         else:
             fn = getattr(np, self._reduction)
 
