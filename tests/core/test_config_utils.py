@@ -13,7 +13,11 @@ from mridc.utils import config_utils
 
 @pytest.fixture()
 def cls():
+    """Create a class with a config attribute."""
+
     class DummyClass:
+        """Dummy class."""
+
         def __init__(self, a, b=5, c: int = 0, d: "ABC" = None):
             pass
 
@@ -21,10 +25,16 @@ def cls():
 
 
 class TestConfigUtils:
+    """Test the config utils."""
+
     @pytest.mark.unit
     def test_all_args_exist(self, cls):
+        """Test that all arguments exist in the dataclass."""
+
         @dataclass
         class DummyDataClass:
+            """Dummy data class."""
+
             a: int = -1
             b: int = 5
             c: int = 0
@@ -42,8 +52,12 @@ class TestConfigUtils:
 
     @pytest.mark.unit
     def test_extra_args_exist_but_is_ignored(self, cls):
+        """Test that extra arguments exist in the dataclass."""
+
         @dataclass
         class DummyDataClass:
+            """Dummy data class."""
+
             a: int = -1
             b: int = 5
             c: int = 0
@@ -61,8 +75,12 @@ class TestConfigUtils:
 
     @pytest.mark.unit
     def test_args_exist_but_is_remapped(self, cls):
+        """Test that arguments exist in the dataclass but are remapped."""
+
         @dataclass
         class DummyDataClass:
+            """Dummy data class."""
+
             a: int = -1
             b: int = 5
             c: int = 0

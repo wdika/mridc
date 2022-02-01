@@ -126,7 +126,7 @@ class SquareRootConstantPolicy(_LRScheduler):
         else:
             self.constant_steps = 0
 
-        self.constant_lr = 1 / (constant_steps ** 0.5)
+        self.constant_lr = 1 / (constant_steps**0.5)
         self.min_lr = min_lr
         super().__init__(optimizer, last_epoch)
 
@@ -568,7 +568,7 @@ class T5InverseSquareRootAnnealing(SquareRootConstantPolicy):
 
     def _get_lr(self, step):
         """Get learning rate at current step."""
-        return [1 / (step ** 0.5) for _ in self.base_lrs]
+        return [1 / (step**0.5) for _ in self.base_lrs]
 
 
 class PolynomialDecayAnnealing(WarmupPolicy):

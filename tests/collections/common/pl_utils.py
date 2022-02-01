@@ -47,8 +47,9 @@ def _class_test(
     check_batch: bool = True,
     atol: float = 1e-8,
 ):
-    """Utility function doing the actual comparison between lightning class metric
-    and reference metric.
+    """
+    Utility function doing the actual comparison between lightning class metric and reference metric.
+
     Args:
         rank: rank of current process
         worldsize: number of processes
@@ -112,8 +113,9 @@ def _functional_test(
     metric_args: dict = None,
     atol: float = 1e-8,
 ):
-    """Utility function doing the actual comparison between lightning functional metric
-    and reference metric.
+    """
+    Utility function doing the actual comparison between lightning functional metric and reference metric.
+
     Args:
         preds: torch tensor with predictions
         target: torch tensor with targets
@@ -135,19 +137,21 @@ def _functional_test(
 
 
 class MetricTester:
-    """Class used for efficiently run a lot of parametrized tests in ddp mode.
-    Makes sure that ddp is only setup once and that pool of processes are
-    used for all tests.
-    All tests should subclass from this and implement a new method called
-        `test_metric_name`
-    where the method `self.run_metric_test` is called inside.
+    """
+    Class used for efficiently run a lot of parametrized tests in ddp mode. Makes sure that ddp is only setup once and
+    that pool of processes are used for all tests.
+
+    All tests should subclass from this and implement a new method called `test_metric_name` where the method
+    `self.run_metric_test` is called inside.
+
     """
 
     atol = 1e-8
 
     def setup_class(self):
-        """Setup the metric class. This will spawn the pool of workers that are
-        used for metric testing and setup_ddp
+        """
+        Setup the metric class.
+        This will spawn the pool of workers that are used for metric testing and setup_ddp
         """
         try:
             set_start_method("spawn")
@@ -170,8 +174,9 @@ class MetricTester:
         sk_metric: Callable,
         metric_args: dict = None,
     ):
-        """Main method that should be used for testing functions. Call this inside
-        testing method
+        """
+        Main method that should be used for testing functions. Call this inside testing method.
+
         Args:
             preds: torch tensor with predictions
             target: torch tensor with targets
@@ -202,8 +207,9 @@ class MetricTester:
         check_dist_sync_on_step: bool = True,
         check_batch: bool = True,
     ):
-        """Main method that should be used for testing class. Call this inside testing
-        methods.
+        """
+        Main method that should be used for testing class. Call this inside testing methods.
+
         Args:
             ddp: bool, if running in ddp mode or not
             preds: torch tensor with predictions
@@ -295,8 +301,9 @@ def _loss_class_test(
     check_batch: bool = True,
     atol: float = 1e-8,
 ):
-    """Utility function doing the actual comparison between lightning class metric
-    and reference metric.
+    """
+    Utility function doing the actual comparison between lightning class metric and reference metric.
+
     Args:
         rank: rank of current process
         worldsize: number of processes
@@ -376,6 +383,7 @@ class LossTester(MetricTester):
         check_dist_sync_on_step: bool = True,
         check_batch: bool = True,
     ):
+        """Run test for class LossMetric"""
         if ddp:
             if sys.platform == "win32":
                 pytest.skip("DDP not supported on windows")
