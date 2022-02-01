@@ -186,8 +186,12 @@ class TestOptimizersSchedulers:
         class TempOpt(torch.optim.SGD):
             """A dummy optimizer"""
 
+            pass
+
         class TempOptParams(optimizers.SGDParams):
             """A dummy optimizer params"""
+
+            pass
 
         register_optimizer("TempOpt", TempOpt, TempOptParams)
 
@@ -287,8 +291,12 @@ class TestOptimizersSchedulers:
         class TempSched(optim.lr_scheduler.CosineAnnealing):
             """Temporary scheduler class."""
 
+            pass
+
         class TempSchedParams(CosineAnnealingParams):
             """Temporary scheduler class."""
+
+            pass
 
         optim.lr_scheduler.register_scheduler("TempSched", TempSched, TempSchedParams)
 

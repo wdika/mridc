@@ -11,9 +11,11 @@ import pytest
 
 
 class TestHydraRunner:
+    """Test the hydra runner."""
+
     @pytest.mark.integration
     def test_no_config(self):
-        """ "Test app without config - fields missing causes error."""
+        """Test app without config - fields missing causes error."""
         # Create system call.
         call = "python hydra/tmp_launch.py"
 
@@ -23,7 +25,7 @@ class TestHydraRunner:
 
     @pytest.mark.integration
     def test_config1(self):
-        """ "Test injection of valid config1."""
+        """Test injection of valid config."""
         # Create system call.
         call = "python hydra/tmp_launch.py --config-name config.yaml"
 
@@ -39,7 +41,7 @@ class TestHydraRunner:
 
     @pytest.mark.integration
     def test_config1_invalid(self):
-        """ "Test injection of invalid config1."""
+        """Test injection of invalid config."""
         # Create system call.
         call = "python hydra/tmp_launch.py --config-name config_invalid.yaml"
 

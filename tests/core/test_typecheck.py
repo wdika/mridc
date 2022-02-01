@@ -13,6 +13,7 @@ from mridc.core.neural_types.neural_type import NeuralType
 
 
 def recursive_assert_shape(x, shape):
+    """Perform recursive shape assert"""
     if isinstance(x, (list, tuple)):
         for xi in x:
             recursive_assert_shape(xi, shape)
@@ -22,8 +23,8 @@ def recursive_assert_shape(x, shape):
         raise AssertionError
 
 
-# Perform recursive type assert
 def recursive_assert_homogeneous_type(x, type_val):
+    """Perform recursive type homogeneous assert"""
     if isinstance(x, (list, tuple)):
         for xi in x:
             recursive_assert_homogeneous_type(xi, type_val)
@@ -34,9 +35,15 @@ def recursive_assert_homogeneous_type(x, type_val):
 
 
 class TestNeuralTypeCheckSystem:
+    """Test the typecheck system"""
+
     @pytest.mark.unit
     def test_no_types_passthrough(self):
+        """Test that no types are checked when passing through."""
+
         class NoTypes(Typing):
+            """No types"""
+
             @typecheck()
             def __call__(self, x):
                 return torch.tensor(1.0)
@@ -51,13 +58,19 @@ class TestNeuralTypeCheckSystem:
 
     @pytest.mark.unit
     def test_input_output_types(self):
+        """Test that input and output types are correctly checked."""
+
         class InputOutputTypes(Typing):
+            """Set input and output types"""
+
             @property
             def input_types(self):
+                """Set input types"""
                 return {"x": NeuralType(("B",), ElementType())}
 
             @property
             def output_types(self):
+                """Set output types"""
                 return {"y": NeuralType(("B",), ElementType())}
 
             @typecheck()
@@ -83,9 +96,14 @@ class TestNeuralTypeCheckSystem:
 
     @pytest.mark.unit
     def test_input_types_only(self):
+        """Test that input types are correctly checked."""
+
         class InputTypes(Typing):
+            """Set input types"""
+
             @property
             def input_types(self):
+                """Set input types"""
                 return {"x": NeuralType(("B",), ElementType())}
 
             @typecheck()
@@ -103,9 +121,14 @@ class TestNeuralTypeCheckSystem:
 
     @pytest.mark.unit
     def test_multiple_input_types_only(self):
+        """Test that multiple input types are correctly checked."""
+
         class InputTypes(Typing):
+            """Set input types"""
+
             @property
             def input_types(self):
+                """Set input types"""
                 return {"x": NeuralType(("B",), ElementType()), "y": NeuralType(("B",), ElementType())}
 
             @typecheck()
@@ -123,9 +146,14 @@ class TestNeuralTypeCheckSystem:
 
     @pytest.mark.unit
     def test_output_types_only(self):
+        """Test that output types are correctly inferred"""
+
         class OutputTypes(Typing):
+            """Set output types"""
+
             @property
             def output_types(self):
+                """Set output types"""
                 return {"y": NeuralType(("B",), ElementType())}
 
             @typecheck()
@@ -149,9 +177,14 @@ class TestNeuralTypeCheckSystem:
 
     @pytest.mark.unit
     def test_multiple_output_types_only(self):
+        """Test multiple output types only"""
+
         class MultipleOutputTypes(Typing):
+            """Set output types"""
+
             @property
             def output_types(self):
+                """Set output types"""
                 return {"y": NeuralType(("B",), ElementType()), "z": NeuralType(("B",), ElementType())}
 
             @typecheck()
@@ -175,9 +208,14 @@ class TestNeuralTypeCheckSystem:
 
     @pytest.mark.unit
     def test_multiple_mixed_output_types_only(self):
+        """Test that multiple output types can be mixed"""
+
         class MultipleMixedOutputTypes(Typing):
+            """Set output types"""
+
             @property
             def output_types(self):
+                """Set output types"""
                 return {"y": NeuralType(("B",), ElementType()), "z": [NeuralType(("B",), ElementType())]}
 
             @typecheck()
@@ -206,9 +244,14 @@ class TestNeuralTypeCheckSystem:
 
     @pytest.mark.unit
     def test_multiple_mixed_output_types_only_mismatched(self):
+        """Test multiple output types with mismatched types"""
+
         class MultipleMixedOutputTypes(Typing):
+            """Set output types"""
+
             @property
             def output_types(self):
+                """Set output types"""
                 return {"y": NeuralType(("B",), ElementType()), "z": [NeuralType(("B",), ElementType())]}
 
             @typecheck()
@@ -220,17 +263,23 @@ class TestNeuralTypeCheckSystem:
 
         obj = MultipleMixedOutputTypes()
         with pytest.raises(TypeError):
-            result_y, result_z = obj(x=torch.zeros(10))
+            _, _ = obj(x=torch.zeros(10))
 
     @pytest.mark.unit
     def test_incorrect_inheritance(self):
+        """Test incorrect inheritance"""
+
         class IncorrectInheritance(object):
+            """Inherit from object"""
+
             @property
             def input_types(self):
+                """Set input types"""
                 return {"x": NeuralType(("B",), ElementType())}
 
             @property
             def output_types(self):
+                """Set output types"""
                 return {"y": NeuralType(("B",), ElementType())}
 
             @typecheck()
@@ -245,13 +294,19 @@ class TestNeuralTypeCheckSystem:
 
     @pytest.mark.unit
     def test_port_definition_rejection(self):
+        """Test port definition rejection"""
+
         class InputPortDefinitionRejection(Typing):
+            """Set input types"""
+
             @property
             def input_types(self):
+                """Set input types"""
                 return {"x": NeuralType(("B",), ElementType())}
 
             @property
             def output_types(self):
+                """Set output types"""
                 return {"w": NeuralType(("B",), ElementType()), "u": NeuralType(("B",), ElementType())}
 
             @typecheck()
@@ -267,12 +322,16 @@ class TestNeuralTypeCheckSystem:
             _ = obj(x=torch.zeros(10), y=torch.zeros(10))
 
         class OutputPortDefinitionRejection(Typing):
+            """Set output types"""
+
             @property
             def input_types(self):
+                """Set input types"""
                 return {"x": NeuralType(("B",), ElementType())}
 
             @property
             def output_types(self):
+                """Set output types"""
                 return {
                     "w": NeuralType(("B",), ElementType()),
                 }
@@ -288,13 +347,19 @@ class TestNeuralTypeCheckSystem:
 
     @pytest.mark.unit
     def test_port_shape_rejection(self):
+        """Test port shape rejection"""
+
         class InputPortShapeRejection(Typing):
+            """Set input types"""
+
             @property
             def input_types(self):
+                """Set input types"""
                 return {"x": NeuralType(("B", "T"), ElementType())}  # expect rank 2 matrix
 
             @property
             def output_types(self):
+                """Set output types"""
                 return {"w": NeuralType(("B",), ElementType())}
 
             @typecheck()
@@ -309,12 +374,16 @@ class TestNeuralTypeCheckSystem:
             _ = obj(x=torch.zeros(10))
 
         class OutputPortShapeRejection(Typing):
+            """Set output types"""
+
             @property
             def input_types(self):
+                """Set input types"""
                 return {"x": NeuralType(("B",), ElementType())}
 
             @property
             def output_types(self):
+                """Set output types"""
                 return {
                     "w": NeuralType(("B", "T", "D"), ElementType()),  # expect rank 3 matrix
                 }
@@ -330,10 +399,14 @@ class TestNeuralTypeCheckSystem:
 
     @pytest.mark.unit
     def test_positional_args(self):
-        # Test positional check on input type
+        """Test positional check on input type."""
+
         class InputPositional(Typing):
+            """Swt input types"""
+
             @property
             def input_types(self):
+                """Set input types"""
                 return {"x": NeuralType(("B",), ElementType())}
 
             @typecheck()
@@ -346,12 +419,15 @@ class TestNeuralTypeCheckSystem:
         with pytest.raises(TypeError):
             _ = obj(torch.zeros(10))
 
-        # Test positional pass-through for only output ports defined
-        # NOTE: This is required behaviour to support type checking of NeMo Dataset class
-        # during collate_fn() call.
         class OutputPositionalPassthrough(Typing):
+            """
+            Test positional pass-through for only output ports defined. NOTE: This is required behaviour to support
+            type checking of MRIDC Dataset class during collate_fn() call.
+            """
+
             @property
             def output_types(self):
+                """Output port definitions"""
                 return {"y": NeuralType(("B",), ElementType())}
 
             @typecheck()
@@ -367,9 +443,14 @@ class TestNeuralTypeCheckSystem:
 
     @pytest.mark.unit
     def test_optional_types(self):
+        """Test optional types"""
+
         class InputOptionalTypes(Typing):
+            """Set input types"""
+
             @property
             def input_types(self):
+                """Input port definitions"""
                 return {"x": NeuralType(("B",), ElementType()), "y": NeuralType(("B",), ElementType(), optional=True)}
 
             @typecheck()
@@ -397,9 +478,14 @@ class TestNeuralTypeCheckSystem:
 
     @pytest.mark.unit
     def test_multi_forward_type(self):
+        """Test multi-forward type"""
+
         class AdaptiveTypeCheck(Typing):
+            """Set input types"""
+
             @property
             def input_types(self):
+                """Input port definitions"""
                 if self.mode == "train":
                     return {"x": NeuralType(("B",), ElementType())}
 
@@ -412,6 +498,7 @@ class TestNeuralTypeCheckSystem:
 
             @property
             def output_types(self):
+                """Output port definitions"""
                 if self.mode == "train":
                     return {"u": NeuralType(("B",), ElementType())}
 
@@ -438,22 +525,27 @@ class TestNeuralTypeCheckSystem:
 
             @typecheck()
             def train_forward(self, x):
+                """Train forward"""
                 return x + 10
 
             @typecheck()
             def eval_forward(self, x, y):
+                """Eval forward"""
                 return x - 1, y - 1
 
             @typecheck()
             def infer_forward(self, y):
+                """Infer forward"""
                 return y - 10
 
             @property
             def mode(self):
+                """Set mode"""
                 return self._mode
 
             @mode.setter
             def mode(self, val):
+                """Set mode"""
                 if val not in ["train", "infer", "eval"]:
                     raise ValueError("mode must be either train infer or eval")
                 self._mode = val
@@ -504,9 +596,14 @@ class TestNeuralTypeCheckSystem:
 
     @pytest.mark.unit
     def test_input_type_override(self):
+        """Test that input type override works"""
+
         class InputTypesOverride(Typing):
+            """Test class"""
+
             @property
             def input_types(self):
+                """Set input types"""
                 return {"x": NeuralType(("B",), ElementType())}
 
             @typecheck()
@@ -516,6 +613,7 @@ class TestNeuralTypeCheckSystem:
 
             @typecheck(input_types={"y": NeuralType(("B",), CategoricalValuesType())})
             def forward(self, y):
+                """Forward"""
                 y -= 1
                 return y
 
@@ -537,9 +635,14 @@ class TestNeuralTypeCheckSystem:
 
     @pytest.mark.unit
     def test_output_type_override(self):
+        """Test overriding output type"""
+
         class OutputTypes(Typing):
+            """Test class"""
+
             @property
             def output_types(self):
+                """Set output types"""
                 return {"y": NeuralType(("B",), ElementType())}
 
             @typecheck()
@@ -549,6 +652,7 @@ class TestNeuralTypeCheckSystem:
 
             @typecheck(output_types={"z": NeuralType(("B",), CategoricalValuesType())})
             def forward(self, z):
+                """Forward"""
                 z -= 1
                 return z
 
@@ -578,17 +682,19 @@ class TestNeuralTypeCheckSystem:
 
     @pytest.mark.unit
     def test_multi_type_override(self):
+        """Test overriding multiple types"""
+
         class AdaptiveTypeCheck(Typing):
+            """Test class"""
+
             @property
             def input_types(self):
-                # __call__ assumed to be for inference only,
-                # therefore infer types checked at class scope
+                """__call__ assumed to be for inference only, therefore infer types checked at class scope"""
                 return {"y": NeuralType(("B",), ChannelType())}
 
             @property
             def output_types(self):
-                # __call__ assumed to be for inference only,
-                # therefore infer types checked at class scope
+                """__call__ assumed to be for inference only, therefore infer types checked at class scope"""
                 return {"v": NeuralType(("B",), ChannelType())}
 
             def __call__(self, **kwargs):
@@ -602,6 +708,7 @@ class TestNeuralTypeCheckSystem:
                 output_types={"u": NeuralType(("B",), ElementType())},
             )
             def train_forward(self, x):
+                """Train forward"""
                 return x + 10
 
             @typecheck(
@@ -609,6 +716,7 @@ class TestNeuralTypeCheckSystem:
                 output_types={"u": NeuralType(("B",), ElementType()), "v": NeuralType(("B",), ChannelType())},
             )
             def eval_forward(self, x, y):
+                """Eval forward"""
                 return x - 1, y - 1
 
             @typecheck(
@@ -616,6 +724,7 @@ class TestNeuralTypeCheckSystem:
                 output_types={"v": NeuralType(("B",), ChannelType())},
             )
             def infer_forward(self, y):
+                """Infers output types from input types"""
                 return y - 10
 
         obj = AdaptiveTypeCheck()
@@ -659,13 +768,19 @@ class TestNeuralTypeCheckSystem:
 
     @pytest.mark.unit
     def test_disable_typecheck(self):
+        """Test disabling typecheck"""
+
         class InputOutputTypes(Typing):
+            """Test class"""
+
             @property
             def input_types(self):
+                """Set input types"""
                 return {"x": NeuralType(("B",), ElementType())}
 
             @property
             def output_types(self):
+                """Set output types"""
                 return {"y": NeuralType(("B",), ElementType())}
 
             @typecheck()
@@ -690,13 +805,19 @@ class TestNeuralTypeCheckSystem:
 
     @pytest.mark.unit
     def test_nested_shape_mismatch(self):
+        """Test nested shape mismatch"""
+
         class NestedShapeMismatch(Typing):
+            """Test class"""
+
             @property
             def input_types(self):
+                """Set input types"""
                 return {"x": [[NeuralType(("D",), ElementType())]]}  # Each element of nest will have 4 values
 
             @property
             def output_types(self):
+                """Set output types"""
                 return {"y": [[NeuralType(("D",), ElementType())]]}  # Each element of nest will have 4 values
 
             @typecheck()
@@ -705,6 +826,7 @@ class TestNeuralTypeCheckSystem:
                 return x
 
         def bb(dim=4):
+            """Basic block"""
             return torch.zeros(dim)
 
         obj = NestedShapeMismatch()
@@ -718,6 +840,7 @@ class TestNeuralTypeCheckSystem:
 
         # Arbitrary nest 2 (should pass)
         def bb(dim=4):
+            """Basic block"""
             return torch.zeros(dim, dim)
 
         data = [[bb(), bb(), bb()], [bb()], [bb(), bb()]]
@@ -727,6 +850,7 @@ class TestNeuralTypeCheckSystem:
 
         # Arbitrary nest 3
         def bb(dim=4):
+            """Basic block"""
             return torch.zeros(dim)
 
         data = [[[bb(), bb(), bb()]], [[bb()], [bb(), bb()]]]
@@ -736,13 +860,19 @@ class TestNeuralTypeCheckSystem:
 
     @pytest.mark.unit
     def test_nested_mixed_shape_mismatch(self):
+        """Test nested mixed shape mismatch"""
+
         class NestedMixedShapeMismatch(Typing):
+            """Test class"""
+
             @property
             def input_types(self):
+                """Set input types"""
                 return {"x": [[NeuralType(("D",), ElementType())]]}  # Each element of nest will have 4 values
 
             @property
             def output_types(self):
+                """Set output types"""
                 return {"y": [NeuralType(("D",), ElementType())]}  # Each element of nest will have 4 values
 
             @typecheck()
@@ -752,6 +882,7 @@ class TestNeuralTypeCheckSystem:
                 return x
 
         def bb(dim=4):
+            """Basic block"""
             return torch.zeros(dim)
 
         obj = NestedMixedShapeMismatch()
@@ -765,6 +896,7 @@ class TestNeuralTypeCheckSystem:
 
         # Arbitrary nest 2 (should pass)
         def bb(dim=4):
+            """Basic block"""
             return torch.zeros(dim, dim)
 
         data = [[bb(), bb(), bb()], [bb()], [bb(), bb()]]
@@ -774,6 +906,7 @@ class TestNeuralTypeCheckSystem:
 
         # Arbitrary nest 3
         def bb(dim=4):
+            """Basic block"""
             return torch.zeros(dim)
 
         data = [[[bb(), bb(), bb()]], [[bb()], [bb(), bb()]]]
