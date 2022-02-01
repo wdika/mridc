@@ -32,7 +32,7 @@ AVAILABLE_OPTIMIZERS = {
     "adafactor": Adafactor,
 }
 
-__all__ = ["get_optimizer", "register_optimizer", "parse_optimizer_args"]
+__all__ = ["AVAILABLE_OPTIMIZERS", "get_optimizer", "register_optimizer", "parse_optimizer_args"]
 
 
 def parse_optimizer_args(
