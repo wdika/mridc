@@ -72,7 +72,7 @@ class CIRIM(ModelPT, ABC):
         self.fft_type = cirim_cfg_dict.get("fft_type")
         self.num_cascades = cirim_cfg_dict.get("num_cascades")
 
-        self.cirim = nn.ModuleList(  # type: ignore
+        self.cirim = nn.ModuleList(
             [
                 RIMBlock(
                     recurrent_layer=cirim_cfg_dict.get("recurrent_layer"),

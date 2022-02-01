@@ -687,6 +687,8 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
         self.always_save_mridc = always_save_mridc
         self.save_mridc_on_train_end = save_mridc_on_train_end
         self.save_best_model = save_best_model
+        self.previous_model_path = None
+        self.last_model_path: Union[Any, str] = None
         if self.save_best_model and not self.save_mridc_on_train_end:
             logging.warning(
                 (
@@ -781,7 +783,7 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
         if self.last_model_path and self.last_model_path != filepath:
             trainer.training_type_plugin.remove_checkpoint(self.last_model_path)
 
-        self.last_model_path: Union[Any, str] = filepath
+        self.last_model_path = filepath
         trainer.save_checkpoint(filepath, self.save_weights_only)
 
     def on_save_checkpoint(self, trainer, pl_module, checkpoint):
