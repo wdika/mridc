@@ -39,8 +39,8 @@ def log_likelihood_gradient(
 
     pred_real, pred_imag = pred.chunk(2, -1)
 
-    re_out = torch.sum(pred_real * sense_real + pred_imag * sense_imag, 1) / (sigma ** 2.0)
-    im_out = torch.sum(pred_imag * sense_real - pred_real * sense_imag, 1) / (sigma ** 2.0)
+    re_out = torch.sum(pred_real * sense_real + pred_imag * sense_imag, 1) / (sigma**2.0)
+    im_out = torch.sum(pred_imag * sense_real - pred_real * sense_imag, 1) / (sigma**2.0)
 
     eta_real = eta_real.squeeze(0)
     eta_imag = eta_imag.squeeze(0)
