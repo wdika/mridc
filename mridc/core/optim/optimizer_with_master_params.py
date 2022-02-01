@@ -100,7 +100,7 @@ class MasterOptimizerWrapper(torch.optim.Optimizer):
         contiguous_grad_bucket=False,
         async_grad_allreduce=False,
     ):
-        super().__init__(params, default)
+        super().__init__(optimizer.param_groups)
         if not HAVE_APEX:
             logging.warning("Apex was not found. Using model parallel models will error out.")
 
@@ -217,7 +217,7 @@ class MasterOptimizerWrapper(torch.optim.Optimizer):
         """Create the grad accumulation and all-reduce hook for back prop."""
         # Hook used for back-prop.
         def param_hook(*unused):
-            # Accumulates gradients on main gradients
+            """Gradient accumulation and all-reduce."""
             if param.grad.data is not None:
                 if main_param.grad is None:
                     main_param.grad = param.grad.float()
