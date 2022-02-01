@@ -31,10 +31,10 @@ class TestHydraRunner:
         subprocess.check_call(call, shell=True, stdout=sys.stdout, stderr=sys.stdout)
 
         # Make sure that .hydra dir is not present.
-        if path.exists(f".hydra"):
+        if path.exists(".hydra"):
             raise AssertionError
         # Make sure that default hydra log file is not present.
-        if path.exists(f"tmp_launch.log"):
+        if path.exists("tmp_launch.log"):
             raise AssertionError
 
     @pytest.mark.integration

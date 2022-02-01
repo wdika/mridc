@@ -82,15 +82,19 @@ def _class_test(
                 ddp_target = torch.stack([target[i + r] for r in range(worldsize)])
                 sk_batch_result = sk_metric(ddp_preds, ddp_target)
                 # assert for dist_sync_on_step
-                if check_dist_sync_on_step:
-                    if not np.allclose(batch_result.numpy(), sk_batch_result, atol=atol):
-                        raise AssertionError
+                if (
+                    check_dist_sync_on_step
+                    and not np.allclose(batch_result.numpy(), sk_batch_result, atol=atol)
+                ):
+                    raise AssertionError
         else:
             sk_batch_result = sk_metric(preds[i], target[i])
             # assert for batch
-            if check_batch:
-                if not np.allclose(batch_result.numpy(), sk_batch_result, atol=atol):
-                    raise AssertionError
+            if (
+                check_batch
+                and not np.allclose(batch_result.numpy(), sk_batch_result, atol=atol)
+            ):
+                raise AssertionError
 
     # check on all batches on all ranks
     result = metric.compute()
