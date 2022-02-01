@@ -334,10 +334,10 @@ def _loss_class_test(
                         if not batch_result.isnan():
                             raise AssertionError
                     else:
-                        if not np.allclose(
-                            batch_result.numpy(), sk_batch_result, atol=atol
-                        ):
-                            raise AssertionError(f"batch_result = {batch_result.numpy()}, sk_batch_result = {sk_batch_result}, i = {i}")
+                        if not np.allclose(batch_result.numpy(), sk_batch_result, atol=atol):
+                            raise AssertionError(
+                                f"batch_result = {batch_result.numpy()}, sk_batch_result = {sk_batch_result}, i = {i}"
+                            )
         else:
             ls = loss_sum_or_avg[i : i + 1]  # type: ignore
             nm = num_measurements[i : i + 1]  # type: ignore
@@ -348,10 +348,10 @@ def _loss_class_test(
                     if not batch_result.isnan():
                         raise AssertionError
                 else:
-                    if not np.allclose(
-                        batch_result.numpy(), sk_batch_result, atol=atol
-                    ):
-                        raise AssertionError(f"batch_result = {batch_result.numpy()}, sk_batch_result = {sk_batch_result}, i = {i}")
+                    if not np.allclose(batch_result.numpy(), sk_batch_result, atol=atol):
+                        raise AssertionError(
+                            f"batch_result = {batch_result.numpy()}, sk_batch_result = {sk_batch_result}, i = {i}"
+                        )
     # check on all batches on all ranks
     result = loss_metric.compute()
     if not isinstance(result, torch.Tensor):

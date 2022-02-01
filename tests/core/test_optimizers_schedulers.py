@@ -142,10 +142,7 @@ class TestOptimizersSchedulers:
         model = TempModel()
 
         for opt_name in AVAILABLE_OPTIMIZERS:
-            if (
-                opt_name == "fused_adam"
-                and not torch.cuda.is_available()
-            ):
+            if opt_name == "fused_adam" and not torch.cuda.is_available():
                 continue
             opt_cls = get_optimizer(opt_name)
             if opt_name == "adafactor":

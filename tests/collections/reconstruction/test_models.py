@@ -186,5 +186,3 @@ def test_cirim(shape, cfg, center_fractions, accelerations):
     if y.shape[1:] != x.shape[2:4]:
         print(y.shape, x.shape)
         raise AssertionError
-
-

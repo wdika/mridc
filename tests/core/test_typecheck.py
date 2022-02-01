@@ -573,9 +573,7 @@ class TestNeuralTypeCheckSystem:
             raise AssertionError
         if not hasattr(result2, "neural_type"):
             raise AssertionError
-        if (
-            result2.neural_type.compare(NeuralType(("B",), CategoricalValuesType())) != NeuralTypeComparisonResult.SAME
-        ):
+        if result2.neural_type.compare(NeuralType(("B",), CategoricalValuesType())) != NeuralTypeComparisonResult.SAME:
             raise AssertionError
 
     @pytest.mark.unit
