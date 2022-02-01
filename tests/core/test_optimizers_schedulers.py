@@ -186,12 +186,8 @@ class TestOptimizersSchedulers:
         class TempOpt(torch.optim.SGD):
             """A dummy optimizer"""
 
-            pass
-
         class TempOptParams(optimizers.SGDParams):
             """A dummy optimizer params"""
-
-            pass
 
         register_optimizer("TempOpt", TempOpt, TempOptParams)
 
@@ -291,12 +287,8 @@ class TestOptimizersSchedulers:
         class TempSched(optim.lr_scheduler.CosineAnnealing):
             """Temporary scheduler class."""
 
-            pass
-
         class TempSchedParams(CosineAnnealingParams):
             """Temporary scheduler class."""
-
-            pass
 
         optim.lr_scheduler.register_scheduler("TempSched", TempSched, TempSchedParams)
 
@@ -711,7 +703,7 @@ class TestOptimizersSchedulers:
             if i <= 3:
                 if policy.get_last_lr()[0] > self.INITIAL_LR + 1e-5:
                     raise AssertionError
-            elif 3 < i <= 8:
+            elif i > 3 and i <= 8:
                 if policy.get_last_lr()[0] != policy._get_lr(i)[0]:
                     raise AssertionError
             else:
