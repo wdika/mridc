@@ -7,6 +7,7 @@ import math
 import os
 import random
 import shutil
+from abc import ABC
 
 import omegaconf
 import pytest
@@ -25,28 +26,36 @@ from mridc.utils import logging
 
 
 class TempModel(torch.nn.Module):
+    """Create a dummy model for testing."""
+
     def __init__(self):
         super(TempModel, self).__init__()
         self.layer = torch.nn.Linear(5, 1)
 
     def forward(self, x):
+        """Forward pass."""
         x = self.layer(x)
         return x
 
 
 class OptCounter(torch.optim.SGD):
+    """A simple optimizer that counts the number of calls to step()."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for group in self.param_groups:
             group.setdefault("count", 0)
 
     def step(self, closure=None):
+        """Performs a single optimization step."""
         for group in self.param_groups:
             group["count"] += 1
         super().step(closure)
 
 
 class RandomDataset(torch.utils.data.Dataset):
+    """A dataset that returns random tensors."""
+
     def __init__(self, dataset_len):
         super().__init__()
         self.__dataset_len = dataset_len
@@ -58,7 +67,9 @@ class RandomDataset(torch.utils.data.Dataset):
         return self.__dataset_len
 
 
-class ExampleModel(pl.LightningModule):
+class ExampleModel(pl.LightningModule, ABC):
+    """A dummy model for testing."""
+
     def __init__(self, batch_size, dataset_len, drop_last, max_steps):
         super().__init__()
         self.l1 = torch.nn.modules.Linear(in_features=2, out_features=1)
@@ -68,22 +79,28 @@ class ExampleModel(pl.LightningModule):
         self.max_steps = max_steps
 
     def train_dataloader(self):
+        """Return a training data loader."""
         dataset = RandomDataset(self.dataset_len)
         return torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, drop_last=self.drop_last)
 
     def training_step(self, batch, batch_idx):
+        """Set training step."""
         output = self.l1(batch)
         output = torch.nn.functional.l1_loss(output, torch.ones(output.size()).to(output.device))
         return {"loss": output}
 
     def configure_optimizers(self):
+        """Configure optimizers for the model."""
         self.my_opt = OptCounter(self.parameters(), lr=0.02)
         return self.my_opt
 
 
 class Callback(pl.callbacks.Callback):
+    """A dummy callback for testing."""
+
     @pl.utilities.distributed.rank_zero_only
     def on_train_end(self, trainer, module):
+        """On train end, check that the number of steps is correct"""
         count = module.my_opt.param_groups[0]["count"]
         if trainer.global_step != count or trainer.global_step != module.max_steps:
             logging.debug(f"max_epochs: {trainer.max_epochs}")
@@ -98,13 +115,21 @@ class Callback(pl.callbacks.Callback):
 
         self.assert_counts(trainer, module, count)
 
-    def assert_counts(self, trainer, module, count):
-        assert trainer.global_step == count, f"{trainer.global_step} != {count} != {module.max_steps}"
-        assert trainer.global_step == module.max_steps, f"{trainer.global_step} != {count} != {module.max_steps}"
+    @staticmethod
+    def assert_counts(trainer, module, count):
+        """Assert that the number of steps is correct"""
+        if trainer.global_step != count:
+            raise AssertionError(f"{trainer.global_step} != {count} != {module.max_steps}")
+        if trainer.global_step != module.max_steps:
+            raise AssertionError(f"{trainer.global_step} != {count} != {module.max_steps}")
 
 
 class SchedulerNoOpCallback(Callback):
-    def on_train_batch_end(self, trainer: pl.Trainer, pl_module, outputs, batch, batch_idx):
+    """A dummy callback for testing."""
+
+    @staticmethod
+    def on_train_batch_end(trainer: pl.Trainer, pl_module, outputs, batch, batch_idx):
+        """On each training batch end"""
         # pl_module.max_steps is "original" max steps without trainer extra steps.
         if (trainer.global_step + 1) % 3 == 0 and (trainer.global_step + 1) < pl_module.max_steps:
             schedulers = trainer.lr_schedulers
@@ -119,13 +144,18 @@ class SchedulerNoOpCallback(Callback):
             trainer.fit_loop.max_steps = trainer.fit_loop.max_steps + 1
 
     def assert_counts(self, trainer, module, count):
+        """This is a no-op callback, so the counts should not change"""
         num_skips = module.max_steps // 3
         extra_steps = module.max_steps + num_skips
-        assert trainer.global_step == count, f"{trainer.global_step} != {count} != {extra_steps}"
-        assert trainer.global_step == extra_steps, f"{trainer.global_step} != {count} != {extra_steps}"
+        if trainer.global_step != count:
+            raise AssertionError(f"{trainer.global_step} != {count} != {extra_steps}")
+        if trainer.global_step != extra_steps:
+            raise AssertionError(f"{trainer.global_step} != {count} != {extra_steps}")
 
 
 class TestOptimizersSchedulers:
+    """Test the optimizers and schedulers."""
+
     INITIAL_LR = 0.1
     MIN_LR = 1e-3
     MAX_STEPS = 10
@@ -133,12 +163,12 @@ class TestOptimizersSchedulers:
     # fused_adam is looking for CUDA and this test is being run on CPU only tests
     @pytest.mark.unit
     def test_get_optimizer(self):
+        """Test that the optimizer is correctly created"""
         model = TempModel()
 
-        for opt_name in AVAILABLE_OPTIMIZERS.keys():
-            if opt_name == "fused_adam":
-                if not torch.cuda.is_available():
-                    continue
+        for opt_name in AVAILABLE_OPTIMIZERS:
+            if opt_name == "fused_adam" and not torch.cuda.is_available():
+                continue
             opt_cls = get_optimizer(opt_name)
             if opt_name == "adafactor":
                 # Adafactor's default mode uses relative_step without any lr.
@@ -146,15 +176,18 @@ class TestOptimizersSchedulers:
             else:
                 opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
 
-            assert isinstance(opt, AVAILABLE_OPTIMIZERS[opt_name])
+            if not isinstance(opt, AVAILABLE_OPTIMIZERS[opt_name]):
+                raise AssertionError
 
     @pytest.mark.unit
     def test_register_optimizer(self):
+        """Test that we can register a new optimizer"""
+
         class TempOpt(torch.optim.SGD):
-            pass
+            """A dummy optimizer"""
 
         class TempOptParams(optimizers.SGDParams):
-            pass
+            """A dummy optimizer params"""
 
         register_optimizer("TempOpt", TempOpt, TempOptParams)
 
@@ -162,39 +195,54 @@ class TestOptimizersSchedulers:
         opt_cls = get_optimizer("TempOpt")
         opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
 
-        assert isinstance(opt, TempOpt)
+        if not isinstance(opt, TempOpt):
+            raise AssertionError
 
     @pytest.mark.unit
     def test_optim_config_parse_bypass(self):
+        """Test that the optimizer config is parsed correctly when the optimizer is not registered."""
         basic_optim_config = {"weight_decay": 0.001, "betas": [0.8, 0.5]}
         parsed_params = parse_optimizer_args("novograd", basic_optim_config)
-        assert parsed_params["weight_decay"] == basic_optim_config["weight_decay"]
-        assert parsed_params["betas"][0] == basic_optim_config["betas"][0]
-        assert parsed_params["betas"][1] == basic_optim_config["betas"][1]
+        if parsed_params["weight_decay"] != basic_optim_config["weight_decay"]:
+            raise AssertionError
+        if parsed_params["betas"][0] != basic_optim_config["betas"][0]:
+            raise AssertionError
+        if parsed_params["betas"][1] != basic_optim_config["betas"][1]:
+            raise AssertionError
 
         dict_config = omegaconf.OmegaConf.create(basic_optim_config)
         parsed_params = parse_optimizer_args("novograd", dict_config)
-        assert parsed_params["weight_decay"] == dict_config["weight_decay"]
-        assert parsed_params["betas"][0] == dict_config["betas"][0]
-        assert parsed_params["betas"][1] == dict_config["betas"][1]
+        if parsed_params["weight_decay"] != dict_config["weight_decay"]:
+            raise AssertionError
+        if parsed_params["betas"][0] != dict_config["betas"][0]:
+            raise AssertionError
+        if parsed_params["betas"][1] != dict_config["betas"][1]:
+            raise AssertionError
 
     @pytest.mark.unit
     def test_optim_config_parse_arg_by_target(self):
+        """Test that the optimizer config is parsed correctly by target."""
         basic_optim_config = {
             "_target_": "mridc.core.conf.optimizers.NovogradParams",
             "params": {"weight_decay": 0.001, "betas": [0.8, 0.5]},
         }
         basic_optim_config = omegaconf.OmegaConf.create(basic_optim_config)
         parsed_params = parse_optimizer_args("novograd", basic_optim_config)
-        assert parsed_params["weight_decay"] == basic_optim_config["params"]["weight_decay"]
-        assert parsed_params["betas"][0] == basic_optim_config["params"]["betas"][0]
-        assert parsed_params["betas"][1] == basic_optim_config["params"]["betas"][1]
+        if parsed_params["weight_decay"] != basic_optim_config["params"]["weight_decay"]:
+            raise AssertionError
+        if parsed_params["betas"][0] != basic_optim_config["params"]["betas"][0]:
+            raise AssertionError
+        if parsed_params["betas"][1] != basic_optim_config["params"]["betas"][1]:
+            raise AssertionError
 
         dict_config = omegaconf.OmegaConf.create(basic_optim_config)
         parsed_params = parse_optimizer_args("novograd", dict_config)
-        assert parsed_params["weight_decay"] == dict_config["params"]["weight_decay"]
-        assert parsed_params["betas"][0] == dict_config["params"]["betas"][0]
-        assert parsed_params["betas"][1] == dict_config["params"]["betas"][1]
+        if parsed_params["weight_decay"] != dict_config["params"]["weight_decay"]:
+            raise AssertionError
+        if parsed_params["betas"][0] != dict_config["params"]["betas"][0]:
+            raise AssertionError
+        if parsed_params["betas"][1] != dict_config["params"]["betas"][1]:
+            raise AssertionError
 
         # Names are ignored when passing class path
         # This will be captured during optimizer instantiation
@@ -202,38 +250,45 @@ class TestOptimizersSchedulers:
         sgd_config = vars(SGDParams())
         novograd_config = vars(NovogradParams())
 
-        assert set(output_config.keys()) != set(sgd_config.keys())
-        assert set(output_config.keys()) == set(novograd_config)
+        if set(output_config.keys()) == set(sgd_config.keys()):
+            raise AssertionError
+        if set(output_config.keys()) != set(novograd_config):
+            raise AssertionError
 
     @pytest.mark.unit
     def test_get_scheduler(self):
+        """Test that get_scheduler returns the correct scheduler class."""
         model = TempModel()
         optimizer = Novograd(model.parameters(), lr=self.INITIAL_LR)
 
-        for sched_name in AVAILABLE_SCHEDULERS.keys():
+        for sched_name in AVAILABLE_SCHEDULERS:
             sched_cls = optim.lr_scheduler.get_scheduler(sched_name)
 
             try:
                 sched = sched_cls(optimizer)
-                assert isinstance(sched, AVAILABLE_SCHEDULERS[sched_name])
+                if not isinstance(sched, AVAILABLE_SCHEDULERS[sched_name]):
+                    raise AssertionError
                 continue
             except Exception:
                 pass
 
             try:
                 sched = sched_cls(optimizer, max_steps=self.MAX_STEPS)
-                assert isinstance(sched, AVAILABLE_SCHEDULERS[sched_name])
+                if not isinstance(sched, AVAILABLE_SCHEDULERS[sched_name]):
+                    raise AssertionError
                 continue
             except Exception:
                 pass
 
     @pytest.mark.unit
     def test_register_scheduler(self):
+        """Test registering a new scheduler"""
+
         class TempSched(optim.lr_scheduler.CosineAnnealing):
-            pass
+            """Temporary scheduler class."""
 
         class TempSchedParams(CosineAnnealingParams):
-            pass
+            """Temporary scheduler class."""
 
         optim.lr_scheduler.register_scheduler("TempSched", TempSched, TempSchedParams)
 
@@ -243,24 +298,29 @@ class TestOptimizersSchedulers:
         sched_cls = optim.lr_scheduler.get_scheduler("TempSched")
         sched = sched_cls(opt, max_steps=self.MAX_STEPS)
 
-        assert isinstance(sched, TempSched)
+        if not isinstance(sched, TempSched):
+            raise AssertionError
 
     @pytest.mark.unit
     def test_sched_config_parse_simple(self):
+        """Test that scheduler config is parsed correctly"""
         model = TempModel()
         opt_cls = get_optimizer("novograd")
         opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
 
         basic_sched_config = {"name": "CosineAnnealing", "max_steps": 10}
         scheduler_setup = optim.lr_scheduler.prepare_lr_scheduler(opt, basic_sched_config)
-        assert isinstance(scheduler_setup["scheduler"], optim.lr_scheduler.CosineAnnealing)
+        if not isinstance(scheduler_setup["scheduler"], optim.lr_scheduler.CosineAnnealing):
+            raise AssertionError
 
         dict_config = omegaconf.OmegaConf.create(basic_sched_config)
         scheduler_setup = optim.lr_scheduler.prepare_lr_scheduler(opt, dict_config)
-        assert isinstance(scheduler_setup["scheduler"], optim.lr_scheduler.CosineAnnealing)
+        if not isinstance(scheduler_setup["scheduler"], optim.lr_scheduler.CosineAnnealing):
+            raise AssertionError
 
     @pytest.mark.unit
     def test_sched_config_parse_from_cls(self):
+        """Test that we can parse a scheduler from a class"""
         model = TempModel()
         opt_cls = get_optimizer("novograd")
         opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
@@ -271,14 +331,17 @@ class TestOptimizersSchedulers:
             "max_steps": self.MAX_STEPS,
         }
         scheduler_setup = optim.lr_scheduler.prepare_lr_scheduler(opt, basic_sched_config)
-        assert isinstance(scheduler_setup["scheduler"], optim.lr_scheduler.CosineAnnealing)
+        if not isinstance(scheduler_setup["scheduler"], optim.lr_scheduler.CosineAnnealing):
+            raise AssertionError
 
         dict_config = omegaconf.OmegaConf.create(basic_sched_config)
         scheduler_setup = optim.lr_scheduler.prepare_lr_scheduler(opt, dict_config)
-        assert isinstance(scheduler_setup["scheduler"], optim.lr_scheduler.CosineAnnealing)
+        if not isinstance(scheduler_setup["scheduler"], optim.lr_scheduler.CosineAnnealing):
+            raise AssertionError
 
     @pytest.mark.unit
     def test_WarmupPolicy(self):
+        """Test WarmupPolicy"""
         model = TempModel()
         opt_cls = get_optimizer("novograd")
         opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
@@ -287,39 +350,47 @@ class TestOptimizersSchedulers:
         policy = optim.lr_scheduler.WarmupPolicy(opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
-        assert initial_lr == self.INITIAL_LR
+        if initial_lr != self.INITIAL_LR:
+            raise AssertionError
 
         for i in range(self.MAX_STEPS):
-            assert policy.get_last_lr()[0] == self.INITIAL_LR
+            if policy.get_last_lr()[0] != self.INITIAL_LR:
+                raise AssertionError
             opt.step()
             policy.step()
 
         policy.step()
         final_lr = policy.get_last_lr()[0]
 
-        assert final_lr == self.MIN_LR
+        if final_lr != self.MIN_LR:
+            raise AssertionError
 
         # Warmup steps available
         policy = optim.lr_scheduler.WarmupPolicy(opt, warmup_steps=5, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
-        assert initial_lr < self.INITIAL_LR
+        if initial_lr >= self.INITIAL_LR:
+            raise AssertionError
 
         for i in range(self.MAX_STEPS):
             if i <= 4:
-                assert policy.get_last_lr()[0] <= self.INITIAL_LR
+                if policy.get_last_lr()[0] > self.INITIAL_LR:
+                    raise AssertionError
             else:
-                assert policy.get_last_lr()[0] == self.INITIAL_LR
+                if policy.get_last_lr()[0] != self.INITIAL_LR:
+                    raise AssertionError
             opt.step()
             policy.step()
 
         policy.step()
         final_lr = policy.get_last_lr()[0]
 
-        assert final_lr == self.MIN_LR
+        if final_lr != self.MIN_LR:
+            raise AssertionError
 
     @pytest.mark.unit
     def test_WarmupHoldPolicy(self):
+        """Test WarmupHoldPolicy"""
         model = TempModel()
         opt_cls = get_optimizer("novograd")
         opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
@@ -328,29 +399,35 @@ class TestOptimizersSchedulers:
         policy = optim.lr_scheduler.WarmupHoldPolicy(opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
-        assert initial_lr == self.INITIAL_LR
+        if initial_lr != self.INITIAL_LR:
+            raise AssertionError
 
         for i in range(self.MAX_STEPS):
-            assert policy.get_last_lr()[0] == self.INITIAL_LR
+            if policy.get_last_lr()[0] != self.INITIAL_LR:
+                raise AssertionError
             opt.step()
             policy.step()
 
         policy.step()
         final_lr = policy.get_last_lr()[0]
 
-        assert final_lr > self.MIN_LR
+        if final_lr <= self.MIN_LR:
+            raise AssertionError
 
         # Warmup steps available
         policy = optim.lr_scheduler.WarmupHoldPolicy(opt, warmup_steps=5, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
-        assert initial_lr < self.INITIAL_LR
+        if initial_lr >= self.INITIAL_LR:
+            raise AssertionError
 
         for i in range(self.MAX_STEPS):
             if i <= 4:
-                assert policy.get_last_lr()[0] <= self.INITIAL_LR
+                if policy.get_last_lr()[0] > self.INITIAL_LR:
+                    raise AssertionError
             else:
-                assert policy.get_last_lr()[0] == self.INITIAL_LR
+                if policy.get_last_lr()[0] != self.INITIAL_LR:
+                    raise AssertionError
 
             opt.step()
             policy.step()
@@ -358,7 +435,8 @@ class TestOptimizersSchedulers:
         policy.step()
         final_lr = policy.get_last_lr()[0]
 
-        assert final_lr > self.MIN_LR
+        if final_lr <= self.MIN_LR:
+            raise AssertionError
 
         # Warmup + Hold steps available
         policy = optim.lr_scheduler.WarmupHoldPolicy(
@@ -366,23 +444,28 @@ class TestOptimizersSchedulers:
         )
         initial_lr = policy.get_last_lr()[0]
 
-        assert initial_lr < self.INITIAL_LR
+        if initial_lr >= self.INITIAL_LR:
+            raise AssertionError
 
         for i in range(self.MAX_STEPS):
             if i <= 4:
-                assert policy.get_last_lr()[0] <= self.INITIAL_LR
+                if policy.get_last_lr()[0] > self.INITIAL_LR:
+                    raise AssertionError
             else:
-                assert policy.get_last_lr()[0] == self.INITIAL_LR
+                if policy.get_last_lr()[0] != self.INITIAL_LR:
+                    raise AssertionError
             opt.step()
             policy.step()
 
         policy.step()
         final_lr = policy.get_last_lr()[0]
 
-        assert final_lr >= self.MIN_LR
+        if final_lr < self.MIN_LR:
+            raise AssertionError
 
     @pytest.mark.unit
     def test_WarmupAnnealing(self):
+        """Test that the warmup annealing policy works as expected."""
         model = TempModel()
         opt_cls = get_optimizer("novograd")
         opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
@@ -391,29 +474,35 @@ class TestOptimizersSchedulers:
         policy = optim.lr_scheduler.WarmupAnnealing(opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
-        assert initial_lr == self.INITIAL_LR
+        if initial_lr != self.INITIAL_LR:
+            raise AssertionError
 
         for i in range(self.MAX_STEPS):
-            assert policy.get_last_lr()[0] <= self.INITIAL_LR
+            if policy.get_last_lr()[0] > self.INITIAL_LR:
+                raise AssertionError
             opt.step()
             policy.step()
 
         policy.step()
         final_lr = policy.get_last_lr()[0]
 
-        assert final_lr >= self.MIN_LR
+        if final_lr < self.MIN_LR:
+            raise AssertionError
 
         # Warmup steps available
         policy = optim.lr_scheduler.WarmupAnnealing(opt, warmup_steps=5, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
-        assert initial_lr < self.INITIAL_LR
+        if initial_lr >= self.INITIAL_LR:
+            raise AssertionError
 
         for i in range(self.MAX_STEPS):
             if i <= 5:
-                assert policy.get_last_lr()[0] <= self.INITIAL_LR
+                if policy.get_last_lr()[0] > self.INITIAL_LR:
+                    raise AssertionError
             else:
-                assert policy.get_last_lr()[0] < self.INITIAL_LR
+                if policy.get_last_lr()[0] >= self.INITIAL_LR:
+                    raise AssertionError
 
             opt.step()
             policy.step()
@@ -421,7 +510,8 @@ class TestOptimizersSchedulers:
         policy.step()
         final_lr = policy.get_last_lr()[0]
 
-        assert final_lr == self.MIN_LR
+        if final_lr != self.MIN_LR:
+            raise AssertionError
 
         # Warmup + Hold steps available
         policy = optim.lr_scheduler.WarmupHoldPolicy(
@@ -429,23 +519,28 @@ class TestOptimizersSchedulers:
         )
         initial_lr = policy.get_last_lr()[0]
 
-        assert initial_lr < self.INITIAL_LR
+        if initial_lr >= self.INITIAL_LR:
+            raise AssertionError
 
         for i in range(self.MAX_STEPS):
             if i <= 4:
-                assert policy.get_last_lr()[0] <= self.INITIAL_LR
+                if policy.get_last_lr()[0] > self.INITIAL_LR:
+                    raise AssertionError
             else:
-                assert policy.get_last_lr()[0] == self.INITIAL_LR
+                if policy.get_last_lr()[0] != self.INITIAL_LR:
+                    raise AssertionError
             opt.step()
             policy.step()
 
         policy.step()
         final_lr = policy.get_last_lr()[0]
 
-        assert final_lr >= self.MIN_LR
+        if final_lr < self.MIN_LR:
+            raise AssertionError
 
     @pytest.mark.unit
     def test_SquareAnnealing(self):
+        """Test SquareAnnealing"""
         model = TempModel()
         opt_cls = get_optimizer("novograd")
         opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
@@ -454,29 +549,35 @@ class TestOptimizersSchedulers:
         policy = optim.lr_scheduler.SquareAnnealing(opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
-        assert initial_lr == self.INITIAL_LR
+        if initial_lr != self.INITIAL_LR:
+            raise AssertionError
 
         for i in range(self.MAX_STEPS):
-            assert policy.get_last_lr()[0] <= self.INITIAL_LR
+            if policy.get_last_lr()[0] > self.INITIAL_LR:
+                raise AssertionError
             opt.step()
             policy.step()
 
         policy.step()
         final_lr = policy.get_last_lr()[0]
 
-        assert final_lr == self.MIN_LR
+        if final_lr != self.MIN_LR:
+            raise AssertionError
 
         # Warmup steps available
         policy = optim.lr_scheduler.SquareAnnealing(opt, warmup_steps=5, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
-        assert initial_lr < self.INITIAL_LR
+        if initial_lr >= self.INITIAL_LR:
+            raise AssertionError
 
         for i in range(self.MAX_STEPS):
             if i <= 5:
-                assert policy.get_last_lr()[0] <= self.INITIAL_LR
+                if policy.get_last_lr()[0] > self.INITIAL_LR:
+                    raise AssertionError
             else:
-                assert policy.get_last_lr()[0] < self.INITIAL_LR
+                if policy.get_last_lr()[0] >= self.INITIAL_LR:
+                    raise AssertionError
 
             opt.step()
             policy.step()
@@ -484,10 +585,12 @@ class TestOptimizersSchedulers:
         policy.step()
         final_lr = policy.get_last_lr()[0]
 
-        assert final_lr == self.MIN_LR
+        if final_lr != self.MIN_LR:
+            raise AssertionError
 
     @pytest.mark.unit
     def test_SquareRootAnnealing(self):
+        """Test SquareRootAnnealing"""
         model = TempModel()
         opt_cls = get_optimizer("novograd")
         opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
@@ -496,17 +599,20 @@ class TestOptimizersSchedulers:
         policy = SquareRootAnnealing(opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
-        assert initial_lr == self.INITIAL_LR
+        if initial_lr != self.INITIAL_LR:
+            raise AssertionError
 
         for i in range(self.MAX_STEPS):
-            assert policy.get_last_lr()[0] <= self.INITIAL_LR
+            if policy.get_last_lr()[0] > self.INITIAL_LR:
+                raise AssertionError
             opt.step()
             policy.step()
 
         policy.step()
         final_lr = policy.get_last_lr()[0]
 
-        assert final_lr == self.MIN_LR
+        if final_lr != self.MIN_LR:
+            raise AssertionError
 
         # Warmup steps available
         policy = optim.lr_scheduler.SquareRootAnnealing(
@@ -514,13 +620,16 @@ class TestOptimizersSchedulers:
         )
         initial_lr = policy.get_last_lr()[0]
 
-        assert initial_lr < self.INITIAL_LR
+        if initial_lr >= self.INITIAL_LR:
+            raise AssertionError
 
         for i in range(self.MAX_STEPS):
             if i <= 5:
-                assert policy.get_last_lr()[0] <= self.INITIAL_LR
+                if policy.get_last_lr()[0] > self.INITIAL_LR:
+                    raise AssertionError
             else:
-                assert policy.get_last_lr()[0] < self.INITIAL_LR
+                if policy.get_last_lr()[0] >= self.INITIAL_LR:
+                    raise AssertionError
 
             opt.step()
             policy.step()
@@ -528,10 +637,12 @@ class TestOptimizersSchedulers:
         policy.step()
         final_lr = policy.get_last_lr()[0]
 
-        assert final_lr == self.MIN_LR
+        if final_lr != self.MIN_LR:
+            raise AssertionError
 
     @pytest.mark.unit
     def test_CosineAnnealing(self):
+        """Test CosineAnnealing"""
         model = TempModel()
         opt_cls = get_optimizer("novograd")
         opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
@@ -540,29 +651,35 @@ class TestOptimizersSchedulers:
         policy = optim.lr_scheduler.CosineAnnealing(opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
-        assert initial_lr == self.INITIAL_LR
+        if initial_lr != self.INITIAL_LR:
+            raise AssertionError
 
         for i in range(self.MAX_STEPS):
-            assert policy.get_last_lr()[0] <= self.INITIAL_LR
+            if policy.get_last_lr()[0] > self.INITIAL_LR:
+                raise AssertionError
             opt.step()
             policy.step()
 
         policy.step()
         final_lr = policy.get_last_lr()[0]
 
-        assert final_lr == self.MIN_LR
+        if final_lr != self.MIN_LR:
+            raise AssertionError
 
         # Warmup steps available
         policy = optim.lr_scheduler.CosineAnnealing(opt, warmup_steps=5, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
-        assert initial_lr < self.INITIAL_LR
+        if initial_lr >= self.INITIAL_LR:
+            raise AssertionError
 
         for i in range(self.MAX_STEPS):
             if i <= 5:
-                assert policy.get_last_lr()[0] <= self.INITIAL_LR
+                if policy.get_last_lr()[0] > self.INITIAL_LR:
+                    raise AssertionError
             else:
-                assert policy.get_last_lr()[0] < self.INITIAL_LR
+                if policy.get_last_lr()[0] >= self.INITIAL_LR:
+                    raise AssertionError
 
             opt.step()
             policy.step()
@@ -570,7 +687,8 @@ class TestOptimizersSchedulers:
         policy.step()
         final_lr = policy.get_last_lr()[0]
 
-        assert final_lr == self.MIN_LR
+        if final_lr != self.MIN_LR:
+            raise AssertionError
 
         # Warmup + Constant steps available
         policy = optim.lr_scheduler.CosineAnnealing(
@@ -578,15 +696,19 @@ class TestOptimizersSchedulers:
         )
         initial_lr = policy.get_last_lr()[0]
 
-        assert initial_lr < self.INITIAL_LR
+        if initial_lr >= self.INITIAL_LR:
+            raise AssertionError
 
         for i in range(self.MAX_STEPS):
             if i <= 3:
-                assert policy.get_last_lr()[0] <= self.INITIAL_LR + 1e-5
-            elif i > 3 and i <= 8:
-                assert policy.get_last_lr()[0] == policy._get_lr(i)[0]
+                if policy.get_last_lr()[0] > self.INITIAL_LR + 1e-5:
+                    raise AssertionError
+            elif 3 < i <= 8:
+                if policy.get_last_lr()[0] != policy._get_lr(i)[0]:
+                    raise AssertionError
             else:
-                assert policy.get_last_lr()[0] == self.MIN_LR
+                if policy.get_last_lr()[0] != self.MIN_LR:
+                    raise AssertionError
 
             opt.step()
             policy.step()
@@ -594,10 +716,12 @@ class TestOptimizersSchedulers:
         policy.step()
         final_lr = policy.get_last_lr()[0]
 
-        assert final_lr == self.MIN_LR
+        if final_lr != self.MIN_LR:
+            raise AssertionError
 
     @pytest.mark.unit
     def test_PolynomialDecayAnnealing(self):
+        """Test PolynomialDecayAnnealing"""
         model = TempModel()
         opt_cls = get_optimizer("novograd")
         opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
@@ -608,17 +732,20 @@ class TestOptimizersSchedulers:
         )
         initial_lr = policy.get_last_lr()[0]
 
-        assert initial_lr == self.INITIAL_LR
+        if initial_lr != self.INITIAL_LR:
+            raise AssertionError
 
         for i in range(self.MAX_STEPS):
-            assert policy.get_last_lr()[0] <= self.INITIAL_LR
+            if policy.get_last_lr()[0] > self.INITIAL_LR:
+                raise AssertionError
             opt.step()
             policy.step()
 
         policy.step()
         final_lr = policy.get_last_lr()[0]
 
-        assert final_lr == self.MIN_LR
+        if final_lr != self.MIN_LR:
+            raise AssertionError
 
         # Warmup steps available
         policy = optim.lr_scheduler.PolynomialDecayAnnealing(
@@ -626,13 +753,16 @@ class TestOptimizersSchedulers:
         )
         initial_lr = policy.get_last_lr()[0]
 
-        assert initial_lr < self.INITIAL_LR
+        if initial_lr >= self.INITIAL_LR:
+            raise AssertionError
 
         for i in range(self.MAX_STEPS):
             if i <= 5:
-                assert policy.get_last_lr()[0] <= self.INITIAL_LR
+                if policy.get_last_lr()[0] > self.INITIAL_LR:
+                    raise AssertionError
             else:
-                assert policy.get_last_lr()[0] < self.INITIAL_LR
+                if policy.get_last_lr()[0] >= self.INITIAL_LR:
+                    raise AssertionError
 
             opt.step()
             policy.step()
@@ -640,10 +770,12 @@ class TestOptimizersSchedulers:
         policy.step()
         final_lr = policy.get_last_lr()[0]
 
-        assert final_lr == self.MIN_LR
+        if final_lr != self.MIN_LR:
+            raise AssertionError
 
     @pytest.mark.unit
     def test_PolynomialHoldDecayAnnealing(self):
+        """Test PolynomialHoldDecayAnnealing"""
         model = TempModel()
         opt_cls = get_optimizer("novograd")
         opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
@@ -654,17 +786,20 @@ class TestOptimizersSchedulers:
         )
         initial_lr = policy.get_last_lr()[0]
 
-        assert initial_lr == self.INITIAL_LR
+        if initial_lr != self.INITIAL_LR:
+            raise AssertionError
 
         for i in range(self.MAX_STEPS):
-            assert policy.get_last_lr()[0] <= self.INITIAL_LR
+            if policy.get_last_lr()[0] > self.INITIAL_LR:
+                raise AssertionError
             opt.step()
             policy.step()
 
         policy.step()
         final_lr = policy.get_last_lr()[0]
 
-        assert final_lr > self.MIN_LR
+        if final_lr <= self.MIN_LR:
+            raise AssertionError
 
         # Warmup steps available
         policy = optim.lr_scheduler.PolynomialHoldDecayAnnealing(
@@ -672,13 +807,16 @@ class TestOptimizersSchedulers:
         )
         initial_lr = policy.get_last_lr()[0]
 
-        assert initial_lr < self.INITIAL_LR
+        if initial_lr >= self.INITIAL_LR:
+            raise AssertionError
 
         for i in range(self.MAX_STEPS):
             if i <= 5:
-                assert policy.get_last_lr()[0] <= self.INITIAL_LR
+                if policy.get_last_lr()[0] > self.INITIAL_LR:
+                    raise AssertionError
             else:
-                assert policy.get_last_lr()[0] <= self.INITIAL_LR
+                if policy.get_last_lr()[0] > self.INITIAL_LR:
+                    raise AssertionError
 
             opt.step()
             policy.step()
@@ -686,7 +824,8 @@ class TestOptimizersSchedulers:
         policy.step()
         final_lr = policy.get_last_lr()[0]
 
-        assert final_lr >= self.MIN_LR
+        if final_lr < self.MIN_LR:
+            raise AssertionError
 
         # Warmup + Hold steps available
         policy = optim.lr_scheduler.PolynomialHoldDecayAnnealing(
@@ -694,25 +833,31 @@ class TestOptimizersSchedulers:
         )
         initial_lr = policy.get_last_lr()[0]
 
-        assert initial_lr < self.INITIAL_LR
+        if initial_lr >= self.INITIAL_LR:
+            raise AssertionError
 
         for i in range(self.MAX_STEPS):
             if i <= 4:
-                assert policy.get_last_lr()[0] <= self.INITIAL_LR
+                if policy.get_last_lr()[0] > self.INITIAL_LR:
+                    raise AssertionError
             elif i <= 8:
-                assert policy.get_last_lr()[0] >= self.INITIAL_LR
+                if policy.get_last_lr()[0] < self.INITIAL_LR:
+                    raise AssertionError
             else:
-                assert policy.get_last_lr()[0] <= self.INITIAL_LR
+                if policy.get_last_lr()[0] > self.INITIAL_LR:
+                    raise AssertionError
             opt.step()
             policy.step()
 
         policy.step()
         final_lr = policy.get_last_lr()[0]
 
-        assert final_lr >= self.MIN_LR
+        if final_lr < self.MIN_LR:
+            raise AssertionError
 
     @pytest.mark.unit
     def test_InverseSquareRootAnnealing(self):
+        """Test InverseSquareRootAnnealing"""
         model = TempModel()
         opt_cls = get_optimizer("novograd")
         opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
@@ -721,17 +866,20 @@ class TestOptimizersSchedulers:
         policy = optim.lr_scheduler.InverseSquareRootAnnealing(opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
-        assert initial_lr == self.INITIAL_LR
+        if initial_lr != self.INITIAL_LR:
+            raise AssertionError
 
         for i in range(self.MAX_STEPS):
-            assert policy.get_last_lr()[0] <= self.INITIAL_LR
+            if policy.get_last_lr()[0] > self.INITIAL_LR:
+                raise AssertionError
             opt.step()
             policy.step()
 
         policy.step()
         final_lr = policy.get_last_lr()[0]
 
-        assert final_lr == self.MIN_LR
+        if final_lr != self.MIN_LR:
+            raise AssertionError
 
         # Warmup steps available
         policy = optim.lr_scheduler.InverseSquareRootAnnealing(
@@ -739,13 +887,16 @@ class TestOptimizersSchedulers:
         )
         initial_lr = policy.get_last_lr()[0]
 
-        assert initial_lr < self.INITIAL_LR
+        if initial_lr >= self.INITIAL_LR:
+            raise AssertionError
 
         for i in range(self.MAX_STEPS):
             if i <= 5:
-                assert policy.get_last_lr()[0] <= self.INITIAL_LR
+                if policy.get_last_lr()[0] > self.INITIAL_LR:
+                    raise AssertionError
             else:
-                assert policy.get_last_lr()[0] < self.INITIAL_LR
+                if policy.get_last_lr()[0] >= self.INITIAL_LR:
+                    raise AssertionError
 
             opt.step()
             policy.step()
@@ -753,10 +904,12 @@ class TestOptimizersSchedulers:
         policy.step()
         final_lr = policy.get_last_lr()[0]
 
-        assert final_lr == self.MIN_LR
+        if final_lr != self.MIN_LR:
+            raise AssertionError
 
     @pytest.mark.unit
     def test_CosineAnnealing_with_noop_steps(self):
+        """Test CosineAnnealing with noop steps."""
         model = TempModel()
         opt_cls = get_optimizer("novograd")
         opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
@@ -765,11 +918,13 @@ class TestOptimizersSchedulers:
         policy = optim.lr_scheduler.CosineAnnealing(opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
-        assert initial_lr == self.INITIAL_LR
+        if initial_lr != self.INITIAL_LR:
+            raise AssertionError
 
         update_steps = 0
         for i in range(self.MAX_STEPS):
-            assert policy.get_last_lr()[0] <= self.INITIAL_LR
+            if policy.get_last_lr()[0] > self.INITIAL_LR:
+                raise AssertionError
             opt.step()
             policy.step()
 
@@ -782,21 +937,27 @@ class TestOptimizersSchedulers:
         policy.step()
         update_steps += 1
 
-        assert update_steps < self.MAX_STEPS
+        if update_steps >= self.MAX_STEPS:
+            raise AssertionError
 
         final_lr = policy.get_last_lr()[0]
-        assert final_lr > self.MIN_LR
+        if final_lr <= self.MIN_LR:
+            raise AssertionError
 
         # update step = true number of updates performed after some number of skipped steps
         true_end_lr = policy._get_lr(step=update_steps)[0]
-        assert final_lr == true_end_lr
+        if final_lr != true_end_lr:
+            raise AssertionError
 
     @pytest.mark.unit
     @pytest.mark.run_only_on("CPU")
     def test_max_step_computation(self):
+        """Test that the max_step computation is correct."""
+
         def train(
             max_epochs, accumulate_grad_batches, limit_train_batches, num_processes, batch_size, dataset_len, drop_last
         ):
+            """Set up the training environment"""
             trainer = pl.Trainer(
                 max_epochs=max_epochs,
                 accelerator="ddp_cpu",
@@ -881,9 +1042,12 @@ class TestOptimizersSchedulers:
     @pytest.mark.unit
     @pytest.mark.run_only_on("CPU")
     def test_max_step_computation_with_sched_no_ops(self):
+        """Test that max_step is computed correctly when scheduler has no_ops"""
+
         def train(
             max_steps, accumulate_grad_batches, limit_train_batches, num_processes, batch_size, dataset_len, drop_last
         ):
+            """Set up trainer and model"""
             trainer = pl.Trainer(
                 max_steps=max_steps,
                 accelerator="ddp_cpu",
@@ -909,6 +1073,8 @@ class TestOptimizersSchedulers:
             drop_last=True,
         )
 
-    def test_remove_logs_left(self):
+    @staticmethod
+    def test_remove_logs_left():
+        """Remove logs left by the trainer."""
         if os.path.exists(os.path.join(os.getcwd(), "lightning_logs")):
             shutil.rmtree(os.path.join(os.getcwd(), "lightning_logs"))

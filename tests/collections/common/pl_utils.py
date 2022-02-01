@@ -42,7 +42,7 @@ def _class_test(
     metric_class: Metric,
     sk_metric: Callable,
     dist_sync_on_step: bool,
-    metric_args: dict = {},
+    metric_args: dict = None,
     check_dist_sync_on_step: bool = True,
     check_batch: bool = True,
     atol: float = 1e-8,
@@ -64,6 +64,8 @@ def _class_test(
         check_batch: bool, if true will check if the metric is also correctly
             calculated across devices for each batch (and not just at the end)
     """
+    if metric_args is None:
+        metric_args = {}
     # Instantiate lightning metric
     metric = metric_class(compute_on_step=True, dist_sync_on_step=dist_sync_on_step, **metric_args)
 
@@ -80,24 +82,26 @@ def _class_test(
                 ddp_target = torch.stack([target[i + r] for r in range(worldsize)])
                 sk_batch_result = sk_metric(ddp_preds, ddp_target)
                 # assert for dist_sync_on_step
-                if check_dist_sync_on_step:
-                    assert np.allclose(batch_result.numpy(), sk_batch_result, atol=atol)
+                if check_dist_sync_on_step and not np.allclose(batch_result.numpy(), sk_batch_result, atol=atol):
+                    raise AssertionError
         else:
             sk_batch_result = sk_metric(preds[i], target[i])
             # assert for batch
-            if check_batch:
-                assert np.allclose(batch_result.numpy(), sk_batch_result, atol=atol)
+            if check_batch and not np.allclose(batch_result.numpy(), sk_batch_result, atol=atol):
+                raise AssertionError
 
     # check on all batches on all ranks
     result = metric.compute()
-    assert isinstance(result, torch.Tensor)
+    if not isinstance(result, torch.Tensor):
+        raise AssertionError
 
     total_preds = torch.stack([preds[i] for i in range(NUM_BATCHES)])
     total_target = torch.stack([target[i] for i in range(NUM_BATCHES)])
     sk_result = sk_metric(total_preds, total_target)
 
     # assert after aggregation
-    assert np.allclose(result.numpy(), sk_result, atol=atol)
+    if not np.allclose(result.numpy(), sk_result, atol=atol):
+        raise AssertionError
 
 
 def _functional_test(
@@ -105,7 +109,7 @@ def _functional_test(
     target: torch.Tensor,
     metric_functional: Callable,
     sk_metric: Callable,
-    metric_args: dict = {},
+    metric_args: dict = None,
     atol: float = 1e-8,
 ):
     """Utility function doing the actual comparison between lightning functional metric
@@ -117,6 +121,8 @@ def _functional_test(
         sk_metric: callable function that is used for comparison
         metric_args: dict with additional arguments used for class initialization
     """
+    if metric_args is None:
+        metric_args = {}
     metric = partial(metric_functional, **metric_args)
 
     for i in range(NUM_BATCHES):
@@ -124,7 +130,8 @@ def _functional_test(
         sk_result = sk_metric(preds[i], target[i])
 
         # assert its the same
-        assert np.allclose(lightning_result.numpy(), sk_result, atol=atol)
+        if not np.allclose(lightning_result.numpy(), sk_result, atol=atol):
+            raise AssertionError
 
 
 class MetricTester:
@@ -161,7 +168,7 @@ class MetricTester:
         target: torch.Tensor,
         metric_functional: Callable,
         sk_metric: Callable,
-        metric_args: dict = {},
+        metric_args: dict = None,
     ):
         """Main method that should be used for testing functions. Call this inside
         testing method
@@ -172,6 +179,8 @@ class MetricTester:
             sk_metric: callable function that is used for comparison
             metric_args: dict with additional arguments used for class initialization
         """
+        if metric_args is None:
+            metric_args = {}
         _functional_test(
             preds=preds,
             target=target,
@@ -189,7 +198,7 @@ class MetricTester:
         metric_class: Metric,
         sk_metric: Callable,
         dist_sync_on_step: bool,
-        metric_args: dict = {},
+        metric_args: dict = None,
         check_dist_sync_on_step: bool = True,
         check_batch: bool = True,
     ):
@@ -209,6 +218,8 @@ class MetricTester:
             check_batch: bool, if true will check if the metric is also correctly
                 calculated across devices for each batch (and not just at the end)
         """
+        if metric_args is None:
+            metric_args = {}
         if ddp:
             if sys.platform == "win32":
                 pytest.skip("DDP not supported on windows")
@@ -318,11 +329,13 @@ def _loss_class_test(
                 # assert for dist_sync_on_step
                 if check_dist_sync_on_step:
                     if sk_batch_result.isnan():
-                        assert batch_result.isnan()
+                        if not batch_result.isnan():
+                            raise AssertionError
                     else:
-                        assert np.allclose(
-                            batch_result.numpy(), sk_batch_result, atol=atol
-                        ), f"batch_result = {batch_result.numpy()}, sk_batch_result = {sk_batch_result}, i = {i}"
+                        if not np.allclose(batch_result.numpy(), sk_batch_result, atol=atol):
+                            raise AssertionError(
+                                f"batch_result = {batch_result.numpy()}, sk_batch_result = {sk_batch_result}, i = {i}"
+                            )
         else:
             ls = loss_sum_or_avg[i : i + 1]  # type: ignore
             nm = num_measurements[i : i + 1]  # type: ignore
@@ -330,21 +343,26 @@ def _loss_class_test(
             # assert for batch
             if check_batch:
                 if sk_batch_result.isnan():
-                    assert batch_result.isnan()
+                    if not batch_result.isnan():
+                        raise AssertionError
                 else:
-                    assert np.allclose(
-                        batch_result.numpy(), sk_batch_result, atol=atol
-                    ), f"batch_result = {batch_result.numpy()}, sk_batch_result = {sk_batch_result}, i = {i}"
+                    if not np.allclose(batch_result.numpy(), sk_batch_result, atol=atol):
+                        raise AssertionError(
+                            f"batch_result = {batch_result.numpy()}, sk_batch_result = {sk_batch_result}, i = {i}"
+                        )
     # check on all batches on all ranks
     result = loss_metric.compute()
-    assert isinstance(result, torch.Tensor)
+    if not isinstance(result, torch.Tensor):
+        raise AssertionError
     sk_result = reference_loss_func(loss_sum_or_avg, num_measurements, take_avg_loss)
 
     # assert after aggregation
     if sk_result.isnan():
-        assert result.isnan()
+        if not result.isnan():
+            raise AssertionError
     else:
-        assert np.allclose(result.numpy(), sk_result, atol=atol), f"result = {result.numpy()}, sk_result = {sk_result}"
+        if not np.allclose(result.numpy(), sk_result, atol=atol):
+            raise AssertionError(f"result = {result.numpy()}, sk_result = {sk_result}")
 
 
 class LossTester(MetricTester):

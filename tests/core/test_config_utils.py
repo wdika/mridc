@@ -33,9 +33,12 @@ class TestConfigUtils:
         result = config_utils.assert_dataclass_signature_match(cls, DummyDataClass)
         signatures_match, cls_subset, dataclass_subset = result
 
-        assert signatures_match
-        assert cls_subset is None
-        assert dataclass_subset is None
+        if not signatures_match:
+            raise AssertionError
+        if cls_subset is not None:
+            raise AssertionError
+        if dataclass_subset is not None:
+            raise AssertionError
 
     @pytest.mark.unit
     def test_extra_args_exist_but_is_ignored(self, cls):
@@ -49,9 +52,12 @@ class TestConfigUtils:
         result = config_utils.assert_dataclass_signature_match(cls, DummyDataClass, ignore_args=["e"])
         signatures_match, cls_subset, dataclass_subset = result
 
-        assert signatures_match
-        assert cls_subset is None
-        assert dataclass_subset is None
+        if not signatures_match:
+            raise AssertionError
+        if cls_subset is not None:
+            raise AssertionError
+        if dataclass_subset is not None:
+            raise AssertionError
 
     @pytest.mark.unit
     def test_args_exist_but_is_remapped(self, cls):
@@ -65,6 +71,9 @@ class TestConfigUtils:
         result = config_utils.assert_dataclass_signature_match(cls, DummyDataClass, remap_args={"e": "d"})
         signatures_match, cls_subset, dataclass_subset = result
 
-        assert signatures_match
-        assert cls_subset is None
-        assert dataclass_subset is None
+        if not signatures_match:
+            raise AssertionError
+        if cls_subset is not None:
+            raise AssertionError
+        if dataclass_subset is not None:
+            raise AssertionError
