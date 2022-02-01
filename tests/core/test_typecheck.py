@@ -13,22 +13,24 @@ from mridc.core.neural_types.neural_type import NeuralType
 
 
 def recursive_assert_shape(x, shape):
-    if isinstance(x, list) or isinstance(x, tuple):
+    if isinstance(x, (list, tuple)):
         for xi in x:
             recursive_assert_shape(xi, shape)
         return
 
-    assert x.shape == shape
+    if x.shape != shape:
+        raise AssertionError
 
 
 # Perform recursive type assert
 def recursive_assert_homogeneous_type(x, type_val):
-    if isinstance(x, list) or isinstance(x, tuple):
+    if isinstance(x, (list, tuple)):
         for xi in x:
             recursive_assert_homogeneous_type(xi, type_val)
         return
 
-    assert x.neural_type.compare(type_val) == NeuralTypeComparisonResult.SAME
+    if x.neural_type.compare(type_val) != NeuralTypeComparisonResult.SAME:
+        raise AssertionError
 
 
 class TestNeuralTypeCheckSystem:
@@ -42,8 +44,10 @@ class TestNeuralTypeCheckSystem:
         obj = NoTypes()
         result = obj(torch.tensor(1.0))
 
-        assert result == torch.tensor(1.0)
-        assert not hasattr(result, "neural_type")
+        if result != torch.tensor(1.0):
+            raise AssertionError
+        if hasattr(result, "neural_type"):
+            raise AssertionError
 
     @pytest.mark.unit
     def test_input_output_types(self):
@@ -64,8 +68,10 @@ class TestNeuralTypeCheckSystem:
         obj = InputOutputTypes()
         result = obj(x=torch.zeros(10))
 
-        assert result.sum() == torch.tensor(10.0)
-        assert result.neural_type.compare(NeuralType(("B",), ElementType())) == NeuralTypeComparisonResult.SAME
+        if result.sum() != torch.tensor(10.0):
+            raise AssertionError
+        if result.neural_type.compare(NeuralType(("B",), ElementType())) != NeuralTypeComparisonResult.SAME:
+            raise AssertionError
 
         # Test passing wrong key for input
         with pytest.raises(TypeError):
@@ -90,8 +96,10 @@ class TestNeuralTypeCheckSystem:
         obj = InputTypes()
         result = obj(x=torch.zeros(10))
 
-        assert result.sum() == torch.tensor(10.0)
-        assert hasattr(result, "neural_type") is False
+        if result.sum() != torch.tensor(10.0):
+            raise AssertionError
+        if hasattr(result, "neural_type") is not False:
+            raise AssertionError
 
     @pytest.mark.unit
     def test_multiple_input_types_only(self):
@@ -108,8 +116,10 @@ class TestNeuralTypeCheckSystem:
         obj = InputTypes()
         result = obj(x=torch.zeros(10), y=torch.ones(10))
 
-        assert result.sum() == torch.tensor(10.0)
-        assert hasattr(result, "neural_type") is False
+        if result.sum() != torch.tensor(10.0):
+            raise AssertionError
+        if hasattr(result, "neural_type") is not False:
+            raise AssertionError
 
     @pytest.mark.unit
     def test_output_types_only(self):
@@ -126,13 +136,16 @@ class TestNeuralTypeCheckSystem:
         obj = OutputTypes()
         result = obj(x=torch.zeros(10))
 
-        assert result.sum() == torch.tensor(10.0)
-        assert result.neural_type.compare(NeuralType(("B",), ElementType())) == NeuralTypeComparisonResult.SAME
+        if result.sum() != torch.tensor(10.0):
+            raise AssertionError
+        if result.neural_type.compare(NeuralType(("B",), ElementType())) != NeuralTypeComparisonResult.SAME:
+            raise AssertionError
 
         # Test passing positional args
         # Positional args allowed if input types is not set !
         result = obj(torch.zeros(10))
-        assert result.sum() == torch.tensor(10.0)
+        if result.sum() != torch.tensor(10.0):
+            raise AssertionError
 
     @pytest.mark.unit
     def test_multiple_output_types_only(self):
@@ -150,11 +163,15 @@ class TestNeuralTypeCheckSystem:
         obj = MultipleOutputTypes()
         result_y, result_z = obj(x=torch.zeros(10))
 
-        assert result_y.sum() == torch.tensor(10.0)
-        assert result_y.neural_type.compare(NeuralType(("B",), ElementType())) == NeuralTypeComparisonResult.SAME
+        if result_y.sum() != torch.tensor(10.0):
+            raise AssertionError
+        if result_y.neural_type.compare(NeuralType(("B",), ElementType())) != NeuralTypeComparisonResult.SAME:
+            raise AssertionError
 
-        assert result_z.sum() == torch.tensor(20.0)
-        assert result_z.neural_type.compare(NeuralType(("B",), ElementType())) == NeuralTypeComparisonResult.SAME
+        if result_z.sum() != torch.tensor(20.0):
+            raise AssertionError
+        if result_z.neural_type.compare(NeuralType(("B",), ElementType())) != NeuralTypeComparisonResult.SAME:
+            raise AssertionError
 
     @pytest.mark.unit
     def test_multiple_mixed_output_types_only(self):
@@ -172,14 +189,20 @@ class TestNeuralTypeCheckSystem:
         obj = MultipleMixedOutputTypes()
         result_y, result_z = obj(x=torch.zeros(10))
 
-        assert result_y.sum() == torch.tensor(10.0)
-        assert result_y.neural_type.compare(NeuralType(("B",), ElementType())) == NeuralTypeComparisonResult.SAME
+        if result_y.sum() != torch.tensor(10.0):
+            raise AssertionError
+        if result_y.neural_type.compare(NeuralType(("B",), ElementType())) != NeuralTypeComparisonResult.SAME:
+            raise AssertionError
 
-        assert result_z[0].sum() == torch.tensor(20.0)
-        assert result_z[0].neural_type.compare(NeuralType(("B",), ElementType())) == NeuralTypeComparisonResult.SAME
+        if result_z[0].sum() != torch.tensor(20.0):
+            raise AssertionError
+        if result_z[0].neural_type.compare(NeuralType(("B",), ElementType())) != NeuralTypeComparisonResult.SAME:
+            raise AssertionError
 
-        assert result_z[1].sum() == torch.tensor(20.0)
-        assert result_z[1].neural_type.compare(NeuralType(("B",), ElementType())) == NeuralTypeComparisonResult.SAME
+        if result_z[1].sum() != torch.tensor(20.0):
+            raise AssertionError
+        if result_z[1].neural_type.compare(NeuralType(("B",), ElementType())) != NeuralTypeComparisonResult.SAME:
+            raise AssertionError
 
     @pytest.mark.unit
     def test_multiple_mixed_output_types_only_mismatched(self):
@@ -339,7 +362,8 @@ class TestNeuralTypeCheckSystem:
         obj = OutputPositionalPassthrough()
         result = obj(torch.zeros(10))
 
-        assert result.sum() == torch.tensor(10.0)
+        if result.sum() != torch.tensor(10.0):
+            raise AssertionError
 
     @pytest.mark.unit
     def test_optional_types(self):
@@ -359,13 +383,17 @@ class TestNeuralTypeCheckSystem:
         obj = InputOptionalTypes()
         result = obj(x=torch.zeros(10))
 
-        assert result.sum() == torch.tensor(10.0)
-        assert hasattr(result, "neural_type") is False
+        if result.sum() != torch.tensor(10.0):
+            raise AssertionError
+        if hasattr(result, "neural_type") is not False:
+            raise AssertionError
 
         result2 = obj(x=torch.zeros(10), y=torch.full([10], fill_value=5, dtype=torch.int32))
 
-        assert result2.sum() == torch.tensor(10 * 5)
-        assert hasattr(result, "neural_type") is False
+        if result2.sum() != torch.tensor(10 * 5):
+            raise AssertionError
+        if hasattr(result, "neural_type") is not False:
+            raise AssertionError
 
     @pytest.mark.unit
     def test_multi_forward_type(self):
@@ -375,26 +403,24 @@ class TestNeuralTypeCheckSystem:
                 if self.mode == "train":
                     return {"x": NeuralType(("B",), ElementType())}
 
-                elif self.mode == "infer":
+                if self.mode == "infer":
                     return {"y": NeuralType(("B",), ChannelType())}
 
-                elif self.mode == "eval":
+                if self.mode == "eval":
                     return {"x": NeuralType(("B",), ElementType()), "y": NeuralType(("B",), ChannelType())}
-                else:
-                    raise ValueError("Wrong mode of operation")
+                raise ValueError("Wrong mode of operation")
 
             @property
             def output_types(self):
                 if self.mode == "train":
                     return {"u": NeuralType(("B",), ElementType())}
 
-                elif self.mode == "infer":
+                if self.mode == "infer":
                     return {"v": NeuralType(("B",), ChannelType())}
 
-                elif self.mode == "eval":
+                if self.mode == "eval":
                     return {"u": NeuralType(("B",), ElementType()), "v": NeuralType(("B",), ChannelType())}
-                else:
-                    raise ValueError("Wrong mode of operation")
+                raise ValueError("Wrong mode of operation")
 
             def __init__(self):
                 self.mode = "train"
@@ -404,10 +430,10 @@ class TestNeuralTypeCheckSystem:
                 if self.mode == "train":
                     return self.train_forward(x=kwargs["x"])
 
-                elif self.mode == "eval":
+                if self.mode == "eval":
                     return self.eval_forward(x=kwargs["x"], y=kwargs["y"])
 
-                elif self.mode == "infer":
+                if self.mode == "infer":
                     return self.infer_forward(y=kwargs["y"])
 
             @typecheck()
@@ -440,22 +466,30 @@ class TestNeuralTypeCheckSystem:
         obj.mode = "train"
         x = obj(x=x)
 
-        assert torch.all(x == 10)
-        assert x.neural_type.compare(NeuralType(("B",), ElementType())) == NeuralTypeComparisonResult.SAME
+        if not torch.all(x == 10):
+            raise AssertionError
+        if x.neural_type.compare(NeuralType(("B",), ElementType())) != NeuralTypeComparisonResult.SAME:
+            raise AssertionError
 
         obj.mode = "eval"
         x, y = obj(x=x, y=y)
 
-        assert torch.all(x == 9)
-        assert torch.all(y == 4)
-        assert x.neural_type.compare(NeuralType(("B",), ElementType())) == NeuralTypeComparisonResult.SAME
-        assert y.neural_type.compare(NeuralType(("B",), ChannelType())) == NeuralTypeComparisonResult.SAME
+        if not torch.all(x == 9):
+            raise AssertionError
+        if not torch.all(y == 4):
+            raise AssertionError
+        if x.neural_type.compare(NeuralType(("B",), ElementType())) != NeuralTypeComparisonResult.SAME:
+            raise AssertionError
+        if y.neural_type.compare(NeuralType(("B",), ChannelType())) != NeuralTypeComparisonResult.SAME:
+            raise AssertionError
 
         obj.mode = "infer"
         y = obj(y=y)
 
-        assert torch.all(y == -6)
-        assert y.neural_type.compare(NeuralType(("B",), ChannelType())) == NeuralTypeComparisonResult.SAME
+        if not torch.all(y == -6):
+            raise AssertionError
+        if y.neural_type.compare(NeuralType(("B",), ChannelType())) != NeuralTypeComparisonResult.SAME:
+            raise AssertionError
 
         # Now perform assertions of wrong mode with wrong input combinations
         obj.mode = "train"
@@ -488,14 +522,18 @@ class TestNeuralTypeCheckSystem:
         obj = InputTypesOverride()
         result = obj(x=torch.zeros(10))
 
-        assert result.sum() == torch.tensor(10.0)
-        assert hasattr(result, "neural_type") is False
+        if result.sum() != torch.tensor(10.0):
+            raise AssertionError
+        if hasattr(result, "neural_type") is not False:
+            raise AssertionError
 
         # Test override
         result2 = obj.forward(y=torch.zeros(10))
 
-        assert result2.sum() == torch.tensor(-10.0)
-        assert hasattr(result2, "neural_type") is False
+        if result2.sum() != torch.tensor(-10.0):
+            raise AssertionError
+        if hasattr(result2, "neural_type") is not False:
+            raise AssertionError
 
     @pytest.mark.unit
     def test_output_type_override(self):
@@ -517,22 +555,28 @@ class TestNeuralTypeCheckSystem:
         obj = OutputTypes()
         result = obj(x=torch.zeros(10))
 
-        assert result.sum() == torch.tensor(10.0)
-        assert result.neural_type.compare(NeuralType(("B",), ElementType())) == NeuralTypeComparisonResult.SAME
+        if result.sum() != torch.tensor(10.0):
+            raise AssertionError
+        if result.neural_type.compare(NeuralType(("B",), ElementType())) != NeuralTypeComparisonResult.SAME:
+            raise AssertionError
 
         # Test passing positional args
         # Positional args allowed if input types is not set !
         result = obj(torch.zeros(10))
-        assert result.sum() == torch.tensor(10.0)
+        if result.sum() != torch.tensor(10.0):
+            raise AssertionError
 
         # Test override
         result2 = obj.forward(z=torch.zeros(10))
 
-        assert result2.sum() == torch.tensor(-10.0)
-        assert hasattr(result2, "neural_type")
-        assert (
-            result2.neural_type.compare(NeuralType(("B",), CategoricalValuesType())) == NeuralTypeComparisonResult.SAME
-        )
+        if result2.sum() != torch.tensor(-10.0):
+            raise AssertionError
+        if not hasattr(result2, "neural_type"):
+            raise AssertionError
+        if (
+            result2.neural_type.compare(NeuralType(("B",), CategoricalValuesType())) != NeuralTypeComparisonResult.SAME
+        ):
+            raise AssertionError
 
     @pytest.mark.unit
     def test_multi_type_override(self):
@@ -584,20 +628,28 @@ class TestNeuralTypeCheckSystem:
         # infer mode
         y = obj(y=y)
 
-        assert torch.all(y == -5)
-        assert y.neural_type.compare(NeuralType(("B",), ChannelType())) == NeuralTypeComparisonResult.SAME
+        if not torch.all(y == -5):
+            raise AssertionError
+        if y.neural_type.compare(NeuralType(("B",), ChannelType())) != NeuralTypeComparisonResult.SAME:
+            raise AssertionError
 
         x, y = obj.eval_forward(x=x, y=y)
 
-        assert torch.all(x == -1)
-        assert torch.all(y == -6)
-        assert x.neural_type.compare(NeuralType(("B",), ElementType())) == NeuralTypeComparisonResult.SAME
-        assert y.neural_type.compare(NeuralType(("B",), ChannelType())) == NeuralTypeComparisonResult.SAME
+        if not torch.all(x == -1):
+            raise AssertionError
+        if not torch.all(y == -6):
+            raise AssertionError
+        if x.neural_type.compare(NeuralType(("B",), ElementType())) != NeuralTypeComparisonResult.SAME:
+            raise AssertionError
+        if y.neural_type.compare(NeuralType(("B",), ChannelType())) != NeuralTypeComparisonResult.SAME:
+            raise AssertionError
 
         x = obj.train_forward(x=x)
 
-        assert torch.all(x == 9)
-        assert x.neural_type.compare(NeuralType(("B",), ElementType())) == NeuralTypeComparisonResult.SAME
+        if not torch.all(x == 9):
+            raise AssertionError
+        if x.neural_type.compare(NeuralType(("B",), ElementType())) != NeuralTypeComparisonResult.SAME:
+            raise AssertionError
 
         # In train func, call eval signature
         with pytest.raises(TypeError):
@@ -630,8 +682,10 @@ class TestNeuralTypeCheckSystem:
             # Execute function without kwarg
             result = obj(torch.zeros(10))
 
-            assert result.sum() == torch.tensor(10.0)
-            assert hasattr(result, "neural_type") is False
+            if result.sum() != torch.tensor(10.0):
+                raise AssertionError
+            if hasattr(result, "neural_type") is not False:
+                raise AssertionError
 
             # Test passing wrong key for input
             _ = obj(a=torch.zeros(10), x=torch.zeros(5))
