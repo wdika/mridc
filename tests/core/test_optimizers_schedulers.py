@@ -703,7 +703,7 @@ class TestOptimizersSchedulers:
             if i <= 3:
                 if policy.get_last_lr()[0] > self.INITIAL_LR + 1e-5:
                     raise AssertionError
-            elif i > 3 and i <= 8:
+            elif 3 < i <= 8:
                 if policy.get_last_lr()[0] != policy._get_lr(i)[0]:
                     raise AssertionError
             else:
