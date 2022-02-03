@@ -85,10 +85,10 @@ def create_temp_data(path):
 
                 enc_size = encs[i]
 
-                enc_limits_center = enc_size[1] // 2 + 1
+                enc_limits_center = np.floor_divide(enc_size[1], 2) + 1
                 enc_limits_max = enc_size[1] - 2
 
-                padding_left = enc_size[1] // 2 - enc_limits_center
+                padding_left = np.floor_divide(enc_size[1], 2) - enc_limits_center
                 padding_right = padding_left + enc_limits_max
 
                 metadata[str(fname)] = (

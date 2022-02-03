@@ -5,6 +5,7 @@ __author__ = "Dimitrios Karkalousos"
 
 from typing import List, Optional, Union
 
+import numpy as np
 import torch
 
 __all__ = ["fft2c", "ifft2c"]
@@ -139,7 +140,7 @@ def fftshift(x: torch.Tensor, dim: Optional[List[int]] = None) -> torch.Tensor:
     # also necessary for torch.jit.script
     shift = [0] * len(dim)
     for i, dim_num in enumerate(dim):
-        shift[i] = x.shape[dim_num] // 2
+        shift[i] = np.floor_divide(x.shape[dim_num], 2)
 
     return roll(x, shift, dim)
 
@@ -164,6 +165,6 @@ def ifftshift(x: torch.Tensor, dim: Optional[List[int]] = None) -> torch.Tensor:
     # also necessary for torch.jit.script
     shift = [0] * len(dim)
     for i, dim_num in enumerate(dim):
-        shift[i] = (x.shape[dim_num] + 1) // 2
+        shift[i] = np.floor_divide(x.shape[dim_num] + 1, 2)
 
     return roll(x, shift, dim)

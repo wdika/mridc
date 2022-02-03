@@ -5,7 +5,7 @@ mode: test
 model:
   model_name: PICS
   reg_wt: 0.05
-  num_iters: 60
+  num_iters: 10
   output_type: SENSE
   num_log_images: 16
 
@@ -13,10 +13,10 @@ model:
     data_path: ???
     dataset_type: FastMRI
     challenge: multicoil
-    fft_type: fft_norm_only
+    fft_type: orthogonal_norm_only
     mask_args:
       type: None
-      shift_mask: true
+      shift_mask: false
       use_seed: false
     normalize_inputs: false
     crop_size: None
@@ -45,4 +45,4 @@ exp_manager:
   name: ???
   create_tensorboard_logger: true
   create_wandb_logger: false
-  files_to_copy: []
+  files_to_copy: [ ]

@@ -3,15 +3,12 @@ __author__ = "Dimitrios Karkalousos"
 
 # Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
 
-import numpy as np
 import pytest
 import torch
 from omegaconf import OmegaConf
 
 from mridc.collections.reconstruction.data.subsample import RandomMaskFunc
 from mridc.collections.reconstruction.models.cirim import CIRIM
-from mridc.collections.reconstruction.models.e2evn import VarNet
-from mridc.collections.reconstruction.models.unet import Unet
 from mridc.collections.reconstruction.parts import transforms
 from tests.collections.reconstruction.fastmri.conftest import create_input
 

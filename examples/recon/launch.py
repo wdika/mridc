@@ -7,6 +7,8 @@ from omegaconf import DictConfig, OmegaConf
 
 from mridc.collections.reconstruction.models.cirim import CIRIM
 from mridc.collections.reconstruction.models.pics import PICS
+from mridc.collections.reconstruction.models.unet import UNet
+from mridc.collections.reconstruction.models.vn import VarNet
 from mridc.collections.reconstruction.models.zf import ZF
 from mridc.core.conf.hydra_runner import hydra_runner
 from mridc.utils import logging
@@ -29,8 +31,10 @@ def main(cfg: DictConfig) -> None:
         model = PICS(cfg.model, trainer=trainer)
     elif model_name == "CIRIM":
         model = CIRIM(cfg.model, trainer=trainer)
-    elif model_name in ("E2EVN", "UNET"):
-        raise NotImplementedError(f"{model_name} is supported but not properly implemented yet.")
+    elif model_name in ("E2EVN", "VN"):
+        model = VarNet(cfg.model, trainer=trainer)
+    elif model_name == "UNET":
+        model = UNet(cfg.model, trainer=trainer)
     else:
         raise NotImplementedError(f"Model {model_name} is not supported.")
 

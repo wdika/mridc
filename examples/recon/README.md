@@ -7,6 +7,7 @@ For running Parallel-Imaging Compressed Sensing (PICS) you need to install the
 NVCC.
 
 After installation, set the TOOLBOX_PATH and PYTHONPATH environment variables for BART:
+
 ```
 export TOOLBOX_PATH=/path/to/bart
 export PYTHONPATH=${TOOLBOX_PATH}/python/

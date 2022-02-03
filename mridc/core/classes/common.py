@@ -1,19 +1,6 @@
 # encoding: utf-8
 __author__ = "Dimitrios Karkalousos"
 
-# Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/classes/common.py
-import hydra
-import torch
-from omegaconf import DictConfig, OmegaConf
-from pytorch_lightning import Trainer
-
-import mridc.utils
-from mridc.core.connectors.save_restore_connector import SaveRestoreConnector
-from mridc.core.neural_types.comparison import NeuralTypeComparisonResult
-from mridc.core.neural_types.neural_type import NeuralType
-from mridc.utils import logging
-from mridc.utils.cloud import maybe_download_from_cloud
-
 # Interfaces common to all Neural Modules and Models.
 import hashlib
 import inspect
@@ -25,7 +12,20 @@ from enum import Enum
 from functools import total_ordering
 from pathlib import Path
 from typing import Dict, List, Optional, Union
+
+# Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/classes/common.py
+import hydra
+import torch
 import wrapt
+from omegaconf import DictConfig, OmegaConf
+from pytorch_lightning import Trainer
+
+import mridc.utils
+from mridc.core.connectors.save_restore_connector import SaveRestoreConnector
+from mridc.core.neural_types.comparison import NeuralTypeComparisonResult
+from mridc.core.neural_types.neural_type import NeuralType
+from mridc.utils import logging
+from mridc.utils.cloud import maybe_download_from_cloud
 
 _HAS_HYDRA = True
 

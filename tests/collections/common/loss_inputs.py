@@ -5,6 +5,7 @@ __author__ = "Dimitrios Karkalousos"
 
 from dataclasses import dataclass
 
+import numpy as np
 import torch
 
 from tests.collections.common.pl_utils import NUM_BATCHES
@@ -36,8 +37,8 @@ SOME_NUM_MEASUREMENTS_ARE_ZERO = LossInput(
     loss_sum_or_avg=torch.rand(NUM_BATCHES) * 2.0 - 1.0,
     num_measurements=torch.cat(
         (
-            torch.randint(1, 100, (NUM_BATCHES // 2,), dtype=torch.int32),
-            torch.zeros(NUM_BATCHES - NUM_BATCHES // 2, dtype=torch.int32),
+            torch.randint(1, 100, (np.floor_divide(NUM_BATCHES, 2)), dtype=torch.int32),
+            torch.zeros(NUM_BATCHES - np.floor_divide(NUM_BATCHES, 2), dtype=torch.int32),
         )
     ),
 )

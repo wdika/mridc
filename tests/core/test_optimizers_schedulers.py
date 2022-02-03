@@ -9,6 +9,7 @@ import random
 import shutil
 from abc import ABC
 
+import numpy as np
 import omegaconf
 import pytest
 import pytorch_lightning as pl
@@ -111,7 +112,7 @@ class Callback(pl.callbacks.Callback):
             logging.debug(f"dataset_len: {module.dataset_len}")
             logging.debug(f"drop_last: {module.drop_last}")
             logging.debug(f"{len(trainer.train_dataloader)}")
-            logging.debug(f"{trainer.num_training_batches }")
+            logging.debug(f"{trainer.num_training_batches}")
 
         self.assert_counts(trainer, module, count)
 
@@ -145,7 +146,7 @@ class SchedulerNoOpCallback(Callback):
 
     def assert_counts(self, trainer, module, count):
         """This is a no-op callback, so the counts should not change"""
-        num_skips = module.max_steps // 3
+        num_skips = torch.div(module.max_steps, 3, rounding_mode="trunc")
         extra_steps = module.max_steps + num_skips
         if trainer.global_step != count:
             raise AssertionError(f"{trainer.global_step} != {count} != {extra_steps}")
@@ -1028,7 +1029,9 @@ class TestOptimizersSchedulers:
             max_epochs = random.randint(4, 20)
             num_processes = random.randint(1, 5)
             dataset_len = random.randint(20, num_processes * 500)
-            batch_size = random.randint(math.ceil(5.0 / num_processes), min(dataset_len // num_processes, 128))
+            batch_size = random.randint(
+                math.ceil(5.0 / num_processes), min(np.floor_divide(dataset_len, num_processes), 128)
+            )
             train(
                 max_epochs,
                 accumulate_grad_batches,

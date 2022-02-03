@@ -3,46 +3,13 @@ checkpoint: None
 mode: train
 
 model:
-  model_name: CIRIM
-  recurrent_layer: IndRNN
-  conv_filters:
-    - 64
-    - 64
-    - 2
-  conv_kernels:
-    - 5
-    - 3
-    - 3
-  conv_dilations:
-    - 1
-    - 2
-    - 1
-  conv_bias:
-    - true
-    - true
-    - false
-  recurrent_filters:
-    - 64
-    - 64
-    - 0
-  recurrent_kernels:
-    - 1
-    - 1
-    - 0
-  recurrent_dilations:
-    - 1
-    - 1
-    - 0
-  recurrent_bias:
-    - true
-    - true
-    - false
-  depth: 2
-  time_steps: 8
-  conv_dim: 2
-  num_cascades: 8
-  no_dc: true
-  keep_eta: true
+  model_name: VN
+  num_cascades: 12
+  channels: 14
+  pooling_layers: 2
+  padding_size: 11
+  normalize: true
+  no_dc: false
   output_type: SENSE
   use_sens_net: false
   sens_chans: 8
@@ -50,7 +17,7 @@ model:
   sens_mask_type: 2D
   train_loss_fn: l1
   eval_loss_fn: l1
-  accumulate_estimates: true
+  accumulate_estimates: false
   fft_type: orthogonal_norm_only
   lr: 0.001
   lr_step_size: 40

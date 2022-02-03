@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 
-import hydra
 from omegaconf import MISSING, OmegaConf
 
 from mridc.core.conf.hydra_runner import hydra_runner

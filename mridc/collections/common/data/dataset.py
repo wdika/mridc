@@ -72,7 +72,7 @@ class ConcatDataset(IterableDataset, ABC):
                 raise ValueError("All datasets in ConcatDataset must be of the same kind (Iterable or Map).")
 
             if self.kind == "map":
-                self.length += len(dataset) // world_size
+                self.length += np.floor_divide(len(dataset), world_size)
             else:
                 self.length += len(dataset)
 
@@ -99,8 +99,8 @@ class ConcatDataset(IterableDataset, ABC):
 
         if self.kind == "map":
             for idx in range(len(self.datasets)):
-                start_idx = (len(self.datasets[idx]) // self.world_size) * self.global_rank
-                end_idx = start_idx + (len(self.datasets[idx]) // self.world_size)
+                start_idx = np.floor_divide(len(self.datasets[idx]), self.world_size) * self.global_rank
+                end_idx = start_idx + np.floor_divide(len(self.datasets[idx]), self.world_size)
                 if self.global_rank == self.world_size - 1:
                     end_idx = len(self.datasets[idx])
                 indices = range(start_idx + wid, end_idx, wnum)

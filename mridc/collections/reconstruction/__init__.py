@@ -9,4 +9,4 @@ __version = __version__
 __author__ = "Dimitrios Karkalousos"
 
 # Set collection name.
-__description__ = "Reconstruction collection"
+__description__ = "Reconstruction models collection"

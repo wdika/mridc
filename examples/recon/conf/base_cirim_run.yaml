@@ -6,37 +6,37 @@ model:
   model_name: CIRIM
   recurrent_layer: IndRNN
   conv_filters:
-  - 128
-  - 128
-  - 2
+    - 128
+    - 128
+    - 2
   conv_kernels:
-  - 5
-  - 3
-  - 3
+    - 5
+    - 3
+    - 3
   conv_dilations:
-  - 1
-  - 2
-  - 1
+    - 1
+    - 2
+    - 1
   conv_bias:
-  - true
-  - true
-  - false
+    - true
+    - true
+    - false
   recurrent_filters:
-  - 128
-  - 128
-  - 0
+    - 128
+    - 128
+    - 0
   recurrent_kernels:
-  - 1
-  - 1
-  - 0
+    - 1
+    - 1
+    - 0
   recurrent_dilations:
-  - 1
-  - 1
-  - 0
+    - 1
+    - 1
+    - 0
   recurrent_bias:
-  - true
-  - true
-  - false
+    - true
+    - true
+    - false
   depth: 2
   time_steps: 8
   conv_dim: 2
@@ -65,9 +65,9 @@ model:
     fft_type: orthogonal_norm_only
     mask_args:
       type: None
-      shift_mask: true
+      shift_mask: false
       use_seed: false
-    normalize_inputs: true
+    normalize_inputs: false
     crop_size: None
     crop_before_masking: true
     kspace_zero_filling_size: None
@@ -82,8 +82,8 @@ model:
     name: adam
     lr: 0.001
     betas:
-    - 0.9
-    - 0.98
+      - 0.9
+      - 0.98
     weight_decay: 0.0
     sched:
       name: InverseSquareRootAnnealing
@@ -107,4 +107,4 @@ exp_manager:
   name: ???
   create_tensorboard_logger: true
   create_wandb_logger: false
-  files_to_copy: []
+  files_to_copy: [ ]

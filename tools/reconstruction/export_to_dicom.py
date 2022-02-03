@@ -2,22 +2,15 @@
 __author__ = "Dimitrios Karkalousos"
 
 import argparse
-import sys
 from argparse import ArgumentParser
 from pathlib import Path
 
 import h5py
 import numpy as np
 from SimpleITK import (
-    Flip,
     GetImageFromArray,
-    ImageSeriesReader,
     ReadImage,
-    Resample,
-    ResampleImageFilter,
     WriteImage,
-    sitkBSpline,
-    sitkProgressEvent,
 )
 from tqdm import tqdm
 

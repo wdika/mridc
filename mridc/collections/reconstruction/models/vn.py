@@ -1,9 +1,8 @@
 # coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
-import math
 from abc import ABC
-from typing import Dict, Generator, Tuple, Union
+from typing import Any, Dict, Tuple, Union
 
 import numpy as np
 import torch
@@ -14,90 +13,73 @@ from torch.nn import L1Loss
 
 from mridc.collections.common.losses.ssim import SSIMLoss
 from mridc.collections.common.parts.fft import ifft2c
-from mridc.collections.common.parts.rnn_utils import rnn_weights_init
 from mridc.collections.common.parts.utils import coil_combination
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
-from mridc.collections.reconstruction.models.rim.rim_block import RIMBlock
+from mridc.collections.reconstruction.models.unet_base.unet_block import NormUnet
+from mridc.collections.reconstruction.models.varnet.vn_block import VarNetBlock
 from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
 from mridc.core.classes.common import typecheck
 
-__all__ = ["CIRIM"]
+__all__ = ["VarNet"]
 
 
-class CIRIM(BaseMRIReconstructionModel, ABC):
+class VarNet(BaseMRIReconstructionModel, ABC):
     """
-    Cascades of Independently Recurrent Inference Machines implementation as presented in [1]_.
+    End-to-end Variational Network (VN) model implementation as presented in [1]_.
 
     References
     ----------
 
-    .. [1] Karkalousos, D. et al. (2021) ‘Assessment of Data Consistency through Cascades of Independently Recurrent
-    Inference Machines for fast and robust accelerated MRI reconstruction’.
-    Available at: https://arxiv.org/abs/2111.15498v1
+    .. [1] Sriram, A. et al. (2020) ‘End-to-End Variational Networks for Accelerated MRI Reconstruction’.
+    Available at: https://github.com/facebookresearch/fastMRI.
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
         # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
 
-        # Cascades of RIM blocks
-        cirim_cfg_dict = OmegaConf.to_container(cfg, resolve=True)
+        vn_cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
-        self.recurrent_filters = cirim_cfg_dict.get("recurrent_filters")
+        self.no_dc = vn_cfg_dict.get("no_dc")
+        self.fft_type = vn_cfg_dict.get("fft_type")
+        self.num_cascades = vn_cfg_dict.get("num_cascades")
 
-        # make time-steps size divisible by 8 for fast fp16 training
-        self.time_steps = 8 * math.ceil(cirim_cfg_dict.get("time_steps") / 8)
-
-        self.no_dc = cirim_cfg_dict.get("no_dc")
-        self.fft_type = cirim_cfg_dict.get("fft_type")
-        self.num_cascades = cirim_cfg_dict.get("num_cascades")
-
-        self.cirim = nn.ModuleList(
+        # Cascades of VN blocks
+        self.cascades = nn.ModuleList(
             [
-                RIMBlock(
-                    recurrent_layer=cirim_cfg_dict.get("recurrent_layer"),
-                    conv_filters=cirim_cfg_dict.get("conv_filters"),
-                    conv_kernels=cirim_cfg_dict.get("conv_kernels"),
-                    conv_dilations=cirim_cfg_dict.get("conv_dilations"),
-                    conv_bias=cirim_cfg_dict.get("conv_bias"),
-                    recurrent_filters=self.recurrent_filters,
-                    recurrent_kernels=cirim_cfg_dict.get("recurrent_kernels"),
-                    recurrent_dilations=cirim_cfg_dict.get("recurrent_dilations"),
-                    recurrent_bias=cirim_cfg_dict.get("recurrent_bias"),
-                    depth=cirim_cfg_dict.get("depth"),
-                    time_steps=self.time_steps,
-                    conv_dim=cirim_cfg_dict.get("conv_dim"),
-                    no_dc=self.no_dc,
+                VarNetBlock(
+                    NormUnet(
+                        chans=vn_cfg_dict.get("channels"),
+                        num_pools=vn_cfg_dict.get("pooling_layers"),
+                        padding_size=vn_cfg_dict.get("padding_size"),
+                        normalize=vn_cfg_dict.get("normalize"),
+                    ),
                     fft_type=self.fft_type,
+                    no_dc=self.no_dc,
                 )
                 for _ in range(self.num_cascades)
             ]
         )
 
-        # Keep estimation through the cascades if keep_eta is True or re-estimate it if False.
-        self.keep_eta = cirim_cfg_dict.get("keep_eta")
-        self.output_type = cirim_cfg_dict.get("output_type")
+        self.output_type = vn_cfg_dict.get("output_type")
 
         # Initialize the sensitivity network if use_sens_net is True
-        self.use_sens_net = cirim_cfg_dict.get("use_sens_net")
+        self.use_sens_net = vn_cfg_dict.get("use_sens_net")
         if self.use_sens_net:
             self.sens_net = BaseSensitivityModel(
-                cirim_cfg_dict.get("sens_chans"),
-                cirim_cfg_dict.get("sens_pools"),
+                vn_cfg_dict.get("sens_chans"),
+                vn_cfg_dict.get("sens_pools"),
                 fft_type=self.fft_type,
-                mask_type=cirim_cfg_dict.get("sens_mask_type"),
-                normalize=cirim_cfg_dict.get("sens_normalize"),
+                mask_type=vn_cfg_dict.get("sens_mask_type"),
+                normalize=vn_cfg_dict.get("sens_normalize"),
             )
 
-        std_init_range = 1 / self.recurrent_filters[0] ** 0.5
+        # initialize weights if not using pretrained vn
+        # TODO if not vn_cfg_dict.get("pretrained", False)
 
-        # initialize weights if not using pretrained cirim
-        if not cirim_cfg_dict.get("pretrained", False):
-            self.cirim.apply(lambda module: rnn_weights_init(module, std_init_range))
-
-        self.train_loss_fn = SSIMLoss() if cirim_cfg_dict.get("loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = SSIMLoss() if cirim_cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
-        self.accumulate_estimates = cirim_cfg_dict.get("accumulate_estimates")
+        self.train_loss_fn = SSIMLoss() if vn_cfg_dict.get("loss_fn") == "ssim" else L1Loss()
+        self.eval_loss_fn = SSIMLoss() if vn_cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
+        self.accumulate_estimates = vn_cfg_dict.get("accumulate_estimates")
 
         # Initialize data consistency term
         # TODO: make this configurable
@@ -109,21 +91,15 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
         y: torch.Tensor,
         sensitivity_maps: torch.Tensor,
         mask: torch.Tensor,
-        eta: torch.Tensor = None,
-        hx: torch.Tensor = None,
         target: torch.Tensor = None,
-        sigma: float = 1.0,
-    ) -> Union[Generator, torch.Tensor]:
+    ) -> Union[list, Any]:
         """
         Forward pass of the network.
         Args:
             y: torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2], masked kspace data
             sensitivity_maps: torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2], coil sensitivity maps
             mask: torch.Tensor, shape [1, 1, n_x, n_y, 1], sampling mask
-            eta: torch.Tensor, shape [batch_size, n_x, n_y, 2], initial guess for eta
-            hx: torch.Tensor, shape [batch_size, n_x, n_y, 2], initial guess for hx
             target: torch.Tensor, shape [batch_size, n_x, n_y, 2], target data
-            sigma: float, noise level
         Returns:
              Final estimation of the network.
              If self.accumulate_loss is True, returns a list of all intermediate estimates.
@@ -133,23 +109,15 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
         estimation = y.clone()
 
         cascades_etas = []
-        for i, cascade in enumerate(self.cirim):
+        for i, cascade in enumerate(self.cascades):
             # Forward pass through the cascades
-            estimation, hx = cascade(
-                estimation, y, sensitivity_maps, mask, eta, hx, sigma, keep_eta=False if i == 0 else self.keep_eta
-            )
-
-            if self.accumulate_estimates:
-                time_steps_etas = [
-                    self.process_intermediate_eta(pred, sensitivity_maps, target) for pred in estimation
-                ]
-                cascades_etas.append(time_steps_etas)
+            estimation = cascade(estimation, y, sensitivity_maps, mask)
+            cascades_etas.append(estimation)
 
         if self.accumulate_estimates:
-            yield cascades_etas
+            return cascades_etas
         else:
-            # TODO: this won't work, yield works unconditionally
-            return self.process_intermediate_eta(estimation, sensitivity_maps, target).detach()
+            return self.process_intermediate_eta(estimation, sensitivity_maps, target, do_coil_combination=True)
 
     def process_intermediate_eta(self, eta, sensitivity_maps, target, do_coil_combination=False):
         """Process the intermediate eta to be used in the loss function."""
@@ -183,14 +151,8 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
                 return set_loss_fn(x, torch.abs(y / torch.max(torch.abs(y))))
 
         if self.accumulate_estimates:
-            cascades_loss = []
-            for cascade_eta in eta:
-                time_steps_loss = [loss_fn(target, time_step_eta) for time_step_eta in cascade_eta]
-                _loss = [
-                    x * torch.logspace(-1, 0, steps=self.time_steps).to(time_steps_loss[0]) for x in time_steps_loss
-                ]
-                cascades_loss.append(sum(sum(_loss) / self.time_steps))
-            yield sum(list(cascades_loss)) / len(self.cirim)
+            cascades_loss = [loss_fn(target, cascade_eta) for cascade_eta in eta]
+            return sum(list(sum(cascades_loss))) / len(self.cascades)
         else:
             return loss_fn(target, eta)
 
@@ -207,7 +169,7 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
 
     def training_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
         """
-        Training step for the CIRIM.
+        Training step for the VarNet.
         Args:
             batch: A dictionary of the form {
                 'y': subsampled kspace,
@@ -227,7 +189,7 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
         """
         y, sensitivity_maps, mask, _, target, _, _, acc, _, _ = batch
         y, mask, r = self.process_inputs(y, mask)
-        etas = self.forward(y, sensitivity_maps, mask, None, None, target, 1.0)
+        etas = self.forward(y, sensitivity_maps, mask, target)
 
         if self.accumulate_estimates:
             try:
@@ -249,10 +211,10 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
         return {"loss": train_loss, "log": tensorboard_logs}
 
     def validation_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict:
-        """Validation step for the CIRIM."""
+        """Validation step for the VarNet."""
         y, sensitivity_maps, mask, _, target, fname, slice_num, _, _, _ = batch
         y, mask, _ = self.process_inputs(y, mask)
-        etas = self.forward(y, sensitivity_maps, mask, None, None, target, 1.0)
+        etas = self.forward(y, sensitivity_maps, mask, target)
 
         if self.accumulate_estimates:
             try:
@@ -282,10 +244,10 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
         }
 
     def test_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Tuple[str, int, torch.Tensor]:
-        """Test step for the CIRIM."""
+        """Test step for the VarNet."""
         y, sensitivity_maps, mask, _, target, fname, slice_num, _, _, _ = batch
         y, mask, _ = self.process_inputs(y, mask)
-        prediction = self.forward(y, sensitivity_maps, mask, None, None, target, 1.0)
+        prediction = self.forward(y, sensitivity_maps, mask, target)
 
         if self.accumulate_estimates:
             try:
