@@ -216,7 +216,6 @@ class MasterOptimizerWrapper(torch.optim.Optimizer):
 
     def _make_param_hook(self, param, main_param):
         """Create the grad accumulation and all-reduce hook for back prop."""
-
         # Hook used for back-prop.
         def param_hook(*unused):
             """Gradient accumulation and all-reduce."""

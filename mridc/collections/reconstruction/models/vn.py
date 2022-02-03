@@ -116,8 +116,7 @@ class VarNet(BaseMRIReconstructionModel, ABC):
 
         if self.accumulate_estimates:
             return cascades_etas
-        else:
-            return self.process_intermediate_eta(estimation, sensitivity_maps, target, do_coil_combination=True)
+        return self.process_intermediate_eta(estimation, sensitivity_maps, target, do_coil_combination=True)
 
     def process_intermediate_eta(self, eta, sensitivity_maps, target, do_coil_combination=False):
         """Process the intermediate eta to be used in the loss function."""
@@ -153,8 +152,7 @@ class VarNet(BaseMRIReconstructionModel, ABC):
         if self.accumulate_estimates:
             cascades_loss = [loss_fn(target, cascade_eta) for cascade_eta in eta]
             return sum(list(sum(cascades_loss))) / len(self.cascades)
-        else:
-            return loss_fn(target, eta)
+        return loss_fn(target, eta)
 
     @staticmethod
     def process_inputs(y, mask):
