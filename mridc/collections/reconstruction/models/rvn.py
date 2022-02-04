@@ -106,7 +106,7 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
                 normalize=rvn_cfg_dict.get("sens_normalize"),
             )
 
-        std_init_range = 1 / self.recurrent_hidden_channels**0.5
+        std_init_range = 1 / self.recurrent_hidden_channels ** 0.5
 
         # initialize weights if not using pretrained cirim
         if not rvn_cfg_dict.get("pretrained", False):
