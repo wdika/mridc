@@ -64,4 +64,5 @@ def test_didn(shape, out_channels, hidden_channels, n_dubs, num_convs_recon, ski
 
     out = model(data)
 
-    assert list(out.shape) == [shape[0]] + [out_channels] + shape[2:]
+    if list(out.shape) != [shape[0]] + [out_channels] + shape[2:]:
+        raise AssertionError

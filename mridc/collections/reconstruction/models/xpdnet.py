@@ -165,9 +165,7 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
         """
         sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         eta = self.xpdnet(y, sensitivity_maps, mask)
-        # eta = coil_combination(eta, sensitivity_maps, method=self.output_type, dim=1)
         eta = eta.sum(-1)
-        # eta = torch.view_as_complex(eta)
         _, eta = center_crop_to_smallest(target, eta)
         return eta
 

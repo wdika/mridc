@@ -156,7 +156,6 @@ class DUB(nn.Module):
         )
         self.up1 = nn.Sequential(
             *[
-                # nn.Conv2d(in_channels * 4, in_channels * 8, kernel_size=1),
                 Subpixel(in_channels * 4, in_channels * 2, 2, 1, 0)
             ]
         )
@@ -170,7 +169,6 @@ class DUB(nn.Module):
         )
         self.up2 = nn.Sequential(
             *[
-                # nn.Conv2d(in_channels * 2, in_channels * 4, kernel_size=1),
                 Subpixel(in_channels * 2, in_channels, 2, 1, 0)
             ]
         )
@@ -205,7 +203,7 @@ class DUB(nn.Module):
 
     @staticmethod
     def crop_to_shape(x, shape):
-        """
+        r"""
         Crops ``x`` to specified shape.
 
         Parameters
@@ -333,7 +331,7 @@ class DIDN(nn.Module):
 
     @staticmethod
     def crop_to_shape(x, shape):
-        """Crops ``x`` to specified shape.
+        r"""Crops ``x`` to specified shape.
         Parameters
         ----------
         x: torch.Tensor

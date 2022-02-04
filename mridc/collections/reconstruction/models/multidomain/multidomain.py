@@ -171,7 +171,7 @@ class TransposeMultiDomainConvBlock(nn.Module):
 
 
 class StandardizationLayer(nn.Module):
-    """ "
+    r""" "
     Multi-channel data standardization method. Inspired by AIRS model submission to the Fast MRI 2020 challenge.
     Given individual coil images :math:`\{x_i\}_{i=1}^{N_c}` and sensitivity coil maps :math:`\{S_i\}_{i=1}^{N_c}`
 

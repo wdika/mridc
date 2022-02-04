@@ -86,7 +86,6 @@ class RecurrentInit(nn.Module):
         out: torch.Tensor
             Initial recurrent hidden state from input `x`.
         """
-
         features = []
         for block in self.conv_blocks:
             x = F.relu(block(x), inplace=True)
@@ -103,7 +102,7 @@ class RecurrentInit(nn.Module):
 
 
 class RecurrentVarNetBlock(nn.Module):
-    """
+    r"""
     Recurrent Variational Network Block :math:`\mathcal{H}_{\theta_{t}}` as presented in [1]_.
 
     References
@@ -182,7 +181,6 @@ class RecurrentVarNetBlock(nn.Module):
         hidden_state: torch.Tensor
             Next hidden state of shape (N, hidden_channels, height, width, num_layers).
         """
-
         kspace_error = torch.where(
             sampling_mask == 0,
             torch.tensor([0.0], dtype=masked_kspace.dtype).to(masked_kspace.device),

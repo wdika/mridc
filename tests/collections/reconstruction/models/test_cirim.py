@@ -180,4 +180,5 @@ def test_cirim(shape, cfg, center_fractions, accelerations):
             -1
         ]  # type: ignore
 
-    assert y.shape[1:] == x.shape[2:4]
+    if y.shape[1:] != x.shape[2:4]:
+        raise AssertionError

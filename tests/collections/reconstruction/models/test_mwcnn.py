@@ -65,4 +65,5 @@ def test_mwcnn(shape, first_conv_hidden_channels, n_scales, bias, batchnorm, act
 
     out = model(data)
 
-    assert list(out.shape) == shape
+    if list(out.shape) != shape:
+        raise AssertionError

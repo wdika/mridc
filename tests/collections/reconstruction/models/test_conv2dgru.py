@@ -43,4 +43,5 @@ def test_conv2dgru(shape, hidden_channels):
 
     out = model(data, None)[0]
 
-    assert list(out.shape) == shape
+    if list(out.shape) != shape:
+        raise AssertionError

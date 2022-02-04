@@ -52,13 +52,15 @@ class CrossDomainNetwork(nn.Module):
 
         self.fft_type = fft_type
 
-        domain_sequence = [domain_name for domain_name in domain_sequence.strip()]  # type: ignore
+        domain_sequence = list(domain_sequence.strip())  # type: ignore
         if not set(domain_sequence).issubset({"K", "I"}):
             raise ValueError(f"Invalid domain sequence. Got {domain_sequence}. Should only contain 'K' and 'I'.")
 
-        if kspace_model_list is not None:
-            if len(kspace_model_list) != domain_sequence.count("K"):
-                raise ValueError("K-space domain steps do not match k-space model list length.")
+        if (
+            kspace_model_list is not None
+            and len(kspace_model_list) != domain_sequence.count("K")
+        ):
+            raise ValueError("K-space domain steps do not match k-space model list length.")
 
         if len(image_model_list) != domain_sequence.count("I"):
             raise ValueError("Image domain steps do not match image model list length.")

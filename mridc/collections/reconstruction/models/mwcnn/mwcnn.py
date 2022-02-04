@@ -27,7 +27,8 @@ class DWT(nn.Module):
         super().__init__()
         self.requires_grad = False
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def forward(x: torch.Tensor) -> torch.Tensor:
         """Computes DWT(`x`) given tensor `x`.
         Parameters
         ----------

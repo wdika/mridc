@@ -111,4 +111,5 @@ def test_vn(shape, cfg, center_fractions, accelerations):
     with torch.no_grad():
         y = vn.forward(output, output, mask, target=torch.abs(torch.view_as_complex(output)))
 
-    assert y.shape[1:] == x.shape[2:4]
+    if y.shape[1:] != x.shape[2:4]:
+        raise AssertionError
