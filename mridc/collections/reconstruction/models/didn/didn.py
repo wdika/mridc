@@ -154,11 +154,7 @@ class DUB(nn.Module):
                 nn.PReLU(),
             ]
         )
-        self.up1 = nn.Sequential(
-            *[
-                Subpixel(in_channels * 4, in_channels * 2, 2, 1, 0)
-            ]
-        )
+        self.up1 = nn.Sequential(*[Subpixel(in_channels * 4, in_channels * 2, 2, 1, 0)])
         # Scale 2
         self.conv_agg_1 = nn.Conv2d(in_channels * 4, in_channels * 2, kernel_size=1)
         self.conv2_2 = nn.Sequential(
@@ -167,11 +163,7 @@ class DUB(nn.Module):
                 nn.PReLU(),
             ]
         )
-        self.up2 = nn.Sequential(
-            *[
-                Subpixel(in_channels * 2, in_channels, 2, 1, 0)
-            ]
-        )
+        self.up2 = nn.Sequential(*[Subpixel(in_channels * 2, in_channels, 2, 1, 0)])
         # Scale 1
         self.conv_agg_2 = nn.Conv2d(in_channels * 2, in_channels, kernel_size=1)
         self.conv1_2 = nn.Sequential(*[nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1), nn.PReLU()] * 2)
