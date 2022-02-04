@@ -40,7 +40,7 @@ model:
   depth: 2
   time_steps: 8
   conv_dim: 2
-  num_cascades: 8
+  num_cascades: 1
   no_dc: true
   keep_eta: true
   output_type: SENSE
@@ -76,7 +76,7 @@ model:
         - 0.7
         - 0.7
       scale: 0.02
-      shift_mask: true
+      shift_mask: false
       use_seed: true
     normalize_inputs: true
     crop_size: None
@@ -107,7 +107,7 @@ model:
         - 0.7
         - 0.7
       scale: 0.02
-      shift_mask: true
+      shift_mask: false
       use_seed: false
     normalize_inputs: true
     crop_size: None

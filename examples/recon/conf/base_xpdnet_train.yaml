@@ -3,11 +3,21 @@ checkpoint: None
 mode: train
 
 model:
-  model_name: UNET
-  channels: 64
-  pooling_layers: 2
-  padding_size: 11
-  normalize: true
+  model_name: XPDNET
+  num_primal: 5
+  num_dual: 1
+  num_iter: 20
+  use_primal_only: true
+  kspace_model_architecture: CONV
+  dual_conv_hidden_channels: 16
+  dual_conv_num_dubs: 2
+  dual_conv_batchnorm: false
+  image_model_architecture: MWCNN
+  mwcnn_hidden_channels: 16
+  mwcnn_num_scales: 2
+  mwcnn_bias: true
+  mwcnn_batchnorm: false
+  normalize_image: false
   output_type: SENSE
   use_sens_net: false
   sens_chans: 8
@@ -40,7 +50,7 @@ model:
         - 0.7
         - 0.7
       scale: 0.02
-      shift_mask: false
+      shift_mask: true
       use_seed: true
     normalize_inputs: true
     crop_size: None
@@ -71,7 +81,7 @@ model:
         - 0.7
         - 0.7
       scale: 0.02
-      shift_mask: false
+      shift_mask: true
       use_seed: false
     normalize_inputs: true
     crop_size: None

@@ -27,6 +27,7 @@ class NormUnet(nn.Module):
         drop_prob: float = 0.0,
         padding_size: int = 15,
         normalize: bool = True,
+        norm_groups: int = 2,
     ):
         """
         Initialize the model.
@@ -39,6 +40,7 @@ class NormUnet(nn.Module):
             drop_prob : Dropout probability.
             padding_size: Size of the padding.
             normalize: Whether to normalize the input.
+            norm_groups: Number of groups to use for group normalization.
         """
         super().__init__()
 
@@ -48,6 +50,8 @@ class NormUnet(nn.Module):
 
         self.padding_size = padding_size
         self.normalize = normalize
+
+        self.norm_groups = norm_groups
 
     @staticmethod
     def complex_to_chan_dim(x: torch.Tensor) -> torch.Tensor:
@@ -82,8 +86,7 @@ class NormUnet(nn.Module):
         c = torch.div(c2, 2, rounding_mode="trunc")
         return x.view(b, 2, c, h, w).permute(0, 2, 3, 4, 1).contiguous()
 
-    @staticmethod
-    def norm(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def norm(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Normalize the input.
 
@@ -95,17 +98,19 @@ class NormUnet(nn.Module):
         """
         # group norm
         b, c, h, w = x.shape
-        x = x.view(b, 2, torch.div(c, 2, rounding_mode="trunc") * h * w)
 
-        mean = x.mean(dim=2).view(b, c, 1, 1)
-        std = x.std(dim=2).view(b, c, 1, 1)
+        x = x.reshape(b, self.norm_groups, -1)
 
-        x = x.view(b, c, h, w)
+        mean = x.mean(-1, keepdim=True)
+        std = x.std(-1, keepdim=True)
 
-        return (x - mean) / std, mean, std
+        x = (x - mean) / std
 
-    @staticmethod
-    def unnorm(x: torch.Tensor, mean: torch.Tensor, std: torch.Tensor) -> torch.Tensor:
+        x = x.reshape(b, c, h, w)
+
+        return x, mean, std
+
+    def unnorm(self, x: torch.Tensor, mean: torch.Tensor, std: torch.Tensor) -> torch.Tensor:
         """
         Unnormalize the input.
 
@@ -117,7 +122,9 @@ class NormUnet(nn.Module):
         Returns:
             Unnormalized input.
         """
-        return x * std + mean
+        b, c, h, w = x.shape
+        input_data = x.reshape(b, self.norm_groups, -1)
+        return (input_data * std + mean).reshape(b, c, h, w)
 
     def pad(self, x: torch.Tensor) -> Tuple[torch.Tensor, Tuple[List[int], List[int], int, int]]:
         """
@@ -169,13 +176,14 @@ class NormUnet(nn.Module):
         Returns:
             Normalized UNet output tensor.
         """
-        if not x.shape[-1] == 2:
-            raise ValueError("Last dimension must be 2 for complex.")
+        iscomplex = False
+        if x.shape[-1] == 2:
+            x = self.complex_to_chan_dim(x)
+            iscomplex = True
 
         mean = 1.0
         std = 1.0
 
-        x = self.complex_to_chan_dim(x)
         if self.normalize:
             x, mean, std = self.norm(x)
 
@@ -185,7 +193,9 @@ class NormUnet(nn.Module):
 
         if self.normalize:
             x = self.unnorm(x, mean, std)
-        x = self.chan_complex_to_last_dim(x)
+
+        if iscomplex:
+            x = self.chan_complex_to_last_dim(x)
 
         return x
 

@@ -1,7 +1,7 @@
 # encoding: utf-8
 __author__ = "Dimitrios Karkalousos"
 
-# Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
+# Parts of the code have been taken from: https://github.com/facebookresearch/fastMRI
 
 import pytest
 import torch
@@ -180,6 +180,4 @@ def test_cirim(shape, cfg, center_fractions, accelerations):
             -1
         ]  # type: ignore
 
-    if y.shape[1:] != x.shape[2:4]:
-        print(y.shape, x.shape)
-        raise AssertionError
+    assert y.shape[1:] == x.shape[2:4]

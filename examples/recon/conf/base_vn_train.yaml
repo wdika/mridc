@@ -17,7 +17,6 @@ model:
   sens_mask_type: 2D
   train_loss_fn: l1
   eval_loss_fn: l1
-  accumulate_estimates: false
   fft_type: orthogonal_norm_only
   lr: 0.001
   lr_step_size: 40
@@ -43,7 +42,7 @@ model:
         - 0.7
         - 0.7
       scale: 0.02
-      shift_mask: true
+      shift_mask: false
       use_seed: true
     normalize_inputs: true
     crop_size: None
@@ -74,7 +73,7 @@ model:
         - 0.7
         - 0.7
       scale: 0.02
-      shift_mask: true
+      shift_mask: false
       use_seed: false
     normalize_inputs: true
     crop_size: None

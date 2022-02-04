@@ -6,9 +6,15 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 
 from mridc.collections.reconstruction.models.cirim import CIRIM
+from mridc.collections.reconstruction.models.jointicnet import JointICNet
+from mridc.collections.reconstruction.models.kikinet import KIKINet
+from mridc.collections.reconstruction.models.lpd import LPDNet
+from mridc.collections.reconstruction.models.multidomainnet import MultiDomainNet
 from mridc.collections.reconstruction.models.pics import PICS
+from mridc.collections.reconstruction.models.rvn import RecurrentVarNet
 from mridc.collections.reconstruction.models.unet import UNet
 from mridc.collections.reconstruction.models.vn import VarNet
+from mridc.collections.reconstruction.models.xpdnet import XPDNet
 from mridc.collections.reconstruction.models.zf import ZF
 from mridc.core.conf.hydra_runner import hydra_runner
 from mridc.utils import logging
@@ -33,10 +39,26 @@ def main(cfg: DictConfig) -> None:
         model = CIRIM(cfg.model, trainer=trainer)
     elif model_name in ("E2EVN", "VN"):
         model = VarNet(cfg.model, trainer=trainer)
+    elif model_name == "RVN":
+        model = RecurrentVarNet(cfg.model, trainer=trainer)
     elif model_name == "UNET":
         model = UNet(cfg.model, trainer=trainer)
+    elif model_name == "KIKINET":
+        model = KIKINet(cfg.model, trainer=trainer)
+    elif model_name == "LPDNET":
+        model = LPDNet(cfg.model, trainer=trainer)
+    elif model_name == "JOINTICNET":
+        model = JointICNet(cfg.model, trainer=trainer)
+    elif model_name == "XPDNET":
+        model = XPDNet(cfg.model, trainer=trainer)
+    elif model_name == "MULTIDOMAINNET":
+        model = MultiDomainNet(cfg.model, trainer=trainer)
     else:
-        raise NotImplementedError(f"Model {model_name} is not supported.")
+        raise NotImplementedError(
+            f"{model_name} is not implemented in MRIDC. Consider using one of the following: "
+            f"CIRIM, RIM, E2EVN, VN, RVN, UNET, XPDNET, KIKINet, JointICNet, LPDNET, Zero-Filled, PICS. "
+            f"If you are using a new model, please add it through a PR on GitHub."
+        )
 
     if cfg.get("pretrained", None):
         checkpoint = cfg.get("checkpoint", None)

@@ -3,11 +3,25 @@ checkpoint: None
 mode: train
 
 model:
-  model_name: UNET
-  channels: 64
-  pooling_layers: 2
-  padding_size: 11
-  normalize: true
+  model_name: RVN
+  in_channels: 2
+  recurrent_hidden_channels: 64
+  recurrent_num_layers: 4
+  num_steps: 8
+  no_parameter_sharing: true
+  learned_initializer: true
+  initializer_initialization: "sense"
+  initializer_channels:
+    - 32
+    - 32
+    - 64
+    - 64
+  initializer_dilations:
+    - 1
+    - 1
+    - 2
+    - 4
+  initializer_multiscale: 1
   output_type: SENSE
   use_sens_net: false
   sens_chans: 8
@@ -40,7 +54,7 @@ model:
         - 0.7
         - 0.7
       scale: 0.02
-      shift_mask: false
+      shift_mask: true
       use_seed: true
     normalize_inputs: true
     crop_size: None
@@ -71,7 +85,7 @@ model:
         - 0.7
         - 0.7
       scale: 0.02
-      shift_mask: false
+      shift_mask: true
       use_seed: false
     normalize_inputs: true
     crop_size: None
