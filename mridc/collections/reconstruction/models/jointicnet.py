@@ -163,7 +163,7 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
             )
 
             sensitivity_maps = sensitivity_maps - step_sensitivity_maps
-            sensitivity_maps_norm = torch.sqrt(((sensitivity_maps**2).sum(-1)).sum(self._coil_dim))
+            sensitivity_maps_norm = torch.sqrt(((sensitivity_maps ** 2).sum(-1)).sum(self._coil_dim))
             sensitivity_maps_norm = sensitivity_maps_norm.unsqueeze(-1).unsqueeze(self._coil_dim)
             sensitivity_maps = torch.where(
                 sensitivity_maps == 0,
@@ -215,7 +215,7 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
             image = image - step_image
 
         out_image = self.conv_out(image.permute(0, 3, 1, 2)).permute(0, 2, 3, 1)
-        out_image = (out_image**2).sum(-1).sqrt()
+        out_image = (out_image ** 2).sum(-1).sqrt()
         _, out_image = center_crop_to_smallest(target, out_image)
         return out_image
 
