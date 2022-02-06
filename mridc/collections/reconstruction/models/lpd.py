@@ -185,7 +185,7 @@ class LPDNet(BaseMRIReconstructionModel, ABC):
             primal_buffer = self.primal_net[idx](primal_buffer, h_1)
 
         output = primal_buffer[..., 0:2]
-        output = (output ** 2).sum(-1).sqrt()
+        output = (output**2).sum(-1).sqrt()
         _, output = center_crop_to_smallest(target, output)
         return output
 
