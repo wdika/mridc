@@ -376,6 +376,7 @@ class MWCNN(nn.Module):
 
     @staticmethod
     def pad(x):
+        """Pad input."""
         padding = [0, 0, 0, 0]
 
         if x.shape[-2] % 2 != 0:
@@ -388,6 +389,7 @@ class MWCNN(nn.Module):
 
     @staticmethod
     def crop_to_shape(x, shape):
+        """Crop input to given shape."""
         h, w = x.shape[-2:]
 
         if h > shape[0]:

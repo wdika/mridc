@@ -13,6 +13,8 @@ from mridc.collections.common.parts.utils import complex_conj, complex_mul
 
 
 class MultiDomainConv2d(nn.Module):
+    """Multi-domain convolution layer."""
+
     def __init__(
         self,
         fft_type,
@@ -29,6 +31,7 @@ class MultiDomainConv2d(nn.Module):
         self._spatial_dims = [1, 2]
 
     def forward(self, image):
+        """Forward method for the MultiDomainConv2d class."""
         kspace = [
             fft2c(im, fft_type=self.fft_type, fft_dim=self._spatial_dims)
             for im in torch.split(image.permute(0, 2, 3, 1).contiguous(), 2, -1)
@@ -48,6 +51,8 @@ class MultiDomainConv2d(nn.Module):
 
 
 class MultiDomainConvTranspose2d(nn.Module):
+    """Multi-Domain convolutional transpose layer."""
+
     def __init__(
         self,
         fft_type,
@@ -64,6 +69,7 @@ class MultiDomainConvTranspose2d(nn.Module):
         self._spatial_dims = [1, 2]
 
     def forward(self, image):
+        """Forward method for the MultiDomainConvTranspose2d class."""
         kspace = [
             fft2c(im, fft_type=self.fft_type, fft_dim=self._spatial_dims)
             for im in torch.split(image.permute(0, 2, 3, 1).contiguous(), 2, -1)
@@ -134,8 +140,10 @@ class MultiDomainConvBlock(nn.Module):
 
 
 class TransposeMultiDomainConvBlock(nn.Module):
-    """A Transpose Convolutional Block that consists of one convolution transpose layers followed by instance
-    normalization and LeakyReLU activation."""
+    """
+    A Transpose Convolutional Block that consists of one convolution transpose layers followed by instance
+    normalization and LeakyReLU activation.
+    """
 
     def __init__(self, fft_type, in_channels: int, out_channels: int):
         """
@@ -171,7 +179,7 @@ class TransposeMultiDomainConvBlock(nn.Module):
 
 
 class StandardizationLayer(nn.Module):
-    r""" "
+    r"""
     Multi-channel data standardization method. Inspired by AIRS model submission to the Fast MRI 2020 challenge.
     Given individual coil images :math:`\{x_i\}_{i=1}^{N_c}` and sensitivity coil maps :math:`\{S_i\}_{i=1}^{N_c}`
 
@@ -188,6 +196,7 @@ class StandardizationLayer(nn.Module):
         self.channel_dim = channel_dim
 
     def forward(self, coil_images: torch.Tensor, sensitivity_map: torch.Tensor) -> torch.Tensor:
+        """Forward pass."""
         combined_image = complex_mul(coil_images, complex_conj(sensitivity_map)).sum(self.coil_dim)
         residual_image = combined_image.unsqueeze(self.coil_dim) - complex_mul(
             combined_image.unsqueeze(self.coil_dim), sensitivity_map

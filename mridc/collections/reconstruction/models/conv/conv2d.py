@@ -49,7 +49,9 @@ class Conv2d(nn.Module):
         self.conv = nn.Sequential(*self.conv)
 
     def forward(self, x):
-        """Performs the forward pass of Conv2d.
+        """
+        Performs the forward pass of Conv2d.
+
         Parameters
         ----------
         x: torch.Tensor

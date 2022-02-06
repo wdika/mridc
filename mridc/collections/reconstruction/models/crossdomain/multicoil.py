@@ -33,6 +33,7 @@ class MultiCoil(nn.Module):
         self._coil_dim = coil_dim
 
     def _compute_model_per_coil(self, data: torch.Tensor) -> torch.Tensor:
+        """Computes the model per coil."""
         output = []
 
         for idx in range(data.size(self._coil_dim)):
@@ -42,7 +43,9 @@ class MultiCoil(nn.Module):
         return output
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Performs the forward pass of MultiCoil.
+        """
+        Performs the forward pass of MultiCoil.
+
         Parameters
         ----------
         x: torch.Tensor

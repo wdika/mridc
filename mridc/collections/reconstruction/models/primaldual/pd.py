@@ -65,6 +65,7 @@ class DualNet(nn.Module):
         return output
 
     def forward(self, h, forward_f, g):
+        """Forward pass."""
         inp = torch.cat([h, forward_f, g], dim=-1).permute(0, 1, 4, 2, 3)
         return self.compute_model_per_coil(self.dual_block, inp).permute(0, 1, 3, 4, 2)
 
@@ -100,5 +101,6 @@ class PrimalNet(nn.Module):
             self.primal_block = kwargs.get("primal_architecture")
 
     def forward(self, f, backward_h):
+        """Forward pass."""
         inp = torch.cat([f, backward_h], dim=-1).permute(0, 3, 1, 2)
         return self.primal_block(inp).permute(0, 2, 3, 1)

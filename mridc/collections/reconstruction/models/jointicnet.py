@@ -90,14 +90,17 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
         self.output_type = jointicnet_cfg_dict.get("output_type")
 
     def _image_model(self, image):
+        """Image model"""
         image = image.permute(0, 3, 1, 2)
         return self.image_model(image).permute(0, 2, 3, 1).contiguous()
 
     def _kspace_model(self, kspace):
+        """K-space model"""
         kspace = kspace.permute(0, 3, 1, 2)
         return self.kspace_model(kspace).permute(0, 2, 3, 1).contiguous()
 
     def _sens_model(self, sensitivity_map):
+        """Sensitivity model"""
         return (
             self._compute_model_per_coil(self.sens_net, sensitivity_map.permute(0, 1, 4, 2, 3))
             .permute(0, 1, 3, 4, 2)
@@ -105,6 +108,7 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
         )
 
     def _compute_model_per_coil(self, model, data):
+        """Compute model per coil"""
         output = []
         for idx in range(data.size(self._coil_dim)):
             subselected_data = data.select(self._coil_dim, idx)

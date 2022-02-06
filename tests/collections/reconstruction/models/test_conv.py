@@ -12,6 +12,7 @@ from mridc.collections.reconstruction.models.conv.conv2d import Conv2d
 
 
 def create_input(shape):
+    """Create a random input tensor."""
     data = torch.rand(shape).float()
 
     return data

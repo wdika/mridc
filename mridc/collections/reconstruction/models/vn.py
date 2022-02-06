@@ -109,7 +109,7 @@ class VarNet(BaseMRIReconstructionModel, ABC):
         estimation = y.clone()
 
         cascades_etas = []
-        for i, cascade in enumerate(self.cascades):
+        for _, cascade in enumerate(self.cascades):
             # Forward pass through the cascades
             estimation = cascade(estimation, y, sensitivity_maps, mask)
             cascades_etas.append(estimation)

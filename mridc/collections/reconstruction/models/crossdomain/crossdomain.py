@@ -77,6 +77,7 @@ class CrossDomainNetwork(nn.Module):
         self._spatial_dims = (2, 3)
 
     def kspace_correction(self, block_idx, image_buffer, kspace_buffer, sampling_mask, sensitivity_map, masked_kspace):
+        """Performs k-space correction."""
         forward_buffer = [
             self._forward_operator(image.clone(), sampling_mask, sensitivity_map)
             for image in torch.split(image_buffer, 2, self._complex_dim)
@@ -95,6 +96,7 @@ class CrossDomainNetwork(nn.Module):
         return kspace_buffer
 
     def image_correction(self, block_idx, image_buffer, kspace_buffer, sampling_mask, sensitivity_map):
+        """Performs image correction."""
         backward_buffer = [
             self._backward_operator(kspace.clone(), sampling_mask, sensitivity_map)
             for kspace in torch.split(kspace_buffer, 2, self._complex_dim)
@@ -107,6 +109,7 @@ class CrossDomainNetwork(nn.Module):
         return image_buffer
 
     def _forward_operator(self, image, sampling_mask, sensitivity_map):
+        """Forward operator."""
         forward = torch.where(
             sampling_mask == 0,
             torch.tensor([0.0], dtype=image.dtype).to(image.device),
@@ -115,6 +118,7 @@ class CrossDomainNetwork(nn.Module):
         return forward
 
     def _backward_operator(self, kspace, sampling_mask, sensitivity_map):
+        """Backward operator."""
         kspace = torch.where(sampling_mask == 0, torch.tensor([0.0], dtype=kspace.dtype).to(kspace.device), kspace)
         backward = complex_mul(ifft2c(kspace, fft_type=self.fft_type), complex_conj(sensitivity_map)).sum(1)
         return backward

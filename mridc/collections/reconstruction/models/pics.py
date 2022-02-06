@@ -4,6 +4,9 @@ __author__ = "Dimitrios Karkalousos"
 from abc import ABC
 from typing import Any, Dict, Tuple, Union
 
+# TODO: Currently environment path variables need to be exported every time to find bart, otherwise it throws an
+#  import error. Need to fix this.
+import bart
 import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
@@ -11,10 +14,6 @@ from pytorch_lightning import Trainer
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
 from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
 from mridc.core.classes.common import typecheck
-
-# TODO: Currently environment path variables need to be exported every time to find bart, otherwise it throws an
-#  import error. Need to fix this.
-# import bart
 
 __all__ = ["PICS"]
 
