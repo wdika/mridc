@@ -229,7 +229,7 @@ if __name__ == "__main__":
     parser.add_argument("--sense_path", type=pathlib.Path, help="Path to the sense data")
     parser.add_argument(
         "--challenge",
-        choices=["singlecoil", "multicoil", "multicoil_sense"],
+        choices=["singlecoil", "multicoil", "multicoil_sense", "multicoil_other"],
         default="multicoil_sense",
         help="Which challenge",
     )

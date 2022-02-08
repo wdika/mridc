@@ -4,6 +4,7 @@ __author__ = "Dimitrios Karkalousos"
 from abc import ABC
 from typing import Any, Dict, Tuple, Union
 
+import numpy as np
 import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
@@ -48,6 +49,17 @@ class ZF(BaseMRIReconstructionModel, ABC):
                 normalize=zf_cfg_dict.get("sens_normalize"),
             )
 
+    @staticmethod
+    def process_inputs(y, mask):
+        """Process the inputs to the network."""
+        if isinstance(y, list):
+            r = np.random.randint(len(y))
+            y = y[r]
+            mask = mask[r]
+        else:
+            r = 0
+        return y, mask, r
+
     @typecheck()
     def forward(
         self,
@@ -77,6 +89,7 @@ class ZF(BaseMRIReconstructionModel, ABC):
     def test_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Tuple[str, int, torch.Tensor]:
         """Test step for ZF."""
         y, sensitivity_maps, mask, _, target, fname, slice_num, _, _, _ = batch
+        y, mask, _ = self.process_inputs(y, mask)
         prediction = self.forward(y, sensitivity_maps, mask, target)
 
         slice_num = int(slice_num)

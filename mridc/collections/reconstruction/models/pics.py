@@ -7,6 +7,8 @@ from typing import Any, Dict, Tuple, Union
 # TODO: Currently environment path variables need to be exported every time to find bart, otherwise it throws an
 #  import error. Need to fix this.
 import bart
+
+import numpy as np
 import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
@@ -48,6 +50,17 @@ class PICS(BaseMRIReconstructionModel, ABC):
                 normalize=pics_cfg_dict.get("sens_normalize"),
             )
 
+    @staticmethod
+    def process_inputs(y, mask):
+        """Process the inputs to the network."""
+        if isinstance(y, list):
+            r = np.random.randint(len(y))
+            y = y[r]
+            mask = mask[r]
+        else:
+            r = 0
+        return y, mask, r
+
     @typecheck()
     def forward(
         self,
@@ -78,6 +91,7 @@ class PICS(BaseMRIReconstructionModel, ABC):
     def test_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Tuple[str, int, torch.Tensor]:
         """Test step for PICS."""
         y, sensitivity_maps, mask, _, target, fname, slice_num, _, _, _ = batch
+        y, mask, _ = self.process_inputs(y, mask)
 
         y = torch.view_as_complex(y).permute(0, 2, 3, 1).detach().cpu().numpy()
         sensitivity_maps = (
