@@ -116,7 +116,7 @@ def complex_abs(data: torch.Tensor) -> torch.Tensor:
     if not data.shape[-1] == 2:
         raise ValueError("Tensor does not have separate complex dim.")
 
-    return (data ** 2).sum(dim=-1).sqrt()
+    return (data**2).sum(dim=-1).sqrt()
 
 
 def complex_abs_sq(data: torch.Tensor) -> torch.Tensor:
@@ -133,7 +133,7 @@ def complex_abs_sq(data: torch.Tensor) -> torch.Tensor:
     if not data.shape[-1] == 2:
         raise ValueError("Tensor does not have separate complex dim.")
 
-    return (data ** 2).sum(dim=-1)
+    return (data**2).sum(dim=-1)
 
 
 def check_stacked_complex(data: torch.Tensor) -> torch.Tensor:
@@ -165,7 +165,7 @@ def rss(data: torch.Tensor, dim: int = 0) -> torch.Tensor:
     Returns:
         The RSS value.
     """
-    return torch.sqrt((data ** 2).sum(dim))
+    return torch.sqrt((data**2).sum(dim))
 
 
 def rss_complex(data: torch.Tensor, dim: int = 0) -> torch.Tensor:

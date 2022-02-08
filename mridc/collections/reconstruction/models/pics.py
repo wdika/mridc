@@ -6,7 +6,7 @@ from typing import Any, Dict, Tuple, Union
 
 # TODO: Currently environment path variables need to be exported every time to find bart, otherwise it throws an
 #  import error. Need to fix this.
-import bart
+# import bart
 
 import numpy as np
 import torch
@@ -38,6 +38,7 @@ class PICS(BaseMRIReconstructionModel, ABC):
 
         self.reg_wt = pics_cfg_dict.get("reg_wt")
         self.num_iters = pics_cfg_dict.get("num_iters")
+        self._device = pics_cfg_dict.get("device")
 
         # Initialize the sensitivity network if use_sens_net is True
         self.use_sens_net = pics_cfg_dict.get("use_sens_net")
@@ -81,7 +82,7 @@ class PICS(BaseMRIReconstructionModel, ABC):
         """
         sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
 
-        if "cuda" in str(self.device):
+        if "cuda" in str(self._device):
             pred = bart.bart(1, f"pics -d0 -g -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
         else:
             pred = bart.bart(1, f"pics -d0 -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
