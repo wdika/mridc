@@ -28,8 +28,16 @@ Through cascades DC can be explicitly enforced by a designed term [1, 4].
 
 You can install mridc with pip:
 
+### Pip
 ```bash
 pip install mridc
+```
+
+### From source
+```bash
+git clone https://github.com/wdika/mridc
+cd mridc
+./reinstall.sh
 ```
 
 ## Usage
