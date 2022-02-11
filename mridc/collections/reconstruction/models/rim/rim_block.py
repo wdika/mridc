@@ -185,4 +185,5 @@ class RIMBlock(nn.Module):
             masked_kspace - soft_dc - fft2c(complex_mul(e.unsqueeze(1), sense), fft_type=self.fft_type) for e in eta
         ]
 
-        return current_kspace, hx
+        return current_kspace, None
+        # return current_kspace, hx
