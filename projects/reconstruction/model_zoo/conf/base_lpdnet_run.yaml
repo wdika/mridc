@@ -3,46 +3,22 @@ checkpoint: ???
 mode: test
 
 model:
-  model_name: CIRIM
-  recurrent_layer: IndRNN
-  conv_filters:
-    - 128
-    - 128
-    - 2
-  conv_kernels:
-    - 5
-    - 3
-    - 3
-  conv_dilations:
-    - 1
-    - 2
-    - 1
-  conv_bias:
-    - true
-    - true
-    - false
-  recurrent_filters:
-    - 128
-    - 128
-    - 0
-  recurrent_kernels:
-    - 1
-    - 1
-    - 0
-  recurrent_dilations:
-    - 1
-    - 1
-    - 0
-  recurrent_bias:
-    - true
-    - true
-    - false
-  depth: 2
-  time_steps: 8
-  conv_dim: 2
-  num_cascades: 4
-  no_dc: true
-  keep_eta: true
+  model_name: LPDNET
+  num_primal: 5
+  num_dual: 5
+  num_iter: 5
+  primal_model_architecture: UNET
+  primal_unet_num_filters: 16
+  primal_unet_num_pool_layers: 2
+  primal_unet_dropout_probability: 0.0
+  primal_unet_padding_size: 11
+  primal_unet_normalize: true
+  dual_model_architecture: UNET
+  dual_unet_num_filters: 16
+  dual_unet_num_pool_layers: 2
+  dual_unet_dropout_probability: 0.0
+  dual_unet_padding_size: 11
+  dual_unet_normalize: true
   output_type: SENSE
   use_sens_net: false
   sens_chans: 8
@@ -50,24 +26,23 @@ model:
   sens_mask_type: 2D
   train_loss_fn: l1
   eval_loss_fn: l1
-  accumulate_estimates: true
-  fft_type: orthogonal_norm_only
-  lr: 0.001
-  lr_step_size: 40
-  lr_gamma: 0.1
-  weight_decay: 0.0
-  num_log_images: 16
+  fft_type: orthogonal
 
   test_ds:
     data_path: ???
     dataset_type: FastMRI
     challenge: multicoil
-    fft_type: orthogonal_norm_only
+    fft_type: orthogonal
     mask_args:
-      type: None
+      type: gaussian2d
+      accelerations:
+      - 10
+      center_fractions:
+      - 0.7
+      scale: 0.02
       shift_mask: false
       use_seed: false
-    normalize_inputs: false
+    normalize_inputs: true
     crop_size: None
     crop_before_masking: true
     kspace_zero_filling_size: None
@@ -106,5 +81,4 @@ trainer:
 exp_manager:
   name: ???
   create_tensorboard_logger: true
-  create_wandb_logger: false
   files_to_copy: [ ]

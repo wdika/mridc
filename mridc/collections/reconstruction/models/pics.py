@@ -83,9 +83,13 @@ class PICS(BaseMRIReconstructionModel, ABC):
         sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
 
         if "cuda" in str(self._device):
-            pred = bart.bart(1, f"pics -d0 -g -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
+            pred = bart.bart(  # type: ignore
+                1, f"pics -d0 -g -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps
+            )[0]
         else:
-            pred = bart.bart(1, f"pics -d0 -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
+            pred = bart.bart(  # type: ignore
+                1, f"pics -d0 -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps
+            )[0]
         _, pred = center_crop_to_smallest(target, pred)
         return pred
 
@@ -95,16 +99,22 @@ class PICS(BaseMRIReconstructionModel, ABC):
         y, mask, _ = self.process_inputs(y, mask)
 
         y = torch.view_as_complex(y).permute(0, 2, 3, 1).detach().cpu().numpy()
-        sensitivity_maps = (
-            torch.fft.fftshift(torch.view_as_complex(sensitivity_maps), dim=(-2, -1))
-            .permute(0, 2, 3, 1)
-            .detach()
-            .cpu()
-            .numpy()
-        )
+        if "AXFLAIR" in fname[0]:  # type: ignore
+            sensitivity_maps = torch.view_as_complex(sensitivity_maps).permute(0, 2, 3, 1).detach().cpu().numpy()
+        else:
+            sensitivity_maps = (
+                torch.fft.fftshift(torch.view_as_complex(sensitivity_maps), dim=(-2, -1))
+                .permute(0, 2, 3, 1)
+                .detach()
+                .cpu()
+                .numpy()
+            )
 
         prediction = self.forward(y, sensitivity_maps, mask, target)
-        prediction = torch.fft.fftshift(torch.from_numpy(prediction), dim=(-2, -1)).unsqueeze(0)
+        if "AXFLAIR" in fname[0]:  # type: ignore
+            prediction = torch.from_numpy(prediction).unsqueeze(0)
+        else:
+            prediction = torch.fft.fftshift(torch.from_numpy(prediction), dim=(-2, -1)).unsqueeze(0)
 
         slice_num = int(slice_num)
         name = str(fname[0])  # type: ignore

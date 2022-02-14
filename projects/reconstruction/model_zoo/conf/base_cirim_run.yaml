@@ -1,6 +1,6 @@
-pretrained: false
-checkpoint: None
-mode: train
+pretrained: true
+checkpoint: ???
+mode: test
 
 model:
   model_name: CIRIM
@@ -40,7 +40,7 @@ model:
   depth: 2
   time_steps: 8
   conv_dim: 2
-  num_cascades: 1
+  num_cascades: 8
   no_dc: true
   keep_eta: true
   output_type: SENSE
@@ -51,61 +51,19 @@ model:
   train_loss_fn: l1
   eval_loss_fn: l1
   accumulate_estimates: true
-  fft_type: orthogonal_norm_only
-  lr: 0.001
-  lr_step_size: 40
-  lr_gamma: 0.1
-  weight_decay: 0.0
-  num_log_images: 16
+  fft_type: orthogonal
 
-  train_ds:
+  test_ds:
     data_path: ???
     dataset_type: FastMRI
     challenge: multicoil
-    fft_type: orthogonal_norm_only
+    fft_type: orthogonal
     mask_args:
       type: gaussian2d
       accelerations:
-        - 4
-        - 6
-        - 8
-        - 10
+      - 10
       center_fractions:
-        - 0.7
-        - 0.7
-        - 0.7
-        - 0.7
-      scale: 0.02
-      shift_mask: false
-      use_seed: true
-    normalize_inputs: true
-    crop_size: None
-    crop_before_masking: true
-    kspace_zero_filling_size: None
-    sample_rate: 1
-    batch_size: 1
-    shuffle: true
-    num_workers: 8
-    drop_last: false
-    pin_memory: false
-
-  validation_ds:
-    data_path: ???
-    dataset_type: FastMRI
-    challenge: multicoil
-    fft_type: orthogonal_norm_only
-    mask_args:
-      type: gaussian2d
-      accelerations:
-        - 4
-        - 6
-        - 8
-        - 10
-      center_fractions:
-        - 0.7
-        - 0.7
-        - 0.7
-        - 0.7
+      - 0.7
       scale: 0.02
       shift_mask: false
       use_seed: false
@@ -147,5 +105,5 @@ trainer:
 
 exp_manager:
   name: ???
-  files_to_copy: [ ]
   create_tensorboard_logger: true
+  files_to_copy: [ ]

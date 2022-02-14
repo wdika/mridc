@@ -5,19 +5,23 @@ mode: test
 model:
   model_name: ZF
   zf_method: SENSE
-  fft_type: orthogonal_norm_only
-  num_log_images: 16
+  fft_type: orthogonal
 
   test_ds:
     data_path: ???
     dataset_type: FastMRI
     challenge: multicoil
-    fft_type: orthogonal_norm_only
+    fft_type: orthogonal
     mask_args:
-      type: None
+      type: gaussian2d
+      accelerations:
+      - 10
+      center_fractions:
+      - 0.7
+      scale: 0.02
       shift_mask: false
       use_seed: false
-    normalize_inputs: false
+    normalize_inputs: true
     crop_size: None
     crop_before_masking: true
     kspace_zero_filling_size: None
@@ -43,5 +47,4 @@ trainer:
 exp_manager:
   name: ???
   create_tensorboard_logger: true
-  create_wandb_logger: false
   files_to_copy: [ ]

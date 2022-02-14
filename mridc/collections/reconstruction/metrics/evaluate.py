@@ -139,21 +139,29 @@ def evaluate(
             with h5py.File(tgt_file, "r") as target, h5py.File(
                 arguments.predictions_path / tgt_file.name, "r"
             ) as recons:
+                kspace = target["kspace"][()]
 
                 if arguments.sense_path is not None:
-                    sense = to_tensor(h5py.File(arguments.sense_path / tgt_file.name, "r")["sensitivity_map"][()])
+                    sense = h5py.File(arguments.sense_path / tgt_file.name, "r")["sensitivity_map"][()]
                 elif "sensitivity_map" in target:
-                    sense = to_tensor(target["sensitivity_map"][()])
+                    sense = target["sensitivity_map"][()]
+
+                sense = sense.squeeze().astype(np.complex64)
+
+                if sense.shape != kspace.shape:
+                    sense = np.transpose(sense, (0, 3, 1, 2))
 
                 target = np.abs(
                     tensor_to_complex_np(
                         torch.sum(
                             complex_mul(
                                 ifft2c(
-                                    to_tensor(target["kspace"][()]),
-                                    fft_type="data" if "data" in str(arguments.sense_path).lower() else "nofastmri",
+                                    to_tensor(kspace),
+                                    fft_type="orthogonal"
+                                    if "fastmri" in str(arguments.sense_path).lower()
+                                    else "other",
                                 ),
-                                complex_conj(sense),
+                                complex_conj(to_tensor(sense)),
                             ),
                             1,
                         )
@@ -230,7 +238,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--challenge",
         choices=["singlecoil", "multicoil", "multicoil_sense", "multicoil_other"],
-        default="multicoil_sense",
+        default="multicoil_other",
         help="Which challenge",
     )
     parser.add_argument("--crop_size", nargs="+", default=None, help="Set crop size.")
@@ -241,13 +249,11 @@ if __name__ == "__main__":
         "--acquisition",
         choices=["CORPD_FBK", "CORPDFS_FBK", "AXT1", "AXT1PRE", "AXT1POST", "AXT2", "AXFLAIR"],
         default=None,
-        help="If set, only volumes of the specified acquisition type are used "
-        "for evaluation. By default, all volumes are included.",
+        help="If set, only volumes of the specified acquisition type are used for "
+        "evaluation. By default, all volumes are included.",
     )
     parser.add_argument("--mask_background", action="store_true", help="Toggle to mask background")
-    parser.add_argument(
-        "--type", choices=["mean_std", "all_slices"], default="mean_std", help="Toggle to mask background"
-    )
+    parser.add_argument("--type", choices=["mean_std", "all_slices"], default="mean_std", help="Output type.")
     parser.add_argument("--slice_start", type=int, help="Select to skip first slices")
     parser.add_argument("--slice_end", type=int, help="Select to skip last slices")
 

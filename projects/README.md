@@ -1,6 +1,11 @@
 For training/running a model, please use the following command:
 
-`python -m examples.recon.launch --config-name config.yaml`
+`python -m mridc.launch --config-path path_to_config --config-name config.yaml`
+
+For example, to train a CIRIM:
+
+`python -m mridc.launch --config-path /home/dkarkalousos/PycharmProjects/mridc/projects/reconstruction/model_zoo/conf --config-name base_cirim_train.yaml`
+
 
 For running Parallel-Imaging Compressed Sensing (PICS) you need to install the
 [BART](https://mrirecon.github.io/bart/). Important! To be able to run BART with a GPU, make sure to compile it with

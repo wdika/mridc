@@ -3,21 +3,11 @@ checkpoint: None
 mode: train
 
 model:
-  model_name: XPDNET
-  num_primal: 5
-  num_dual: 1
-  num_iter: 20
-  use_primal_only: true
-  kspace_model_architecture: CONV
-  dual_conv_hidden_channels: 16
-  dual_conv_num_dubs: 2
-  dual_conv_batchnorm: false
-  image_model_architecture: MWCNN
-  mwcnn_hidden_channels: 16
-  mwcnn_num_scales: 2
-  mwcnn_bias: true
-  mwcnn_batchnorm: false
-  normalize_image: false
+  model_name: UNET
+  channels: 64
+  pooling_layers: 2
+  padding_size: 11
+  normalize: true
   output_type: SENSE
   use_sens_net: false
   sens_chans: 8
@@ -25,33 +15,22 @@ model:
   sens_mask_type: 2D
   train_loss_fn: l1
   eval_loss_fn: l1
-  fft_type: orthogonal_norm_only
-  lr: 0.001
-  lr_step_size: 40
-  lr_gamma: 0.1
-  weight_decay: 0.0
-  num_log_images: 16
+  fft_type: orthogonal
 
   train_ds:
     data_path: ???
     dataset_type: FastMRI
     challenge: multicoil
-    fft_type: orthogonal_norm_only
+    fft_type: orthogonal
     mask_args:
       type: gaussian2d
       accelerations:
-        - 4
-        - 6
-        - 8
         - 10
       center_fractions:
         - 0.7
-        - 0.7
-        - 0.7
-        - 0.7
       scale: 0.02
-      shift_mask: true
-      use_seed: true
+      shift_mask: false
+      use_seed: false
     normalize_inputs: true
     crop_size: None
     crop_before_masking: true
@@ -67,21 +46,15 @@ model:
     data_path: ???
     dataset_type: FastMRI
     challenge: multicoil
-    fft_type: orthogonal_norm_only
+    fft_type: orthogonal
     mask_args:
       type: gaussian2d
       accelerations:
-        - 4
-        - 6
-        - 8
         - 10
       center_fractions:
         - 0.7
-        - 0.7
-        - 0.7
-        - 0.7
       scale: 0.02
-      shift_mask: true
+      shift_mask: false
       use_seed: false
     normalize_inputs: true
     crop_size: None
@@ -121,5 +94,5 @@ trainer:
 
 exp_manager:
   name: ???
-  files_to_copy: [ ]
   create_tensorboard_logger: true
+  files_to_copy: [ ]
