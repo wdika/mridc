@@ -17,7 +17,7 @@ class TestHydraRunner:
     def test_no_config(self):
         """Test app without config - fields missing causes error."""
         # Create system call.
-        call = "python hydra/tmp_launch.py"
+        call = "python tests/hydra/tmp_launch.py"
 
         with pytest.raises(subprocess.CalledProcessError):
             # Run the call as subprocess.
@@ -27,7 +27,7 @@ class TestHydraRunner:
     def test_config1(self):
         """Test injection of valid config."""
         # Create system call.
-        call = "python hydra/tmp_launch.py --config-name config.yaml"
+        call = "python tests/hydra/tmp_launch.py --config-name config.yaml"
 
         # Run the call as subprocess.
         subprocess.check_call(call, shell=True, stdout=sys.stdout, stderr=sys.stdout)
@@ -43,7 +43,7 @@ class TestHydraRunner:
     def test_config1_invalid(self):
         """Test injection of invalid config."""
         # Create system call.
-        call = "python hydra/tmp_launch.py --config-name config_invalid.yaml"
+        call = "python tests/hydra/tmp_launch.py --config-name config_invalid.yaml"
 
         with pytest.raises(subprocess.CalledProcessError):
             # Run the call as subprocess.

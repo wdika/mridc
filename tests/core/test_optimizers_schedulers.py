@@ -79,6 +79,8 @@ class ExampleModel(pl.LightningModule, ABC):
         self.drop_last = drop_last
         self.max_steps = max_steps
 
+        self.my_opt = None
+
     def train_dataloader(self):
         """Return a training data loader."""
         dataset = RandomDataset(self.dataset_len)

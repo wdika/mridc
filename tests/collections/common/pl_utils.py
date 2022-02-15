@@ -148,6 +148,11 @@ class MetricTester:
 
     atol = 1e-8
 
+    def __init__(self):
+        """Initialize the tester"""
+        self.poolSize = 4
+        self.pool = None
+
     def setup_class(self):
         """
         Setup the metric class.

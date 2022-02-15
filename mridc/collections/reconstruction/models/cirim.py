@@ -14,7 +14,7 @@ from torch.nn import L1Loss
 
 from mridc.collections.common.losses.ssim import SSIMLoss
 from mridc.collections.common.parts.fft import ifft2c, fft2c
-from mridc.collections.common.parts.utils import complex_mul
+from mridc.collections.common.parts.utils import complex_conj, complex_mul
 from mridc.collections.common.parts.rnn_utils import rnn_weights_init
 from mridc.collections.common.parts.utils import coil_combination
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel

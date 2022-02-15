@@ -11,9 +11,9 @@ For running Parallel-Imaging Compressed Sensing (PICS) you need to install the
 [BART](https://mrirecon.github.io/bart/). Important! To be able to run BART with a GPU, make sure to compile it with
 NVCC.
 
-After installation, set the TOOLBOX_PATH and PYTHONPATH environment variables for BART:
+After installation, set the TOOLBOX_PATH and PYTHONPATH environment variables for BART on the projects/reconstruction/export_bart_path.sh .
+Finally run the script:
 
 ```
-export TOOLBOX_PATH=/path/to/bart
-export PYTHONPATH=${TOOLBOX_PATH}/python/
+bash ./projects/reconstruction/export_bart_path.sh
 ```

@@ -174,11 +174,14 @@ def test_cirim(shape, cfg, center_fractions, accelerations):
     cirim = CIRIM(cfg)
 
     with torch.no_grad():
-        y = next(cirim.forward(output, output, mask, eta=x.sum(1), target=torch.abs(torch.view_as_complex(output))))[
-            -1
-        ][
-            -1
-        ]  # type: ignore
+        y = cirim.forward(output, output, mask, eta=x.sum(1), target=torch.abs(torch.view_as_complex(output)))
+
+        try:
+            y = next(y)
+        except StopIteration:
+            pass
+
+        y = y[-1][-1]
 
     if y.shape[1:] != x.shape[2:4]:
         raise AssertionError
