@@ -83,7 +83,7 @@ class ConvGRUCellBase(nn.Module):
             return nn.Conv2d
         if n_dim == 3:
             return nn.Conv3d
-        NotImplementedError("No convolution of this dimensionality implemented")
+        raise NotImplementedError("No convolution of this dimensionality implemented")
 
     def extra_repr(self):
         """
@@ -463,7 +463,7 @@ class IndRNNCellBase(nn.Module):
             return nn.Conv2d
         if n_dim == 3:
             return nn.Conv3d
-        NotImplementedError("No convolution of this dimensionality implemented")
+        raise NotImplementedError("No convolution of this dimensionality implemented")
 
     def extra_repr(self):
         """

@@ -91,7 +91,7 @@ class RIMBlock(nn.Module):
                 elif rnn_type.upper() == "INDRNN":
                     rnn_type = IndRNNCell
                 else:
-                    ValueError("Please specify a proper recurrent layer type.")
+                    raise ValueError("Please specify a proper recurrent layer type.")
 
                 rnn_layer = rnn_type(
                     self.input_size,

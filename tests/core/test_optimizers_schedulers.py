@@ -814,12 +814,8 @@ class TestOptimizersSchedulers:
             raise AssertionError
 
         for i in range(self.MAX_STEPS):
-            if i <= 5:
-                if policy.get_last_lr()[0] > self.INITIAL_LR:
-                    raise AssertionError
-            else:
-                if policy.get_last_lr()[0] > self.INITIAL_LR:
-                    raise AssertionError
+            if policy.get_last_lr()[0] > self.INITIAL_LR:
+                raise AssertionError
 
             opt.step()
             policy.step()

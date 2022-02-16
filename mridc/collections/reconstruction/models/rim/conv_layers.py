@@ -61,7 +61,7 @@ class ConvNonlinear(nn.Module):
         elif nonlinear is None:
             self.nonlinear = lambda x: x
         else:
-            ValueError("Please specify a proper nonlinearity")
+            raise ValueError("Please specify a proper nonlinearity")
 
         self.padding = [
             torch.nn.ReplicationPad1d(torch.div(dilation * (kernel_size - 1), 2, rounding_mode="trunc").item()),
