@@ -2,13 +2,12 @@
 __author__ = "Dimitrios Karkalousos"
 
 import torch
-from torch import nn
 
 from mridc.collections.common.parts.fft import fft2c, ifft2c
 from mridc.collections.common.parts.utils import complex_conj, complex_mul
 
 
-class VarNetBlock(nn.Module):
+class VarNetBlock(torch.nn.Module):
     """
     Model block for end-to-end variational network.
 
@@ -16,7 +15,7 @@ class VarNetBlock(nn.Module):
     A series of these blocks can be stacked to form the full variational network.
     """
 
-    def __init__(self, model: nn.Module, fft_type: str = "orthogonal", no_dc: bool = False):
+    def __init__(self, model: torch.nn.Module, fft_type: str = "orthogonal", no_dc: bool = False):
         """
         Initialize the model block.
 
@@ -30,7 +29,7 @@ class VarNetBlock(nn.Module):
         self.model = model
         self.fft_type = fft_type
         self.no_dc = no_dc
-        self.dc_weight = nn.Parameter(torch.ones(1))
+        self.dc_weight = torch.nn.Parameter(torch.ones(1))
 
     def sens_expand(self, x: torch.Tensor, sens_maps: torch.Tensor) -> torch.Tensor:
         """

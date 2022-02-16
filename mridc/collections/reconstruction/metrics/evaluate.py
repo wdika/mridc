@@ -3,9 +3,8 @@ __author__ = "Dimitrios Karkalousos"
 
 # Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
 
-import argparse
 import pathlib
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from os.path import exists
 
 import h5py
@@ -230,7 +229,7 @@ def evaluate(
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument("target_path", type=pathlib.Path, help="Path to the ground truth data")
     parser.add_argument("predictions_path", type=pathlib.Path, help="Path to reconstructions")
     parser.add_argument("output_path", type=str, help="Path to save the metrics")

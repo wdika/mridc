@@ -6,11 +6,9 @@ import math
 from typing import List, Tuple
 
 import torch
-from torch import nn
-from torch.nn import functional as F
 
 
-class NormUnet(nn.Module):
+class NormUnet(torch.nn.Module):
     """
     Normalized U-Net model.
 
@@ -145,7 +143,7 @@ class NormUnet(nn.Module):
         # the documentation lies - this actually takes a list
         # https://github.com/pytorch/pytorch/blob/master/torch/nn/functional.py#L3457
         # https://github.com/pytorch/pytorch/pull/16949
-        x = F.pad(x, w_pad + h_pad)
+        x = torch.nn.functional.pad(x, w_pad + h_pad)
 
         return x, (h_pad, w_pad, h_mult, w_mult)
 
@@ -200,7 +198,7 @@ class NormUnet(nn.Module):
         return x
 
 
-class Unet(nn.Module):
+class Unet(torch.nn.Module):
     """
     PyTorch implementation of a U-Net model.
 
@@ -229,15 +227,15 @@ class Unet(nn.Module):
         self.num_pool_layers = num_pool_layers
         self.drop_prob = drop_prob
 
-        self.down_sample_layers = nn.ModuleList([ConvBlock(in_chans, chans, drop_prob)])
+        self.down_sample_layers = torch.nn.ModuleList([ConvBlock(in_chans, chans, drop_prob)])
         ch = chans
         for _ in range(num_pool_layers - 1):
             self.down_sample_layers.append(ConvBlock(ch, ch * 2, drop_prob))
             ch *= 2
         self.conv = ConvBlock(ch, ch * 2, drop_prob)
 
-        self.up_conv = nn.ModuleList()
-        self.up_transpose_conv = nn.ModuleList()
+        self.up_conv = torch.nn.ModuleList()
+        self.up_transpose_conv = torch.nn.ModuleList()
         for _ in range(num_pool_layers - 1):
             self.up_transpose_conv.append(TransposeConvBlock(ch * 2, ch))
             self.up_conv.append(ConvBlock(ch * 2, ch, drop_prob))
@@ -245,7 +243,9 @@ class Unet(nn.Module):
 
         self.up_transpose_conv.append(TransposeConvBlock(ch * 2, ch))
         self.up_conv.append(
-            nn.Sequential(ConvBlock(ch * 2, ch, drop_prob), nn.Conv2d(ch, self.out_chans, kernel_size=1, stride=1))
+            torch.nn.Sequential(
+                ConvBlock(ch * 2, ch, drop_prob), torch.nn.Conv2d(ch, self.out_chans, kernel_size=1, stride=1)
+            )
         )
 
     def forward(self, image: torch.Tensor) -> torch.Tensor:
@@ -263,7 +263,7 @@ class Unet(nn.Module):
         for layer in self.down_sample_layers:
             output = layer(output)
             stack.append(output)
-            output = F.avg_pool2d(output, kernel_size=2, stride=2, padding=0)
+            output = torch.nn.functional.avg_pool2d(output, kernel_size=2, stride=2, padding=0)
 
         output = self.conv(output)
 
@@ -279,7 +279,7 @@ class Unet(nn.Module):
             if output.shape[-2] != downsample_layer.shape[-2]:
                 padding[3] = 1  # padding bottom
             if torch.sum(torch.tensor(padding)) != 0:
-                output = F.pad(output, padding, "reflect")
+                output = torch.nn.functional.pad(output, padding, "reflect")
 
             output = torch.cat([output, downsample_layer], dim=1)
             output = conv(output)
@@ -287,7 +287,7 @@ class Unet(nn.Module):
         return output
 
 
-class ConvBlock(nn.Module):
+class ConvBlock(torch.nn.Module):
     """
     A Convolutional Block that consists of two convolution layers each followed by
     instance normalization, LeakyReLU activation and dropout.
@@ -306,15 +306,15 @@ class ConvBlock(nn.Module):
         self.out_chans = out_chans
         self.drop_prob = drop_prob
 
-        self.layers = nn.Sequential(
-            nn.Conv2d(in_chans, out_chans, kernel_size=3, padding=1, bias=False),
-            nn.InstanceNorm2d(out_chans),
-            nn.LeakyReLU(negative_slope=0.2, inplace=True),
-            nn.Dropout2d(drop_prob),
-            nn.Conv2d(out_chans, out_chans, kernel_size=3, padding=1, bias=False),
-            nn.InstanceNorm2d(out_chans),
-            nn.LeakyReLU(negative_slope=0.2, inplace=True),
-            nn.Dropout2d(drop_prob),
+        self.layers = torch.nn.Sequential(
+            torch.nn.Conv2d(in_chans, out_chans, kernel_size=3, padding=1, bias=False),
+            torch.nn.InstanceNorm2d(out_chans),
+            torch.nn.LeakyReLU(negative_slope=0.2, inplace=True),
+            torch.nn.Dropout2d(drop_prob),
+            torch.nn.Conv2d(out_chans, out_chans, kernel_size=3, padding=1, bias=False),
+            torch.nn.InstanceNorm2d(out_chans),
+            torch.nn.LeakyReLU(negative_slope=0.2, inplace=True),
+            torch.nn.Dropout2d(drop_prob),
         )
 
     def forward(self, image: torch.Tensor) -> torch.Tensor:
@@ -328,7 +328,7 @@ class ConvBlock(nn.Module):
         return self.layers(image)
 
 
-class TransposeConvBlock(nn.Module):
+class TransposeConvBlock(torch.nn.Module):
     """
     A Transpose Convolutional Block that consists of one convolution transpose
     layers followed by instance normalization and LeakyReLU activation.
@@ -345,10 +345,10 @@ class TransposeConvBlock(nn.Module):
         self.in_chans = in_chans
         self.out_chans = out_chans
 
-        self.layers = nn.Sequential(
-            nn.ConvTranspose2d(in_chans, out_chans, kernel_size=2, stride=2, bias=False),
-            nn.InstanceNorm2d(out_chans),
-            nn.LeakyReLU(negative_slope=0.2, inplace=True),
+        self.layers = torch.nn.Sequential(
+            torch.nn.ConvTranspose2d(in_chans, out_chans, kernel_size=2, stride=2, bias=False),
+            torch.nn.InstanceNorm2d(out_chans),
+            torch.nn.LeakyReLU(negative_slope=0.2, inplace=True),
         )
 
     def forward(self, image: torch.Tensor) -> torch.Tensor:

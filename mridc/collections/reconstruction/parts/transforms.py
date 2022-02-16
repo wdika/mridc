@@ -7,8 +7,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
-import torch.nn.functional as F
-from torch import Tensor
 
 from mridc.collections.common.parts.fft import fft2c, ifft2c
 from mridc.collections.common.parts.utils import complex_conj, complex_mul, to_tensor
@@ -74,16 +72,16 @@ class MRIDataTransforms:
         fname: str,
         slice_num: int,
     ) -> Tuple[
-        Union[Union[List[Union[Union[float, Tensor], Any]], Tensor, float], Any],
-        Union[Optional[Tensor], Any],
+        Union[Union[List[Union[Union[float, torch.Tensor], Any]], torch.Tensor, float], Any],
+        Union[Optional[torch.Tensor], Any],
         Union[list, Any],
-        Union[Optional[Tensor], Any],
-        Union[Tensor, Any],
+        Union[Optional[torch.Tensor], Any],
+        Union[torch.Tensor, Any],
         str,
         int,
-        Union[Union[list, Tensor], Any],
+        Union[Union[list, torch.Tensor], Any],
         Any,
-        Tensor,
+        torch.Tensor,
     ]:
         """
         Apply the data transform.
@@ -115,14 +113,14 @@ class MRIDataTransforms:
             padding_right = padding_left
 
             kspace = torch.view_as_complex(kspace)
-            kspace = F.pad(
+            kspace = torch.nn.functional.pad(
                 kspace, pad=(padding_left, padding_right, padding_top, padding_bottom), mode="constant", value=0
             )
             kspace = torch.view_as_real(kspace)
 
             sensitivity_map = fft2c(sensitivity_map, self.fft_type)
             sensitivity_map = torch.view_as_complex(sensitivity_map)
-            sensitivity_map = F.pad(
+            sensitivity_map = torch.nn.functional.pad(
                 sensitivity_map,
                 pad=(padding_left, padding_right, padding_top, padding_bottom),
                 mode="constant",

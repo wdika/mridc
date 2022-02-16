@@ -8,12 +8,11 @@ from typing import Any, List
 
 import numpy as np
 import torch.utils.data as pt_data
-from torch.utils.data import IterableDataset
 
 __all__ = ["ConcatDataset"]
 
 
-class ConcatDataset(IterableDataset, ABC):
+class ConcatDataset(pt_data.IterableDataset, ABC):
     """
     A dataset that accepts as argument multiple datasets and then samples from them based on the specified
     sampling technique.
@@ -61,13 +60,13 @@ class ConcatDataset(IterableDataset, ABC):
             raise ValueError(f"Currently we only support sampling techniques in {supported_sampling_techniques}.")
         self.length = 0
 
-        if isinstance(datasets[0], IterableDataset):
+        if isinstance(datasets[0], pt_data.IterableDataset):
             self.kind = "iterable"
         else:
             self.kind = "map"
 
         for _, dataset in enumerate(datasets):
-            isiterable = isinstance(dataset, IterableDataset)
+            isiterable = isinstance(dataset, pt_data.IterableDataset)
             if (isiterable and not self.kind == "iterable") or (not isiterable and self.kind == "iterable"):
                 raise ValueError("All datasets in ConcatDataset must be of the same kind (Iterable or Map).")
 
@@ -78,7 +77,7 @@ class ConcatDataset(IterableDataset, ABC):
 
     def get_iterable(self, dataset):
         """Returns an iterable dataset."""
-        if isinstance(dataset, IterableDataset):
+        if isinstance(dataset, pt_data.IterableDataset):
             return dataset.__iter__()
         indices = np.arange(len(dataset))
         if self.shuffle:

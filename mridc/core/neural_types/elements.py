@@ -3,8 +3,7 @@ __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/neural_types/elements.py
 
-import abc
-from abc import ABC
+from abc import ABC, ABCMeta
 from typing import Dict, Optional, Tuple
 
 __all__ = [
@@ -113,7 +112,7 @@ class VoidType(ElementType):
     For example, when you need template-like functionality.
     """
 
-    def compare(cls, second: abc.ABCMeta) -> NeuralTypeComparisonResult:
+    def compare(cls, second: ABCMeta) -> NeuralTypeComparisonResult:
         """Void type is compatible with everything."""
         return NeuralTypeComparisonResult.SAME
 

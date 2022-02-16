@@ -4,7 +4,6 @@ __author__ = "Dimitrios Karkalousos"
 from typing import Any, Tuple, Union
 
 import torch
-from torch import nn
 
 from mridc.collections.common.parts.fft import fft2c, ifft2c
 from mridc.collections.common.parts.utils import complex_conj, complex_mul
@@ -13,7 +12,7 @@ from mridc.collections.reconstruction.models.rim.rnn_cells import ConvGRUCell, C
 from mridc.collections.reconstruction.models.rim.utils import log_likelihood_gradient
 
 
-class RIMBlock(nn.Module):
+class RIMBlock(torch.nn.Module):
     """RIMBlock is a block of Recurrent Inference Machines (RIMs)."""
 
     def __init__(
@@ -55,7 +54,7 @@ class RIMBlock(nn.Module):
         self.input_size = depth * 2
         self.time_steps = time_steps
 
-        self.layers = nn.ModuleList()
+        self.layers = torch.nn.ModuleList()
         for (
             (conv_features, conv_k_size, conv_dilation, l_conv_bias, nonlinear),
             (rnn_features, rnn_k_size, rnn_dilation, rnn_bias, rnn_type),
@@ -114,7 +113,7 @@ class RIMBlock(nn.Module):
         self.no_dc = no_dc
 
         if not self.no_dc:
-            self.dc_weight = nn.Parameter(torch.ones(1))
+            self.dc_weight = torch.nn.Parameter(torch.ones(1))
             self.zero = torch.zeros(1, 1, 1, 1, 1)
 
     def forward(
