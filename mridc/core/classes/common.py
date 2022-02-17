@@ -685,7 +685,7 @@ class Model(Typing, Serialization, FileIO, ABC):  # type: ignore
         cache_dir = Path.joinpath(mridc.utils.model_utils.resolve_cache_dir(), f"{filename[:-5]}")  # type: ignore
         # If either description and location in the cloud changes, this will force re-download
         # of the model.
-        cache_subfolder = hashlib.md5((location_in_the_cloud + description).encode("utf-8")).hexdigest()
+        cache_subfolder = hashlib.sha512((location_in_the_cloud + description).encode("utf-8")).hexdigest()
         # if file exists on cache_folder/subfolder, it will be re-used, unless refresh_cache is True
         mridc_model_file_in_cache = maybe_download_from_cloud(
             url=url, filename=filename, cache_dir=cache_dir, subfolder=cache_subfolder, refresh_cache=refresh_cache

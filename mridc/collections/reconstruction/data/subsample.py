@@ -697,4 +697,4 @@ def create_mask_for_mask_type(
         return Gaussian2DMaskFunc(center_fractions, accelerations)
     if mask_type_str == "poisson2d":
         return Poisson2DMaskFunc(center_fractions, accelerations)
-    raise Exception(f"{mask_type_str} not supported")
+    raise NotImplementedError(f"{mask_type_str} not supported")
