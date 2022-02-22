@@ -62,7 +62,7 @@ def apply_mask(
 
 
 def mask_center(
-    x: torch.Tensor, mask_from: Union[int, None], mask_to: Union[int, None], mask_type: str = "2D"
+    x: torch.Tensor, mask_from: Optional[int], mask_to: Optional[int], mask_type: str = "2D"
 ) -> torch.Tensor:
     """
     Apply a center crop to the input real image or batch of real images.
