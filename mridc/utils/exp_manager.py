@@ -445,9 +445,7 @@ def check_resume(
     trainer.checkpoint_connector.resume_from_checkpoint_fit_path = str(checkpoint)
 
     if is_global_rank_zero():
-        if files_to_move := [
-            child for child in Path(log_dir).iterdir() if child.is_file()
-        ]:
+        if files_to_move := [child for child in Path(log_dir).iterdir() if child.is_file()]:
             # Move old files to a new folder
             other_run_dirs = Path(log_dir).glob("run_*")
             run_count = sum(bool(fold.is_dir()) for fold in other_run_dirs)
@@ -908,7 +906,7 @@ def configure_checkpointing(trainer: Trainer, log_dir: Path, name: str, resume: 
         params.filename = f"{name}--{{{params.monitor}:.4f}}-{{epoch}}"
     if params.prefix is None:
         params.prefix = name
-    MRIDCModelCheckpoint.CHECKPOINT_NAME_LAST = f'{params.filename}-last'
+    MRIDCModelCheckpoint.CHECKPOINT_NAME_LAST = f"{params.filename}-last"
 
     logging.debug(params.dirpath)
     logging.debug(params.filename)

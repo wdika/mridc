@@ -300,7 +300,7 @@ class SaveRestoreConnector:
                 shutil.copy2(artiitem.path, os.path.join(mridc_file_folder, artifact_uniq_name))
 
                 # Update artifacts registry
-                artiitem.hashed_path = f'mridc:{artifact_uniq_name}'
+                artiitem.hashed_path = f"mridc:{artifact_uniq_name}"
                 model.artifacts[conf_path] = artiitem
 
             elif artiitem.path_type == mridc.utils.model_utils.ArtifactPathType.TAR_PATH:
@@ -335,7 +335,7 @@ class SaveRestoreConnector:
 
                         # Update artifacts registry
                         new_artiitem = mridc.utils.model_utils.ArtifactItem()
-                        new_artiitem.path = f'mridc:{artifact_uniq_name}'
+                        new_artiitem.path = f"mridc:{artifact_uniq_name}"
                         new_artiitem.path_type = mridc.utils.model_utils.ArtifactPathType.TAR_PATH
                         model.artifacts[conf_path] = new_artiitem
             finally:
@@ -364,9 +364,7 @@ class SaveRestoreConnector:
         process into the checkpoint file name.
         """
         app_state = AppState()
-        return os.path.join(
-            dirname, f"mp_rank_{app_state.model_parallel_rank:02}", basename
-        )
+        return os.path.join(dirname, f"mp_rank_{app_state.model_parallel_rank:02}", basename)
 
     @staticmethod
     def _make_mridc_file_from_folder(filename, source_dir):

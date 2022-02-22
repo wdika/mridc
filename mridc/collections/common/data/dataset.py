@@ -67,11 +67,7 @@ class ConcatDataset(pt_data.IterableDataset, ABC):
 
         for dataset in datasets:
             isiterable = isinstance(dataset, pt_data.IterableDataset)
-            if (
-                isiterable
-                and self.kind != "iterable"
-                or (not isiterable and self.kind == "iterable")
-            ):
+            if isiterable and self.kind != "iterable" or (not isiterable and self.kind == "iterable"):
                 raise ValueError("All datasets in ConcatDataset must be of the same kind (Iterable or Map).")
 
             if self.kind == "map":

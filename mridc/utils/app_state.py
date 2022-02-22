@@ -245,11 +245,7 @@ class AppState(metaclass=Singleton):
     @property
     def model_restore_path(self):
         """Returns the model_restore_path set by exp_manager."""
-        return (
-            self._all_model_restore_paths[-1]
-            if len(self._all_model_restore_paths) > 0
-            else None
-        )
+        return self._all_model_restore_paths[-1] if len(self._all_model_restore_paths) > 0 else None
 
     @model_restore_path.setter
     def model_restore_path(self, path):

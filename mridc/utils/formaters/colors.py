@@ -31,7 +31,7 @@ def set_title(title):
     Returns:
         str: String of characters.
     """
-    return f'{OSC}2;{title}{BEL}'
+    return f"{OSC}2;{title}{BEL}"
 
 
 def clear_screen(mode=2):

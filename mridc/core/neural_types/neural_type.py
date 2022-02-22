@@ -79,10 +79,7 @@ class NeuralType:
         if dimensions_pass == 0:
             return element_comparison_result
         # TRANSPOSE_SAME DIMS
-        if (
-            dimensions_pass == 1
-            and element_comparison_result == NeuralTypeComparisonResult.SAME
-        ):
+        if dimensions_pass == 1 and element_comparison_result == NeuralTypeComparisonResult.SAME:
             return NeuralTypeComparisonResult.TRANSPOSE_SAME
         elif (
             dimensions_pass == 1

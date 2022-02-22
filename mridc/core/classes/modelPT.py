@@ -389,11 +389,7 @@ class ModelPT(LightningModule, Model):
                 will be built and supplied to instantiate the optimizer.
         """
         # If config was not explicitly passed to us
-        if (
-            optim_config is None
-            and self._cfg is not None
-            and hasattr(self._cfg, "optim")
-        ):
+        if optim_config is None and self._cfg is not None and hasattr(self._cfg, "optim"):
             optim_config = self._cfg.optim
 
         if optim_config is None:
@@ -502,7 +498,7 @@ class ModelPT(LightningModule, Model):
             self._optimizer = optimizer
 
         else:
-                # Attempt class path resolution
+            # Attempt class path resolution
             try:
                 optimizer_cls = OmegaConf.create({"_target_": optimizer_cls})
                 optimizer_config = {"lr": lr} if lr is not None else {}
@@ -518,9 +514,7 @@ class ModelPT(LightningModule, Model):
 
             except Exception as e:
                 logging.error(
-                    "Could not instantiate class path - {} with kwargs {}".format(
-                        optimizer_cls, str(optimizer_config)
-                    )
+                    "Could not instantiate class path - {} with kwargs {}".format(optimizer_cls, str(optimizer_config))
                 )
                 raise e
 
@@ -1021,9 +1015,7 @@ class ModelPT(LightningModule, Model):
             raise FileExistsError(f"Can't find {restore_path}")
 
         cls.update_save_restore_connector(save_restore_connector)
-        return cls._save_restore_connector.extract_state_dict_from(
-            restore_path, save_dir, split_by_module
-        )
+        return cls._save_restore_connector.extract_state_dict_from(restore_path, save_dir, split_by_module)
 
     def prepare_test(self, trainer: "Trainer") -> bool:
         """

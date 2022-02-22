@@ -164,7 +164,7 @@ def parse_dataset_as_name(name: str) -> str:
         name = name.replace("dataset", "")
 
     if name[-1] != "_":
-        name = f'{name}_'
+        name = f"{name}_"
 
     return name
 
@@ -551,9 +551,7 @@ def resolve_cache_dir() -> Path:
     """
     override_dir = os.environ.get(MRIDC_ENV_CACHE_DIR, "")
     return (
-        Path.joinpath(
-            Path.home(), f".cache/torch/MRIDC/MRIDC_{mridc.__version__}"
-        )
+        Path.joinpath(Path.home(), f".cache/torch/MRIDC/MRIDC_{mridc.__version__}")
         if override_dir == ""
         else Path(override_dir).resolve()
     )

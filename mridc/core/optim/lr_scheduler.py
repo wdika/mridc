@@ -521,10 +521,7 @@ class NoamAnnealing(_LRScheduler):
                     f"{self} received an initial learning rate that was lower than the minimum learning rate."
                 )
 
-        return [
-            self._noam_annealing(initial_lr=initial_lr, step=step)
-            for initial_lr in self.base_lrs
-        ]
+        return [self._noam_annealing(initial_lr=initial_lr, step=step) for initial_lr in self.base_lrs]
 
     def _noam_annealing(self, initial_lr, step):
         """Noam learning rate annealing."""

@@ -71,17 +71,12 @@ class TypecheckMetadata:
     is_singular_container_type: bool = field(init=False)
 
     def __post_init__(self):
-        has_container_types = any(
-            isinstance(type_val, (list, tuple))
-            for type_val in self.original_types.values()
-        )
+        has_container_types = any(isinstance(type_val, (list, tuple)) for type_val in self.original_types.values())
 
         self.has_container_types = has_container_types
 
         # If only one NeuralType is declared, and it declares a container nest, set to True
-        self.is_singular_container_type = (
-            self.has_container_types and len(self.original_types) == 1
-        )
+        self.is_singular_container_type = self.has_container_types and len(self.original_types) == 1
 
         # If container nests are declared, flatten the nest into `base_types`
         # Also compute the nest depth for each of the NeuralTypes
@@ -174,9 +169,7 @@ class Typing(ABC):
                 )
 
                 # Perform neural type check
-            if hasattr(value, "neural_type") and metadata.base_types[key].compare(
-                value.neural_type
-            ) not in (
+            if hasattr(value, "neural_type") and metadata.base_types[key].compare(value.neural_type) not in (
                 NeuralTypeComparisonResult.SAME,
                 NeuralTypeComparisonResult.GREATER,
             ):
@@ -190,9 +183,7 @@ class Typing(ABC):
                     error_msg.insert(i + 2, f"  input param_{i} : {dict_tuple[0]}: {dict_tuple[1]}")
                 error_msg.extend(
                     f"  input param_{i} : {dict_tuple[0]}: {dict_tuple[1]}"
-                    for i, dict_tuple in enumerate(
-                        value.neural_type.elements_type.type_parameters.items()
-                    )
+                    for i, dict_tuple in enumerate(value.neural_type.elements_type.type_parameters.items())
                 )
 
                 raise TypeError("\n".join(error_msg))
@@ -205,7 +196,7 @@ class Typing(ABC):
 
                 if type_shape is not None and len(value_shape) != len(tuple(type_shape)):
                     raise TypeError(
-                        f'Input shape mismatch occurred for {name} in module {self.__class__.__name__} : \nInput shape expected = {metadata.base_types[name].axes} | \nInput shape found : {value_shape}'
+                        f"Input shape mismatch occurred for {name} in module {self.__class__.__name__} : \nInput shape expected = {metadata.base_types[name].axes} | \nInput shape found : {value_shape}"
                     )
 
             elif isinstance(value, (list, tuple)):
@@ -342,9 +333,7 @@ class Typing(ABC):
                 f"Expected nested depth : {metadata.container_depth[name]}"
             )
 
-        if hasattr(obj, "neural_type") and type_val.compare(
-            obj.neural_type
-        ) not in (
+        if hasattr(obj, "neural_type") and type_val.compare(obj.neural_type) not in (
             NeuralTypeComparisonResult.SAME,
             NeuralTypeComparisonResult.GREATER,
         ):

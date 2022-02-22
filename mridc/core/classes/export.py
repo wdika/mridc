@@ -123,7 +123,7 @@ class Exportable(ABC):
         my_args = locals()
         del my_args["self"]
 
-        qual_name = f'{self.__module__}.{self.__class__.__qualname__}'
+        qual_name = f"{self.__module__}.{self.__class__.__qualname__}"
         format = self.get_format(output)
         output_descr = f"{qual_name} exported to {format}"
 

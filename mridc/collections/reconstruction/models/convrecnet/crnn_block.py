@@ -21,10 +21,7 @@ class DataConsistencyLayer(torch.nn.Module):
     def forward(self, pred_kspace, ref_kspace, mask):
         """Forward pass of the data consistency layer."""
         zero = torch.zeros(1, 1, 1, 1, 1).to(pred_kspace)
-        return (
-            torch.where(mask.bool(), pred_kspace - ref_kspace, zero)
-            * self.dc_weight
-        )
+        return torch.where(mask.bool(), pred_kspace - ref_kspace, zero) * self.dc_weight
 
 
 class RecurrentConvolutionalNetBlock(torch.nn.Module):
