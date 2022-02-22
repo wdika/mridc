@@ -28,15 +28,23 @@ Through cascades DC can be explicitly enforced by a designed term [1, 4].
 
 You can install mridc with pip:
 
+### Pip
 ```bash
 pip install mridc
 ```
 
+### From source
+```bash
+git clone https://github.com/wdika/mridc
+cd mridc
+./reinstall.sh
+```
+
 ## Usage
 
-Check on [scripts](scripts) how to train models and run a method for reconstruction.
+Check on [scripts](examples) how to train models and run a method for reconstruction.
 
-Check on [tools](tools) for preprocessing and evaluation tools.
+Check on [tools](mridc/collections/reconstruction/tools) for preprocessing and evaluation tools.
 
 Recommended public datasets to use with this repo:
 
