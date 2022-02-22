@@ -4,53 +4,27 @@
 # Check if this file is valid by running in bash:
 # curl -X POST --data-binary @.codecov.yml https://codecov.io/validate
 
-codecov:
-  bot: "codecov-io"
-  strict_yaml_branch: "yaml-config"
-  require_ci_to_pass: yes
-  notify:
-    # after_n_builds: 2
-    wait_for_ci: yes
-
+# Coverage configuration
+# ----------------------
 coverage:
-  precision: 0  # 2 = xx.xx%, 0 = xx%
-  round: nearest # how coverage is rounded: down/up/nearest
-  range: 40...100 # custom range of coverage colors from red -> yellow -> green
   status:
-    # https://codecov.readme.io/v1.0/docs/commit-status
-    project:
-      default:
-        target: 95% # specify the target coverage for each commit status
-        threshold: 30% # allow this little decrease on project
-        # https://github.com/codecov/support/wiki/Filtering-Branches
-        # branches: master
-        if_ci_failed: error
-    # https://github.com/codecov/support/wiki/Patch-Status
-    patch:
-      default:
-        threshold: 50% # allow this much decrease on patch
-    changes: false
+    patch: true
 
+  range: 40..100     # First number represents red, and second represents green
+  # (default is 70..100)
+  round: down       # up, down, or nearest
+  precision: 2      # Number of decimal places, between 0 and 5
+
+# Ignoring Paths
+# --------------
+# which folders/files to ignore
 ignore:
   - projects/*
   - setup.py
-  
-# https://docs.codecov.com/docs/github-checks#disabling-github-checks-patch-annotations
-github_checks:
-    annotations: false
 
-parsers:
-  gcov:
-    branch_detection:
-      conditional: true
-      loop: true
-      macro: false
-      method: false
-  javascript:
-    enable_partials: false
-
+# Pull request comments:
+# ----------------------
+# Diff is the Coverage Diff of the pull request.
+# Files are the files impacted by the pull request
 comment:
-  layout: header, diff
-  require_changes: false
-  behavior: default  # update if exists else create new
-  # branches: *
+  layout: diff, files  # accepted in any order: reach, diff, flags, and/or files
