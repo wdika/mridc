@@ -50,10 +50,7 @@ def ssim(gt: np.ndarray, pred: np.ndarray, maxval: np.ndarray = None) -> float:
     maxval = np.max(gt) if maxval is None else maxval
 
     _ssim = sum(
-        structural_similarity(
-            gt[slice_num], pred[slice_num], data_range=maxval
-        )
-        for slice_num in range(gt.shape[0])
+        structural_similarity(gt[slice_num], pred[slice_num], data_range=maxval) for slice_num in range(gt.shape[0])
     )
 
     return _ssim / gt.shape[0]
@@ -122,7 +119,7 @@ class Metrics:
 
         res = " ".join(f"{name} = {means[name]:.4g} +/- {2 * stddevs[name]:.4g}" for name in metric_names) + "\n"
 
-        with open(f'{self.output_path}metrics.txt', "a") as output:
+        with open(f"{self.output_path}metrics.txt", "a") as output:
             output.write(f"{self.method}: {res}")
 
         return res
@@ -140,8 +137,8 @@ def evaluate(
     for tgt_file in tqdm(arguments.target_path.iterdir()):
         if exists(arguments.predictions_path / tgt_file.name):
             with h5py.File(tgt_file, "r") as target, h5py.File(
-                            arguments.predictions_path / tgt_file.name, "r"
-                        ) as recons:
+                arguments.predictions_path / tgt_file.name, "r"
+            ) as recons:
 
                 if arguments.sense_path is not None:
                     sense = to_tensor(h5py.File(arguments.sense_path / tgt_file.name, "r")["sensitivity_map"][()])

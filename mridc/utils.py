@@ -168,4 +168,4 @@ def convert_fnames_to_v2(path: Path):
 
     for fname in path.glob("*.h5"):
         if fname.name[-6:] != "_v2.h5":
-            fname.rename(path / f'{fname.stem}_v2.h5')
+            fname.rename(path / f"{fname.stem}_v2.h5")

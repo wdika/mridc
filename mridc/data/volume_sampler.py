@@ -63,12 +63,7 @@ class VolumeSampler(Sampler):
         self.all_volume_names = sorted({str(example[0]) for example in self.dataset.examples})
         self.all_volumes_split: List[List[str]] = []
         self.all_volumes_split.extend(
-            [
-                self.all_volume_names[i]
-                for i in range(
-                    rank_num, len(self.all_volume_names), self.num_replicas
-                )
-            ]
+            [self.all_volume_names[i] for i in range(rank_num, len(self.all_volume_names), self.num_replicas)]
             for rank_num in range(self.num_replicas)
         )
 
