@@ -39,7 +39,7 @@ def is_typecheck_enabled():
     return _TYPECHECK_ENABLED
 
 
-@dataclass
+@dataclass(frozen=True)
 class TypecheckMetadata:
     """
     Metadata class for input/output neural types.
