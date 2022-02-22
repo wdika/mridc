@@ -31,6 +31,10 @@ coverage:
         threshold: 50% # allow this much decrease on patch
     changes: false
 
+ignore:
+  - projects/*
+  - setup.py
+  
 # https://docs.codecov.com/docs/github-checks#disabling-github-checks-patch-annotations
 github_checks:
     annotations: false
