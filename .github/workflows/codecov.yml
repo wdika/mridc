@@ -24,4 +24,9 @@ jobs:
       run: |
         coverage run -m pytest --ignore=projects
     - name: Upload Coverage to Codecov
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v2
+      with:
+        fail_ci_if_error: true
+        flags: pytests # optional
+        name: codecov-umbrella # optional
+        verbose: true # optional (default = false)
