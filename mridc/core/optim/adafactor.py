@@ -71,7 +71,7 @@ class Adafactor(Optimizer):
             warmup_init=warmup_init,
             min_step=min_step,
         )
-        super(Adafactor, self).__init__(params, defaults)
+        super().__init__(params, defaults)
 
     @property
     def supports_memory_efficient_fp16(self):
