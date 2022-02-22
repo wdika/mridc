@@ -67,7 +67,7 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
                 "zero_filled",
             ]:
                 raise ValueError(
-                    f"Unknown initializer_initialization. Expected `sense`, `'input_image` or `zero_filled`."
+                    "Unknown initializer_initialization. Expected `sense`, `'input_image` or `zero_filled`."
                     f"Got {self.initializer_initialization}."
                 )
             self.initializer = RecurrentInit(
