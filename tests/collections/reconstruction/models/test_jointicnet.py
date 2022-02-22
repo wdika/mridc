@@ -97,7 +97,7 @@ def test_jointicnet(shape, cfg, center_fractions, accelerations):
     jointicnet = JointICNet(cfg)
 
     with torch.no_grad():
-        y = jointicnet.forward(output, mask, target=torch.abs(torch.view_as_complex(output)))
+        y = jointicnet.forward(output, output, mask, output, target=torch.abs(torch.view_as_complex(output)))
 
     if y.shape[1:] != x.shape[2:4]:
         raise AssertionError

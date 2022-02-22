@@ -110,9 +110,7 @@ class ConvGRUCellBase(nn.Module):
             None
         """
         if _input.size(1) != self.input_size:
-            raise RuntimeError(
-                "input has inconsistent input_size: got {}, expected {}".format(_input.size(1), self.input_size)
-            )
+            raise RuntimeError(f"input has inconsistent input_size: got {_input.size(1)}, expected {self.input_size}")
 
     def check_forward_hidden(self, _input, hx, hidden_label=""):
         """
@@ -128,16 +126,12 @@ class ConvGRUCellBase(nn.Module):
         """
         if _input.size(0) != hx.size(0):
             raise RuntimeError(
-                "Input batch size {} doesn't match hidden{} batch size {}".format(
-                    _input.size(0), hidden_label, hx.size(0)
-                )
+                f"Input batch size {_input.size(0)} doesn't match hidden{hidden_label} batch size {hx.size(0)}"
             )
 
         if hx.size(1) != self.hidden_size:
             raise RuntimeError(
-                "hidden{} has inconsistent hidden_size: got {}, expected {}".format(
-                    hidden_label, hx.size(1), self.hidden_size
-                )
+                f"hidden{hidden_label} has inconsistent hidden_size: got {hx.size(1)}, expected {self.hidden_size}"
             )
 
 
@@ -273,7 +267,7 @@ class ConvMGUCellBase(nn.Module):
             return nn.Conv2d
         if n_dim == 3:
             return nn.Conv3d
-        raise ValueError("Convolution of: {} dims is not implemented".format(n_dim))
+        raise ValueError(f"Convolution of: {n_dim} dims is not implemented")
 
     def extra_repr(self):
         """
@@ -300,9 +294,7 @@ class ConvMGUCellBase(nn.Module):
             None
         """
         if _input.size(1) != self.input_size:
-            raise RuntimeError(
-                "input has inconsistent input_size: got {}, expected {}".format(_input.size(1), self.input_size)
-            )
+            raise RuntimeError(f"input has inconsistent input_size: got {_input.size(1)}, expected {self.input_size}")
 
     def check_forward_hidden(self, _input, hx, hidden_label=""):
         """
@@ -318,16 +310,12 @@ class ConvMGUCellBase(nn.Module):
         """
         if _input.size(0) != hx.size(0):
             raise RuntimeError(
-                "Input batch size {} doesn't match hidden{} batch size {}".format(
-                    _input.size(0), hidden_label, hx.size(0)
-                )
+                f"Input batch size {_input.size(0)} doesn't match hidden{hidden_label} batch size {hx.size(0)}"
             )
 
         if hx.size(1) != self.hidden_size:
             raise RuntimeError(
-                "hidden{} has inconsistent hidden_size: got {}, expected {}".format(
-                    hidden_label, hx.size(1), self.hidden_size
-                )
+                f"hidden{hidden_label} has inconsistent hidden_size: got {hx.size(1)}, expected {self.hidden_size}"
             )
 
 
@@ -488,9 +476,7 @@ class IndRNNCellBase(nn.Module):
             The input.
         """
         if _input.size(1) != self.input_size:
-            raise RuntimeError(
-                "input has inconsistent input_size: got {}, expected {}".format(_input.size(1), self.input_size)
-            )
+            raise RuntimeError(f"input has inconsistent input_size: got {_input.size(1)}, expected {self.input_size}")
 
     def check_forward_hidden(self, _input, hx, hidden_label=""):
         """
@@ -506,16 +492,12 @@ class IndRNNCellBase(nn.Module):
         """
         if _input.size(0) != hx.size(0):
             raise RuntimeError(
-                "Input batch size {} doesn't match hidden{} batch size {}".format(
-                    _input.size(0), hidden_label, hx.size(0)
-                )
+                f"Input batch size {_input.size(0)} doesn't match hidden{hidden_label} batch size {hx.size(0)}"
             )
 
         if hx.size(1) != self.hidden_size:
             raise RuntimeError(
-                "hidden{} has inconsistent hidden_size: got {}, expected {}".format(
-                    hidden_label, hx.size(1), self.hidden_size
-                )
+                f"hidden{hidden_label} has inconsistent hidden_size: got {hx.size(1)}, expected {self.hidden_size}"
             )
 
 

@@ -84,7 +84,7 @@ def test_vn(shape, cfg, center_fractions, accelerations):
 
     Args:
         shape: shape of the input
-        cascades: number of cascades
+        cfg: configuration of the model
         center_fractions: center fractions
         accelerations: accelerations
 
@@ -109,7 +109,7 @@ def test_vn(shape, cfg, center_fractions, accelerations):
     vn = VarNet(cfg)
 
     with torch.no_grad():
-        y = vn.forward(output, output, mask, target=torch.abs(torch.view_as_complex(output)))
+        y = vn.forward(output, output, mask, output, target=torch.abs(torch.view_as_complex(output)))
 
     if y.shape[1:] != x.shape[2:4]:
         raise AssertionError

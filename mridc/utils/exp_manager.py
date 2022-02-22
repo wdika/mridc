@@ -510,7 +510,7 @@ def get_log_dir(
         ValueError: If resume is True, and there were more than 1 checkpoint could found.
     """
     if explicit_log_dir:  # If explicit log_dir was passed, short circuit
-        return check_explicit_log_dir(trainer, [Path(explicit_log_dir)], str(exp_dir), str(name), str(version))
+        return check_explicit_log_dir(trainer, [Path(explicit_log_dir)], exp_dir, name, version)  # type: ignore
 
     # Default exp_dir to ./mridc_experiments if None was passed
     _exp_dir = exp_dir

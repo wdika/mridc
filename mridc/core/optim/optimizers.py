@@ -77,7 +77,7 @@ def parse_optimizer_args(
             # If `auto` is passed as name for resolution of optimizer name,
             # then lookup optimizer name and resolve its parameter config
             if optimizer_kwargs["name"] == "auto":
-                optimizer_params_name = "{}_params".format(optimizer_name)
+                optimizer_params_name = f"{optimizer_name}_params"
                 optimizer_kwargs.pop("name")
             else:
                 optimizer_params_name = optimizer_kwargs.pop("name")
@@ -124,7 +124,7 @@ def register_optimizer(name: str, optimizer: Optimizer, optimizer_params: Optimi
 
     AVAILABLE_OPTIMIZERS[name] = optimizer
 
-    optim_name = "{}_params".format(optimizer.__name__)
+    optim_name = f"{optimizer.__name__}_params"
     register_optimizer_params(name=optim_name, optimizer_params=optimizer_params)
 
 

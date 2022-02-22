@@ -101,7 +101,7 @@ def test_lpdnet(shape, cfg, center_fractions, accelerations):
     lpdnet = LPDNet(cfg)
 
     with torch.no_grad():
-        y = lpdnet.forward(output, output, mask, target=torch.abs(torch.view_as_complex(output)))
+        y = lpdnet.forward(output, output, mask, output, target=torch.abs(torch.view_as_complex(output)))
 
     if y.shape[1:] != x.shape[2:4]:
         raise AssertionError

@@ -32,21 +32,21 @@ class PICS(BaseMRIReconstructionModel, ABC):
         # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
 
-        pics_cfg_dict = OmegaConf.to_container(cfg, resolve=True)
+        cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
-        self.reg_wt = pics_cfg_dict.get("reg_wt")
-        self.num_iters = pics_cfg_dict.get("num_iters")
-        self._device = pics_cfg_dict.get("device")
+        self.reg_wt = cfg_dict.get("reg_wt")
+        self.num_iters = cfg_dict.get("num_iters")
+        self._device = cfg_dict.get("device")
 
         # Initialize the sensitivity network if use_sens_net is True
-        self.use_sens_net = pics_cfg_dict.get("use_sens_net")
+        self.use_sens_net = cfg_dict.get("use_sens_net")
         if self.use_sens_net:
             self.sens_net = BaseSensitivityModel(
-                pics_cfg_dict.get("sens_chans"),
-                pics_cfg_dict.get("sens_pools"),
-                fft_type=pics_cfg_dict.get("fft_type"),
-                mask_type=pics_cfg_dict.get("sens_mask_type"),
-                normalize=pics_cfg_dict.get("sens_normalize"),
+                cfg_dict.get("sens_chans"),
+                cfg_dict.get("sens_pools"),
+                fft_type=cfg_dict.get("fft_type"),
+                mask_type=cfg_dict.get("sens_mask_type"),
+                normalize=cfg_dict.get("sens_normalize"),
             )
 
     @staticmethod
@@ -89,26 +89,20 @@ class PICS(BaseMRIReconstructionModel, ABC):
 
     def test_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Tuple[str, int, torch.Tensor]:
         """Test step for PICS."""
-        y, sensitivity_maps, mask, _, target, fname, slice_num, _, _, _ = batch
+        y, sensitivity_maps, mask, _, target, fname, slice_num, _ = batch
         y, mask, _ = self.process_inputs(y, mask)
 
         y = torch.view_as_complex(y).permute(0, 2, 3, 1).detach().cpu().numpy()
-        if "AXFLAIR" in fname[0]:  # type: ignore
-            sensitivity_maps = torch.view_as_complex(sensitivity_maps).permute(0, 2, 3, 1).detach().cpu().numpy()
-        else:
-            sensitivity_maps = (
-                torch.fft.fftshift(torch.view_as_complex(sensitivity_maps), dim=(-2, -1))
-                .permute(0, 2, 3, 1)
-                .detach()
-                .cpu()
-                .numpy()
-            )
+        sensitivity_maps = (
+            torch.fft.fftshift(torch.view_as_complex(sensitivity_maps), dim=(-2, -1))
+            .permute(0, 2, 3, 1)
+            .detach()
+            .cpu()
+            .numpy()
+        )
 
         prediction = self.forward(y, sensitivity_maps, mask, target)
-        if "AXFLAIR" in fname[0]:  # type: ignore
-            prediction = torch.from_numpy(prediction).unsqueeze(0)
-        else:
-            prediction = torch.fft.fftshift(torch.from_numpy(prediction), dim=(-2, -1)).unsqueeze(0)
+        prediction = torch.fft.fftshift(torch.from_numpy(prediction), dim=(-2, -1)).unsqueeze(0)
 
         slice_num = int(slice_num)
         name = str(fname[0])  # type: ignore

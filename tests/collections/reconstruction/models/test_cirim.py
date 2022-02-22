@@ -149,7 +149,7 @@ def test_cirim(shape, cfg, center_fractions, accelerations):
 
     Args:
         shape: shape of the input
-        cascades: number of cascades
+        cfg: configuration of the model
         center_fractions: center fractions
         accelerations: accelerations
 
@@ -174,7 +174,7 @@ def test_cirim(shape, cfg, center_fractions, accelerations):
     cirim = CIRIM(cfg)
 
     with torch.no_grad():
-        y = cirim.forward(output, output, mask, eta=x.sum(1), target=torch.abs(torch.view_as_complex(output)))
+        y = cirim.forward(output, output, mask, output.sum(1), target=torch.abs(torch.view_as_complex(output)))
 
         try:
             y = next(y)

@@ -1,11 +1,11 @@
 # Data Consistency for Magnetic Resonance Imaging
 
-[![Build Status](https://app.travis-ci.com/wdika/mridc.svg?branch=main)](https://app.travis-ci.com/wdika/mridc)
 [![CodeQL](https://github.com/wdika/mridc/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/wdika/mridc/actions/workflows/codeql-analysis.yml)
 [![CircleCI](https://circleci.com/gh/wdika/mridc/tree/main.svg?style=svg)](https://circleci.com/gh/wdika/mridc/tree/main)
 [![codecov](https://codecov.io/gh/wdika/mridc/branch/main/graph/badge.svg?token=KPPQ33DOTF)](https://codecov.io/gh/wdika/mridc)
 [![DeepSource](https://deepsource.io/gh/wdika/mridc.svg/?label=active+issues&show_trend=true&token=txj87v43GA6vhpbSwPEUTQtX)](https://deepsource.io/gh/wdika/mridc/?ref=repository-badge)
 [![DeepSource](https://deepsource.io/gh/wdika/mridc.svg/?label=resolved+issues&show_trend=true&token=txj87v43GA6vhpbSwPEUTQtX)](https://deepsource.io/gh/wdika/mridc/?ref=repository-badge)
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/wdika/mridc.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/wdika/mridc/alerts/)
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 
 ---
@@ -41,10 +41,6 @@ cd mridc
 ```
 
 ## Usage
-
-Check on [scripts](examples) how to train models and run a method for reconstruction.
-
-Check on [tools](mridc/collections/reconstruction/tools) for preprocessing and evaluation tools.
 
 Recommended public datasets to use with this repo:
 

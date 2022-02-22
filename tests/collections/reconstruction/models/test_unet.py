@@ -76,7 +76,7 @@ def test_unet(shape, cfg, center_fractions, accelerations):
 
     Args:
         shape: shape of the input
-        cascades: number of cascades
+        cfg: configuration of the model
         center_fractions: center fractions
         accelerations: accelerations
 
@@ -101,7 +101,7 @@ def test_unet(shape, cfg, center_fractions, accelerations):
     unet = UNet(cfg)
 
     with torch.no_grad():
-        y = unet.forward(output, output, mask, target=torch.abs(torch.view_as_complex(output)))
+        y = unet.forward(output, output, mask, output, target=torch.abs(torch.view_as_complex(output)))
 
     if y.shape[1:] != x.shape[2:4]:
         raise AssertionError

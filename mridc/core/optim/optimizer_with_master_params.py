@@ -183,18 +183,14 @@ class MasterOptimizerWrapper(torch.optim.Optimizer):
                         # Reset existing state dict key to the new main param.
                         if param in self.optimizer.state:
                             self.optimizer.state[main_param] = self.optimizer.state.pop(param)
-                    # fp32 params.
                     elif param.type() == "torch.cuda.FloatTensor":
                         fp32_params_this_group.append(param)
                         param_group["params"][j] = param
 
                     else:
                         raise TypeError(
-                            "Wrapped parameters must be one of "
-                            "torch.cuda.FloatTensor,  "
-                            "torch.cuda.HalfTensor, or "
-                            "torch.cuda.BFloat16Tensor. "
-                            "Received {}".format(param.type())
+                            "Wrapped parameters must be one of torch.cuda.FloatTensor,  torch.cuda.HalfTensor, "
+                            f"or torch.cuda.BFloat16Tensor. Received {param.type()}"
                         )
 
                 # Add gradient accumulation hook for fp32 grad accumulation

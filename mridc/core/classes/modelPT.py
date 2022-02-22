@@ -351,7 +351,7 @@ class ModelPT(LightningModule, Model):
             and self._validation_dl is not None
             and type(self._validation_dl) in [list, tuple]
         ):
-            self.validation_names = ["val_{}_".format(idx) for idx in range(len(self._validation_dl))]
+            self.validation_names = [f"val_{idx}_" for idx in range(len(self._validation_dl))]
 
     def setup_multiple_test_data(self, test_data_config: Union[DictConfig, Dict]):
         """
@@ -374,7 +374,7 @@ class ModelPT(LightningModule, Model):
             self._multi_dataset_mode = False
 
         if self.test_names is None and self._test_dl is not None and type(self._test_dl) in [list, tuple]:
-            self.test_names = ["test_{}_".format(idx) for idx in range(len(self._test_dl))]
+            self.test_names = [f"test_{idx}_" for idx in range(len(self._test_dl))]
 
     def setup_optimization(self, optim_config: Optional[Union[DictConfig, Dict]] = None):
         """
@@ -513,9 +513,8 @@ class ModelPT(LightningModule, Model):
                 self._optimizer = optimizer_instance
 
             except Exception as e:
-                logging.error(
-                    "Could not instantiate class path - {} with kwargs {}".format(optimizer_cls, str(optimizer_config))
-                )
+                logging.error(f"Could not instantiate class path - {optimizer_cls} with kwargs {optimizer_config}")
+
                 raise e
 
         # Try to instantiate scheduler for optimizer
@@ -1143,7 +1142,7 @@ class ModelPT(LightningModule, Model):
         """Sets the state of the model to be restored."""
         app_state = AppState()
         app_state.is_model_being_restored = is_being_restored
-        app_state.mridc_file_folder = str(folder)
+        app_state.mridc_file_folder = folder  # type: ignore
 
     def _set_model_guid(self):
         """Sets the model guid."""

@@ -52,12 +52,12 @@ def deprecated(wrapped=None, version=None, explanation=None):
             _PRINTED_WARNING[_wrapped.__name__] = True
 
             # Prepare the warning message.
-            msg = "Function ``{}`` is deprecated.".format(_wrapped.__name__)
+            msg = f"Function ``{_wrapped.__name__}`` is deprecated."
 
             # Optionally, add version and alternative.
             if version is not None:
                 msg = f"{msg} It is going to be removed in "
-                msg = msg + "the {} version.".format(version)
+                msg = msg + f"the {version} version."
 
             if explanation is not None:
                 msg = f"{msg} {explanation}"

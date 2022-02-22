@@ -31,36 +31,38 @@ class MultiDomainNet(BaseMRIReconstructionModel, ABC):
         self._coil_dim = 1
         self._complex_dim = -1
 
-        multidomainnet_cfg_dict = OmegaConf.to_container(cfg, resolve=True)
-        standardization = multidomainnet_cfg_dict["standardization"]
+        cfg_dict = OmegaConf.to_container(cfg, resolve=True)
+        standardization = cfg_dict["standardization"]
         if standardization:
             self.standardization = StandardizationLayer(self._coil_dim, self._complex_dim)
 
-        self.fft_type = multidomainnet_cfg_dict.get("fft_type")
+        self.fft_type = cfg_dict.get("fft_type")
 
         self.unet = MultiDomainUnet2d(
             in_channels=4 if standardization else 2,  # if standardization, in_channels is 4 due to standardized input
             out_channels=2,
-            num_filters=multidomainnet_cfg_dict["num_filters"],
-            num_pool_layers=multidomainnet_cfg_dict["num_pool_layers"],
-            dropout_probability=multidomainnet_cfg_dict["dropout_probability"],
+            num_filters=cfg_dict["num_filters"],
+            num_pool_layers=cfg_dict["num_pool_layers"],
+            dropout_probability=cfg_dict["dropout_probability"],
             fft_type=self.fft_type,
         )
 
         # Initialize the sensitivity network if use_sens_net is True
-        self.use_sens_net = multidomainnet_cfg_dict.get("use_sens_net")
+        self.use_sens_net = cfg_dict.get("use_sens_net")
         if self.use_sens_net:
             self.sens_net = BaseSensitivityModel(
-                multidomainnet_cfg_dict.get("sens_chans"),
-                multidomainnet_cfg_dict.get("sens_pools"),
+                cfg_dict.get("sens_chans"),
+                cfg_dict.get("sens_pools"),
                 fft_type=self.fft_type,
-                mask_type=multidomainnet_cfg_dict.get("sens_mask_type"),
-                normalize=multidomainnet_cfg_dict.get("sens_normalize"),
+                mask_type=cfg_dict.get("sens_mask_type"),
+                normalize=cfg_dict.get("sens_normalize"),
             )
 
-        self.train_loss_fn = SSIMLoss() if multidomainnet_cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = SSIMLoss() if multidomainnet_cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
-        self.output_type = multidomainnet_cfg_dict.get("output_type")
+        self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
+        self.eval_loss_fn = SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
+        self.output_type = cfg_dict.get("output_type")
+
+        self.accumulate_estimates = False
 
     def _compute_model_per_coil(self, model, data):
         """Computes model per coil."""
@@ -77,17 +79,19 @@ class MultiDomainNet(BaseMRIReconstructionModel, ABC):
         y: torch.Tensor,
         sensitivity_maps: torch.Tensor,
         mask: torch.Tensor,
-        target: torch.Tensor = None,
-    ) -> Union[Generator, torch.Tensor]:
+        init_pred: torch.Tensor,
+        target: torch.Tensor,
+    ) -> torch.Tensor:
         """
         Forward pass of the network.
         Args:
             y: torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2], masked kspace data
             sensitivity_maps: torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2], coil sensitivity maps
             mask: torch.Tensor, shape [1, 1, n_x, n_y, 1], sampling mask
+            init_pred: torch.Tensor, shape [batch_size, n_x, n_y, 2], initial guess for pred
             target: torch.Tensor, shape [batch_size, n_x, n_y, 2], target data
         Returns:
-             Final estimation of the network.
+             Final prediction of the network.
         """
         sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         image = ifft2c(y, fft_type=self.fft_type)
@@ -100,115 +104,3 @@ class MultiDomainNet(BaseMRIReconstructionModel, ABC):
         output_image = torch.view_as_complex(output_image)
         _, output_image = center_crop_to_smallest(target, output_image)
         return output_image
-
-    @staticmethod
-    def process_loss(target, eta, set_loss_fn):
-        """Calculate the loss."""
-        target = torch.abs(target / torch.max(torch.abs(target)))
-
-        if "ssim" in str(set_loss_fn).lower():
-            max_value = np.array(torch.max(torch.abs(target)).item()).astype(np.float32)
-
-            def loss_fn(x, y):
-                """Calculate the ssim loss."""
-                return set_loss_fn(
-                    x.unsqueeze(dim=1),
-                    torch.abs(y / torch.max(torch.abs(y))).unsqueeze(dim=1),
-                    data_range=torch.tensor(max_value).unsqueeze(dim=0).to(x.device),
-                )
-
-        else:
-
-            def loss_fn(x, y):
-                """Calculate other loss."""
-                return set_loss_fn(x, torch.abs(y / torch.max(torch.abs(y))))
-
-        return loss_fn(target, eta)
-
-    @staticmethod
-    def process_inputs(y, mask):
-        """Process the inputs to the network."""
-        if isinstance(y, list):
-            r = np.random.randint(len(y))
-            y = y[r]
-            mask = mask[r]
-        else:
-            r = 0
-        return y, mask, r
-
-    def training_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
-        """
-        Training step for the XPDNet.
-        Args:
-            batch: A dictionary of the form {
-                'y': subsampled kspace,
-                'sensitivity_maps': sensitivity_maps,
-                'mask': mask,
-                'target': target,
-                'scaling_factor': scaling_factor
-                }
-            batch_idx: The index of the batch.
-        Returns:
-            A dictionary of the form {
-                'loss': loss value,
-                'log': log,
-            }
-        """
-        y, sensitivity_maps, mask, _, target, _, _, acc, _, _ = batch
-        y, mask, r = self.process_inputs(y, mask)
-        etas = self.forward(y, sensitivity_maps, mask, target)
-        train_loss = self.process_loss(target, etas, set_loss_fn=self.train_loss_fn)
-
-        acc = r if r != 0 else acc
-
-        tensorboard_logs = {
-            f"train_loss_{acc}x": train_loss.item(),  # type: ignore
-            "lr": self._optimizer.param_groups[0]["lr"],  # type: ignore
-        }
-
-        return {"loss": train_loss, "log": tensorboard_logs}
-
-    def validation_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict:
-        """Validation step for the XPDNet."""
-        y, sensitivity_maps, mask, _, target, fname, slice_num, _, _, _ = batch
-        y, mask, _ = self.process_inputs(y, mask)
-        etas = self.forward(y, sensitivity_maps, mask, target)
-        val_loss = self.process_loss(target, etas, set_loss_fn=self.eval_loss_fn)
-
-        key = f"{fname[0]}_images_idx_{int(slice_num)}"  # type: ignore
-        output = torch.abs(etas).detach().cpu()
-        target = torch.abs(target).detach().cpu()
-        output = output / output.max()  # type: ignore
-        target = target / target.max()  # type: ignore
-        error = torch.abs(target - output)
-        self.log_image(f"{key}/target", target)
-        self.log_image(f"{key}/reconstruction", output)
-        self.log_image(f"{key}/error", error)
-
-        return {
-            "val_loss": val_loss,
-        }
-
-    def test_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Tuple[str, int, torch.Tensor]:
-        """Test step for the XPDNet."""
-        y, sensitivity_maps, mask, _, target, fname, slice_num, _, _, _ = batch
-        y, mask, _ = self.process_inputs(y, mask)
-        prediction = self.forward(y, sensitivity_maps, mask, target)
-
-        slice_num = int(slice_num)
-        name = str(fname[0])  # type: ignore
-        key = f"{name}_images_idx_{slice_num}"  # type: ignore
-
-        output = torch.abs(prediction).detach().cpu()
-        output = output / output.max()  # type: ignore
-
-        target = torch.abs(target).detach().cpu()
-        target = target / target.max()  # type: ignore
-
-        error = torch.abs(target - output)
-
-        self.log_image(f"{key}/target", target)
-        self.log_image(f"{key}/reconstruction", output)
-        self.log_image(f"{key}/error", error)
-
-        return name, slice_num, prediction.detach().cpu().numpy()
