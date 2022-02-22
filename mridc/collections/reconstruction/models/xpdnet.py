@@ -105,7 +105,7 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
             )
         else:
             raise NotImplementedError(
-                f"XPDNet is currently implemented for kspace_model_architecture == 'CONV' or 'DIDN'."
+                "XPDNet is currently implemented for kspace_model_architecture == 'CONV' or 'DIDN'."
                 f"Got kspace_model_architecture == {kspace_model_architecture}."
             )
 
