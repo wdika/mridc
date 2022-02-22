@@ -154,7 +154,7 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
             elif self.initializer_initialization == "input_image":
                 if "initial_image" not in kwargs:
                     raise ValueError(
-                        f"`'initial_image` is required as input if initializer_initialization "
+                        "`'initial_image` is required as input if initializer_initialization "
                         f"is {self.initializer_initialization}."
                     )
                 initializer_input_image = kwargs["initial_image"].unsqueeze(1)
