@@ -147,8 +147,8 @@ class PICSDataTransform:
 
         if self.crop_size is not None:
             # Check for smallest size against the target shape.
-            h = int(self.crop_size[0]) if int(self.crop_size[0]) <= target.shape[0] else target.shape[0]
-            w = int(self.crop_size[1]) if int(self.crop_size[1]) <= target.shape[1] else target.shape[1]
+            h = min(int(self.crop_size[0]), target.shape[0])
+            w = min(int(self.crop_size[1]), target.shape[1])
 
             # Check for smallest size against the stored recon shape in metadata.
             if crop_size[0] != 0:
@@ -261,9 +261,7 @@ def main(args):
             time_taken = time.perf_counter() - start_time
     else:
         start_time = time.perf_counter()
-        outputs = []
-        for i in range(len(dataset)):
-            outputs.append(run_pics(i))
+        outputs = [run_pics(i) for i in range(len(dataset))]
         time_taken = time.perf_counter() - start_time
 
     logging.info(f"Run Time = {time_taken:} s")

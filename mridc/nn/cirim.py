@@ -222,8 +222,7 @@ class CIRIM(nn.Module):
 
         # Take average of all cascades loss
         if accumulate_loss:
-            loss = sum(list(cascade_time_steps_loss)) / len(self.cascades)
-            yield loss
+            yield sum(list(cascade_time_steps_loss)) / len(self.cascades)
         else:
             if isinstance(pred, list):
                 # Use the prediction of the last time-step.

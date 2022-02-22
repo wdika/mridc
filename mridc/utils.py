@@ -47,7 +47,7 @@ def complex_conj(x: torch.Tensor) -> torch.Tensor:
     Returns:
         A PyTorch tensor with the last dimension of size 2.
     """
-    if not x.shape[-1] == 2:
+    if x.shape[-1] != 2:
         raise ValueError("Tensor does not have separate complex dim.")
 
     return torch.stack((x[..., 0], -x[..., 1]), dim=-1)
@@ -64,7 +64,7 @@ def complex_abs(data: torch.Tensor) -> torch.Tensor:
     Returns:
         Absolute value of data.
     """
-    if not data.shape[-1] == 2:
+    if data.shape[-1] != 2:
         raise ValueError("Tensor does not have separate complex dim.")
 
     return (data**2).sum(dim=-1).sqrt()
@@ -81,7 +81,7 @@ def complex_abs_sq(data: torch.Tensor) -> torch.Tensor:
     Returns:
         Squared absolute value of data.
     """
-    if not data.shape[-1] == 2:
+    if data.shape[-1] != 2:
         raise ValueError("Tensor does not have separate complex dim.")
 
     return (data**2).sum(dim=-1)
@@ -167,5 +167,5 @@ def convert_fnames_to_v2(path: Path):
         raise ValueError("Path does not exist")
 
     for fname in path.glob("*.h5"):
-        if not fname.name[-6:] == "_v2.h5":
-            fname.rename(path / (fname.stem + "_v2.h5"))
+        if fname.name[-6:] != "_v2.h5":
+            fname.rename(path / f"{fname.stem}_v2.h5")

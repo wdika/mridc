@@ -212,63 +212,36 @@ def evaluate(
                 image = img[r].to(args.device)
                 acceleration = str(acc[r].item())
 
-                output = model.forward(image.unsqueeze(1)).squeeze(1)
-
-                if output_type == "SENSE":
-                    output = output[..., 0] + 1j * output[..., 1]
-                    output = torch.abs(output / torch.max(torch.abs(output)))
-                elif output_type == "RSS":
-                    output = rss(output, dim=1)
-                else:
-                    raise NotImplementedError("Output type should be either SENSE or RSS.")
-
-                target, output = center_crop_to_smallest(target, output)
-
-                output_np = output.cpu().numpy()
-                target_np = target.cpu().numpy()
-
-                if "ssim" in str(loss_fn).lower():
-                    val_losses[acceleration] = (
-                        loss_fn(target.unsqueeze(1), output.unsqueeze(1), data_range=max_value).cpu().numpy()
-                    )
-                else:
-                    val_losses[acceleration] = loss_fn(target.unsqueeze(1), output.unsqueeze(1)).cpu().numpy()
-
-                mse_losses[acceleration] = mse(target_np, output_np)
-                nmse_losses[acceleration] = nmse(target_np, output_np)
-                psnr_losses[acceleration] = psnr(target_np, output_np)
-                ssim_losses[acceleration] = ssim(target_np, output_np)
             else:
                 image = img.to(args.device)
                 acceleration = str(acc.item())
 
-                output = model.forward(image.unsqueeze(1)).squeeze(1)
+            output = model.forward(image.unsqueeze(1)).squeeze(1)
 
-                if output_type == "SENSE":
-                    output = output[..., 0] + 1j * output[..., 1]
-                    output = torch.abs(output / torch.max(torch.abs(output)))
-                elif output_type == "RSS":
-                    output = rss(output, dim=1)
-                else:
-                    raise NotImplementedError("Output type should be either SENSE or RSS.")
+            if output_type == "RSS":
+                output = rss(output, dim=1)
+            elif output_type == "SENSE":
+                output = output[..., 0] + 1j * output[..., 1]
+                output = torch.abs(output / torch.max(torch.abs(output)))
+            else:
+                raise NotImplementedError("Output type should be either SENSE or RSS.")
 
-                target, output = center_crop_to_smallest(target, output)
+            target, output = center_crop_to_smallest(target, output)
 
-                output_np = output.cpu().numpy()
-                target_np = target.cpu().numpy()
+            output_np = output.cpu().numpy()
+            target_np = target.cpu().numpy()
 
-                if "ssim" in str(loss_fn).lower():
-                    val_losses[acceleration] = (
-                        loss_fn(target.unsqueeze(1), output.unsqueeze(1), data_range=max_value).cpu().numpy()
-                    )
-                else:
-                    val_losses[acceleration] = loss_fn(target.unsqueeze(1), output.unsqueeze(1)).cpu().numpy()
+            if "ssim" in str(loss_fn).lower():
+                val_losses[acceleration] = (
+                    loss_fn(target.unsqueeze(1), output.unsqueeze(1), data_range=max_value).cpu().numpy()
+                )
+            else:
+                val_losses[acceleration] = loss_fn(target.unsqueeze(1), output.unsqueeze(1)).cpu().numpy()
 
-                mse_losses[acceleration] = mse(target_np, output_np)
-                nmse_losses[acceleration] = nmse(target_np, output_np)
-                psnr_losses[acceleration] = psnr(target_np, output_np)
-                ssim_losses[acceleration] = ssim(target_np, output_np)
-
+            mse_losses[acceleration] = mse(target_np, output_np)
+            nmse_losses[acceleration] = nmse(target_np, output_np)
+            psnr_losses[acceleration] = psnr(target_np, output_np)
+            ssim_losses[acceleration] = ssim(target_np, output_np)
             if args.device == "cuda":
                 memory_allocated.append(torch.cuda.max_memory_allocated() * 1e-6)
                 torch.cuda.reset_peak_memory_stats()
