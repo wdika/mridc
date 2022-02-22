@@ -19,7 +19,8 @@ coverage:
 # --------------
 # which folders/files to ignore
 ignore:
-  - scripts/*
+  - examples/*
+  - projects/*
   - tools/*
   - setup.py
 

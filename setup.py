@@ -4,7 +4,6 @@ import sys
 
 __author__ = "Dimitrios Karkalousos"
 
-import os
 import subprocess
 from distutils import cmd as distutils_cmd
 from distutils import log as distutils_log
@@ -12,7 +11,6 @@ from pathlib import Path
 import importlib.util
 
 import setuptools
-
 
 spec = importlib.util.spec_from_file_location("package_info", "mridc/package_info.py")
 package_info = importlib.util.module_from_spec(spec)  # type: ignore
@@ -28,7 +26,6 @@ __license__ = package_info.__license__  # type: ignore
 __package_name__ = package_info.__package_name__  # type: ignore
 __repository_url__ = package_info.__repository_url__  # type: ignore
 __version__ = package_info.__version__  # type: ignore
-
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
