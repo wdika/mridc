@@ -72,7 +72,7 @@ def update_model_config(model_cls: MRIDCConfig, update_cfg: "DictConfig", drop_m
 
     # Perform full merge of model config class and update config
     # Remove ModelPT artifact `target`
-    if "target" in update_cfg.model and "target" not in model_cls.model:
+    if "target" in update_cfg.model and "target" not in model_cls.model:  # type: ignore
         with open_dict(update_cfg.model):
             update_cfg.model.pop("target")
 

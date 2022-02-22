@@ -21,9 +21,7 @@ class ConcatDataset(pt_data.IterableDataset, ABC):
         shuffle (bool): Whether to shuffle individual datasets. Only works with non-iterable datasets.
             Defaults to True.
         sampling_technique (str): Sampling technique to choose which dataset to draw a sample from.
-            Defaults to 'temperature'. Currently supports 'temperature', 'random' and 'round-robin'.
-        sampling_temperature (int): Temperature value for sampling. Only used when sampling_technique = 'temperature'.
-            Defaults to 5.
+            Defaults to 'random'. Currently supports 'random' and 'round-robin'.
         sampling_probabilities (list): Probability values for sampling. Only used when sampling_technique = 'random'.
         global_rank (int): Worker rank, used for partitioning map style datasets. Defaults to 0.
         world_size (int): Total number of processes, used for partitioning map style datasets. Defaults to 1.
@@ -33,8 +31,7 @@ class ConcatDataset(pt_data.IterableDataset, ABC):
         self,
         datasets: List[Any],
         shuffle: bool = True,
-        sampling_technique: str = "temperature",
-        sampling_temperature: int = 5,
+        sampling_technique: str = "random",
         sampling_probabilities: List[float] = None,
         global_rank: int = 0,
         world_size: int = 1,
@@ -52,11 +49,8 @@ class ConcatDataset(pt_data.IterableDataset, ABC):
             self.sampling_kwargs["p"] = sampling_probabilities  # type: ignore
         elif sampling_technique == "round-robin":
             self.index_generator = ConcatDataset.round_robin_generator
-        elif sampling_technique == "temperature":
-            self.index_generator = ConcatDataset.temperature_generator
-            self.sampling_kwargs["temperature"] = sampling_temperature
         else:
-            supported_sampling_techniques = ["temperature", "random", "round-robin"]
+            supported_sampling_techniques = ["random", "round-robin"]
             raise ValueError(f"Currently we only support sampling techniques in {supported_sampling_techniques}.")
         self.length = 0
 
@@ -129,22 +123,6 @@ class ConcatDataset(pt_data.IterableDataset, ABC):
     def __len__(self):
         """Returns the number of elements in the dataset."""
         return self.length
-
-    @staticmethod
-    def temperature_generator(datasets, **kwargs):
-        """Generates indices for sampling with temperature."""
-        temp = kwargs.get("temperature")
-        if not temp:
-            raise ValueError("Temperature generator expects a 'temperature' keyword argument.")
-
-        num = len(datasets)
-        lengths = [len(dataset) for dataset in datasets]
-        p = np.array(lengths) / np.sum(lengths)
-        p = np.power(p, 1 / temp)
-        p = p / np.sum(p)
-
-        while True:
-            yield np.random.choice(np.arange(num), p=p)
 
     @staticmethod
     def round_robin_generator(datasets, **kwargs):

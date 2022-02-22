@@ -162,7 +162,7 @@ def replace_modules(
     for name, m in model.named_modules():
         m_type = type(m).__name__
         if m_type in expansions:  # type: ignore
-            if swapped := expansions[m_type](m):
+            if swapped := expansions[m_type](m):  # type: ignore
                 mapping[name] = swapped
     logging.warning(f"Swapped {len(mapping)} modules")
     swap_modules(model, mapping)

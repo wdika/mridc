@@ -489,13 +489,13 @@ class ModelPT(LightningModule, Model):
 
             logging.info("Optimizer config = %s", str(optimizer))
 
-            self._optimizer = optimizer
+            self._optimizer = optimizer  # type: ignore
 
         elif inspect.isclass(optimizer_cls):
             optimizer = optimizer_cls(self.parameters(), **optimizer_args)
             logging.info("Optimizer config = %s", str(optimizer))
 
-            self._optimizer = optimizer
+            self._optimizer = optimizer  # type: ignore
 
         else:
             # Attempt class path resolution

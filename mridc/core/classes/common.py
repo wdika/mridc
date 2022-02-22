@@ -609,7 +609,7 @@ class Model(Typing, Serialization, FileIO, ABC):  # type: ignore
             A list of model names
         """
         return (
-            [model.pretrained_model_name for model in cls.list_available_models()]
+            [model.pretrained_model_name for model in cls.list_available_models()]  # type: ignore
             if cls.list_available_models() is not None
             else []
         )
