@@ -227,66 +227,62 @@ class Logger(metaclass=Singleton):
     @contextmanager
     def patch_stderr_handler(self, stream):
         """Sends messages that should log to stderr to stream instead. Useful for unittests"""
-        if self._logger is not None:
-            try:
-                old_stream = self._handlers["stream_stderr"].stream
-                if old_stream is None:
-                    raise ValueError
-
-                # Port backwards set_stream() from python 3.7
-                self._handlers["stream_stderr"].acquire()
-                try:
-                    self._handlers["stream_stderr"].flush()
-                    self._handlers["stream_stderr"].stream = stream
-                finally:
-                    self._handlers["stream_stderr"].release()
-
-                yield stream
-            except (KeyError, ValueError):
-                raise RuntimeError("Impossible to patch logging handlers if handler does not exist")
-            finally:
-                # Port backwards set_stream() from python 3.7
-                self._handlers["stream_stderr"].acquire()
-                try:
-                    self._handlers["stream_stderr"].flush()
-                    self._handlers["stream_stderr"].stream = old_stream
-                finally:
-                    self._handlers["stream_stderr"].release()
-
-        else:
+        if self._logger is None:
             raise RuntimeError("Impossible to patch logging handlers if handler does not exist")
+        try:
+            old_stream = self._handlers["stream_stderr"].stream
+            if old_stream is None:
+                raise ValueError
+
+            # Port backwards set_stream() from python 3.7
+            self._handlers["stream_stderr"].acquire()
+            try:
+                self._handlers["stream_stderr"].flush()
+                self._handlers["stream_stderr"].stream = stream
+            finally:
+                self._handlers["stream_stderr"].release()
+
+            yield stream
+        except (KeyError, ValueError):
+            raise RuntimeError("Impossible to patch logging handlers if handler does not exist")
+        finally:
+            # Port backwards set_stream() from python 3.7
+            self._handlers["stream_stderr"].acquire()
+            try:
+                self._handlers["stream_stderr"].flush()
+                self._handlers["stream_stderr"].stream = old_stream
+            finally:
+                self._handlers["stream_stderr"].release()
 
     @contextmanager
     def patch_stdout_handler(self, stream):
         """Sends messages that should log to stdout to stream instead. Useful for unittests"""
-        if self._logger is not None:
-            try:
-                old_stream = self._handlers["stream_stdout"].stream
-                if old_stream is None:
-                    raise ValueError
-
-                # Port backwards set_stream() from python 3.7
-                self._handlers["stream_stdout"].acquire()
-                try:
-                    self._handlers["stream_stdout"].flush()
-                    self._handlers["stream_stdout"].stream = stream
-                finally:
-                    self._handlers["stream_stdout"].release()
-
-                yield stream
-            except (KeyError, ValueError):
-                raise RuntimeError("Impossible to patch logging handlers if handler does not exist")
-            finally:
-                # Port backwards set_stream() from python 3.7
-                self._handlers["stream_stdout"].acquire()
-                try:
-                    self._handlers["stream_stdout"].flush()
-                    self._handlers["stream_stdout"].stream = old_stream
-                finally:
-                    self._handlers["stream_stdout"].release()
-
-        else:
+        if self._logger is None:
             raise RuntimeError("Impossible to patch logging handlers if handler does not exist")
+        try:
+            old_stream = self._handlers["stream_stdout"].stream
+            if old_stream is None:
+                raise ValueError
+
+            # Port backwards set_stream() from python 3.7
+            self._handlers["stream_stdout"].acquire()
+            try:
+                self._handlers["stream_stdout"].flush()
+                self._handlers["stream_stdout"].stream = stream
+            finally:
+                self._handlers["stream_stdout"].release()
+
+            yield stream
+        except (KeyError, ValueError):
+            raise RuntimeError("Impossible to patch logging handlers if handler does not exist")
+        finally:
+            # Port backwards set_stream() from python 3.7
+            self._handlers["stream_stdout"].acquire()
+            try:
+                self._handlers["stream_stdout"].flush()
+                self._handlers["stream_stdout"].stream = old_stream
+            finally:
+                self._handlers["stream_stdout"].release()
 
     @contextmanager
     def temp_verbosity(self, verbosity_level):
@@ -347,8 +343,8 @@ class Logger(metaclass=Singleton):
         Returns:
             True if the message has been logged at least once in the given mode.
         """
-        PREFIX_LEN = 12
         if mode == LogMode.ONCE:
+            PREFIX_LEN = 12
             if msg[PREFIX_LEN:] in self.once_logged:
                 return True
             self.once_logged.add(msg[PREFIX_LEN:])

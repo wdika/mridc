@@ -92,7 +92,7 @@ class ElementType(ABC):
             return result
         # now check that all parameters match
         check_params = set(self.type_parameters.keys()) == set(second.type_parameters.keys())
-        if check_params is False:
+        if not check_params:
             return NeuralTypeComparisonResult.SAME_TYPE_INCOMPATIBLE_PARAMS
         for k1, v1 in self.type_parameters.items():
             if v1 is None or second.type_parameters[k1] is None:

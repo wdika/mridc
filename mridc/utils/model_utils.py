@@ -134,9 +134,8 @@ def resolve_dataset_name_from_cfg(cfg: "DictConfig") -> Union[Union[str, int, En
             if values_are_paths == len(value):
                 return key
 
-        else:
-            if os.path.exists(str(value)) or os.path.isdir(str(value)):
-                return key
+        elif os.path.exists(str(value)) or os.path.isdir(str(value)):
+            return key
 
     return None
 
@@ -165,7 +164,7 @@ def parse_dataset_as_name(name: str) -> str:
         name = name.replace("dataset", "")
 
     if name[-1] != "_":
-        name = name + "_"
+        name = f'{name}_'
 
     return name
 
@@ -534,7 +533,7 @@ def check_lib_version(lib_name: str, checked_version: str, operator) -> Tuple[Op
             f"Could not check version compatibility."
         )
         return False, msg
-    except (ImportError, ModuleNotFoundError):
+    except ImportError:
         pass
 
     msg = f"Lib {lib_name} has not been installed. Please use pip or conda to install this package."
@@ -551,8 +550,10 @@ def resolve_cache_dir() -> Path:
         uses an inbuilt default which adapts to mridc versions strings.
     """
     override_dir = os.environ.get(MRIDC_ENV_CACHE_DIR, "")
-    if override_dir == "":
-        path = Path.joinpath(Path.home(), f".cache/torch/MRIDC/MRIDC_{mridc.__version__}")
-    else:
-        path = Path(override_dir).resolve()
-    return path
+    return (
+        Path.joinpath(
+            Path.home(), f".cache/torch/MRIDC/MRIDC_{mridc.__version__}"
+        )
+        if override_dir == ""
+        else Path(override_dir).resolve()
+    )

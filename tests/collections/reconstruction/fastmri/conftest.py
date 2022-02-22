@@ -64,7 +64,7 @@ def knee_split_lens():
     Returns:
         A dictionary with the split lengths.
     """
-    split_lens = {
+    return {
         "multicoil_train": 34742,
         "multicoil_val": 7135,
         "multicoil_test": 4092,
@@ -72,8 +72,6 @@ def knee_split_lens():
         "singlecoil_val": 7135,
         "singlecoil_test": 3903,
     }
-
-    return split_lens
 
 
 @pytest.fixture
@@ -84,6 +82,8 @@ def brain_split_lens():
     Returns:
         A dictionary with the split lengths.
     """
-    split_lens = {"multicoil_train": 70748, "multicoil_val": 21842, "multicoil_test": 8852}
-
-    return split_lens
+    return {
+        "multicoil_train": 70748,
+        "multicoil_val": 21842,
+        "multicoil_test": 8852,
+    }

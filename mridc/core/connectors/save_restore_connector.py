@@ -247,22 +247,19 @@ class SaveRestoreConnector:
             return_path = os.path.abspath(src)
             artifact_item.path_type = mridc.utils.model_utils.ArtifactPathType.LOCAL_PATH  # type: ignore
 
-        # this is the case when artifact must be retried from the mridc file
-        # we are assuming that the location of the right mridc file is available from _MODEL_RESTORE_PATH
         elif src.startswith("mridc:"):
             return_path = os.path.abspath(os.path.join(app_state.mridc_file_folder, src[5:]))
             artifact_item.path_type = mridc.utils.model_utils.ArtifactPathType.TAR_PATH  # type: ignore
 
-        # backward compatibility implementation
         elif os.path.exists(src_obj_path):
             return_path = src_obj_path
             artifact_item.path_type = mridc.utils.model_utils.ArtifactPathType.TAR_PATH  # type: ignore
+        elif verify_src_exists:
+            raise FileNotFoundError(
+                f"src path does not exist or it is not a path in mridc file. src value I got was: {src}. "
+                f"Absolute: {os.path.abspath(src)}"
+            )
         else:
-            if verify_src_exists:
-                raise FileNotFoundError(
-                    f"src path does not exist or it is not a path in mridc file. src value I got was: {src}. "
-                    f"Absolute: {os.path.abspath(src)}"
-                )
             # artifact is optional and we simply return None
             return None
 
@@ -303,7 +300,7 @@ class SaveRestoreConnector:
                 shutil.copy2(artiitem.path, os.path.join(mridc_file_folder, artifact_uniq_name))
 
                 # Update artifacts registry
-                artiitem.hashed_path = "mridc:" + artifact_uniq_name
+                artiitem.hashed_path = f'mridc:{artifact_uniq_name}'
                 model.artifacts[conf_path] = artiitem
 
             elif artiitem.path_type == mridc.utils.model_utils.ArtifactPathType.TAR_PATH:
@@ -316,7 +313,7 @@ class SaveRestoreConnector:
         # Process current tarfile artifacts by unpacking the previous tarfile and extract the artifacts
         # that are currently required.
         model_metadata = app_state.get_model_metadata_from_guid(model.model_guid)
-        if len(tarfile_artifacts) > 0 and model_metadata.restoration_path is not None:
+        if tarfile_artifacts and model_metadata.restoration_path is not None:
             # Need to step into mridc archive to extract file
             # Get path where the command is executed - the artifacts will be "retrieved" there
             # (original .mridc behavior)
@@ -338,7 +335,7 @@ class SaveRestoreConnector:
 
                         # Update artifacts registry
                         new_artiitem = mridc.utils.model_utils.ArtifactItem()
-                        new_artiitem.path = "mridc:" + artifact_uniq_name
+                        new_artiitem.path = f'mridc:{artifact_uniq_name}'
                         new_artiitem.path_type = mridc.utils.model_utils.ArtifactPathType.TAR_PATH
                         model.artifacts[conf_path] = new_artiitem
             finally:
@@ -367,8 +364,9 @@ class SaveRestoreConnector:
         process into the checkpoint file name.
         """
         app_state = AppState()
-        model_weights = os.path.join(dirname, f"mp_rank_{app_state.model_parallel_rank:02}", basename)
-        return model_weights
+        return os.path.join(
+            dirname, f"mp_rank_{app_state.model_parallel_rank:02}", basename
+        )
 
     @staticmethod
     def _make_mridc_file_from_folder(filename, source_dir):

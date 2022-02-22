@@ -85,7 +85,7 @@ class Conv2dGRU(nn.Module):
             self.conv_blocks.append(nn.Sequential(*block))
 
         # Create GRU blocks
-        for idx in range(num_layers):
+        for _ in range(num_layers):
             for gru_part in [self.reset_gates, self.update_gates, self.out_gates]:
                 block = []
                 if instance_norm:

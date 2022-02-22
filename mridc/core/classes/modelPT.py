@@ -166,7 +166,7 @@ class ModelPT(LightningModule, Model):
             str: If src is not None or empty it always returns absolute path which is guaranteed to exists during
                 model instance life
         """
-        if src is None or src == "":
+        if src is None or not src:
             return src
 
         if not hasattr(self, "artifacts"):
@@ -389,12 +389,13 @@ class ModelPT(LightningModule, Model):
                 will be built and supplied to instantiate the optimizer.
         """
         # If config was not explicitly passed to us
-        if optim_config is None:
-            # See if internal config has `optim` namespace
-            if self._cfg is not None and hasattr(self._cfg, "optim"):
-                optim_config = self._cfg.optim
+        if (
+            optim_config is None
+            and self._cfg is not None
+            and hasattr(self._cfg, "optim")
+        ):
+            optim_config = self._cfg.optim
 
-                # If config is still None, or internal config has no Optim, return without instantiation
         if optim_config is None:
             logging.info("No optimizer config provided, therefore no optimizer was created")
             return None
@@ -458,12 +459,11 @@ class ModelPT(LightningModule, Model):
         if optimizer_cls is None:
             # Try to get optimizer name for dynamic resolution, defaulting to Adam
             optimizer_name = optim_config.get("name", "adam")
+        elif inspect.isclass(optimizer_cls):
+            optimizer_name = optimizer_cls.__name__.lower()
         else:
-            if inspect.isclass(optimizer_cls):
-                optimizer_name = optimizer_cls.__name__.lower()
-            else:
-                # resolve the class name (lowercase) from the class path if not provided
-                optimizer_name = optimizer_cls.split(".")[-1].lower()
+            # resolve the class name (lowercase) from the class path if not provided
+            optimizer_name = optimizer_cls.split(".")[-1].lower()
 
         # We are guaranteed to have lr since it is required by the argparser
         # But maybe user forgot to pass it to this function
@@ -487,46 +487,42 @@ class ModelPT(LightningModule, Model):
             optimizer_args["lr"] = lr
 
         # Actually instantiate the optimizer
-        if optimizer_cls is not None:
-            if inspect.isclass(optimizer_cls):
-                optimizer = optimizer_cls(self.parameters(), **optimizer_args)
-                logging.info("Optimizer config = %s", str(optimizer))
-
-                self._optimizer = optimizer
-
-            else:
-                # Attempt class path resolution
-                try:
-                    optimizer_cls = OmegaConf.create({"_target_": optimizer_cls})
-                    if lr is not None:
-                        optimizer_config = {"lr": lr}
-                    else:
-                        optimizer_config = {}
-                    optimizer_config.update(optimizer_args)
-
-                    optimizer_instance = hydra.utils.instantiate(
-                        optimizer_cls, self.parameters(), **optimizer_config
-                    )  # type: DictConfig
-
-                    logging.info("Optimizer config = %s", str(optimizer_instance))
-
-                    self._optimizer = optimizer_instance
-
-                except Exception as e:
-                    logging.error(
-                        "Could not instantiate class path - {} with kwargs {}".format(
-                            optimizer_cls, str(optimizer_config)
-                        )
-                    )
-                    raise e
-
-        else:
+        if optimizer_cls is None:
             optimizer = mridc.core.optim.optimizers.get_optimizer(optimizer_name)
             optimizer = optimizer(self.parameters(), **optimizer_args)
 
             logging.info("Optimizer config = %s", str(optimizer))
 
             self._optimizer = optimizer
+
+        elif inspect.isclass(optimizer_cls):
+            optimizer = optimizer_cls(self.parameters(), **optimizer_args)
+            logging.info("Optimizer config = %s", str(optimizer))
+
+            self._optimizer = optimizer
+
+        else:
+                # Attempt class path resolution
+            try:
+                optimizer_cls = OmegaConf.create({"_target_": optimizer_cls})
+                optimizer_config = {"lr": lr} if lr is not None else {}
+                optimizer_config.update(optimizer_args)
+
+                optimizer_instance = hydra.utils.instantiate(
+                    optimizer_cls, self.parameters(), **optimizer_config
+                )  # type: DictConfig
+
+                logging.info("Optimizer config = %s", str(optimizer_instance))
+
+                self._optimizer = optimizer_instance
+
+            except Exception as e:
+                logging.error(
+                    "Could not instantiate class path - {} with kwargs {}".format(
+                        optimizer_cls, str(optimizer_config)
+                    )
+                )
+                raise e
 
         # Try to instantiate scheduler for optimizer
         self._scheduler = mridc.core.optim.lr_scheduler.prepare_lr_scheduler(  # type: ignore
@@ -550,21 +546,15 @@ class ModelPT(LightningModule, Model):
 
     def train_dataloader(self):
         """Return the training dataloader."""
-        if self._train_dl is not None:
-            return self._train_dl
-        return None
+        return self._train_dl if self._train_dl is not None else None
 
     def val_dataloader(self):
         """Return the validation dataloader."""
-        if self._validation_dl is not None:
-            return self._validation_dl
-        return None
+        return self._validation_dl if self._validation_dl is not None else None
 
     def test_dataloader(self):
         """Return the test dataloader."""
-        if self._test_dl is not None:
-            return self._test_dl
-        return None
+        return self._test_dl if self._test_dl is not None else None
 
     def validation_epoch_end(
         self, outputs: Union[List[Dict[str, torch.Tensor]], List[List[Dict[str, torch.Tensor]]]]
@@ -816,12 +806,7 @@ class ModelPT(LightningModule, Model):
         # create dict
         dict_to_load = {}
         for k, v in state_dict.items():
-            should_add = False
-            # if any string in include is present, should add
-            for p in include:
-                if p in k:
-                    should_add = True
-                    break
+            should_add = any(p in k for p in include)
             # except for if any string from exclude is present
             for e in exclude:
                 if e in k:
@@ -835,7 +820,7 @@ class ModelPT(LightningModule, Model):
         self.load_state_dict(dict_to_load, strict=False)  # type: ignore
         logging.info(f"Model checkpoint partially restored from {load_from_string}")
 
-        if len(excluded_param_names) > 0:
+        if excluded_param_names:
             logging.info(
                 f"The following parameters were excluded from loading from {load_from_string} : {excluded_param_names}"
             )
@@ -985,14 +970,8 @@ class ModelPT(LightningModule, Model):
         Args:
             stage: either 'fit' or 'test'
         """
-        if stage == "fit":
-            # Update env variable to bypass multi gpu issue after training
-            # This fix affects usage of trainer.test() after trainer.train()
-            # If trainer.train() was done on multiple GPUs, then trainer.test()
-            # will try to do ddp, even if its a new Trainer object with just 1 GPU.
-            # Temporary patch to fix that
-            if "PL_TRAINER_GPUS" in os.environ:
-                os.environ.pop("PL_TRAINER_GPUS")
+        if stage == "fit" and "PL_TRAINER_GPUS" in os.environ:
+            os.environ.pop("PL_TRAINER_GPUS")
 
         super().teardown(stage)
 
@@ -1042,8 +1021,9 @@ class ModelPT(LightningModule, Model):
             raise FileExistsError(f"Can't find {restore_path}")
 
         cls.update_save_restore_connector(save_restore_connector)
-        state_dict = cls._save_restore_connector.extract_state_dict_from(restore_path, save_dir, split_by_module)
-        return state_dict
+        return cls._save_restore_connector.extract_state_dict_from(
+            restore_path, save_dir, split_by_module
+        )
 
     def prepare_test(self, trainer: "Trainer") -> bool:
         """
@@ -1061,8 +1041,9 @@ class ModelPT(LightningModule, Model):
             logging.info("No `test_ds` config found within the manifest.")
             return False
 
-        # Replace ddp multi-gpu until PTL has a fix
-        DDP_WARN = """\n\nDuring testing, it is currently advisable to construct a new Trainer "
+        if trainer is not None and trainer.num_gpus > 1:
+            # Replace ddp multi-gpu until PTL has a fix
+            DDP_WARN = """\n\nDuring testing, it is currently advisable to construct a new Trainer "
                     "with single GPU and no DDP to obtain accurate results.
                     "Following pattern should be used: "
                     "gpu = 1 if cfg.trainer.gpus != 0 else 0"
@@ -1070,7 +1051,6 @@ class ModelPT(LightningModule, Model):
                     "if model.prepare_test(trainer):"
                     "  trainer.test(model)\n\n"""
 
-        if trainer is not None and trainer.num_gpus > 1:
             logging.warning(DDP_WARN)
             return False
 
@@ -1121,7 +1101,7 @@ class ModelPT(LightningModule, Model):
             if not isinstance(config, DictConfig):
                 config = OmegaConf.create(config)
 
-            if dataset_name in ["train", "validation", "test"]:
+            if dataset_name in {"train", "validation", "test"}:
                 OmegaConf.set_struct(self.cfg, False)
 
                 key_name = dataset_name + "_ds"
@@ -1137,11 +1117,7 @@ class ModelPT(LightningModule, Model):
     @property
     def num_weights(self):
         """Utility property that returns the total number of parameters of the Model."""
-        num: int = 0
-        for p in self.parameters():
-            if p.requires_grad:
-                num += p.numel()
-        return num
+        return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
     @property
     def cfg(self):

@@ -132,6 +132,4 @@ class NamedTimer:
         """Exports a dictionary with average/all dt per named timer"""
         fn = self._reduction_fn
 
-        data = {k: fn(v["dt"]) for k, v in self.timers.items() if "dt" in v}
-
-        return data
+        return {k: fn(v["dt"]) for k, v in self.timers.items() if "dt" in v}

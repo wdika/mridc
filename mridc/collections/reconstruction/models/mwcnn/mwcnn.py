@@ -138,8 +138,7 @@ class ConvBlock(nn.Module):
         """
         super().__init__()
 
-        net = []
-        net.append(
+        net = [
             nn.Conv2d(
                 in_channels=in_channels,
                 out_channels=out_channels,
@@ -147,7 +146,8 @@ class ConvBlock(nn.Module):
                 bias=bias,
                 padding=kernel_size // 2,
             )
-        )
+        ]
+
         if batchnorm:
             net.append(nn.BatchNorm2d(num_features=out_channels, eps=1e-4, momentum=0.95))
         net.append(activation)
@@ -166,8 +166,7 @@ class ConvBlock(nn.Module):
         output: torch.Tensor
             Output with shape (N, C', H', W').
         """
-        output = self.net(x) * self.scale
-        return output
+        return self.net(x) * self.scale
 
 
 class DilatedConvBlock(nn.Module):
@@ -212,8 +211,7 @@ class DilatedConvBlock(nn.Module):
             Scale. Default: 1.0.
         """
         super().__init__()
-        net = []
-        net.append(
+        net = [
             nn.Conv2d(
                 in_channels=in_channels,
                 out_channels=in_channels,
@@ -222,7 +220,8 @@ class DilatedConvBlock(nn.Module):
                 dilation=dilations[0],
                 padding=kernel_size // 2 + dilations[0] - 1,
             )
-        )
+        ]
+
         if batchnorm:
             net.append(nn.BatchNorm2d(num_features=in_channels, eps=1e-4, momentum=0.95))
         net.append(activation)
@@ -258,8 +257,7 @@ class DilatedConvBlock(nn.Module):
         output: torch.Tensor
             Output with shape (N, C', H', W').
         """
-        output = self.net(x) * self.scale
-        return output
+        return self.net(x) * self.scale
 
 
 class MWCNN(nn.Module):
@@ -303,7 +301,7 @@ class MWCNN(nn.Module):
         self.IWT = IWT()
 
         self.down = nn.ModuleList()
-        for idx in range(0, num_scales):
+        for idx in range(num_scales):
             in_channels = input_channels if idx == 0 else first_conv_hidden_channels * 2 ** (idx + 1)
             out_channels = first_conv_hidden_channels * 2**idx
             dilations = (2, 1) if idx != num_scales - 1 else (2, 3)

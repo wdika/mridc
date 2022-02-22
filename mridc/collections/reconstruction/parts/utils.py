@@ -109,11 +109,15 @@ def batched_mask_center(
     Returns:
          A mask with the center filled.
     """
-    if not mask_from.shape == mask_to.shape:
+    if mask_from.shape != mask_to.shape:
         raise ValueError("mask_from and mask_to must match shapes.")
-    if not mask_from.ndim == 1:
+    if mask_from.ndim != 1:
         raise ValueError("mask_from and mask_to must have 1 dimension.")
-    if not mask_from.shape[0] == 1 and (not x.shape[0] == mask_from.shape[0]) or (not x.shape[0] == mask_to.shape[0]):
+    if (
+        mask_from.shape[0] != 1
+        and x.shape[0] != mask_from.shape[0]
+        or x.shape[0] != mask_to.shape[0]
+    ):
         raise ValueError("mask_from and mask_to must have batch_size length.")
 
     if mask_from.shape[0] == 1:

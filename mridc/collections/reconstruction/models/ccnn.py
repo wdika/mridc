@@ -109,7 +109,7 @@ class CascadeNet(BaseMRIReconstructionModel, ABC):
         """
         sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         estimation = y.clone()
-        for _, cascade in enumerate(self.cascades):
+        for cascade in self.cascades:
             # Forward pass through the cascades
             estimation = cascade(estimation, y, sensitivity_maps, mask)
         return self.process_intermediate_eta(estimation, sensitivity_maps, target, do_coil_combination=True)

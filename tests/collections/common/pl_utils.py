@@ -338,30 +338,26 @@ def _loss_class_test(
                 ddp_loss_sum_or_avg = torch.stack([loss_sum_or_avg[i + r] for r in range(worldsize)])  # type: ignore
                 ddp_num_measurements = torch.stack([num_measurements[i + r] for r in range(worldsize)])  # type: ignore
                 sk_batch_result = reference_loss_func(ddp_loss_sum_or_avg, ddp_num_measurements, take_avg_loss)
-                # assert for dist_sync_on_step
-                if check_dist_sync_on_step:
-                    if sk_batch_result.isnan():
-                        if not batch_result.isnan():
-                            raise AssertionError
-                    else:
-                        if not np.allclose(batch_result.numpy(), sk_batch_result, atol=atol):
-                            raise AssertionError(
-                                f"batch_result = {batch_result.numpy()}, sk_batch_result = {sk_batch_result}, i = {i}"
-                            )
+                if sk_batch_result.isnan():
+                    if check_dist_sync_on_step and not batch_result.isnan():
+                        raise AssertionError
+                elif not np.allclose(batch_result.numpy(), sk_batch_result, atol=atol):
+                    if check_dist_sync_on_step:
+                        raise AssertionError(
+                            f"batch_result = {batch_result.numpy()}, sk_batch_result = {sk_batch_result}, i = {i}"
+                        )
         else:
             ls = loss_sum_or_avg[i : i + 1]  # type: ignore
             nm = num_measurements[i : i + 1]  # type: ignore
             sk_batch_result = reference_loss_func(ls, nm, take_avg_loss)
-            # assert for batch
-            if check_batch:
-                if sk_batch_result.isnan():
-                    if not batch_result.isnan():
-                        raise AssertionError
-                else:
-                    if not np.allclose(batch_result.numpy(), sk_batch_result, atol=atol):
-                        raise AssertionError(
-                            f"batch_result = {batch_result.numpy()}, sk_batch_result = {sk_batch_result}, i = {i}"
-                        )
+            if sk_batch_result.isnan():
+                if check_batch and not batch_result.isnan():
+                    raise AssertionError
+            elif not np.allclose(batch_result.numpy(), sk_batch_result, atol=atol):
+                if check_batch:
+                    raise AssertionError(
+                        f"batch_result = {batch_result.numpy()}, sk_batch_result = {sk_batch_result}, i = {i}"
+                    )
     # check on all batches on all ranks
     result = loss_metric.compute()
     if not isinstance(result, torch.Tensor):
@@ -372,9 +368,8 @@ def _loss_class_test(
     if sk_result.isnan():
         if not result.isnan():
             raise AssertionError
-    else:
-        if not np.allclose(result.numpy(), sk_result, atol=atol):
-            raise AssertionError(f"result = {result.numpy()}, sk_result = {sk_result}")
+    elif not np.allclose(result.numpy(), sk_result, atol=atol):
+        raise AssertionError(f"result = {result.numpy()}, sk_result = {sk_result}")
 
 
 class LossTester(MetricTester):

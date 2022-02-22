@@ -26,11 +26,10 @@ class AggregatorLoss(Loss):
     @property
     def input_types(self):
         """Returns definitions of module input ports."""
-        input_types = {}
-        for i in range(self._num_losses):
-            input_types["loss_" + str(i + 1)] = NeuralType(elements_type=LossType())
-
-        return input_types
+        return {
+            f'loss_{str(i + 1)}': NeuralType(elements_type=LossType())
+            for i in range(self._num_losses)
+        }
 
     @property
     def output_types(self):

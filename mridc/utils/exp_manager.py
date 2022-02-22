@@ -417,19 +417,18 @@ def check_resume(
             )
             return
         raise NotFoundError(f"There was no checkpoint folder at checkpoint_dir :{checkpoint_dir}. Cannot resume.")
-    if len(end_checkpoints) > 0:
-        if resume_past_end:
-            if len(end_checkpoints) > 1:
-                if "mp_rank" in str(end_checkpoints[0]):
-                    checkpoint = end_checkpoints[0]
-                else:
-                    raise ValueError(f"Multiple checkpoints {end_checkpoints} that matches *end.ckpt.")
-            logging.info(f"Resuming from {end_checkpoints[0]}")
-        else:
+    if end_checkpoints:
+        if not resume_past_end:
             raise ValueError(
                 f"Found {end_checkpoints[0]} indicating that the last training run has already completed."
             )
-    elif not len(last_checkpoints) > 0:
+        if len(end_checkpoints) > 1:
+            if "mp_rank" in str(end_checkpoints[0]):
+                checkpoint = end_checkpoints[0]
+            else:
+                raise ValueError(f"Multiple checkpoints {end_checkpoints} that matches *end.ckpt.")
+        logging.info(f"Resuming from {end_checkpoints[0]}")
+    elif not last_checkpoints:
         if resume_ignore_no_checkpoint:
             logging.warning(f"There were no checkpoints found in {checkpoint_dir}. Training from scratch.")
             return
@@ -446,19 +445,12 @@ def check_resume(
     trainer.checkpoint_connector.resume_from_checkpoint_fit_path = str(checkpoint)
 
     if is_global_rank_zero():
-        # Check to see if any files exist that need to be moved
-        files_to_move = []
-        for child in Path(log_dir).iterdir():
-            if child.is_file():
-                files_to_move.append(child)
-
-        if len(files_to_move) > 0:
+        if files_to_move := [
+            child for child in Path(log_dir).iterdir() if child.is_file()
+        ]:
             # Move old files to a new folder
             other_run_dirs = Path(log_dir).glob("run_*")
-            run_count = 0
-            for fold in other_run_dirs:
-                if fold.is_dir():
-                    run_count += 1
+            run_count = sum(bool(fold.is_dir()) for fold in other_run_dirs)
             new_run_dir = Path(Path(log_dir) / f"run_{run_count}")
             new_run_dir.mkdir()
             for _file in files_to_move:
@@ -701,11 +693,7 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
         self.model_parallel_size = model_parallel_size
 
         # `prefix` is deprecated
-        if "prefix" in kwargs:
-            self.prefix = kwargs.pop("prefix")
-        else:
-            self.prefix = ""
-
+        self.prefix = kwargs.pop("prefix") if "prefix" in kwargs else ""
         # Call the parent class constructor with the remaining kwargs.
         super().__init__(**kwargs)
 
@@ -729,14 +717,13 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
                 continue
             index = checkpoint.find(self.monitor) + len(self.monitor) + 1  # Find monitor in str + 1 for '='
             if index != -1:
-                match = re.search("[A-z]", checkpoint[index:])
-                if match:
+                if match := re.search("[A-z]", checkpoint[index:]):
                     value = checkpoint[index : index + match.start() - 1]  # -1 due to separator hypen
                     self.best_k_models[checkpoint] = float(value)
-        if len(self.best_k_models) < 1:
+        if not self.best_k_models:
             return  # No saved checkpoints yet
 
-        _reverse = not self.mode == "min"
+        _reverse = self.mode != "min"
 
         best_k_models = sorted(self.best_k_models, key=self.best_k_models.get, reverse=_reverse)
 
@@ -921,7 +908,7 @@ def configure_checkpointing(trainer: Trainer, log_dir: Path, name: str, resume: 
         params.filename = f"{name}--{{{params.monitor}:.4f}}-{{epoch}}"
     if params.prefix is None:
         params.prefix = name
-    MRIDCModelCheckpoint.CHECKPOINT_NAME_LAST = params.filename + "-last"
+    MRIDCModelCheckpoint.CHECKPOINT_NAME_LAST = f'{params.filename}-last'
 
     logging.debug(params.dirpath)
     logging.debug(params.filename)

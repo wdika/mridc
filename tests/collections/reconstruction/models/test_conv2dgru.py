@@ -12,9 +12,7 @@ from mridc.collections.reconstruction.models.recurrentvarnet.conv2gru import Con
 
 def create_input(shape):
     """Create a random input tensor."""
-    data = torch.rand(shape).float()
-
-    return data
+    return torch.rand(shape).float()
 
 
 @pytest.mark.parametrize(

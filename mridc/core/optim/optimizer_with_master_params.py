@@ -17,7 +17,7 @@ try:
 
     HAVE_APEX = True
 
-except (ImportError, ModuleNotFoundError):
+except ImportError:
 
     HAVE_APEX = False
 
@@ -365,8 +365,7 @@ class MasterOptimizerWrapper(torch.optim.Optimizer):
         """Return the parameters of the optimizer."""
         params = []
         for param_group in self.optimizer.param_groups:
-            for param in param_group["params"]:
-                params.append(param)
+            params.extend(iter(param_group["params"]))
         return params
 
     def _get_state(self):

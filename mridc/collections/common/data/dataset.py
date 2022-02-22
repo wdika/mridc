@@ -41,22 +41,22 @@ class ConcatDataset(pt_data.IterableDataset, ABC):
     ):
         super().__init__()
 
-        supported_sampling_techniques = ["temperature", "random", "round-robin"]
         self.datasets = datasets
         self.iterables = [None] * len(datasets)
         self.shuffle = shuffle
         self.global_rank = global_rank
         self.world_size = world_size
         self.sampling_kwargs = {}
-        if sampling_technique == "temperature":
-            self.index_generator = ConcatDataset.temperature_generator
-            self.sampling_kwargs["temperature"] = sampling_temperature
-        elif sampling_technique == "random":
+        if sampling_technique == "random":
             self.index_generator = ConcatDataset.random_generator
             self.sampling_kwargs["p"] = sampling_probabilities  # type: ignore
         elif sampling_technique == "round-robin":
             self.index_generator = ConcatDataset.round_robin_generator
+        elif sampling_technique == "temperature":
+            self.index_generator = ConcatDataset.temperature_generator
+            self.sampling_kwargs["temperature"] = sampling_temperature
         else:
+            supported_sampling_techniques = ["temperature", "random", "round-robin"]
             raise ValueError(f"Currently we only support sampling techniques in {supported_sampling_techniques}.")
         self.length = 0
 
@@ -65,9 +65,13 @@ class ConcatDataset(pt_data.IterableDataset, ABC):
         else:
             self.kind = "map"
 
-        for _, dataset in enumerate(datasets):
+        for dataset in datasets:
             isiterable = isinstance(dataset, pt_data.IterableDataset)
-            if (isiterable and not self.kind == "iterable") or (not isiterable and self.kind == "iterable"):
+            if (
+                isiterable
+                and self.kind != "iterable"
+                or (not isiterable and self.kind == "iterable")
+            ):
                 raise ValueError("All datasets in ConcatDataset must be of the same kind (Iterable or Map).")
 
             if self.kind == "map":
@@ -137,26 +141,21 @@ class ConcatDataset(pt_data.IterableDataset, ABC):
         if not temp:
             raise ValueError("Temperature generator expects a 'temperature' keyword argument.")
 
-        lengths = []
         num = len(datasets)
-        for dataset in datasets:
-            lengths.append(len(dataset))
-
+        lengths = [len(dataset) for dataset in datasets]
         p = np.array(lengths) / np.sum(lengths)
         p = np.power(p, 1 / temp)
         p = p / np.sum(p)
 
         while True:
-            ind = np.random.choice(np.arange(num), p=p)
-            yield ind
+            yield np.random.choice(np.arange(num), p=p)
 
     @staticmethod
     def round_robin_generator(datasets, **kwargs):
         """Generates indices in a round-robin fashion."""
         num = len(datasets)
         while True:
-            for i in range(num):
-                yield i
+            yield from range(num)
 
     @staticmethod
     def random_generator(datasets, **kwargs):
@@ -170,5 +169,4 @@ class ConcatDataset(pt_data.IterableDataset, ABC):
             raise ValueError("Length of probabilities list must be equal to the number of datasets.")
 
         while True:
-            ind = np.random.choice(np.arange(num), p=p)
-            yield ind
+            yield np.random.choice(np.arange(num), p=p)

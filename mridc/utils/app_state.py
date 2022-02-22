@@ -245,8 +245,11 @@ class AppState(metaclass=Singleton):
     @property
     def model_restore_path(self):
         """Returns the model_restore_path set by exp_manager."""
-        restore_path = self._all_model_restore_paths[-1] if len(self._all_model_restore_paths) > 0 else None
-        return restore_path
+        return (
+            self._all_model_restore_paths[-1]
+            if len(self._all_model_restore_paths) > 0
+            else None
+        )
 
     @model_restore_path.setter
     def model_restore_path(self, path):
@@ -271,8 +274,7 @@ class AppState(metaclass=Singleton):
 
     def get_model_metadata_from_guid(self, guid) -> ModelMetadataRegistry:
         """Returns the global model idx and restoration path."""
-        metadata = self._model_guid_map[guid]
-        return metadata
+        return self._model_guid_map[guid]
 
     @property
     def is_model_being_restored(self) -> bool:

@@ -65,5 +65,4 @@ class Conv2d(nn.Module):
             x = x.squeeze(1)
             if x.shape[-1] == 2:
                 x = x.permute(0, 3, 1, 2)
-        out = self.conv(x)
-        return out
+        return self.conv(x)

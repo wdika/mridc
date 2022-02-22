@@ -365,9 +365,7 @@ class ConvMGUCell(ConvMGUCellBase):
         f = torch.sigmoid(ih[0] + hh[0])
         c = torch.tanh(ih[1] + f * hh[1])
 
-        hy = c + f * (hx - c)
-
-        return hy
+        return c + f * (hx - c)
 
 
 class IndRNNCellBase(nn.Module):

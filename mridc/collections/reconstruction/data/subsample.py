@@ -50,7 +50,7 @@ class MaskFunc:
             accelerations: Amount of under-sampling. This should have the same length as center_fractions. If multiple
             values are provided, then one of these is chosen uniformly each time.
         """
-        if not len(center_fractions) == len(accelerations):
+        if len(center_fractions) != len(accelerations):
             raise ValueError("Number of center fractions should match number of accelerations")
 
         self.center_fractions = center_fractions
@@ -667,9 +667,7 @@ class Poisson2DMaskFunc(MaskFunc):
 
         X, Y = np.indices(self.shape)
         radius = int(self.shape[0] * self.scale)
-        circle_image = ((X - center_x) ** 2 + (Y - center_y) ** 2) < radius**2  # type: bool
-
-        return circle_image
+        return ((X - center_x) ** 2 + (Y - center_y) ** 2) < radius**2
 
 
 def create_mask_for_mask_type(

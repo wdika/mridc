@@ -76,7 +76,14 @@ def _bool(value):
     if isinstance(value, bool):
         return value
 
-    return not (value is None or value.lower() in ("false", "0", "no", "n", "f", "none"))
+    return value is not None and value.lower() not in (
+        "false",
+        "0",
+        "no",
+        "n",
+        "f",
+        "none",
+    )
 
 
 def _int(value):

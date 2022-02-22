@@ -56,11 +56,11 @@ def deprecated(wrapped=None, version=None, explanation=None):
 
             # Optionally, add version and alternative.
             if version is not None:
-                msg = msg + " It is going to be removed in "
+                msg = f'{msg} It is going to be removed in '
                 msg = msg + "the {} version.".format(version)
 
             if explanation is not None:
-                msg = msg + " " + explanation
+                msg = f'{msg} {explanation}'
 
             # Display the deprecated warning.
             logging.warning(msg)

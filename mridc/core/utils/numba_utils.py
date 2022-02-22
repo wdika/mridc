@@ -103,31 +103,23 @@ def numba_cuda_is_supported(min_version: str) -> bool:
     if module_available is None:
         return False
 
-    # If numba version is installed and available
-    if module_available is True:
-        from numba import cuda
+    if module_available is not True:
+        return False
+    from numba import cuda
 
-        # this method first arrived in 0.53, and that's the minimum version required
-        if hasattr(cuda, "is_supported_version"):
-            try:
-                cuda_available = cuda.is_available()
-                if cuda_available:
-                    cuda_compatible = cuda.is_supported_version()
-                else:
-                    cuda_compatible = False
+    if not hasattr(cuda, "is_supported_version"):
+        # assume cuda is supported, but it may fail due to CUDA incompatibility
+        return False
 
-                if is_numba_compat_strict():
-                    return cuda_available and cuda_compatible
-                return cuda_available
+    try:
+        cuda_available = cuda.is_available()
+        cuda_compatible = cuda.is_supported_version() if cuda_available else False
+        if is_numba_compat_strict():
+            return cuda_available and cuda_compatible
+        return cuda_available
 
-            except OSError:
-                # dlopen(libcudart.dylib) might fail if CUDA was never installed in the first place.
-                return False
-        else:
-            # assume cuda is supported, but it may fail due to CUDA incompatibility
-            return False
-
-    else:
+    except OSError:
+        # dlopen(libcudart.dylib) might fail if CUDA was never installed in the first place.
         return False
 
 

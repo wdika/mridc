@@ -59,7 +59,7 @@ class GRUConv2d(nn.Module):
                 bias=False,
             )
         )
-        for i in range(n_convs):
+        for _ in range(n_convs):
             self.layers.append(
                 ConvNonlinear(
                     hidden_channels,
@@ -108,11 +108,5 @@ class GRUConv2d(nn.Module):
             hx = x.new_zeros((x.size(0), self.hidden_channels, *x.size()[2:]))
 
         for i, layer in enumerate(self.layers):
-            if i == 0:
-                # forward_x = cat([layer(xi, hx) for xi in x])
-                # backward_x = cat([layer(xi, hx) for xi in x[::-1]][::-1])
-                # x = forward_x + backward_x
-                x = layer(x, hx)
-            else:
-                x = layer(x)
+            x = layer(x, hx) if i == 0 else layer(x)
         return x

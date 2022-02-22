@@ -34,16 +34,14 @@ def get_input_names(self):
     """Returns a list of input names for the Neural Module"""
     if not hasattr(self, "input_types"):
         raise NotImplementedError("For export to work you must define input_types")
-    input_names = list(self.input_types.keys())
-    return input_names
+    return list(self.input_types.keys())
 
 
 def get_output_names(self):
     """Returns a list of output names for the Neural Module"""
     if not hasattr(self, "output_types"):
         raise NotImplementedError("For export to work you must define output_types")
-    output_names = list(self.output_types.keys())
-    return output_names
+    return list(self.output_types.keys())
 
 
 def get_input_dynamic_axes(self, input_names):
@@ -66,12 +64,10 @@ def get_output_dynamic_axes(self, output_names):
 
 def to_onnxrt_input(input_names, input_list, input_dict):
     """Converts a list of inputs to a list of ONNX inputs"""
-    odict = {}
-    for k, v in input_dict.items():
-        odict[k] = v.cpu().numpy()
+    odict = {k: v.cpu().numpy() for k, v in input_dict.items()}
     for i, input in enumerate(input_list):
         if type(input) in (list, tuple):
-            odict[input_names[i]] = tuple([ip.cpu().numpy() for ip in input])
+            odict[input_names[i]] = tuple(ip.cpu().numpy() for ip in input)
         else:
             odict[input_names[i]] = input.cpu().numpy()
     return odict
@@ -127,7 +123,7 @@ class Exportable(ABC):
         my_args = locals()
         del my_args["self"]
 
-        qual_name = self.__module__ + "." + self.__class__.__qualname__
+        qual_name = f'{self.__module__}.{self.__class__.__qualname__}'
         format = self.get_format(output)
         output_descr = f"{qual_name} exported to {format}"
 
@@ -220,7 +216,7 @@ class Exportable(ABC):
         """Verifies the exported model can be run on a test input."""
         try:
             import onnxruntime
-        except (ImportError, ModuleNotFoundError):
+        except ImportError:
             logging.warning(f"ONNX generated at {output}, not verified - please install onnxruntime.\n")
             return
 

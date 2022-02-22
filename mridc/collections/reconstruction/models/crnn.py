@@ -104,8 +104,12 @@ class CRNNet(BaseMRIReconstructionModel, ABC):
         """
         sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         pred = self.crnn(y, sensitivity_maps, mask)
-        preds = [self.process_intermediate_eta(x, sensitivity_maps, target, do_coil_combination=False) for x in pred]
-        yield preds
+        yield [
+            self.process_intermediate_eta(
+                x, sensitivity_maps, target, do_coil_combination=False
+            )
+            for x in pred
+        ]
 
     def process_intermediate_eta(self, eta, sensitivity_maps, target, do_coil_combination=False):
         """Process the intermediate eta to be used in the loss function."""

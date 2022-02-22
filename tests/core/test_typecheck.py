@@ -455,10 +455,7 @@ class TestNeuralTypeCheckSystem:
 
             @typecheck()
             def __call__(self, x, y=None):
-                if y is None:
-                    x += 1
-                else:
-                    x += y
+                x += 1 if y is None else y
                 return x
 
         obj = InputOptionalTypes()

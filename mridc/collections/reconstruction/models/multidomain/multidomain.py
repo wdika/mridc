@@ -201,16 +201,16 @@ class StandardizationLayer(nn.Module):
         residual_image = combined_image.unsqueeze(self.coil_dim) - complex_mul(
             combined_image.unsqueeze(self.coil_dim), sensitivity_map
         )
-        concat = torch.cat(
+        return torch.cat(
             [
-                torch.cat([combined_image, residual_image.select(self.coil_dim, idx)], self.channel_dim).unsqueeze(
-                    self.coil_dim
-                )
+                torch.cat(
+                    [combined_image, residual_image.select(self.coil_dim, idx)],
+                    self.channel_dim,
+                ).unsqueeze(self.coil_dim)
                 for idx in range(coil_images.size(self.coil_dim))
             ],
             self.coil_dim,
         )
-        return concat
 
 
 class MultiDomainUnet2d(nn.Module):
@@ -290,7 +290,7 @@ class MultiDomainUnet2d(nn.Module):
         output = input_data
 
         # Apply down-sampling layers
-        for _, layer in enumerate(self.down_sample_layers):
+        for layer in self.down_sample_layers:
             output = layer(output)
             stack.append(output)
             output = F.avg_pool2d(output, kernel_size=2, stride=2, padding=0)

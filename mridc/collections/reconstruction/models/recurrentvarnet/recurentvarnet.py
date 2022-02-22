@@ -97,8 +97,7 @@ class RecurrentInit(nn.Module):
         for block in self.out_blocks:
             y = F.relu(block(x), inplace=True)
             output_list.append(y)
-        out = torch.stack(output_list, dim=-1)
-        return out
+        return torch.stack(output_list, dim=-1)
 
 
 class RecurrentVarNetBlock(nn.Module):

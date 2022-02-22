@@ -242,7 +242,7 @@ def get_optimizer_config(
 
     scheduler_params = AVAILABLE_OPTIMIZER_PARAMS[name]
 
-    if kwargs is not None and len(kwargs) != 0:
+    if kwargs is not None and kwargs:
         kwargs = OmegaConf.create(kwargs)
         OmegaConf.merge(scheduler_params(), kwargs)
 

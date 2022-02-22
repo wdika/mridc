@@ -89,7 +89,7 @@ def roll_one_dim(x: torch.Tensor, shift: int, dim: int) -> torch.Tensor:
     Returns:
         Rolled version of x.
     """
-    shift = shift % x.size(dim)
+    shift %= x.size(dim)
     if shift == 0:
         return x
 

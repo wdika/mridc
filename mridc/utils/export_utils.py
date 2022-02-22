@@ -125,8 +125,7 @@ def simple_replace(BaseT: Type[nn.Module], DestT: Type[nn.Module]) -> Callable[[
         if not isinstance(mod, BaseT):
             return None
         args = [getattr(mod, name, None) for name in mod.__constants__]
-        out = DestT(*args)  # type: ignore
-        return out
+        return DestT(*args)
 
     return expansion_fn
 
@@ -163,8 +162,7 @@ def replace_modules(
     for name, m in model.named_modules():
         m_type = type(m).__name__
         if m_type in expansions:  # type: ignore
-            swapped = expansions[m_type](m)  # type: ignore
-            if swapped:
+            if swapped := expansions[m_type](m):
                 mapping[name] = swapped
     logging.warning(f"Swapped {len(mapping)} modules")
     swap_modules(model, mapping)

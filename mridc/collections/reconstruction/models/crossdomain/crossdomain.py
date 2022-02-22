@@ -110,22 +110,26 @@ class CrossDomainNetwork(nn.Module):
 
     def _forward_operator(self, image, sampling_mask, sensitivity_map):
         """Forward operator."""
-        forward = torch.where(
+        return torch.where(
             sampling_mask == 0,
             torch.tensor([0.0], dtype=image.dtype).to(image.device),
-            fft2c(complex_mul(image.unsqueeze(1), sensitivity_map), fft_type=self.fft_type).type(image.type()),
+            fft2c(
+                complex_mul(image.unsqueeze(1), sensitivity_map),
+                fft_type=self.fft_type,
+            ).type(image.type()),
         )
-        return forward
 
     def _backward_operator(self, kspace, sampling_mask, sensitivity_map):
         """Backward operator."""
         kspace = torch.where(sampling_mask == 0, torch.tensor([0.0], dtype=kspace.dtype).to(kspace.device), kspace)
-        backward = (
-            complex_mul(ifft2c(kspace.float(), fft_type=self.fft_type), complex_conj(sensitivity_map))
+        return (
+            complex_mul(
+                ifft2c(kspace.float(), fft_type=self.fft_type),
+                complex_conj(sensitivity_map),
+            )
             .sum(1)
             .type(kspace.type())
         )
-        return backward
 
     def forward(
         self,
@@ -169,5 +173,4 @@ class CrossDomainNetwork(nn.Module):
                 )
                 image_block_idx += 1
 
-        out_image = image_buffer[..., :2]
-        return out_image
+        return image_buffer[..., :2]

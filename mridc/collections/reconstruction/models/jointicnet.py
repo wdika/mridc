@@ -103,8 +103,11 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
         sense_term_3_A = torch.where(mask == 0, torch.tensor([0.0], dtype=y.dtype).to(y.device), sense_term_3_A)
         # 2 * ni_{k} * F^-1(M.T * (M * F * (C * x_{k}) - b)) * x_{k}^*
         sense_term_3_mask = torch.where(
-            (1 - mask) == 0, torch.tensor([0.0], dtype=y.dtype).to(y.device), sense_term_3_A - y
+            mask == 1,
+            torch.tensor([0.0], dtype=y.dtype).to(y.device),
+            sense_term_3_A - y,
         )
+
         sense_term_3_backward = ifft2c(sense_term_3_mask, fft_type=self.fft_type)
         sense_term_3 = 2 * self.lr_sens[idx] * sense_term_3_backward * complex_conj(image).unsqueeze(1)
         sensitivity_maps = sense_term_1 + sense_term_2 - sense_term_3

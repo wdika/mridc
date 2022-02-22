@@ -79,15 +79,19 @@ class NeuralType:
         if dimensions_pass == 0:
             return element_comparison_result
         # TRANSPOSE_SAME DIMS
-        if dimensions_pass == 1:
-            if element_comparison_result == NeuralTypeComparisonResult.SAME:
-                return NeuralTypeComparisonResult.TRANSPOSE_SAME
+        if (
+            dimensions_pass == 1
+            and element_comparison_result == NeuralTypeComparisonResult.SAME
+        ):
+            return NeuralTypeComparisonResult.TRANSPOSE_SAME
+        elif (
+            dimensions_pass == 1
+            or dimensions_pass == 2
+            and element_comparison_result != NeuralTypeComparisonResult.SAME
+        ):
             return NeuralTypeComparisonResult.INCOMPATIBLE
-            # DIM_INCOMPATIBLE DIMS
-        if dimensions_pass == 2:
-            if element_comparison_result == NeuralTypeComparisonResult.SAME:
-                return NeuralTypeComparisonResult.DIM_INCOMPATIBLE
-            return NeuralTypeComparisonResult.INCOMPATIBLE
+        elif dimensions_pass == 2:
+            return NeuralTypeComparisonResult.DIM_INCOMPATIBLE
         return NeuralTypeComparisonResult.INCOMPATIBLE
 
     def compare_and_raise_error(self, parent_type_name, port_name, second_object):
@@ -100,10 +104,7 @@ class NeuralType:
 
     def __eq__(self, other):
         """Checks if two NeuralTypes are equal."""
-        if isinstance(other, NeuralType):
-            return self.compare(other)
-
-        return False
+        return self.compare(other) if isinstance(other, NeuralType) else False
 
     @staticmethod
     def __check_sanity(axes):
@@ -121,9 +122,8 @@ class NeuralType:
         for axis in axes:
             if not axis.is_list:
                 saw_tensor_dim = True
-            else:  # current axis is a list
-                if saw_tensor_dim:  # which is preceded by tensor dim
-                    checks_passed = False
+            elif saw_tensor_dim:  # which is preceded by tensor dim
+                checks_passed = False
         if not checks_passed:
             raise ValueError(
                 "You have list dimension after Tensor dimension. All list dimensions must preceded Tensor dimensions"
@@ -144,9 +144,9 @@ class NeuralType:
         """
         if axes_a is None and axes_b is None:
             return 0
-        if axes_a is None and axes_b is not None:
+        if axes_a is None:
             return 3
-        if axes_a is not None and axes_b is None:
+        if axes_b is None:
             return 3
         if len(axes_a) != len(axes_b):
             return 3
@@ -170,19 +170,12 @@ class NeuralType:
             return 0
         # can be TRANSPOSE_SAME, DIM_INCOMPATIBLE
         if kinds_a.keys() == kinds_b.keys():
-            for key, value in kinds_a.items():
-                if kinds_b[key] != value:
-                    return 2
-            return 1
+            return next((2 for key, value in kinds_a.items() if kinds_b[key] != value), 1)
         return 3
 
     def __repr__(self):
         """Returns string representation of NeuralType."""
-        if self.axes is not None:
-            axes = str(self.axes)
-        else:
-            axes = "None"
-
+        axes = str(self.axes) if self.axes is not None else "None"
         if self.elements_type is not None:
             element_type = repr(self.elements_type)
         else:
@@ -193,8 +186,7 @@ class NeuralType:
         if self.optional:
             data = f"{data}, optional={self.optional}"
 
-        final = f"{self.__class__.__name__}({data})"
-        return final
+        return f"{self.__class__.__name__}({data})"
 
 
 class NeuralTypeError(Exception):
