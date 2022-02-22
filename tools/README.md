@@ -11,7 +11,7 @@ Evaluate the performance of a method by comparing the reconstructions to the gro
 Example for evaluating zero-filled reconstruction and returning the mean +/- std performance,
 
 ```bash
-python -m mridc.evaluate target_path/ predictions_path/ output_path/ --method zero-filled --acceleration 10
+python -m mridc.evaluate target_path/ predictions_path/ output_path/ --method zero-filled --acceleration 10  
 --type mean_std
 ```
 
@@ -19,7 +19,7 @@ Example for evaluating zero-filled reconstruction and returning a csv with the s
 (to use for further visualization),
 
 ```bash
-python -m mridc.evaluate target_path/ predictions_path/ output_path/ --method zero-filled --acceleration 10
+python -m mridc.evaluate target_path/ predictions_path/ output_path/ --method zero-filled --acceleration 10  
 --type all_slices
 ```
 

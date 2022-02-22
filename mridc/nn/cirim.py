@@ -30,7 +30,7 @@ class CIRIM(nn.Module):
         time_steps: int = 8,
         conv_dim: int = 2,
         loss_fn: Union[nn.Module, str] = "l1",
-        num_cascades: int = 1,
+        num_cascades: int = 4,
         no_dc: bool = False,
         keep_eta: bool = False,
         use_sens_net: bool = False,
@@ -115,10 +115,10 @@ class CIRIM(nn.Module):
 
         # Initialize the sensitivity network if use_sens_net is True
         self.use_sens_net = use_sens_net
-        if self.use_sens_net:
-            self.sens_net = SensitivityModel(
-                sens_chans, sens_pools, fft_type=self.fft_type, mask_type=sens_mask_type, normalize=sens_normalize
-            )
+
+        self.sens_net = SensitivityModel(
+            sens_chans, sens_pools, fft_type=self.fft_type, mask_type=sens_mask_type, normalize=sens_normalize
+        )
 
         self.loss_fn = loss_fn
 
@@ -198,7 +198,7 @@ class CIRIM(nn.Module):
                         if self.output_type == "SENSE":
                             p = complex_mul(p, complex_conj(sense)).sum(dim=1)
                         elif self.output_type == "RSS":
-                            p = torch.sqrt((p**2).sum(dim=1))
+                            p = torch.sqrt((p ** 2).sum(dim=1))
                         else:
                             raise ValueError("Output type not supported.")
 
@@ -218,11 +218,14 @@ class CIRIM(nn.Module):
                 ]
 
                 # Take average of all time-steps loss
-                cascade_time_steps_loss.append(sum(sum(_loss) / self.time_steps))  # type: ignore
+                # TODO: check if this line works, otherwise use sum(sum(l) / self.time_steps)
+                cascade_time_steps_loss.append(torch.stack(_loss, dim=0).sum(dim=0) / self.time_steps)
 
         # Take average of all cascades loss
         if accumulate_loss:
-            yield sum(list(cascade_time_steps_loss)) / len(self.cascades)
+            # TODO: check if this line works, otherwise use sum(list(cascade_time_steps_loss)) / len(self.cascades)
+            loss = torch.stack(cascade_time_steps_loss, dim=0).mean(dim=0)
+            yield loss
         else:
             if isinstance(pred, list):
                 # Use the prediction of the last time-step.
@@ -234,7 +237,7 @@ class CIRIM(nn.Module):
                 if self.output_type == "SENSE":
                     pred = complex_mul(pred, complex_conj(sense)).sum(dim=1)
                 elif self.output_type == "RSS":
-                    pred = torch.sqrt((pred**2).sum(dim=1))
+                    pred = torch.sqrt((pred ** 2).sum(dim=1))
                 else:
                     raise ValueError("Output type not supported.")
 
@@ -287,7 +290,7 @@ class CIRIM(nn.Module):
                     if self.output_type == "SENSE":
                         p = complex_mul(p, complex_conj(sense)).sum(dim=1)
                     elif self.output_type == "RSS":
-                        p = torch.sqrt((p**2).sum(dim=1))
+                        p = torch.sqrt((p ** 2).sum(dim=1))
                     else:
                         raise ValueError("Output type not supported.")
 

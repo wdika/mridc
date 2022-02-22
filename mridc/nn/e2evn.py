@@ -176,7 +176,7 @@ class NormUnet(nn.Module):
         Returns:
             Normalized UNet output tensor.
         """
-        if x.shape[-1] != 2:
+        if not x.shape[-1] == 2:
             raise ValueError("Last dimension must be 2 for complex.")
 
         mean = 1.0
@@ -417,7 +417,7 @@ class VarNet(nn.Module):
         sens_maps = self.sens_net(masked_kspace, mask) if self.use_sens_net and self.sens_net is not None else sense
 
         pred_kspace = masked_kspace.clone()
-        for cascade in self.cascades:
+        for _, cascade in enumerate(self.cascades):
             pred_kspace = cascade(pred_kspace, masked_kspace, mask, sens_maps)
 
         if self.output_type == "SENSE":

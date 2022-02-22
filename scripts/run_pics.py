@@ -12,7 +12,6 @@ from typing import Any, List, Optional, Tuple, Union
 import bart
 import numpy as np
 import torch
-import torch.nn.functional as F
 
 from mridc import ifft2c, fft2c, save_reconstructions
 from mridc.data.mri_data import SliceDataset
@@ -60,7 +59,6 @@ class PICSDataTransform:
         crop_size: Optional[Union[Tuple, None]] = None,
         kspace_crop: bool = False,
         crop_before_masking: bool = True,
-        kspace_zero_filling_size: Optional[Tuple] = None,
         fft_type: str = "data",
         use_seed: bool = True,
     ):
@@ -71,7 +69,6 @@ class PICSDataTransform:
             crop_size: Size of crop.
             kspace_crop: Whether to crop kspace.
             crop_before_masking: Whether to crop before masking.
-            kspace_zero_filling_size: The size of padding in kspace -> zero filling.
             fft_type: Type of fft to use.
             use_seed: Whether to use seed.
         """
@@ -80,7 +77,6 @@ class PICSDataTransform:
 
         self.crop_size = crop_size
         self.crop_before_masking = crop_before_masking
-        self.kspace_zero_filling_size = kspace_zero_filling_size
         self.kspace_crop = kspace_crop
 
         self.fft_type = fft_type
@@ -118,37 +114,12 @@ class PICSDataTransform:
         kspace = to_tensor(kspace)
         sensitivity_map = to_tensor(sensitivity_map)
 
-        # Apply zero-filling on kspace
-        if self.kspace_zero_filling_size is not None and self.kspace_zero_filling_size != "":
-            # (padding_left,padding_right, padding_top,padding_bottom)
-            padding_top = abs(int(self.kspace_zero_filling_size[0]) - kspace.shape[1]) // 2
-            padding_bottom = padding_top
-            padding_left = abs(int(self.kspace_zero_filling_size[1]) - kspace.shape[2]) // 2
-            padding_right = padding_left
-
-            kspace = torch.view_as_complex(kspace)
-            kspace = F.pad(
-                kspace, pad=(padding_left, padding_right, padding_top, padding_bottom), mode="constant", value=0
-            )
-            kspace = torch.view_as_real(kspace)
-
-            sensitivity_map = fft2c(sensitivity_map, self.fft_type)
-            sensitivity_map = torch.view_as_complex(sensitivity_map)
-            sensitivity_map = F.pad(
-                sensitivity_map,
-                pad=(padding_left, padding_right, padding_top, padding_bottom),
-                mode="constant",
-                value=0,
-            )
-            sensitivity_map = torch.view_as_real(sensitivity_map)
-            sensitivity_map = ifft2c(sensitivity_map, self.fft_type)
-
         crop_size = torch.tensor([attrs["recon_size"][0], attrs["recon_size"][1]])
 
         if self.crop_size is not None:
             # Check for smallest size against the target shape.
-            h = min(int(self.crop_size[0]), target.shape[0])
-            w = min(int(self.crop_size[1]), target.shape[1])
+            h = self.crop_size[0] if self.crop_size[0] <= target.shape[0] else target.shape[0]
+            w = self.crop_size[1] if self.crop_size[1] <= target.shape[1] else target.shape[1]
 
             # Check for smallest size against the stored recon shape in metadata.
             if crop_size[0] != 0:
@@ -157,6 +128,7 @@ class PICSDataTransform:
                 w = w if w <= crop_size[1] else crop_size[1]
 
             self.crop_size = (h, w)
+            # crop_size = torch.tensor([self.crop_size[0], self.crop_size[1]])
 
             if sensitivity_map is not None and sensitivity_map.size != 0:
                 sensitivity_map = complex_center_crop(sensitivity_map, self.crop_size)
@@ -261,7 +233,9 @@ def main(args):
             time_taken = time.perf_counter() - start_time
     else:
         start_time = time.perf_counter()
-        outputs = [run_pics(i) for i in range(len(dataset))]
+        outputs = []
+        for i in range(len(dataset)):
+            outputs.append(run_pics(i))
         time_taken = time.perf_counter() - start_time
 
     logging.info(f"Run Time = {time_taken:} s")
@@ -296,11 +270,6 @@ def create_arg_parser():
     parser.add_argument("--sample_rate", type=float, default=1.0, help="Sample rate for the data")
     parser.add_argument("--batch_size", type=int, default=1, help="Batch size for the data loader")
     parser.add_argument(
-        "--no_mask",
-        action="store_true",
-        help="Toggle to turn off masking. This can be used for prospectively undersampled data.",
-    )
-    parser.add_argument(
         "--mask_type",
         choices=("random", "gaussian2d", "equispaced"),
         default="gaussian2d",
@@ -315,9 +284,8 @@ def create_arg_parser():
     )
     parser.add_argument("--shift_mask", action="store_true", help="Shift the mask")
     parser.add_argument("--normalize_inputs", action="store_true", help="Normalize the inputs")
-    parser.add_argument("--crop_size", nargs="+", help="Size of the crop to apply to the input")
+    parser.add_argument("--crop_size", default=None, help="Size of the crop to apply to the input")
     parser.add_argument("--crop_before_masking", action="store_true", help="Crop before masking")
-    parser.add_argument("--kspace_zero_filling_size", nargs="+", help="Size of zero-filling in kspace")
     parser.add_argument(
         "--num_iters", type=int, default=60, help="Number of iterations to run the reconstruction algorithm"
     )
@@ -348,13 +316,10 @@ if __name__ == "__main__":
         root=ARGS.data_path,
         sense_root=ARGS.sense_path,
         transform=PICSDataTransform(
-            mask_func=False
-            if ARGS.no_mask
-            else create_mask_for_mask_type(ARGS.mask_type, ARGS.center_fractions, ARGS.accelerations),  # type: ignore
+            mask_func=create_mask_for_mask_type(ARGS.mask_type, ARGS.center_fractions, ARGS.accelerations),
             shift_mask=ARGS.shift_mask,
             crop_size=ARGS.crop_size,  # type: ignore
             crop_before_masking=ARGS.crop_before_masking,
-            kspace_zero_filling_size=ARGS.kspace_zero_filling_size,
             fft_type=ARGS.fft_type,
         ),
         challenge=ARGS.challenge,

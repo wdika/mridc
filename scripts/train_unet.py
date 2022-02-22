@@ -212,36 +212,63 @@ def evaluate(
                 image = img[r].to(args.device)
                 acceleration = str(acc[r].item())
 
+                output = model.forward(image.unsqueeze(1)).squeeze(1)
+
+                if output_type == "SENSE":
+                    output = output[..., 0] + 1j * output[..., 1]
+                    output = torch.abs(output / torch.max(torch.abs(output)))
+                elif output_type == "RSS":
+                    output = rss(output, dim=1)
+                else:
+                    raise NotImplementedError("Output type should be either SENSE or RSS.")
+
+                target, output = center_crop_to_smallest(target, output)
+
+                output_np = output.cpu().numpy()
+                target_np = target.cpu().numpy()
+
+                if "ssim" in str(loss_fn).lower():
+                    val_losses[acceleration] = (
+                        loss_fn(target.unsqueeze(1), output.unsqueeze(1), data_range=max_value).cpu().numpy()
+                    )
+                else:
+                    val_losses[acceleration] = loss_fn(target.unsqueeze(1), output.unsqueeze(1)).cpu().numpy()
+
+                mse_losses[acceleration] = mse(target_np, output_np)
+                nmse_losses[acceleration] = nmse(target_np, output_np)
+                psnr_losses[acceleration] = psnr(target_np, output_np)
+                ssim_losses[acceleration] = ssim(target_np, output_np)
             else:
                 image = img.to(args.device)
                 acceleration = str(acc.item())
 
-            output = model.forward(image.unsqueeze(1)).squeeze(1)
+                output = model.forward(image.unsqueeze(1)).squeeze(1)
 
-            if output_type == "RSS":
-                output = rss(output, dim=1)
-            elif output_type == "SENSE":
-                output = output[..., 0] + 1j * output[..., 1]
-                output = torch.abs(output / torch.max(torch.abs(output)))
-            else:
-                raise NotImplementedError("Output type should be either SENSE or RSS.")
+                if output_type == "SENSE":
+                    output = output[..., 0] + 1j * output[..., 1]
+                    output = torch.abs(output / torch.max(torch.abs(output)))
+                elif output_type == "RSS":
+                    output = rss(output, dim=1)
+                else:
+                    raise NotImplementedError("Output type should be either SENSE or RSS.")
 
-            target, output = center_crop_to_smallest(target, output)
+                target, output = center_crop_to_smallest(target, output)
 
-            output_np = output.cpu().numpy()
-            target_np = target.cpu().numpy()
+                output_np = output.cpu().numpy()
+                target_np = target.cpu().numpy()
 
-            if "ssim" in str(loss_fn).lower():
-                val_losses[acceleration] = (
-                    loss_fn(target.unsqueeze(1), output.unsqueeze(1), data_range=max_value).cpu().numpy()
-                )
-            else:
-                val_losses[acceleration] = loss_fn(target.unsqueeze(1), output.unsqueeze(1)).cpu().numpy()
+                if "ssim" in str(loss_fn).lower():
+                    val_losses[acceleration] = (
+                        loss_fn(target.unsqueeze(1), output.unsqueeze(1), data_range=max_value).cpu().numpy()
+                    )
+                else:
+                    val_losses[acceleration] = loss_fn(target.unsqueeze(1), output.unsqueeze(1)).cpu().numpy()
 
-            mse_losses[acceleration] = mse(target_np, output_np)
-            nmse_losses[acceleration] = nmse(target_np, output_np)
-            psnr_losses[acceleration] = psnr(target_np, output_np)
-            ssim_losses[acceleration] = ssim(target_np, output_np)
+                mse_losses[acceleration] = mse(target_np, output_np)
+                nmse_losses[acceleration] = nmse(target_np, output_np)
+                psnr_losses[acceleration] = psnr(target_np, output_np)
+                ssim_losses[acceleration] = ssim(target_np, output_np)
+
             if args.device == "cuda":
                 memory_allocated.append(torch.cuda.max_memory_allocated() * 1e-6)
                 torch.cuda.reset_peak_memory_stats()
@@ -405,8 +432,8 @@ def main(args):
 
     if args.accelerations[0] != args.accelerations[1] or len(args.accelerations) > 2:
         mask_func: list = []
-        for acc, cf in zip(args.accelerations, args.center_fractions):
-            mask_func.append(create_mask_for_mask_type(args.mask_type, [cf] * 2, [acc] * 2))
+        for i, _ in enumerate(args.accelerations):
+            mask_func += create_mask_for_mask_type(args.mask_type, args.center_fractions[i], args.accelerations[i])
     else:
         mask_func = create_mask_for_mask_type(args.mask_type, args.center_fractions, args.accelerations)
 
@@ -417,7 +444,6 @@ def main(args):
         output_type=args.output_type,
         crop_size=args.crop_size,
         crop_before_masking=args.crop_before_masking,
-        kspace_zero_filling_size=args.kspace_zero_filling_size,
         fft_type=args.fft_type,
         use_seed=True,
     )
@@ -428,7 +454,6 @@ def main(args):
         output_type=args.output_type,
         crop_size=args.crop_size,
         crop_before_masking=args.crop_before_masking,
-        kspace_zero_filling_size=args.kspace_zero_filling_size,
         fft_type=args.fft_type,
     )
 
@@ -513,9 +538,8 @@ def create_arg_parser():
     )
     parser.add_argument("--shift_mask", action="store_true", help="Shift the mask")
     parser.add_argument("--normalize_inputs", action="store_true", help="Normalize the inputs")
-    parser.add_argument("--crop_size", nargs="+", help="Size of the crop to apply to the input")
+    parser.add_argument("--crop_size", default=None, help="Size of the crop to apply to the input")
     parser.add_argument("--crop_before_masking", action="store_true", help="Crop before masking")
-    parser.add_argument("--kspace_zero_filling_size", nargs="+", help="Size of zero-filling in kspace")
     parser.add_argument("--in_chans", type=int, default=2, help="Number of input channels")
     parser.add_argument("--out_chans", type=int, default=2, help="Number of output channels")
     parser.add_argument("--chans", type=int, default=64, help="Number of channels for the model")
