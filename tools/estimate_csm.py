@@ -115,9 +115,7 @@ def run_bart(args):
     """Run the BART ecalib on the given data set."""
     if args.num_procs == 0:
         start_time = time.perf_counter()
-        outputs = []
-        for i in range(len(dataset)):
-            outputs.append(run_model(i))
+        outputs = [run_model(i) for i in range(len(dataset))]
         time_taken = time.perf_counter() - start_time
     else:
         with multiprocessing.Pool(args.num_procs) as pool:

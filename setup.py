@@ -86,9 +86,7 @@ class StyleCommand(distutils_cmd.Command):
 
         self.announce(msg="Running command: %s" % str(" ".join(command)), level=distutils_log.INFO)
 
-        return_code = subprocess.call(command)
-
-        return return_code
+        return subprocess.call(command)
 
     def _isort(self, scope, check):
         return self.__call_checker(base_command=self.__ISORT_BASE.split(), scope=scope, check=check)

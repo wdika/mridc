@@ -61,7 +61,7 @@ def save_png(data_dir: Path, out_dir: Path) -> None:
                 plt.imshow(np.imag(im), cmap="gray")
                 plt.title("Imaginary")
                 plt.axis("off")
-                plt.savefig(str(out_path) + "/" + str(sl) + ".png")
+                plt.savefig(f'{str(out_path)}/{str(sl)}.png')
                 plt.close()
 
 

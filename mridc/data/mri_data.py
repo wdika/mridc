@@ -35,7 +35,7 @@ def et_query(root: str, qlist: Sequence[str], namespace: str = "https://www.ismr
     ns = {prefix: namespace}
 
     for el in qlist:
-        s = s + f"//{prefix}:{el}"
+        s += f"//{prefix}:{el}"
 
     value = root.find(s, ns)  # type: ignore
     if value is None:
@@ -108,7 +108,7 @@ class CombinedSliceDataset(torch.utils.data.Dataset):
                 )
             )
 
-            self.examples = self.examples + self.datasets[-1].examples
+            self.examples += self.datasets[-1].examples
 
     def __len__(self):
         return sum(len(dataset) for dataset in self.datasets)
@@ -313,9 +313,26 @@ class SliceDataset(Dataset):
             attrs = dict(hf.attrs)
             attrs.update(metadata)
 
-        if self.transform is None:
-            sample = (kspace, sensitivity_map, mask, eta, target, attrs, fname.name, dataslice)
-        else:
-            sample = self.transform(kspace, sensitivity_map, mask, eta, target, attrs, fname.name, dataslice)
-
-        return sample
+        return (
+            (
+                kspace,
+                sensitivity_map,
+                mask,
+                eta,
+                target,
+                attrs,
+                fname.name,
+                dataslice,
+            )
+            if self.transform is None
+            else self.transform(
+                kspace,
+                sensitivity_map,
+                mask,
+                eta,
+                target,
+                attrs,
+                fname.name,
+                dataslice,
+            )
+        )

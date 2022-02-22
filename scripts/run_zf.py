@@ -63,11 +63,10 @@ def run_zf(data_loader: DataLoader, fft_type: str, device: str, progress_bar_ref
     sys.stdout.write("\n")
     sys.stdout.flush()
 
-    reconstructions = {
-        fname: np.stack([pred for _, pred in sorted(slice_preds)]) for fname, slice_preds in output.items()
+    return {
+        fname: np.stack([pred for _, pred in sorted(slice_preds)])
+        for fname, slice_preds in output.items()
     }
-
-    return reconstructions
 
 
 def main(args):
