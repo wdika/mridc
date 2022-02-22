@@ -1096,7 +1096,7 @@ class ModelPT(LightningModule, Model):
             if dataset_name in {"train", "validation", "test"}:
                 OmegaConf.set_struct(self.cfg, False)
 
-                key_name = dataset_name + "_ds"
+                key_name = f'{dataset_name}_ds'
                 self.cfg[key_name] = config
 
                 OmegaConf.set_struct(self.cfg, True)
