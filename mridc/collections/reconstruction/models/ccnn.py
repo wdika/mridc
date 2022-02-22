@@ -188,7 +188,7 @@ class CascadeNet(BaseMRIReconstructionModel, ABC):
         acc = r if r != 0 else acc
 
         tensorboard_logs = {
-            f'train_loss_{acc}x': train_loss.item(),  # type: ignore
+            f"train_loss_{acc}x": train_loss.item(),  # type: ignore
             "lr": self._optimizer.param_groups[0]["lr"],  # type: ignore
         }
 
