@@ -70,7 +70,7 @@ class CrossDomainNetwork(nn.Module):
         self.image_model_list = image_model_list
         self.image_buffer_size = image_buffer_size
 
-        self.normalize_image = normalize_image
+        # self.normalize_image = normalize_image
 
         self._coil_dim = 1
         self._complex_dim = -1
@@ -82,8 +82,8 @@ class CrossDomainNetwork(nn.Module):
             self._forward_operator(image.clone(), sampling_mask, sensitivity_map)
             for image in torch.split(image_buffer, 2, self._complex_dim)
         ]
-
         forward_buffer = torch.cat(forward_buffer, self._complex_dim)
+
         kspace_buffer = torch.cat([kspace_buffer, forward_buffer, masked_kspace], self._complex_dim)
 
         if self.kspace_model_list is not None:
@@ -120,7 +120,11 @@ class CrossDomainNetwork(nn.Module):
     def _backward_operator(self, kspace, sampling_mask, sensitivity_map):
         """Backward operator."""
         kspace = torch.where(sampling_mask == 0, torch.tensor([0.0], dtype=kspace.dtype).to(kspace.device), kspace)
-        backward = complex_mul(ifft2c(kspace, fft_type=self.fft_type), complex_conj(sensitivity_map)).sum(1)
+        backward = (
+            complex_mul(ifft2c(kspace.float(), fft_type=self.fft_type), complex_conj(sensitivity_map))
+            .sum(1)
+            .type(kspace.type())
+        )
         return backward
 
     def forward(
@@ -148,7 +152,6 @@ class CrossDomainNetwork(nn.Module):
         input_image = self._backward_operator(masked_kspace, sampling_mask, sensitivity_map)
 
         image_buffer = torch.cat([input_image] * self.image_buffer_size, self._complex_dim).to(masked_kspace.device)
-
         kspace_buffer = torch.cat([masked_kspace] * self.kspace_buffer_size, self._complex_dim).to(
             masked_kspace.device
         )

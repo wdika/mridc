@@ -64,7 +64,7 @@ class UNet(BaseMRIReconstructionModel, ABC):
         # initialize weights if not using pretrained unet
         # TODO if not unet_cfg_dict.get("pretrained", False):
 
-        self.train_loss_fn = SSIMLoss() if unet_cfg_dict.get("loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = SSIMLoss() if unet_cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
         self.eval_loss_fn = SSIMLoss() if unet_cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
 
     @typecheck()

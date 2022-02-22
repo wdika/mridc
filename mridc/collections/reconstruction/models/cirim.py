@@ -96,7 +96,7 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
         if not cirim_cfg_dict.get("pretrained", False):
             self.cirim.apply(lambda module: rnn_weights_init(module, std_init_range))
 
-        self.train_loss_fn = SSIMLoss() if cirim_cfg_dict.get("loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = SSIMLoss() if cirim_cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
         self.eval_loss_fn = SSIMLoss() if cirim_cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
         self.accumulate_estimates = cirim_cfg_dict.get("accumulate_estimates")
 
@@ -236,7 +236,7 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
             except StopIteration:
                 pass
 
-            train_loss = sum(self.process_loss(target, etas, set_loss_fn=self.eval_loss_fn))
+            train_loss = sum(self.process_loss(target, etas, set_loss_fn=self.train_loss_fn))
         else:
             train_loss = self.process_loss(target, etas, set_loss_fn=self.train_loss_fn)
 

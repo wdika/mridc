@@ -15,44 +15,46 @@ from mridc.collections.common.losses.ssim import SSIMLoss
 from mridc.collections.common.parts.fft import ifft2c
 from mridc.collections.common.parts.utils import coil_combination
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
-from mridc.collections.reconstruction.models.unet_base.unet_block import NormUnet
-from mridc.collections.reconstruction.models.varnet.vn_block import VarNetBlock
+from mridc.collections.reconstruction.models.conv.conv2d import Conv2d
+from mridc.collections.reconstruction.models.cascadenet.ccnn_block import CascadeNetBlock
 from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
 from mridc.core.classes.common import typecheck
 
-__all__ = ["VarNet"]
+__all__ = ["CascadeNet"]
 
 
-class VarNet(BaseMRIReconstructionModel, ABC):
+class CascadeNet(BaseMRIReconstructionModel, ABC):
     """
-    End-to-end Variational Network (VN) model implementation as presented in [1]_.
+    Deep Cascade of Convolutional Neural Networks model implementation as presented in [1]_.
 
     References
     ----------
 
-    .. [1] Sriram, A. et al. (2020) ‘End-to-End Variational Networks for Accelerated MRI Reconstruction’.
-    Available at: https://github.com/facebookresearch/fastMRI.
+    .. [1] Schlemper, J., Caballero, J., Hajnal, J. V., Price, A., & Rueckert, D.
+    A Deep Cascade of Convolutional Neural Networks for MR Image Reconstruction.
+    Information Processing in Medical Imaging (IPMI), 2017. Available at: https://arxiv.org/pdf/1703.00555.pdf
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
         # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
 
-        vn_cfg_dict = OmegaConf.to_container(cfg, resolve=True)
+        ccnn_cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
-        self.no_dc = vn_cfg_dict.get("no_dc")
-        self.fft_type = vn_cfg_dict.get("fft_type")
-        self.num_cascades = vn_cfg_dict.get("num_cascades")
+        self.no_dc = ccnn_cfg_dict.get("no_dc")
+        self.fft_type = ccnn_cfg_dict.get("fft_type")
+        self.num_cascades = ccnn_cfg_dict.get("num_cascades")
 
-        # Cascades of VN blocks
+        # Cascades of CascadeCNN blocks
         self.cascades = nn.ModuleList(
             [
-                VarNetBlock(
-                    NormUnet(
-                        chans=vn_cfg_dict.get("channels"),
-                        num_pools=vn_cfg_dict.get("pooling_layers"),
-                        padding_size=vn_cfg_dict.get("padding_size"),
-                        normalize=vn_cfg_dict.get("normalize"),
+                CascadeNetBlock(
+                    Conv2d(
+                        in_channels=2,
+                        out_channels=2,
+                        hidden_channels=ccnn_cfg_dict.get("hidden_channels"),
+                        n_convs=ccnn_cfg_dict.get("n_convs"),
+                        batchnorm=ccnn_cfg_dict.get("kbatchnorm"),
                     ),
                     fft_type=self.fft_type,
                     no_dc=self.no_dc,
@@ -61,25 +63,25 @@ class VarNet(BaseMRIReconstructionModel, ABC):
             ]
         )
 
-        self.output_type = vn_cfg_dict.get("output_type")
+        self.output_type = ccnn_cfg_dict.get("output_type")
 
         # Initialize the sensitivity network if use_sens_net is True
-        self.use_sens_net = vn_cfg_dict.get("use_sens_net")
+        self.use_sens_net = ccnn_cfg_dict.get("use_sens_net")
         if self.use_sens_net:
             self.sens_net = BaseSensitivityModel(
-                vn_cfg_dict.get("sens_chans"),
-                vn_cfg_dict.get("sens_pools"),
+                ccnn_cfg_dict.get("sens_chans"),
+                ccnn_cfg_dict.get("sens_pools"),
                 fft_type=self.fft_type,
-                mask_type=vn_cfg_dict.get("sens_mask_type"),
-                normalize=vn_cfg_dict.get("sens_normalize"),
+                mask_type=ccnn_cfg_dict.get("sens_mask_type"),
+                normalize=ccnn_cfg_dict.get("sens_normalize"),
             )
 
-        # initialize weights if not using pretrained vn
-        # TODO if not vn_cfg_dict.get("pretrained", False)
+        # initialize weights if not using pretrained ccnn
+        # TODO if not ccnn_cfg_dict.get("pretrained", False)
 
-        self.train_loss_fn = SSIMLoss() if vn_cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = SSIMLoss() if vn_cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
-        self.accumulate_estimates = vn_cfg_dict.get("accumulate_estimates")
+        self.train_loss_fn = SSIMLoss() if ccnn_cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
+        self.eval_loss_fn = SSIMLoss() if ccnn_cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
+        self.accumulate_estimates = ccnn_cfg_dict.get("accumulate_estimates")
 
         # Initialize data consistency term
         # TODO: make this configurable
@@ -107,15 +109,9 @@ class VarNet(BaseMRIReconstructionModel, ABC):
         """
         sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         estimation = y.clone()
-
-        cascades_etas = []
         for _, cascade in enumerate(self.cascades):
             # Forward pass through the cascades
             estimation = cascade(estimation, y, sensitivity_maps, mask)
-            cascades_etas.append(estimation)
-
-        if self.accumulate_estimates:
-            return cascades_etas
         return self.process_intermediate_eta(estimation, sensitivity_maps, target, do_coil_combination=True)
 
     def process_intermediate_eta(self, eta, sensitivity_maps, target, do_coil_combination=False):
@@ -149,9 +145,6 @@ class VarNet(BaseMRIReconstructionModel, ABC):
                 """Calculate other loss."""
                 return set_loss_fn(x, torch.abs(y / torch.max(torch.abs(y))))
 
-        if self.accumulate_estimates:
-            cascades_loss = [loss_fn(target, cascade_eta) for cascade_eta in eta]
-            return sum(list(sum(cascades_loss))) / len(self.cascades)
         return loss_fn(target, eta)
 
     @staticmethod
@@ -189,15 +182,7 @@ class VarNet(BaseMRIReconstructionModel, ABC):
         y, mask, r = self.process_inputs(y, mask)
         etas = self.forward(y, sensitivity_maps, mask, target)
 
-        if self.accumulate_estimates:
-            try:
-                etas = next(etas)
-            except StopIteration:
-                pass
-
-            train_loss = sum(self.process_loss(target, etas, set_loss_fn=self.eval_loss_fn))
-        else:
-            train_loss = self.process_loss(target, etas, set_loss_fn=self.train_loss_fn)
+        train_loss = self.process_loss(target, etas, set_loss_fn=self.train_loss_fn)
 
         acc = r if r != 0 else acc
 
@@ -214,18 +199,7 @@ class VarNet(BaseMRIReconstructionModel, ABC):
         y, mask, _ = self.process_inputs(y, mask)
         etas = self.forward(y, sensitivity_maps, mask, target)
 
-        if self.accumulate_estimates:
-            try:
-                etas = next(etas)
-            except StopIteration:
-                pass
-
-            val_loss = sum(self.process_loss(target, etas, set_loss_fn=self.eval_loss_fn))
-        else:
-            val_loss = self.process_loss(target, etas, set_loss_fn=self.eval_loss_fn)
-
-        if isinstance(etas, list):
-            etas = etas[-1][-1]
+        val_loss = self.process_loss(target, etas, set_loss_fn=self.eval_loss_fn)
 
         key = f"{fname[0]}_images_idx_{int(slice_num)}"  # type: ignore
         output = torch.abs(etas).detach().cpu()
@@ -246,15 +220,6 @@ class VarNet(BaseMRIReconstructionModel, ABC):
         y, sensitivity_maps, mask, _, target, fname, slice_num, _, _, _ = batch
         y, mask, _ = self.process_inputs(y, mask)
         prediction = self.forward(y, sensitivity_maps, mask, target)
-
-        if self.accumulate_estimates:
-            try:
-                prediction = next(prediction)
-            except StopIteration:
-                pass
-
-        if isinstance(prediction, list):
-            prediction = prediction[-1][-1]
 
         slice_num = int(slice_num)
         name = str(fname[0])  # type: ignore

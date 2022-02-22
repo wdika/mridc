@@ -5,6 +5,8 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import DictConfig, OmegaConf
 
+from mridc.collections.reconstruction.models.ccnn import CascadeNet
+from mridc.collections.reconstruction.models.crnn import CRNNet
 from mridc.collections.reconstruction.models.cirim import CIRIM
 from mridc.collections.reconstruction.models.jointicnet import JointICNet
 from mridc.collections.reconstruction.models.kikinet import KIKINet
@@ -31,32 +33,37 @@ def main(cfg: DictConfig) -> None:
 
     model_name = (cfg.model["model_name"]).upper()
 
-    if model_name == "ZF":
-        model = ZF(cfg.model, trainer=trainer)
-    elif model_name == "PICS":
-        model = PICS(cfg.model, trainer=trainer)
+    if model_name == "CASCADENET":
+        model = CascadeNet(cfg.model, trainer=trainer)
     elif model_name == "CIRIM":
         model = CIRIM(cfg.model, trainer=trainer)
+    elif model_name == "CRNNET":
+        model = CRNNet(cfg.model, trainer=trainer)
     elif model_name in ("E2EVN", "VN"):
         model = VarNet(cfg.model, trainer=trainer)
-    elif model_name == "RVN":
-        model = RecurrentVarNet(cfg.model, trainer=trainer)
-    elif model_name == "UNET":
-        model = UNet(cfg.model, trainer=trainer)
+    elif model_name == "JOINTICNET":
+        model = JointICNet(cfg.model, trainer=trainer)
     elif model_name == "KIKINET":
         model = KIKINet(cfg.model, trainer=trainer)
     elif model_name == "LPDNET":
         model = LPDNet(cfg.model, trainer=trainer)
-    elif model_name == "JOINTICNET":
-        model = JointICNet(cfg.model, trainer=trainer)
-    elif model_name == "XPDNET":
-        model = XPDNet(cfg.model, trainer=trainer)
     elif model_name == "MULTIDOMAINNET":
         model = MultiDomainNet(cfg.model, trainer=trainer)
+    elif model_name == "PICS":
+        model = PICS(cfg.model, trainer=trainer)
+    elif model_name == "RVN":
+        model = RecurrentVarNet(cfg.model, trainer=trainer)
+    elif model_name == "UNET":
+        model = UNet(cfg.model, trainer=trainer)
+    elif model_name == "XPDNET":
+        model = XPDNet(cfg.model, trainer=trainer)
+    elif model_name == "ZF":
+        model = ZF(cfg.model, trainer=trainer)
     else:
         raise NotImplementedError(
             f"{model_name} is not implemented in MRIDC. Consider using one of the following: "
-            f"CIRIM, RIM, E2EVN, VN, RVN, UNET, XPDNET, KIKINet, JointICNet, LPDNET, Zero-Filled, PICS. "
+            f"CASCADENET, CIRIM, CRNNET, E2EVN, JOINTICNET, KIKINET, LPDNET, MULTIDOMAINNET, PICS, RVN, UNET, XPDNET, "
+            f"and Zero-Filled. /n"
             f"If you are using a new model, please add it through a PR on GitHub."
         )
 

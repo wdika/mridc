@@ -44,6 +44,7 @@ class KIKINet(BaseMRIReconstructionModel, ABC):
         kikinet_cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
         self.num_iter = kikinet_cfg_dict.get("num_iter")
+        self.no_dc = kikinet_cfg_dict.get("no_dc")
 
         kspace_model_architecture = kikinet_cfg_dict.get("kspace_model_architecture")
 
@@ -122,9 +123,11 @@ class KIKINet(BaseMRIReconstructionModel, ABC):
                 normalize=kikinet_cfg_dict.get("sens_normalize"),
             )
 
-        self.train_loss_fn = SSIMLoss() if kikinet_cfg_dict.get("loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = SSIMLoss() if kikinet_cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
         self.eval_loss_fn = SSIMLoss() if kikinet_cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
         self.output_type = kikinet_cfg_dict.get("output_type")
+
+        self.dc_weight = torch.nn.Parameter(torch.ones(1))
 
     @typecheck()
     def forward(
@@ -146,27 +149,27 @@ class KIKINet(BaseMRIReconstructionModel, ABC):
         """
         sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         kspace = y.clone()
+        zero = torch.zeros(1, 1, 1, 1, 1).to(kspace)
 
         for idx in range(self.num_iter):
+            soft_dc = torch.where(mask.bool(), kspace - y, zero) * self.dc_weight
+
             kspace = self.kspace_model_list[idx](kspace)
-
-            image = complex_mul(
-                ifft2c(
-                    torch.where(mask == 0, torch.tensor([0.0], dtype=kspace.dtype).to(kspace.device), kspace),
-                    fft_type=self.fft_type,
-                ),
-                complex_conj(sensitivity_maps),
-            ).sum(1)
-
+            if kspace.shape[-1] != 2:
+                kspace = kspace.permute(0, 1, 3, 4, 2).to(target)
+            image = complex_mul(ifft2c(kspace, fft_type=self.fft_type), complex_conj(sensitivity_maps)).sum(1)
             image = self.image_model_list[idx](image.unsqueeze(1)).squeeze(1)
 
+            if not self.no_dc:
+                image = fft2c(complex_mul(image.unsqueeze(1), sensitivity_maps), fft_type=self.fft_type).type(
+                    image.type()
+                )
+                image = kspace - soft_dc - image
+                image = complex_mul(ifft2c(image, fft_type=self.fft_type), complex_conj(sensitivity_maps)).sum(1)
+
             if idx < self.num_iter - 1:
-                kspace = torch.where(
-                    mask == 0,
-                    torch.tensor([0.0], dtype=image.dtype).to(image.device),
-                    fft2c(complex_mul(image.unsqueeze(1), sensitivity_maps), fft_type=self.fft_type).type(
-                        image.type()
-                    ),
+                kspace = fft2c(complex_mul(image.unsqueeze(1), sensitivity_maps), fft_type=self.fft_type).type(
+                    image.type()
                 )
 
         image = torch.view_as_complex(image)

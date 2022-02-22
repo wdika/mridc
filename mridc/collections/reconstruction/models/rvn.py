@@ -112,7 +112,7 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
         if not rvn_cfg_dict.get("pretrained", False):
             self.block_list.apply(lambda module: rnn_weights_init(module, std_init_range))
 
-        self.train_loss_fn = SSIMLoss() if rvn_cfg_dict.get("loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = SSIMLoss() if rvn_cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
         self.eval_loss_fn = SSIMLoss() if rvn_cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
 
     @typecheck()

@@ -58,7 +58,7 @@ class MultiDomainNet(BaseMRIReconstructionModel, ABC):
                 normalize=multidomainnet_cfg_dict.get("sens_normalize"),
             )
 
-        self.train_loss_fn = SSIMLoss() if multidomainnet_cfg_dict.get("loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = SSIMLoss() if multidomainnet_cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
         self.eval_loss_fn = SSIMLoss() if multidomainnet_cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
         self.output_type = multidomainnet_cfg_dict.get("output_type")
 

@@ -165,6 +165,7 @@ class BaseSensitivityModel(nn.Module, ABC):
         in_chans: int = 2,
         out_chans: int = 2,
         drop_prob: float = 0.0,
+        padding_size: int = 15,
         mask_type: str = "2D",  # TODO: make this generalizable
         fft_type: str = "orthogonal",
         normalize: bool = True,
@@ -179,6 +180,7 @@ class BaseSensitivityModel(nn.Module, ABC):
             in_chan s: Number of channels in the input to the U-Net model.
             out_chans : Number of channels in the output to the U-Net model.
             drop_prob : Dropout probability.
+            padding_size: Size of the zero-padding.
             mask_type : Type of mask to use.
             fft_type : Type of FFT to use.
             normalize : Whether to normalize the data.
@@ -190,10 +192,17 @@ class BaseSensitivityModel(nn.Module, ABC):
         self.fft_type = fft_type
 
         self.norm_unet = NormUnet(
-            chans, num_pools, in_chans=in_chans, out_chans=out_chans, drop_prob=drop_prob, normalize=normalize
+            chans,
+            num_pools,
+            in_chans=in_chans,
+            out_chans=out_chans,
+            drop_prob=drop_prob,
+            padding_size=padding_size,
+            normalize=normalize,
         )
 
         self.mask_center = mask_center
+        self.normalize = normalize
 
     @staticmethod
     def chans_to_batch_dim(x: torch.Tensor) -> Tuple[torch.Tensor, int]:
@@ -298,4 +307,5 @@ class BaseSensitivityModel(nn.Module, ABC):
         images, batches = self.chans_to_batch_dim(ifft2c(masked_kspace))
 
         # estimate sensitivities
-        return self.divide_root_sum_of_squares(self.batch_chans_to_chan_dim(self.norm_unet(images), batches))
+        images = self.batch_chans_to_chan_dim(self.norm_unet(images), batches)
+        return self.divide_root_sum_of_squares(images)

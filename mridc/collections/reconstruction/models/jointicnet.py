@@ -14,9 +14,11 @@ from torch.nn import L1Loss
 from mridc.collections.common.losses.ssim import SSIMLoss
 from mridc.collections.common.parts.fft import fft2c, ifft2c
 from mridc.collections.common.parts.utils import complex_conj, complex_mul
-from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel
+from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
 from mridc.collections.reconstruction.models.unet_base.unet_block import NormUnet
 from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
+from mridc.collections.common.parts.utils import coil_combination
+
 from mridc.core.classes.common import typecheck
 
 __all__ = ["JointICNet"]
@@ -41,6 +43,7 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
         jointicnet_cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
         self.num_iter = jointicnet_cfg_dict.get("num_iter")
+        self.fft_type = jointicnet_cfg_dict.get("fft_type")
 
         self.kspace_model = NormUnet(
             jointicnet_cfg_dict.get("kspace_unet_num_filters"),
@@ -62,11 +65,12 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
             normalize=jointicnet_cfg_dict.get("imspace_unet_normalize"),
         )
 
-        self.sens_net = NormUnet(
+        self.sens_net = BaseSensitivityModel(
             jointicnet_cfg_dict.get("sens_unet_num_filters"),
             jointicnet_cfg_dict.get("sens_unet_num_pool_layers"),
-            in_chans=2,
-            out_chans=2,
+            mask_center=jointicnet_cfg_dict.get("sens_unet_mask_center"),
+            fft_type=self.fft_type,
+            mask_type=jointicnet_cfg_dict.get("sens_mask_type"),
             drop_prob=jointicnet_cfg_dict.get("sens_unet_dropout_probability"),
             padding_size=jointicnet_cfg_dict.get("sens_unet_padding_size"),
             normalize=jointicnet_cfg_dict.get("sens_unet_normalize"),
@@ -81,40 +85,60 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
         self.lr_image = nn.Parameter(torch.ones(self.num_iter))
         self.lr_sens = nn.Parameter(torch.ones(self.num_iter))
 
-        self.fft_type = jointicnet_cfg_dict.get("fft_type")
         self._coil_dim = 1
         self._spatial_dims = (2, 3)
 
-        self.train_loss_fn = SSIMLoss() if jointicnet_cfg_dict.get("loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = SSIMLoss() if jointicnet_cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
         self.eval_loss_fn = SSIMLoss() if jointicnet_cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
         self.output_type = jointicnet_cfg_dict.get("output_type")
 
-    def _image_model(self, image):
-        """Image model"""
-        image = image.permute(0, 3, 1, 2)
-        return self.image_model(image).permute(0, 2, 3, 1).contiguous()
-
-    def _kspace_model(self, kspace):
-        """K-space model"""
-        kspace = kspace.permute(0, 3, 1, 2)
-        return self.kspace_model(kspace).permute(0, 2, 3, 1).contiguous()
-
-    def _sens_model(self, sensitivity_map):
-        """Sensitivity model"""
-        return (
-            self._compute_model_per_coil(self.sens_net, sensitivity_map.permute(0, 1, 4, 2, 3))
-            .permute(0, 1, 3, 4, 2)
-            .contiguous()
+    def update_C(self, idx, DC_sens, sensitivity_maps, image, y, mask):
+        """Update the coil sensitivity maps."""
+        # (1 - 2 * lambda_{k}^{C} * ni_{k}) * C_{k}
+        sense_term_1 = (1 - 2 * self.reg_param_C[idx] * self.lr_sens[idx]) * sensitivity_maps
+        # 2 * lambda_{k}^{C} * ni_{k} * D_{C}(F^-1(b))
+        sense_term_2 = 2 * self.reg_param_C[idx] * self.lr_sens[idx] * DC_sens
+        # A(x_{k}) = M * F * (C * x_{k})
+        sense_term_3_A = fft2c(complex_mul(image.unsqueeze(1), sensitivity_maps), fft_type=self.fft_type)
+        sense_term_3_A = torch.where(mask == 0, torch.tensor([0.0], dtype=y.dtype).to(y.device), sense_term_3_A)
+        # 2 * ni_{k} * F^-1(M.T * (M * F * (C * x_{k}) - b)) * x_{k}^*
+        sense_term_3_mask = torch.where(
+            (1 - mask) == 0, torch.tensor([0.0], dtype=y.dtype).to(y.device), sense_term_3_A - y
         )
+        sense_term_3_backward = ifft2c(sense_term_3_mask, fft_type=self.fft_type)
+        sense_term_3 = 2 * self.lr_sens[idx] * sense_term_3_backward * complex_conj(image).unsqueeze(1)
+        sensitivity_maps = sense_term_1 + sense_term_2 - sense_term_3
+        return sensitivity_maps
 
-    def _compute_model_per_coil(self, model, data):
-        """Compute model per coil"""
-        output = []
-        for idx in range(data.size(self._coil_dim)):
-            subselected_data = data.select(self._coil_dim, idx)
-            output.append(model(subselected_data))
-        output = torch.stack(output, dim=self._coil_dim)
-        return output
+    def update_X(self, idx, image, sensitivity_maps, y, mask):
+        """Update the image."""
+        # (1 - 2 * lamdba_{k}_{I} * mi_{k} - 2 * lamdba_{k}_{F} * mi_{k}) * x_{k}
+        image_term_1 = (
+            1 - 2 * self.reg_param_I[idx] * self.lr_image[idx] - 2 * self.reg_param_F[idx] * self.lr_image[idx]
+        ) * image
+        # D_I(x_{k})
+        image_term_2_DI = self.image_model(image.unsqueeze(1)).squeeze(1).contiguous()
+        # F^-1(D_F(f))
+        image_term_2_DF = ifft2c(
+            self.kspace_model(fft2c(image, fft_type=self.fft_type).unsqueeze(1)).squeeze(1).contiguous(),
+            fft_type=self.fft_type,
+        )
+        # 2 * mi_{k} * (lambda_{k}_{I} * D_I(x_{k}) + lambda_{k}_{F} * F^-1(D_F(f)))
+        image_term_2 = (
+            2
+            * self.lr_image[idx]
+            * (self.reg_param_I[idx] * image_term_2_DI + self.reg_param_F[idx] * image_term_2_DF)
+        )
+        # A(x{k}) - b) = M * F * (C * x{k}) - b
+        image_term_3_A = fft2c(complex_mul(image.unsqueeze(1), sensitivity_maps), fft_type=self.fft_type)
+        image_term_3_A = torch.where(mask == 0, torch.tensor([0.0], dtype=y.dtype).to(y.device), image_term_3_A) - y
+        # 2 * mi_{k} * A^* * (A(x{k}) - b))
+        image_term_3_Aconj = complex_mul(
+            ifft2c(image_term_3_A, fft_type=self.fft_type), complex_conj(sensitivity_maps)
+        ).sum(1)
+        image_term_3 = 2 * self.lr_image[idx] * image_term_3_Aconj
+        image = image_term_1 + image_term_2 - image_term_3
+        return image
 
     @typecheck()
     def forward(
@@ -134,90 +158,17 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
         Returns:
              Final estimation of the network.
         """
-        image = complex_mul(
-            ifft2c(torch.where(mask == 0, torch.tensor([0.0], dtype=y.dtype).to(y.device), y), fft_type=self.fft_type),
-            complex_conj(sensitivity_maps),
-        ).sum(1)
+        DC_sens = self.sens_net(y, mask)
+        sensitivity_maps = DC_sens.clone()
+        image = complex_mul(ifft2c(y, fft_type=self.fft_type), complex_conj(sensitivity_maps)).sum(self._coil_dim)
 
         for idx in range(self.num_iter):
-            step_sensitivity_maps = (
-                2
-                * self.lr_sens[idx]
-                * (
-                    complex_mul(
-                        ifft2c(
-                            torch.where(
-                                mask == 0,
-                                torch.tensor([0.0], dtype=image.dtype).to(image.device),
-                                fft2c(
-                                    complex_mul(image.unsqueeze(self._coil_dim), sensitivity_maps),
-                                    fft_type=self.fft_type,
-                                ),
-                            ),
-                            fft_type=self.fft_type,
-                        ),
-                        complex_conj(image).unsqueeze(self._coil_dim),
-                    )
-                    + self.reg_param_C[idx] * (sensitivity_maps - self._sens_model(ifft2c(y, fft_type=self.fft_type)))
-                )
-            )
+            sensitivity_maps = self.update_C(idx, DC_sens, sensitivity_maps, image, y, mask)
+            image = self.update_X(idx, image, sensitivity_maps, y, mask)
 
-            sensitivity_maps = sensitivity_maps - step_sensitivity_maps
-            sensitivity_maps_norm = torch.sqrt(((sensitivity_maps**2).sum(-1)).sum(self._coil_dim))
-            sensitivity_maps_norm = sensitivity_maps_norm.unsqueeze(-1).unsqueeze(self._coil_dim)
-            sensitivity_maps = torch.where(
-                sensitivity_maps == 0,
-                torch.tensor([0.0], dtype=sensitivity_maps.dtype).to(sensitivity_maps.device),
-                sensitivity_maps / sensitivity_maps_norm,
-            )
-
-            input_kspace = fft2c(image, fft_type=self.fft_type)
-
-            forward = (
-                torch.where(
-                    mask == 0,
-                    torch.tensor([0.0], dtype=image.dtype).to(image.device),
-                    fft2c(complex_mul(image.unsqueeze(self._coil_dim), sensitivity_maps), fft_type=self.fft_type),
-                )
-                - y
-            )
-            backward = complex_mul(
-                ifft2c(
-                    torch.where(mask == 0, torch.tensor([0.0], dtype=forward.dtype).to(forward.device), forward),
-                    fft_type=self.fft_type,
-                ),
-                complex_conj(sensitivity_maps),
-            ).sum(self._coil_dim)
-            _input_kspace = self._kspace_model(input_kspace)
-            _backward = complex_mul(
-                ifft2c(
-                    torch.where(
-                        mask == 0,
-                        torch.tensor([0.0], dtype=_input_kspace.dtype).to(_input_kspace.device),
-                        _input_kspace,
-                    ),
-                    fft_type=self.fft_type,
-                    fft_dim=[d - 1 for d in self._spatial_dims],
-                ),
-                complex_conj(sensitivity_maps),
-            ).sum(self._coil_dim)
-
-            step_image = (
-                2
-                * self.lr_image[idx]
-                * (
-                    backward
-                    + self.reg_param_I[idx] * (image - self._image_model(image))
-                    + self.reg_param_F[idx] * (image - _backward)
-                )
-            )
-
-            image = image - step_image
-
-        out_image = self.conv_out(image.permute(0, 3, 1, 2)).permute(0, 2, 3, 1)
-        out_image = (out_image**2).sum(-1).sqrt()
-        _, out_image = center_crop_to_smallest(target, out_image)
-        return out_image
+        image = torch.view_as_complex(image)
+        _, image = center_crop_to_smallest(target, image)
+        return image
 
     @staticmethod
     def process_loss(target, eta, set_loss_fn):

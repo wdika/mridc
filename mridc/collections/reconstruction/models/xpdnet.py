@@ -18,6 +18,7 @@ from mridc.collections.reconstruction.models.crossdomain.crossdomain import Cros
 from mridc.collections.reconstruction.models.crossdomain.multicoil import MultiCoil
 from mridc.collections.reconstruction.models.didn.didn import DIDN
 from mridc.collections.reconstruction.models.mwcnn.mwcnn import MWCNN
+from mridc.collections.reconstruction.models.unet_base.unet_block import NormUnet
 from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
 from mridc.core.classes.common import typecheck
 
@@ -84,6 +85,24 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
                     for _ in range(num_iter)
                 ]
             )
+        elif kspace_model_architecture in ["UNET", "NORMUNET"]:
+            kspace_model_list = nn.ModuleList(
+                [
+                    MultiCoil(
+                        NormUnet(
+                            xpdnet_cfg_dict.get("kspace_unet_num_filters"),
+                            xpdnet_cfg_dict.get("kspace_unet_num_pool_layers"),
+                            in_chans=2 * (num_dual + num_primal + 1),
+                            out_chans=2 * num_dual,
+                            drop_prob=xpdnet_cfg_dict.get("kspace_unet_dropout_probability"),
+                            padding_size=xpdnet_cfg_dict.get("kspace_unet_padding_size"),
+                            normalize=xpdnet_cfg_dict.get("kspace_unet_normalize"),
+                        ),
+                        coil_to_batch=True,
+                    )
+                    for _ in range(num_iter)
+                ]
+            )
         else:
             raise NotImplementedError(
                 f"XPDNet is currently implemented for kspace_model_architecture == 'CONV' or 'DIDN'."
@@ -112,11 +131,23 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
                     for _ in range(num_iter)
                 ]
             )
-        else:
-            raise NotImplementedError(
-                f"XPDNet is currently implemented only with image_model_architecture == 'MWCNN'."
-                f"Got {image_model_architecture}."
+        elif image_model_architecture in ["UNET", "NORMUNET"]:
+            image_model_list = nn.ModuleList(
+                [
+                    NormUnet(
+                        xpdnet_cfg_dict.get("imspace_unet_num_filters"),
+                        xpdnet_cfg_dict.get("imspace_unet_num_pool_layers"),
+                        in_chans=2 * (num_primal + num_dual),
+                        out_chans=2 * num_primal,
+                        drop_prob=xpdnet_cfg_dict.get("imspace_unet_dropout_probability"),
+                        padding_size=xpdnet_cfg_dict.get("imspace_unet_padding_size"),
+                        normalize=xpdnet_cfg_dict.get("imspace_unet_normalize"),
+                    )
+                    for _ in range(num_iter)
+                ]
             )
+        else:
+            raise NotImplementedError(f"Image model architecture {image_model_architecture} not found for XPDNet.")
 
         self.fft_type = xpdnet_cfg_dict.get("fft_type")
 
@@ -141,7 +172,7 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
                 normalize=xpdnet_cfg_dict.get("sens_normalize"),
             )
 
-        self.train_loss_fn = SSIMLoss() if xpdnet_cfg_dict.get("loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = SSIMLoss() if xpdnet_cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
         self.eval_loss_fn = SSIMLoss() if xpdnet_cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
         self.output_type = xpdnet_cfg_dict.get("output_type")
 
@@ -165,7 +196,7 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
         """
         sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         eta = self.xpdnet(y, sensitivity_maps, mask)
-        eta = eta.sum(-1)
+        eta = (eta**2).sqrt().sum(-1)
         _, eta = center_crop_to_smallest(target, eta)
         return eta
 

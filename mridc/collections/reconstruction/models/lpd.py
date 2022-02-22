@@ -132,7 +132,7 @@ class LPDNet(BaseMRIReconstructionModel, ABC):
                 normalize=lpd_cfg_dict.get("sens_normalize"),
             )
 
-        self.train_loss_fn = SSIMLoss() if lpd_cfg_dict.get("loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = SSIMLoss() if lpd_cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
         self.eval_loss_fn = SSIMLoss() if lpd_cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
         self.output_type = lpd_cfg_dict.get("output_type")
 

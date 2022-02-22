@@ -57,11 +57,11 @@ class MultiCoil(nn.Module):
         """
         if self.coil_to_batch:
             x = x.clone()
-            batch, coil, height, width, channels = x.size()
 
-            x = x.reshape(batch * coil, height, width, channels).permute(0, 3, 1, 2).contiguous()
+            batch, coil, channels, height, width = x.size()
+            x = x.reshape(batch * coil, channels, height, width).contiguous()
             x = self.model(x).permute(0, 2, 3, 1)
-            x = x.reshape(batch, coil, height, width, -1)
+            x = x.reshape(batch, coil, height, width, -1).permute(0, 1, 4, 2, 3)
         else:
             x = self._compute_model_per_coil(x).contiguous()
 
