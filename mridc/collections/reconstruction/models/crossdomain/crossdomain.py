@@ -70,8 +70,6 @@ class CrossDomainNetwork(nn.Module):
         self.image_model_list = image_model_list
         self.image_buffer_size = image_buffer_size
 
-        # self.normalize_image = normalize_image
-
         self._coil_dim = 1
         self._complex_dim = -1
         self._spatial_dims = (2, 3)
