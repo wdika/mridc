@@ -70,18 +70,16 @@ class MRIDataTransforms:
         target: np.ndarray,
         attrs: Dict,
         fname: str,
-        slice_num: int,
+        slice_idx: int,
     ) -> Tuple[
-        Union[Union[List[Union[Union[float, torch.Tensor], Any]], torch.Tensor, float], Any],
+        Union[Union[List[Union[torch.Tensor, Any]], torch.Tensor], Any],
         Union[Optional[torch.Tensor], Any],
-        Union[list, Any],
+        Union[List, Any],
         Union[Optional[torch.Tensor], Any],
         Union[torch.Tensor, Any],
         str,
         int,
-        Union[Union[list, torch.Tensor], Any],
-        Any,
-        torch.Tensor,
+        Union[Union[List, torch.Tensor], Any],
     ]:
         """
         Apply the data transform.
@@ -94,7 +92,7 @@ class MRIDataTransforms:
             target: The target.
             attrs: The attributes.
             fname: The file name.
-            slice_num: The slice number.
+            slice_idx: The slice number.
 
         Returns:
             The transformed data.
@@ -324,4 +322,4 @@ class MRIDataTransforms:
         # This is needed when using the ssim as loss function.
         max_value = np.array(torch.max(torch.abs(target)).item()).astype(np.float32)
 
-        return masked_kspace, sensitivity_map, mask, eta, target, fname, slice_num, acc, max_value, crop_size
+        return masked_kspace, sensitivity_map, mask, eta, target, fname, slice_idx, acc

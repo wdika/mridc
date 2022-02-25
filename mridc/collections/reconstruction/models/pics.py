@@ -32,21 +32,21 @@ class PICS(BaseMRIReconstructionModel, ABC):
         # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
 
-        pics_cfg_dict = OmegaConf.to_container(cfg, resolve=True)
+        cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
-        self.reg_wt = pics_cfg_dict.get("reg_wt")
-        self.num_iters = pics_cfg_dict.get("num_iters")
-        self._device = pics_cfg_dict.get("device")
+        self.reg_wt = cfg_dict.get("reg_wt")
+        self.num_iters = cfg_dict.get("num_iters")
+        self._device = cfg_dict.get("device")
 
         # Initialize the sensitivity network if use_sens_net is True
-        self.use_sens_net = pics_cfg_dict.get("use_sens_net")
+        self.use_sens_net = cfg_dict.get("use_sens_net")
         if self.use_sens_net:
             self.sens_net = BaseSensitivityModel(
-                pics_cfg_dict.get("sens_chans"),
-                pics_cfg_dict.get("sens_pools"),
-                fft_type=pics_cfg_dict.get("fft_type"),
-                mask_type=pics_cfg_dict.get("sens_mask_type"),
-                normalize=pics_cfg_dict.get("sens_normalize"),
+                cfg_dict.get("sens_chans"),
+                cfg_dict.get("sens_pools"),
+                fft_type=cfg_dict.get("fft_type"),
+                mask_type=cfg_dict.get("sens_mask_type"),
+                normalize=cfg_dict.get("sens_normalize"),
             )
 
     @staticmethod

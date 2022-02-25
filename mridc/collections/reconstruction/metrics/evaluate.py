@@ -125,7 +125,15 @@ class Metrics:
 
 
 def evaluate(
-    arguments, reconstruction_key, mask_background, output_path, method, acc, no_params, slice_start, slice_end
+    arguments,
+    reconstruction_key,
+    mask_background,
+    output_path,
+    method,
+    acc,
+    no_params,
+    slice_start,
+    slice_end,
 ):
     """
     Evaluate the reconstruction.

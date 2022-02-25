@@ -44,14 +44,156 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
 
+    def process_loss(self, target, pred, _loss_fn):
+        """Calculate the loss."""
+        target = torch.abs(target / torch.max(torch.abs(target)))
+        if "ssim" in str(_loss_fn).lower():
+            max_value = np.array(torch.max(torch.abs(target)).item()).astype(np.float32)
+
+            def loss_fn(x, y):
+                """Calculate the ssim loss."""
+                return _loss_fn(
+                    x.unsqueeze(dim=1),
+                    torch.abs(y / torch.max(torch.abs(y))).unsqueeze(dim=1),
+                    data_range=torch.tensor(max_value).unsqueeze(dim=0).to(x.device),
+                )
+
+        else:
+
+            def loss_fn(x, y):
+                """Calculate other loss."""
+                return _loss_fn(x, torch.abs(y / torch.max(torch.abs(y))))
+
+        return loss_fn(target, pred)
+
+    @staticmethod
+    def process_inputs(y, mask):
+        """Process the inputs to the network."""
+        if isinstance(y, list):
+            r = np.random.randint(len(y))
+            y = y[r]
+            mask = mask[r]
+        else:
+            r = 0
+        return y, mask, r
+
     def training_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
-        """Training step for the model."""
+        """
+        Training step for the model.
+        Args:
+            batch: A dictionary of the form {
+                'y': subsampled kspace
+                'sensitivity_maps': sensitivity_maps
+                'mask': mask
+                'init_pred': initial prediction. For example zero-filled or PICS.
+                'target': target
+                'fname': filename
+                'slice_idx': slice_idx
+                'acc': acceleration factor
+                'max_value': maximum value of the magnitude image space
+                'crop_size': crop size
+                }
+            batch_idx: The index of the batch.
+        Returns:
+            A dictionary of the form {
+                'loss': loss value,
+                'log': log,
+            }
+        """
+        y, sensitivity_maps, mask, init_pred, target, _, _, acc = batch
+        y, mask, r = self.process_inputs(y, mask)
+        preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
+
+        if self.accumulate_estimates:
+            try:
+                preds = next(preds)
+            except StopIteration:
+                pass
+
+            train_loss = sum(self.process_loss(target, preds, _loss_fn=self.train_loss_fn))
+        else:
+            train_loss = self.process_loss(target, preds, _loss_fn=self.train_loss_fn)
+
+        acc = r if r != 0 else acc
+        tensorboard_logs = {
+            f"train_loss_{acc}x": train_loss.item(),  # type: ignore
+            "lr": self._optimizer.param_groups[0]["lr"],  # type: ignore
+        }
+        return {"loss": train_loss, "log": tensorboard_logs}
 
     def validation_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict:
         """Validation step for the model."""
+        y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
+        y, mask, _ = self.process_inputs(y, mask)
+        preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
+
+        if self.accumulate_estimates:
+            try:
+                preds = next(preds)
+            except StopIteration:
+                pass
+
+            val_loss = sum(self.process_loss(target, preds, _loss_fn=self.eval_loss_fn))
+        else:
+            val_loss = self.process_loss(target, preds, _loss_fn=self.eval_loss_fn)
+
+        # Cascades
+        if isinstance(preds, list):
+            preds = preds[-1]
+
+        # Time-steps
+        if isinstance(preds, list):
+            preds = preds[-1]
+
+        key = f"{fname[0]}_images_idx_{int(slice_num)}"  # type: ignore
+        output = torch.abs(preds).detach().cpu()
+        target = torch.abs(target).detach().cpu()
+        output = output / output.max()  # type: ignore
+        target = target / target.max()  # type: ignore
+        error = torch.abs(target - output)
+        self.log_image(f"{key}/target", target)
+        self.log_image(f"{key}/reconstruction", output)
+        self.log_image(f"{key}/error", error)
+
+        return {"val_loss": val_loss}
 
     def test_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Tuple[str, int, torch.Tensor]:
         """Test step for the model."""
+        y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
+        y, mask, _ = self.process_inputs(y, mask)
+        preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
+
+        if self.accumulate_estimates:
+            try:
+                preds = next(preds)
+            except StopIteration:
+                pass
+
+        # Cascades
+        if isinstance(preds, list):
+            preds = preds[-1]
+
+        # Time-steps
+        if isinstance(preds, list):
+            preds = preds[-1]
+
+        slice_num = int(slice_num)
+        name = str(fname[0])  # type: ignore
+        key = f"{name}_images_idx_{slice_num}"  # type: ignore
+
+        output = torch.abs(preds).detach().cpu()
+        output = output / output.max()  # type: ignore
+
+        target = torch.abs(target).detach().cpu()
+        target = target / target.max()  # type: ignore
+
+        error = torch.abs(target - output)
+
+        self.log_image(f"{key}/target", target)
+        self.log_image(f"{key}/reconstruction", output)
+        self.log_image(f"{key}/error", error)
+
+        return name, slice_num, preds.detach().cpu().numpy()
 
     def log_image(self, name, image):
         """Log an image."""
@@ -151,11 +293,10 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
 
 class BaseSensitivityModel(nn.Module, ABC):
     """
-    TODO: appears to be broken. Convert this to ModelPT ?
     Model for learning sensitivity estimation from k-space data.
 
     This model applies an IFFT to multichannel k-space data and then a U-Net to the coil images to estimate coil
-    sensitivities. It can be used with the end-to-end variational network.
+    sensitivities.
     """
 
     def __init__(
@@ -308,4 +449,6 @@ class BaseSensitivityModel(nn.Module, ABC):
 
         # estimate sensitivities
         images = self.batch_chans_to_chan_dim(self.norm_unet(images), batches)
-        return self.divide_root_sum_of_squares(images)
+        if self.normalize:
+            images = self.divide_root_sum_of_squares(images)
+        return images

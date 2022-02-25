@@ -99,7 +99,7 @@ def test_xpdnet(shape, cfg, center_fractions, accelerations):
     xpdnet = XPDNet(cfg)
 
     with torch.no_grad():
-        y = xpdnet.forward(output, output, mask, target=torch.abs(torch.view_as_complex(output)))
+        y = xpdnet.forward(output, output, mask, output, target=torch.abs(torch.view_as_complex(output)))
 
     if y.shape[1:] != x.shape[2:4]:
         raise AssertionError

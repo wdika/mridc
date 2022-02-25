@@ -16,6 +16,7 @@ from mridc.collections.reconstruction.models.pics import PICS
 from mridc.collections.reconstruction.models.rvn import RecurrentVarNet
 from mridc.collections.reconstruction.models.unet import UNet
 from mridc.collections.reconstruction.models.vn import VarNet
+from mridc.collections.reconstruction.models.vsnet import VSNet
 from mridc.collections.reconstruction.models.xpdnet import XPDNet
 from mridc.collections.reconstruction.models.zf import ZF
 from mridc.core.conf.hydra_runner import hydra_runner
@@ -55,6 +56,8 @@ def main(cfg: DictConfig) -> None:
         model = RecurrentVarNet(cfg.model, trainer=trainer)
     elif model_name == "UNET":
         model = UNet(cfg.model, trainer=trainer)
+    elif model_name == "VSNET":
+        model = VSNet(cfg.model, trainer=trainer)
     elif model_name == "XPDNET":
         model = XPDNet(cfg.model, trainer=trainer)
     elif model_name == "ZF":
@@ -62,8 +65,8 @@ def main(cfg: DictConfig) -> None:
     else:
         raise NotImplementedError(
             f"{model_name} is not implemented in MRIDC. Consider using one of the following: "
-            f"CASCADENET, CIRIM, CRNNET, E2EVN, JOINTICNET, KIKINET, LPDNET, MULTIDOMAINNET, PICS, RVN, UNET, XPDNET, "
-            f"and Zero-Filled. /n"
+            f"CASCADENET, CIRIM, CRNNET, E2EVN, JOINTICNET, KIKINET, LPDNET, MULTIDOMAINNET, PICS, RVN, UNET, VSNET, "
+            f"XPDNET, or Zero-Filled. /n"
             f"If you are using a new model, please add it through a PR on GitHub."
         )
 

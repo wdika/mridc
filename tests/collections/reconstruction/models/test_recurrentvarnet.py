@@ -107,7 +107,7 @@ def test_recurrentvarnet(shape, cfg, center_fractions, accelerations):
 
     Args:
         shape: shape of the input
-        cascades: number of cascades
+        cfg: configuration of the model
         center_fractions: center fractions
         accelerations: accelerations
 
@@ -132,7 +132,7 @@ def test_recurrentvarnet(shape, cfg, center_fractions, accelerations):
     rvn = RecurrentVarNet(cfg)
 
     with torch.no_grad():
-        y = rvn.forward(output, output, mask, eta=x.sum(1), target=torch.abs(torch.view_as_complex(output)))
+        y = rvn.forward(output, output, mask, output, eta=x.sum(1), target=torch.abs(torch.view_as_complex(output)))
 
     if y.shape[1:] != x.shape[2:4]:
         raise AssertionError

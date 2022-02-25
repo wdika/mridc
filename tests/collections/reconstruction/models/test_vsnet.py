@@ -8,7 +8,7 @@ import torch
 from omegaconf import OmegaConf
 
 from mridc.collections.reconstruction.data.subsample import RandomMaskFunc
-from mridc.collections.reconstruction.models.unet import UNet
+from mridc.collections.reconstruction.models.vsnet import VSNet
 from mridc.collections.reconstruction.parts import transforms
 from tests.collections.reconstruction.fastmri.conftest import create_input
 
@@ -19,10 +19,11 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
         (
             [1, 3, 32, 16, 2],
             {
-                "channels": 14,
-                "pooling_layers": 2,
-                "padding_size": 11,
-                "normalize": True,
+                "num_cascades": 10,
+                "imspace_model_architecture": "CONV",
+                "imspace_conv_hidden_channels": 64,
+                "imspace_conv_n_convs": 5,
+                "imspace_conv_batchnorm": False,
                 "use_sens_net": False,
                 "output_type": "SENSE",
             },
@@ -32,10 +33,11 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
         (
             [1, 5, 15, 12, 2],
             {
-                "channels": 14,
-                "pooling_layers": 2,
-                "padding_size": 11,
-                "normalize": True,
+                "num_cascades": 10,
+                "imspace_model_architecture": "CONV",
+                "imspace_conv_hidden_channels": 64,
+                "imspace_conv_n_convs": 5,
+                "imspace_conv_batchnorm": True,
                 "use_sens_net": False,
                 "output_type": "SENSE",
             },
@@ -45,10 +47,11 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
         (
             [1, 2, 17, 19, 2],
             {
-                "channels": 14,
-                "pooling_layers": 2,
-                "padding_size": 11,
-                "normalize": True,
+                "num_cascades": 10,
+                "imspace_model_architecture": "CONV",
+                "imspace_conv_hidden_channels": 16,
+                "imspace_conv_n_convs": 5,
+                "imspace_conv_batchnorm": True,
                 "use_sens_net": False,
                 "output_type": "SENSE",
             },
@@ -58,10 +61,11 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
         (
             [1, 2, 17, 19, 2],
             {
-                "channels": 14,
-                "pooling_layers": 2,
-                "padding_size": 15,
-                "normalize": True,
+                "num_cascades": 2,
+                "imspace_model_architecture": "CONV",
+                "imspace_conv_hidden_channels": 128,
+                "imspace_conv_n_convs": 2,
+                "imspace_conv_batchnorm": True,
                 "use_sens_net": False,
                 "output_type": "SENSE",
             },
@@ -70,9 +74,9 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
         ),
     ],
 )
-def test_unet(shape, cfg, center_fractions, accelerations):
+def test_vsnet(shape, cfg, center_fractions, accelerations):
     """
-    Test UNet with different parameters
+    Test VSNet with different parameters
 
     Args:
         shape: shape of the input
@@ -98,10 +102,10 @@ def test_unet(shape, cfg, center_fractions, accelerations):
     cfg = OmegaConf.create(cfg)
     cfg = OmegaConf.create(OmegaConf.to_container(cfg, resolve=True))
 
-    unet = UNet(cfg)
+    vsnet = VSNet(cfg)
 
     with torch.no_grad():
-        y = unet.forward(output, output, mask, output, target=torch.abs(torch.view_as_complex(output)))
+        y = vsnet.forward(output, output, mask, output, target=torch.abs(torch.view_as_complex(output)))
 
     if y.shape[1:] != x.shape[2:4]:
         raise AssertionError
