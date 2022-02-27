@@ -73,8 +73,8 @@ class LPDNet(BaseMRIReconstructionModel, ABC):
             )
         else:
             raise NotImplementedError(
-                f"LPDNet is currently implemented for kspace_model_architecture == 'CONV' or 'UNet'."
-                f"Got kspace_model_architecture == {primal_model_architecture}."
+                f"LPDNet is currently implemented for primal_model_architecture == 'CONV' or 'UNet'."
+                f"Got primal_model_architecture == {primal_model_architecture}."
             )
 
         dual_model_architecture = cfg_dict.get("dual_model_architecture")
@@ -107,8 +107,8 @@ class LPDNet(BaseMRIReconstructionModel, ABC):
             )
         else:
             raise NotImplementedError(
-                f"LPDNet is currently implemented for kspace_model_architecture == 'CONV' or 'DIDN' or 'UNet'."
-                f"Got kspace_model_architecture == {dual_model_architecture}."
+                f"LPDNet is currently implemented for dual_model_architecture == 'CONV' or 'DIDN' or 'UNet'."
+                f"Got dual_model_architecture == {dual_model_architecture}."
             )
 
         self.primal_net = nn.ModuleList(

@@ -38,7 +38,10 @@ class MultiCoil(nn.Module):
 
         for idx in range(data.size(self._coil_dim)):
             subselected_data = data.select(self._coil_dim, idx)
-            output.append(self.model(subselected_data.unsqueeze(1)).squeeze(1))
+            if subselected_data.shape[-1] == 2 and subselected_data.dim() == 4:
+                output.append(self.model(subselected_data.permute(0, 3, 1, 2)))
+            else:
+                output.append(self.model(subselected_data.unsqueeze(1)).squeeze(1))
         output = torch.stack(output, dim=self._coil_dim)
         return output
 

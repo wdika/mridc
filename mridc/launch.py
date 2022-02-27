@@ -8,6 +8,7 @@ from omegaconf import DictConfig, OmegaConf
 from mridc.collections.reconstruction.models.ccnn import CascadeNet
 from mridc.collections.reconstruction.models.crnn import CRNNet
 from mridc.collections.reconstruction.models.cirim import CIRIM
+from mridc.collections.reconstruction.models.dunet import DUNet
 from mridc.collections.reconstruction.models.jointicnet import JointICNet
 from mridc.collections.reconstruction.models.kikinet import KIKINet
 from mridc.collections.reconstruction.models.lpd import LPDNet
@@ -40,6 +41,8 @@ def main(cfg: DictConfig) -> None:
         model = CIRIM(cfg.model, trainer=trainer)
     elif model_name == "CRNNET":
         model = CRNNet(cfg.model, trainer=trainer)
+    elif model_name == "DUNET":
+        model = DUNet(cfg.model, trainer=trainer)
     elif model_name in ("E2EVN", "VN"):
         model = VarNet(cfg.model, trainer=trainer)
     elif model_name == "JOINTICNET":
@@ -64,10 +67,10 @@ def main(cfg: DictConfig) -> None:
         model = ZF(cfg.model, trainer=trainer)
     else:
         raise NotImplementedError(
-            f"{model_name} is not implemented in MRIDC. Consider using one of the following: "
-            f"CASCADENET, CIRIM, CRNNET, E2EVN, JOINTICNET, KIKINET, LPDNET, MULTIDOMAINNET, PICS, RVN, UNET, VSNET, "
-            f"XPDNET, or Zero-Filled. /n"
-            f"If you are using a new model, please add it through a PR on GitHub."
+            f"{model_name} is not implemented in MRIDC. You can use one of the following methods: "
+            f"CASCADENET, CIRIM, CRNNET, DUNET, E2EVN, JOINTICNET, KIKINET, LPDNET, MULTIDOMAINNET, PICS, RVN, UNET, "
+            f"VSNET, XPDNET, or Zero-Filled. /n"
+            f"If you implemented a new model, please consider adding it through a PR on GitHub."
         )
 
     if cfg.get("pretrained", None):
