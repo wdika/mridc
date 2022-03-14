@@ -203,13 +203,8 @@ class NeuralPortNmTensorMismatchError(NeuralTypeError):
 
     def __init__(self, class_name, port_name, first_type, second_type, type_compatibility):
         super().__init__()
-        self.message = (
-            "\nIn {}. \nPort: {} and a NmTensor it was fed are \n".format(
-                class_name, port_name
-            )
-            + "of incompatible neural types:\n\n{} \n\n and \n\n{}".format(
-                first_type, second_type
-            )
-        )
+        self.message = "\nIn {}. \nPort: {} and a NmTensor it was fed are \n".format(
+            class_name, port_name
+        ) + "of incompatible neural types:\n\n{} \n\n and \n\n{}".format(first_type, second_type)
 
         self.message += "\n\nType comparison result: {}".format(type_compatibility)

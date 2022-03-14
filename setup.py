@@ -81,10 +81,7 @@ class StyleCommand(distutils_cmd.Command):
         if check:
             command.extend(["--check", "--diff"])
 
-        self.announce(
-            msg=f'Running command: {" ".join(command)}', level=distutils_log.INFO
-        )
-
+        self.announce(msg=f'Running command: {" ".join(command)}', level=distutils_log.INFO)
 
         return subprocess.call(command)
 

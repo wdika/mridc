@@ -351,9 +351,7 @@ class ModelPT(LightningModule, Model):
             and self._validation_dl is not None
             and type(self._validation_dl) in [list, tuple]
         ):
-            self.validation_names = [
-                f"val_{idx}_" for idx in range(len(self._validation_dl))
-            ]
+            self.validation_names = [f"val_{idx}_" for idx in range(len(self._validation_dl))]
 
     def setup_multiple_test_data(self, test_data_config: Union[DictConfig, Dict]):
         """
@@ -515,9 +513,7 @@ class ModelPT(LightningModule, Model):
                 self._optimizer = optimizer_instance
 
             except Exception as e:
-                logging.error(
-                    f"Could not instantiate class path - {optimizer_cls} with kwargs {optimizer_config}"
-                )
+                logging.error(f"Could not instantiate class path - {optimizer_cls} with kwargs {optimizer_config}")
 
                 raise e
 

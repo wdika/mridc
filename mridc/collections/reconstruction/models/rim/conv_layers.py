@@ -136,9 +136,7 @@ class ConvNonlinear(nn.Module):
             _input: input to the convolutional layer.
         """
         if _input.size(1) != self.input_size:
-            raise RuntimeError(
-                f"input has inconsistent input_size: got {_input.size(1)}, expected {self.input_size}"
-            )
+            raise RuntimeError(f"input has inconsistent input_size: got {_input.size(1)}, expected {self.input_size}")
 
     def forward(self, _input):
         """

@@ -232,7 +232,6 @@ def resolve_validation_dataloaders(model: ModelPT):
             f"Could not resolve file path from provided config - {cfg.validation_ds}. Disabling support for multi-dataloaders."
         )
 
-
         model.setup_validation_data(cfg.validation_ds)
         return
 
@@ -298,7 +297,6 @@ def resolve_test_dataloaders(model: "ModelPT"):
         logging.debug(
             f"Could not resolve file path from provided config - {cfg.test_ds}. Disabling support for multi-dataloaders."
         )
-
 
         model.setup_test_data(cfg.test_ds)
         return
