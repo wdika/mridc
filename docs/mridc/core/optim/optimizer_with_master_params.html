@@ -112,7 +112,7 @@
                     <h1 class="modulename">
 <a href="./../../../mridc.html">mridc</a><wbr>.<a href="./../../core.html">core</a><wbr>.<a href="./../optim.html">optim</a><wbr>.optimizer_with_master_params    </h1>
 
-                
+
                         <details>
             <summary>View Source</summary>
             <div class="pdoc-code codehilite"><pre><span></span><span class="c1"># encoding: utf-8</span>
@@ -516,7 +516,7 @@
                                 <div class="attr class">
         <a class="headerlink" href="#GradBucket">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">GradBucket</span>:
     </div>
@@ -561,7 +561,7 @@
                             <div id="GradBucket.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#GradBucket.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">GradBucket</span><span class="signature">(numel)</span>
     </div>
 
@@ -577,13 +577,13 @@
 
         </details>
 
-    
+
 
                             </div>
                             <div id="GradBucket.zero" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#GradBucket.zero">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">zero</span><span class="signature">(self)</span>:
     </div>
@@ -605,7 +605,7 @@
                             <div id="GradBucket.allreduce_buffer" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#GradBucket.allreduce_buffer">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">allreduce_buffer</span><span class="signature">(self)</span>:
     </div>
@@ -628,7 +628,7 @@
                             <div id="GradBucket.get" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#GradBucket.get">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">get</span><span class="signature">(self, shape, start_index)</span>:
     </div>
@@ -657,7 +657,7 @@
                                 <div class="attr class">
         <a class="headerlink" href="#MasterOptimizerWrapper">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">MasterOptimizerWrapper</span><wbr>(<span class="base">torch.optim.optimizer.Optimizer</span>):
     </div>
@@ -996,7 +996,7 @@ stable convergence.</p>
                             <div id="MasterOptimizerWrapper.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#MasterOptimizerWrapper.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">MasterOptimizerWrapper</span><span class="signature">(
     optimizer,
     fp32_grad_accum=False,
@@ -1130,13 +1130,13 @@ stable convergence.</p>
 
         </details>
 
-    
+
 
                             </div>
                             <div id="MasterOptimizerWrapper.zero_grad" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#MasterOptimizerWrapper.zero_grad">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">zero_grad</span><span class="signature">(self, set_to_none=True)</span>:
     </div>
@@ -1173,7 +1173,7 @@ set_to_none==True, the space used by this field can be safely deallocated at thi
                             <div id="MasterOptimizerWrapper.copy_model_grads_to_main_grads" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#MasterOptimizerWrapper.copy_model_grads_to_main_grads">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">copy_model_grads_to_main_grads</span><span class="signature">(self)</span>:
     </div>
@@ -1204,7 +1204,7 @@ set_to_none==True, the space used by this field can be safely deallocated at thi
                             <div id="MasterOptimizerWrapper.reload_model_params" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#MasterOptimizerWrapper.reload_model_params">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">reload_model_params</span><span class="signature">(self)</span>:
     </div>
@@ -1255,7 +1255,7 @@ set_to_none==True, the space used by this field can be safely deallocated at thi
                             <div id="MasterOptimizerWrapper.state_dict" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#MasterOptimizerWrapper.state_dict">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">state_dict</span><span class="signature">(self)</span>:
     </div>
@@ -1277,7 +1277,7 @@ set_to_none==True, the space used by this field can be safely deallocated at thi
                             <div id="MasterOptimizerWrapper.load_state_dict" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#MasterOptimizerWrapper.load_state_dict">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">load_state_dict</span><span class="signature">(self, state_dict)</span>:
     </div>
@@ -1312,7 +1312,7 @@ set_to_none==True, the space used by this field can be safely deallocated at thi
                             <div id="MasterOptimizerWrapper.allreduce_main_grads" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#MasterOptimizerWrapper.allreduce_main_grads">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">allreduce_main_grads</span><span class="signature">(self)</span>:
     </div>
@@ -1367,7 +1367,7 @@ set_to_none==True, the space used by this field can be safely deallocated at thi
         <span class="name">async_master_grads_allreudce</span>
     </div>
 
-    
+
             <div class="docstring"><p>Return whether to use async allreduce for master grads.</p>
 </div>
 
@@ -1379,7 +1379,7 @@ set_to_none==True, the space used by this field can be safely deallocated at thi
         <span class="name">fp32_grad_accumulation</span>
     </div>
 
-    
+
             <div class="docstring"><p>Return whether to accumulate gradients in fp32.</p>
 </div>
 
@@ -1388,7 +1388,7 @@ set_to_none==True, the space used by this field can be safely deallocated at thi
                             <div id="MasterOptimizerWrapper.get_parameters" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#MasterOptimizerWrapper.get_parameters">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">get_parameters</span><span class="signature">(self)</span>:
     </div>
@@ -1416,7 +1416,7 @@ set_to_none==True, the space used by this field can be safely deallocated at thi
         <span class="name">state</span>
     </div>
 
-    
+
             <div class="docstring"><p>Promote state so it can be retrieved or set via "optimizer_instance.state.</p>
 </div>
 
@@ -1428,7 +1428,7 @@ set_to_none==True, the space used by this field can be safely deallocated at thi
         <span class="name">param_groups</span>
     </div>
 
-    
+
             <div class="docstring"><p>Promote param_groups so it can be retrieved or set via "optimizer_instance.param_groups.
 (for example, to adjust the learning rate)</p>
 </div>

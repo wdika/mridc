@@ -164,7 +164,7 @@ class SensitivityNetwork(torch.nn.Module):
         # setup the modules
         self.gradR = torch.nn.ModuleList([ComplexNormWrapper(model) for _ in range(self.num_iter)])
 
-        self.gradD = torch.nn.ModuleList([datalayer for i in range(self.num_iter)])
+        self.gradD = torch.nn.ModuleList([datalayer for _ in range(self.num_iter)])
 
         self.save_space = save_space
         if self.save_space:

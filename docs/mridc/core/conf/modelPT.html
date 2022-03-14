@@ -157,7 +157,7 @@
                     <h1 class="modulename">
 <a href="./../../../mridc.html">mridc</a><wbr>.<a href="./../../core.html">core</a><wbr>.<a href="./../conf.html">conf</a><wbr>.modelPT    </h1>
 
-                
+
                         <details>
             <summary>View Source</summary>
             <div class="pdoc-code codehilite"><pre><span></span><span class="c1"># encoding: utf-8</span>
@@ -365,12 +365,12 @@
                             <div id="SchedConfig.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#SchedConfig.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">SchedConfig</span><span class="signature">(name: str = &#39;???&#39;, min_lr: float = 0.0, last_epoch: int = -1)</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div id="SchedConfig.name" class="classattr">
@@ -379,8 +379,8 @@
         <span class="name">name</span><span class="annotation">: str</span><span class="default_value"> = &#39;???&#39;</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div id="SchedConfig.min_lr" class="classattr">
@@ -389,8 +389,8 @@
         <span class="name">min_lr</span><span class="annotation">: float</span><span class="default_value"> = 0.0</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div id="SchedConfig.last_epoch" class="classattr">
@@ -399,8 +399,8 @@
         <span class="name">last_epoch</span><span class="annotation">: int</span><span class="default_value"> = -1</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                 </section>
@@ -433,15 +433,15 @@
                             <div id="OptimConfig.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#OptimConfig.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">OptimConfig</span><span class="signature">(
     name: str = &#39;???&#39;,
     sched: Optional[<a href="#SchedConfig">mridc.core.conf.modelPT.SchedConfig</a>] = None
 )</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div id="OptimConfig.name" class="classattr">
@@ -450,8 +450,8 @@
         <span class="name">name</span><span class="annotation">: str</span><span class="default_value"> = &#39;???&#39;</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div id="OptimConfig.sched" class="classattr">
@@ -460,8 +460,8 @@
         <span class="name">sched</span><span class="annotation">: Optional[<a href="#SchedConfig">mridc.core.conf.modelPT.SchedConfig</a>]</span><span class="default_value"> = None</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                 </section>
@@ -496,7 +496,7 @@
                             <div id="ModelConfig.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelConfig.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">ModelConfig</span><span class="signature">(
     train_ds: Optional[<a href="../classes/dataset.html#DatasetConfig">mridc.core.classes.dataset.DatasetConfig</a>] = None,
     validation_ds: Optional[<a href="../classes/dataset.html#DatasetConfig">mridc.core.classes.dataset.DatasetConfig</a>] = None,
@@ -505,8 +505,8 @@
 )</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div id="ModelConfig.train_ds" class="classattr">
@@ -515,8 +515,8 @@
         <span class="name">train_ds</span><span class="annotation">: Optional[<a href="../classes/dataset.html#DatasetConfig">mridc.core.classes.dataset.DatasetConfig</a>]</span><span class="default_value"> = None</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div id="ModelConfig.validation_ds" class="classattr">
@@ -525,8 +525,8 @@
         <span class="name">validation_ds</span><span class="annotation">: Optional[<a href="../classes/dataset.html#DatasetConfig">mridc.core.classes.dataset.DatasetConfig</a>]</span><span class="default_value"> = None</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div id="ModelConfig.test_ds" class="classattr">
@@ -535,8 +535,8 @@
         <span class="name">test_ds</span><span class="annotation">: Optional[<a href="../classes/dataset.html#DatasetConfig">mridc.core.classes.dataset.DatasetConfig</a>]</span><span class="default_value"> = None</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div id="ModelConfig.optim" class="classattr">
@@ -545,8 +545,8 @@
         <span class="name">optim</span><span class="annotation">: Optional[<a href="#OptimConfig">mridc.core.conf.modelPT.OptimConfig</a>]</span><span class="default_value"> = None</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                 </section>
@@ -579,15 +579,15 @@
                             <div id="HydraConfig.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#HydraConfig.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">HydraConfig</span><span class="signature">(
     run: Dict[str, Any] = &lt;factory&gt;,
     job_logging: Dict[str, Any] = &lt;factory&gt;
 )</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                 </section>
@@ -625,7 +625,7 @@
                             <div id="MRIDCConfig.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#MRIDCConfig.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">MRIDCConfig</span><span class="signature">(
     name: str = &#39;???&#39;,
     model: <a href="#ModelConfig">mridc.core.conf.modelPT.ModelConfig</a> = &#39;???&#39;,
@@ -635,8 +635,8 @@
 )</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div id="MRIDCConfig.name" class="classattr">
@@ -645,8 +645,8 @@
         <span class="name">name</span><span class="annotation">: str</span><span class="default_value"> = &#39;???&#39;</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div id="MRIDCConfig.model" class="classattr">
@@ -655,8 +655,8 @@
         <span class="name">model</span><span class="annotation">: <a href="#ModelConfig">mridc.core.conf.modelPT.ModelConfig</a></span><span class="default_value"> = &#39;???&#39;</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div id="MRIDCConfig.trainer" class="classattr">
@@ -665,8 +665,8 @@
         <span class="name">trainer</span><span class="annotation">: <a href="trainer.html#TrainerConfig">mridc.core.conf.trainer.TrainerConfig</a></span><span class="default_value"> = TrainerConfig(logger=False, enable_checkpointing=False, callbacks=None, default_root_dir=None, gradient_clip_val=0, process_position=0, num_nodes=1, num_processes=1, gpus=None, auto_select_gpus=False, tpu_cores=None, log_gpu_memory=None, progress_bar_refresh_rate=1, enable_progress_bar=True, overfit_batches=0.0, track_grad_norm=-1, check_val_every_n_epoch=1, fast_dev_run=False, accumulate_grad_batches=1, max_epochs=1000, min_epochs=1, max_steps=None, min_steps=None, limit_train_batches=1.0, limit_val_batches=1.0, limit_test_batches=1.0, val_check_interval=1.0, flush_logs_every_n_steps=100, log_every_n_steps=1, accelerator=&#39;ddp&#39;, sync_batchnorm=False, precision=32, weights_summary=&#39;full&#39;, weights_save_path=None, num_sanity_val_steps=2, resume_from_checkpoint=None, profiler=None, benchmark=False, deterministic=False, reload_dataloaders_every_epoch=False, auto_lr_find=False, replace_sampler_ddp=True, detect_anomaly=False, terminate_on_nan=False, auto_scale_batch_size=False, prepare_data_per_node=True, amp_backend=&#39;native&#39;, amp_level=None, plugins=None, move_metrics_to_cpu=False, multiple_trainloader_mode=&#39;max_size_cycle&#39;, limit_predict_batches=1.0, stochastic_weight_avg=False, gradient_clip_algorithm=&#39;norm&#39;, max_time=None, reload_dataloaders_every_n_epochs=0, ipus=None, devices=None, strategy=&#39;ddp&#39;, enable_model_summary=True)</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div id="MRIDCConfig.exp_manager" class="classattr">
@@ -675,8 +675,8 @@
         <span class="name">exp_manager</span><span class="annotation">: Optional[Any]</span><span class="default_value"> = ExpManagerConfig(explicit_log_dir=None, exp_dir=None, name=None, version=None, use_datetime_version=True, resume_if_exists=False, resume_past_end=False, resume_ignore_no_checkpoint=False, create_tensorboard_logger=True, summary_writer_kwargs=None, create_wandb_logger=False, wandb_logger_kwargs=None, create_checkpoint_callback=True, checkpoint_callback_params=CallbackParams(filepath=None, dirpath=None, filename=None, monitor=&#39;val_loss&#39;, verbose=True, save_last=True, save_top_k=3, save_weights_only=False, mode=&#39;min&#39;, every_n_epochs=1, prefix=None, postfix=&#39;.mridc&#39;, save_best_model=False, always_save_mridc=False, save_mridc_on_train_end=True, model_parallel_size=None), files_to_copy=None, log_step_timing=True, step_timing_kwargs=StepTimingParams(reduction=&#39;mean&#39;, sync_cuda=False, buffer_size=1), model_parallel_size=None)</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div id="MRIDCConfig.hydra" class="classattr">
@@ -685,8 +685,8 @@
         <span class="name">hydra</span><span class="annotation">: <a href="#HydraConfig">mridc.core.conf.modelPT.HydraConfig</a></span><span class="default_value"> = HydraConfig(run={&#39;dir&#39;: &#39;.&#39;}, job_logging={&#39;root&#39;: {&#39;handlers&#39;: None}})</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                 </section>
@@ -694,7 +694,7 @@
                                 <div class="attr class">
         <a class="headerlink" href="#ModelConfigBuilder">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">ModelConfigBuilder</span>:
     </div>
@@ -817,7 +817,7 @@
                             <div id="ModelConfigBuilder.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelConfigBuilder.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">ModelConfigBuilder</span><span class="signature">(model_cfg: <a href="#ModelConfig">mridc.core.conf.modelPT.ModelConfig</a>)</span>
     </div>
 
@@ -939,7 +939,7 @@ model_cfg:</li>
                             <div id="ModelConfigBuilder.set_train_ds" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelConfigBuilder.set_train_ds">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">set_train_ds</span><span class="signature">(self, cfg: Optional[<a href="../classes/dataset.html#DatasetConfig">mridc.core.classes.dataset.DatasetConfig</a>] = None)</span>:
     </div>
@@ -961,7 +961,7 @@ model_cfg:</li>
                             <div id="ModelConfigBuilder.set_validation_ds" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelConfigBuilder.set_validation_ds">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">set_validation_ds</span><span class="signature">(self, cfg: Optional[<a href="../classes/dataset.html#DatasetConfig">mridc.core.classes.dataset.DatasetConfig</a>] = None)</span>:
     </div>
@@ -983,7 +983,7 @@ model_cfg:</li>
                             <div id="ModelConfigBuilder.set_test_ds" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelConfigBuilder.set_test_ds">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">set_test_ds</span><span class="signature">(self, cfg: Optional[<a href="../classes/dataset.html#DatasetConfig">mridc.core.classes.dataset.DatasetConfig</a>] = None)</span>:
     </div>
@@ -1005,7 +1005,7 @@ model_cfg:</li>
                             <div id="ModelConfigBuilder.set_optim" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelConfigBuilder.set_optim">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">set_optim</span><span class="signature">(
     self,
@@ -1052,7 +1052,7 @@ model_cfg:</li>
                             <div id="ModelConfigBuilder.build" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelConfigBuilder.build">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">build</span><span class="signature">(self) -&gt; <a href="#ModelConfig">mridc.core.conf.modelPT.ModelConfig</a></span>:
     </div>

@@ -88,7 +88,7 @@
                     <h1 class="modulename">
 <a href="./../../../../../mridc.html">mridc</a><wbr>.<a href="./../../../../collections.html">collections</a><wbr>.<a href="./../../../reconstruction.html">reconstruction</a><wbr>.<a href="./../../models.html">models</a><wbr>.<a href="./../variablesplittingnet.html">variablesplittingnet</a><wbr>.vsnet_block    </h1>
 
-                
+
                         <details>
             <summary>View Source</summary>
             <div class="pdoc-code codehilite"><pre><span></span><span class="c1"># coding=utf-8</span>
@@ -231,7 +231,7 @@
                                 <div class="attr class">
         <a class="headerlink" href="#DataConsistencyLayer">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">DataConsistencyLayer</span><wbr>(<span class="base">torch.nn.modules.module.Module</span>):
     </div>
@@ -267,7 +267,7 @@
                             <div id="DataConsistencyLayer.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#DataConsistencyLayer.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">DataConsistencyLayer</span><span class="signature">()</span>
     </div>
 
@@ -289,7 +289,7 @@
                             <div id="DataConsistencyLayer.forward" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#DataConsistencyLayer.forward">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">forward</span><span class="signature">(self, pred_kspace, ref_kspace, mask)</span>:
     </div>
@@ -364,7 +364,7 @@
                                 <div class="attr class">
         <a class="headerlink" href="#WeightedAverageTerm">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">WeightedAverageTerm</span><wbr>(<span class="base">torch.nn.modules.module.Module</span>):
     </div>
@@ -391,7 +391,7 @@
                             <div id="WeightedAverageTerm.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#WeightedAverageTerm.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">WeightedAverageTerm</span><span class="signature">()</span>
     </div>
 
@@ -412,7 +412,7 @@
                             <div id="WeightedAverageTerm.forward" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#WeightedAverageTerm.forward">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">forward</span><span class="signature">(self, x, Sx)</span>:
     </div>
@@ -492,7 +492,7 @@
                                 <div class="attr class">
         <a class="headerlink" href="#VSNetBlock">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">VSNetBlock</span><wbr>(<span class="base">torch.nn.modules.module.Module</span>):
     </div>
@@ -607,7 +607,7 @@ in Bioinformatics), 11767 LNCS, pp. 713–722. doi: 10.1007/978-3-030-32251-9_78
                             <div id="VSNetBlock.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#VSNetBlock.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">VSNetBlock</span><span class="signature">(
     denoiser_block: torch.nn.modules.container.ModuleList,
     data_consistency_block: torch.nn.modules.container.ModuleList,
@@ -663,7 +663,7 @@ in Bioinformatics), 11767 LNCS, pp. 713–722. doi: 10.1007/978-3-030-32251-9_78
                             <div id="VSNetBlock.sens_expand" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#VSNetBlock.sens_expand">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">sens_expand</span><span class="signature">(self, x: torch.Tensor, sens_maps: torch.Tensor) -&gt; torch.Tensor</span>:
     </div>
@@ -701,7 +701,7 @@ in Bioinformatics), 11767 LNCS, pp. 713–722. doi: 10.1007/978-3-030-32251-9_78
                             <div id="VSNetBlock.sens_reduce" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#VSNetBlock.sens_reduce">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">sens_reduce</span><span class="signature">(self, x: torch.Tensor, sens_maps: torch.Tensor) -&gt; torch.Tensor</span>:
     </div>
@@ -740,7 +740,7 @@ in Bioinformatics), 11767 LNCS, pp. 713–722. doi: 10.1007/978-3-030-32251-9_78
                             <div id="VSNetBlock.forward" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#VSNetBlock.forward">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">forward</span><span class="signature">(
     self,

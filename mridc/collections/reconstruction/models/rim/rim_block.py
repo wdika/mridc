@@ -185,4 +185,3 @@ class RIMBlock(torch.nn.Module):
         ]
 
         return current_kspace, None
-        # return current_kspace, hx

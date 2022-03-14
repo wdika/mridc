@@ -112,7 +112,7 @@
                     <h1 class="modulename">
 <a href="./../../../../mridc.html">mridc</a><wbr>.<a href="./../../../collections.html">collections</a><wbr>.<a href="./../../reconstruction.html">reconstruction</a><wbr>.<a href="./../models.html">models</a><wbr>.base    </h1>
 
-                
+
                         <details>
             <summary>View Source</summary>
             <div class="pdoc-code codehilite"><pre><span></span><span class="c1"># coding=utf-8</span>
@@ -578,7 +578,7 @@
                                 <div class="attr class">
         <a class="headerlink" href="#BaseMRIReconstructionModel">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">BaseMRIReconstructionModel</span><wbr>(<span class="base"><a href="../../../core/classes/modelPT.html#ModelPT">mridc.core.classes.modelPT.ModelPT</a></span>, <span class="base">abc.ABC</span>):
     </div>
@@ -857,7 +857,7 @@
                             <div id="BaseMRIReconstructionModel.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#BaseMRIReconstructionModel.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">BaseMRIReconstructionModel</span><span class="signature">(
     cfg: omegaconf.dictconfig.DictConfig,
     trainer: pytorch_lightning.trainer.trainer.Trainer = None
@@ -914,7 +914,7 @@ _MODEL_RESTORE_PATH:
                             <div id="BaseMRIReconstructionModel.process_loss" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#BaseMRIReconstructionModel.process_loss">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">process_loss</span><span class="signature">(self, target, pred, _loss_fn)</span>:
     </div>
@@ -984,7 +984,7 @@ _MODEL_RESTORE_PATH:
                             <div id="BaseMRIReconstructionModel.training_step" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#BaseMRIReconstructionModel.training_step">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">training_step</span><span class="signature">(
     self,
@@ -1069,7 +1069,7 @@ Returns:
                             <div id="BaseMRIReconstructionModel.validation_step" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#BaseMRIReconstructionModel.validation_step">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">validation_step</span><span class="signature">(self, batch: Dict[float, torch.Tensor], batch_idx: int) -&gt; Dict</span>:
     </div>
@@ -1123,7 +1123,7 @@ Returns:
                             <div id="BaseMRIReconstructionModel.test_step" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#BaseMRIReconstructionModel.test_step">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">test_step</span><span class="signature">(
     self,
@@ -1183,7 +1183,7 @@ Returns:
                             <div id="BaseMRIReconstructionModel.log_image" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#BaseMRIReconstructionModel.log_image">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">log_image</span><span class="signature">(self, name, image)</span>:
     </div>
@@ -1206,7 +1206,7 @@ Returns:
                             <div id="BaseMRIReconstructionModel.validation_epoch_end" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#BaseMRIReconstructionModel.validation_epoch_end">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">validation_epoch_end</span><span class="signature">(self, outputs)</span>:
     </div>
@@ -1228,7 +1228,7 @@ Returns:
                             <div id="BaseMRIReconstructionModel.test_epoch_end" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#BaseMRIReconstructionModel.test_epoch_end">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">test_epoch_end</span><span class="signature">(self, outputs)</span>:
     </div>
@@ -1261,7 +1261,7 @@ Returns:
                             <div id="BaseMRIReconstructionModel.setup_training_data" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#BaseMRIReconstructionModel.setup_training_data">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">setup_training_data</span><span class="signature">(self, train_data_config: Optional[omegaconf.dictconfig.DictConfig])</span>:
     </div>
@@ -1283,7 +1283,7 @@ Returns:
                             <div id="BaseMRIReconstructionModel.setup_validation_data" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#BaseMRIReconstructionModel.setup_validation_data">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">setup_validation_data</span><span class="signature">(self, val_data_config: Optional[omegaconf.dictconfig.DictConfig])</span>:
     </div>
@@ -1305,7 +1305,7 @@ Returns:
                             <div id="BaseMRIReconstructionModel.setup_test_data" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#BaseMRIReconstructionModel.setup_test_data">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">setup_test_data</span><span class="signature">(self, test_data_config: Optional[omegaconf.dictconfig.DictConfig])</span>:
     </div>
@@ -1553,7 +1553,7 @@ Returns:
                                 <div class="attr class">
         <a class="headerlink" href="#BaseSensitivityModel">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">BaseSensitivityModel</span><wbr>(<span class="base">torch.nn.modules.module.Module</span>, <span class="base">abc.ABC</span>):
     </div>
@@ -1735,7 +1735,7 @@ sensitivities.</p>
                             <div id="BaseSensitivityModel.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#BaseSensitivityModel.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">BaseSensitivityModel</span><span class="signature">(
     chans: int = 8,
     num_pools: int = 4,
@@ -2004,7 +2004,7 @@ sensitivities.</p>
                             <div id="BaseSensitivityModel.forward" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#BaseSensitivityModel.forward">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">forward</span><span class="signature">(
     self,

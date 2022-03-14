@@ -323,7 +323,4 @@ class MRIDataTransforms:
 
             target = target / torch.max(torch.abs(target))
 
-        # This is needed when using the ssim as loss function.
-        max_value = np.array(torch.max(torch.abs(target)).item()).astype(np.float32)
-
         return masked_kspace, sensitivity_map, mask, eta, target, fname, slice_idx, acc

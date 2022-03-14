@@ -112,7 +112,7 @@
                     <h1 class="modulename">
 <a href="./../../../../../mridc.html">mridc</a><wbr>.<a href="./../../../../collections.html">collections</a><wbr>.<a href="./../../../reconstruction.html">reconstruction</a><wbr>.<a href="./../../models.html">models</a><wbr>.<a href="./../unet_base.html">unet_base</a><wbr>.unet_block    </h1>
 
-                
+
                         <details>
             <summary>View Source</summary>
             <div class="pdoc-code codehilite"><pre><span></span><span class="c1"># encoding: utf-8</span>
@@ -486,7 +486,7 @@
                                 <div class="attr class">
         <a class="headerlink" href="#NormUnet">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">NormUnet</span><wbr>(<span class="base">torch.nn.modules.module.Module</span>):
     </div>
@@ -695,7 +695,7 @@ This keeps the values more numerically stable during training.</p>
                             <div id="NormUnet.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#NormUnet.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">NormUnet</span><span class="signature">(
     chans: int,
     num_pools: int,
@@ -849,7 +849,7 @@ This keeps the values more numerically stable during training.</p>
                             <div id="NormUnet.norm" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#NormUnet.norm">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">norm</span><span class="signature">(
     self,
@@ -900,7 +900,7 @@ This keeps the values more numerically stable during training.</p>
                             <div id="NormUnet.unnorm" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#NormUnet.unnorm">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">unnorm</span><span class="signature">(
     self,
@@ -947,7 +947,7 @@ This keeps the values more numerically stable during training.</p>
                             <div id="NormUnet.pad" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#NormUnet.pad">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">pad</span><span class="signature">(
     self,
@@ -1049,7 +1049,7 @@ This keeps the values more numerically stable during training.</p>
                             <div id="NormUnet.forward" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#NormUnet.forward">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">forward</span><span class="signature">(self, x: torch.Tensor) -&gt; torch.Tensor</span>:
     </div>
@@ -1157,7 +1157,7 @@ This keeps the values more numerically stable during training.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#Unet">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">Unet</span><wbr>(<span class="base">torch.nn.modules.module.Module</span>):
     </div>
@@ -1267,7 +1267,7 @@ Springer, 2015.</p>
                             <div id="Unet.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#Unet.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">Unet</span><span class="signature">(
     in_chans: int,
     out_chans: int,
@@ -1335,7 +1335,7 @@ Springer, 2015.</p>
                             <div id="Unet.forward" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#Unet.forward">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">forward</span><span class="signature">(self, image: torch.Tensor) -&gt; torch.Tensor</span>:
     </div>
@@ -1446,7 +1446,7 @@ Springer, 2015.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#ConvBlock">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">ConvBlock</span><wbr>(<span class="base">torch.nn.modules.module.Module</span>):
     </div>
@@ -1504,7 +1504,7 @@ instance normalization, LeakyReLU activation and dropout.</p>
                             <div id="ConvBlock.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ConvBlock.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">ConvBlock</span><span class="signature">(in_chans: int, out_chans: int, drop_prob: float)</span>
     </div>
 
@@ -1548,7 +1548,7 @@ instance normalization, LeakyReLU activation and dropout.</p>
                             <div id="ConvBlock.forward" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ConvBlock.forward">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">forward</span><span class="signature">(self, image: torch.Tensor) -&gt; torch.Tensor</span>:
     </div>
@@ -1631,7 +1631,7 @@ instance normalization, LeakyReLU activation and dropout.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#TransposeConvBlock">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">TransposeConvBlock</span><wbr>(<span class="base">torch.nn.modules.module.Module</span>):
     </div>
@@ -1682,7 +1682,7 @@ layers followed by instance normalization and LeakyReLU activation.</p>
                             <div id="TransposeConvBlock.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#TransposeConvBlock.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">TransposeConvBlock</span><span class="signature">(in_chans: int, out_chans: int)</span>
     </div>
 
@@ -1718,7 +1718,7 @@ layers followed by instance normalization and LeakyReLU activation.</p>
                             <div id="TransposeConvBlock.forward" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#TransposeConvBlock.forward">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">forward</span><span class="signature">(self, image: torch.Tensor) -&gt; torch.Tensor</span>:
     </div>

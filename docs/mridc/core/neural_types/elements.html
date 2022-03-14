@@ -331,7 +331,7 @@
                     <h1 class="modulename">
 <a href="./../../../mridc.html">mridc</a><wbr>.<a href="./../../core.html">core</a><wbr>.<a href="./../neural_types.html">neural_types</a><wbr>.elements    </h1>
 
-                
+
                         <details>
             <summary>View Source</summary>
             <div class="pdoc-code codehilite"><pre><span></span><span class="c1"># encoding: utf-8</span>
@@ -601,7 +601,7 @@
                                 <div class="attr class">
         <a class="headerlink" href="#ElementType">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">ElementType</span><wbr>(<span class="base">abc.ABC</span>):
     </div>
@@ -681,12 +681,12 @@
                             <div id="ElementType.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ElementType.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">ElementType</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div id="ElementType.type_parameters" class="classattr">
@@ -695,7 +695,7 @@
         <span class="name">type_parameters</span><span class="annotation">: Dict</span>
     </div>
 
-    
+
             <div class="docstring"><p>Override this property to parametrize your type. For example, you can specify 'storage' type such as float,
 int, bool with 'dtype' keyword. Another example, is if you want to represent a signal with a particular
 property (say, sample frequency), then you can put sample_freq->value in there. When two types are compared
@@ -710,7 +710,7 @@ their type_parameters must match."</p>
         <span class="name">fields</span><span class="annotation">: Optional[Tuple]</span>
     </div>
 
-    
+
             <div class="docstring"><p>This should be used to logically represent tuples/structures. For example, if you want to represent a bounding
 box (x, y, width, height) you can put a tuple with names ('x', y', 'w', 'h') in here. Under the hood this
 should be converted to the last tensor dimension of fixed size = len(fields). When two types are compared their
@@ -722,7 +722,7 @@ should be converted to the last tensor dimension of fixed size = len(fields). Wh
                             <div id="ElementType.compare" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ElementType.compare">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">compare</span><span class="signature">(
     self,
@@ -777,7 +777,7 @@ should be converted to the last tensor dimension of fixed size = len(fields). Wh
                                 <div class="attr class">
         <a class="headerlink" href="#VoidType">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">VoidType</span><wbr>(<span class="base"><a href="#ElementType">ElementType</a></span>):
     </div>
@@ -805,18 +805,18 @@ For example, when you need template-like functionality.</p>
                             <div id="VoidType.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#VoidType.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">VoidType</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div id="VoidType.compare" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#VoidType.compare">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">compare</span><span class="signature">(
     cls,
@@ -853,7 +853,7 @@ For example, when you need template-like functionality.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#ChannelType">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">ChannelType</span><wbr>(<span class="base"><a href="#ElementType">ElementType</a></span>):
     </div>
@@ -873,12 +873,12 @@ For example, when you need template-like functionality.</p>
                             <div id="ChannelType.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ChannelType.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">ChannelType</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -897,7 +897,7 @@ For example, when you need template-like functionality.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#MRISignal">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">MRISignal</span><wbr>(<span class="base"><a href="#ElementType">ElementType</a></span>):
     </div>
@@ -935,7 +935,7 @@ For example, when you need template-like functionality.</p>
                             <div id="MRISignal.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#MRISignal.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">MRISignal</span><span class="signature">(freq: int = None)</span>
     </div>
 
@@ -947,7 +947,7 @@ For example, when you need template-like functionality.</p>
 
         </details>
 
-    
+
 
                             </div>
                             <div id="MRISignal.type_parameters" class="classattr">
@@ -956,7 +956,7 @@ For example, when you need template-like functionality.</p>
         <span class="name">type_parameters</span>
     </div>
 
-    
+
             <div class="docstring"><p>Returns the type parameters of the element type.</p>
 </div>
 
@@ -977,7 +977,7 @@ For example, when you need template-like functionality.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#RecurrentsType">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">RecurrentsType</span><wbr>(<span class="base"><a href="#ElementType">ElementType</a></span>):
     </div>
@@ -997,12 +997,12 @@ For example, when you need template-like functionality.</p>
                             <div id="RecurrentsType.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#RecurrentsType.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">RecurrentsType</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -1021,7 +1021,7 @@ For example, when you need template-like functionality.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#LabelsType">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">LabelsType</span><wbr>(<span class="base"><a href="#ElementType">ElementType</a></span>):
     </div>
@@ -1041,12 +1041,12 @@ For example, when you need template-like functionality.</p>
                             <div id="LabelsType.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#LabelsType.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">LabelsType</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -1065,7 +1065,7 @@ For example, when you need template-like functionality.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#LogprobsType">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">LogprobsType</span><wbr>(<span class="base"><a href="#ElementType">ElementType</a></span>):
     </div>
@@ -1085,12 +1085,12 @@ For example, when you need template-like functionality.</p>
                             <div id="LogprobsType.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#LogprobsType.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">LogprobsType</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -1109,7 +1109,7 @@ For example, when you need template-like functionality.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#ProbsType">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">ProbsType</span><wbr>(<span class="base"><a href="#ElementType">ElementType</a></span>):
     </div>
@@ -1129,12 +1129,12 @@ For example, when you need template-like functionality.</p>
                             <div id="ProbsType.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ProbsType.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">ProbsType</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -1153,7 +1153,7 @@ For example, when you need template-like functionality.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#LossType">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">LossType</span><wbr>(<span class="base"><a href="#ElementType">ElementType</a></span>):
     </div>
@@ -1173,12 +1173,12 @@ For example, when you need template-like functionality.</p>
                             <div id="LossType.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#LossType.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">LossType</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -1197,7 +1197,7 @@ For example, when you need template-like functionality.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#RegressionValuesType">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">RegressionValuesType</span><wbr>(<span class="base"><a href="#PredictionsType">PredictionsType</a></span>):
     </div>
@@ -1217,12 +1217,12 @@ For example, when you need template-like functionality.</p>
                             <div id="RegressionValuesType.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#RegressionValuesType.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">RegressionValuesType</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -1241,7 +1241,7 @@ For example, when you need template-like functionality.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#CategoricalValuesType">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">CategoricalValuesType</span><wbr>(<span class="base"><a href="#PredictionsType">PredictionsType</a></span>):
     </div>
@@ -1261,12 +1261,12 @@ For example, when you need template-like functionality.</p>
                             <div id="CategoricalValuesType.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#CategoricalValuesType.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">CategoricalValuesType</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -1285,7 +1285,7 @@ For example, when you need template-like functionality.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#PredictionsType">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">PredictionsType</span><wbr>(<span class="base"><a href="#LabelsType">LabelsType</a></span>):
     </div>
@@ -1305,12 +1305,12 @@ For example, when you need template-like functionality.</p>
                             <div id="PredictionsType.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#PredictionsType.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">PredictionsType</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -1329,7 +1329,7 @@ For example, when you need template-like functionality.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#LengthsType">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">LengthsType</span><wbr>(<span class="base"><a href="#ElementType">ElementType</a></span>):
     </div>
@@ -1349,12 +1349,12 @@ For example, when you need template-like functionality.</p>
                             <div id="LengthsType.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#LengthsType.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">LengthsType</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -1373,7 +1373,7 @@ For example, when you need template-like functionality.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#MaskType">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">MaskType</span><wbr>(<span class="base"><a href="#PredictionsType">PredictionsType</a></span>):
     </div>
@@ -1393,12 +1393,12 @@ For example, when you need template-like functionality.</p>
                             <div id="MaskType.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#MaskType.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">MaskType</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -1417,7 +1417,7 @@ For example, when you need template-like functionality.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#Target">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">Target</span><wbr>(<span class="base"><a href="#ElementType">ElementType</a></span>):
     </div>
@@ -1437,12 +1437,12 @@ For example, when you need template-like functionality.</p>
                             <div id="Target.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#Target.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">Target</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -1461,7 +1461,7 @@ For example, when you need template-like functionality.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#ReconstructionTarget">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">ReconstructionTarget</span><wbr>(<span class="base"><a href="#Target">Target</a></span>):
     </div>
@@ -1485,12 +1485,12 @@ class.</p>
                             <div id="ReconstructionTarget.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ReconstructionTarget.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">ReconstructionTarget</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -1509,7 +1509,7 @@ class.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#ImageFeatureValue">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">ImageFeatureValue</span><wbr>(<span class="base"><a href="#ImageValue">ImageValue</a></span>):
     </div>
@@ -1529,12 +1529,12 @@ class.</p>
                             <div id="ImageFeatureValue.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ImageFeatureValue.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">ImageFeatureValue</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -1553,7 +1553,7 @@ class.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#Index">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">Index</span><wbr>(<span class="base"><a href="#ElementType">ElementType</a></span>):
     </div>
@@ -1573,12 +1573,12 @@ class.</p>
                             <div id="Index.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#Index.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">Index</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -1597,7 +1597,7 @@ class.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#ImageValue">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">ImageValue</span><wbr>(<span class="base"><a href="#ElementType">ElementType</a></span>):
     </div>
@@ -1617,12 +1617,12 @@ class.</p>
                             <div id="ImageValue.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ImageValue.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">ImageValue</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -1641,7 +1641,7 @@ class.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#NormalizedImageValue">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">NormalizedImageValue</span><wbr>(<span class="base"><a href="#ImageValue">ImageValue</a></span>):
     </div>
@@ -1661,12 +1661,12 @@ class.</p>
                             <div id="NormalizedImageValue.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#NormalizedImageValue.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">NormalizedImageValue</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -1685,7 +1685,7 @@ class.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#StringLabel">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">StringLabel</span><wbr>(<span class="base"><a href="#StringType">StringType</a></span>):
     </div>
@@ -1705,12 +1705,12 @@ class.</p>
                             <div id="StringLabel.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#StringLabel.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">StringLabel</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -1729,7 +1729,7 @@ class.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#StringType">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">StringType</span><wbr>(<span class="base"><a href="#ElementType">ElementType</a></span>):
     </div>
@@ -1749,12 +1749,12 @@ class.</p>
                             <div id="StringType.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#StringType.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">StringType</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -1773,7 +1773,7 @@ class.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#Length">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">Length</span><wbr>(<span class="base"><a href="#IntType">IntType</a></span>):
     </div>
@@ -1793,12 +1793,12 @@ class.</p>
                             <div id="Length.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#Length.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">Length</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -1817,7 +1817,7 @@ class.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#IntType">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">IntType</span><wbr>(<span class="base"><a href="#ElementType">ElementType</a></span>):
     </div>
@@ -1837,12 +1837,12 @@ class.</p>
                             <div id="IntType.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#IntType.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">IntType</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -1861,7 +1861,7 @@ class.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#FloatType">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">FloatType</span><wbr>(<span class="base"><a href="#ElementType">ElementType</a></span>):
     </div>
@@ -1881,12 +1881,12 @@ class.</p>
                             <div id="FloatType.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#FloatType.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">FloatType</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -1905,7 +1905,7 @@ class.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#NormalDistributionSamplesType">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">NormalDistributionSamplesType</span><wbr>(<span class="base"><a href="#ProbabilityDistributionSamplesType">ProbabilityDistributionSamplesType</a></span>):
     </div>
@@ -1925,12 +1925,12 @@ class.</p>
                             <div id="NormalDistributionSamplesType.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#NormalDistributionSamplesType.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">NormalDistributionSamplesType</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -1949,7 +1949,7 @@ class.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#NormalDistributionMeanType">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">NormalDistributionMeanType</span><wbr>(<span class="base"><a href="#ElementType">ElementType</a></span>):
     </div>
@@ -1969,12 +1969,12 @@ class.</p>
                             <div id="NormalDistributionMeanType.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#NormalDistributionMeanType.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">NormalDistributionMeanType</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -1993,7 +1993,7 @@ class.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#NormalDistributionLogVarianceType">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">NormalDistributionLogVarianceType</span><wbr>(<span class="base"><a href="#ElementType">ElementType</a></span>):
     </div>
@@ -2013,12 +2013,12 @@ class.</p>
                             <div id="NormalDistributionLogVarianceType.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#NormalDistributionLogVarianceType.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">NormalDistributionLogVarianceType</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -2037,7 +2037,7 @@ class.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#LogDeterminantType">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">LogDeterminantType</span><wbr>(<span class="base"><a href="#ElementType">ElementType</a></span>):
     </div>
@@ -2057,12 +2057,12 @@ class.</p>
                             <div id="LogDeterminantType.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#LogDeterminantType.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">LogDeterminantType</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -2081,7 +2081,7 @@ class.</p>
                                 <div class="attr class">
         <a class="headerlink" href="#SequenceToSequenceAlignmentType">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">SequenceToSequenceAlignmentType</span><wbr>(<span class="base"><a href="#ElementType">ElementType</a></span>):
     </div>
@@ -2105,12 +2105,12 @@ to decoder time steps.</p>
                             <div id="SequenceToSequenceAlignmentType.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#SequenceToSequenceAlignmentType.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">SequenceToSequenceAlignmentType</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">

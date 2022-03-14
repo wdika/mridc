@@ -106,7 +106,7 @@
                     <h1 class="modulename">
 <a href="./../../mridc.html">mridc</a><wbr>.<a href="./../utils.html">utils</a><wbr>.model_utils    </h1>
 
-                
+
                         <details>
             <summary>View Source</summary>
             <div class="pdoc-code codehilite"><pre><span></span><span class="c1"># encoding: utf-8</span>
@@ -675,7 +675,7 @@
                                 <div class="attr class">
         <a class="headerlink" href="#ArtifactPathType">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">ArtifactPathType</span><wbr>(<span class="base">enum.Enum</span>):
     </div>
@@ -707,8 +707,8 @@ TAR_PATH: A (generally flattened) filepath that exists inside of an archive (tha
         <span class="name">LOCAL_PATH</span><span class="default_value"> = &lt;<a href="#ArtifactPathType.LOCAL_PATH">ArtifactPathType.LOCAL_PATH</a>: 0&gt;</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div id="ArtifactPathType.TAR_PATH" class="classattr">
@@ -717,8 +717,8 @@ TAR_PATH: A (generally flattened) filepath that exists inside of an archive (tha
         <span class="name">TAR_PATH</span><span class="default_value"> = &lt;<a href="#ArtifactPathType.TAR_PATH">ArtifactPathType.TAR_PATH</a>: 1&gt;</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -762,12 +762,12 @@ TAR_PATH: A (generally flattened) filepath that exists inside of an archive (tha
                             <div id="ArtifactItem.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ArtifactItem.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">ArtifactItem</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div id="ArtifactItem.hashed_path" class="classattr">
@@ -776,15 +776,15 @@ TAR_PATH: A (generally flattened) filepath that exists inside of an archive (tha
         <span class="name">hashed_path</span><span class="annotation">: Optional[str]</span><span class="default_value"> = None</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                 </section>
                 <section id="resolve_dataset_name_from_cfg">
                             <div class="attr function"><a class="headerlink" href="#resolve_dataset_name_from_cfg">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">resolve_dataset_name_from_cfg</span><span class="signature">(
     cfg: omegaconf.dictconfig.DictConfig
@@ -924,7 +924,7 @@ Returns:
                 <section id="parse_dataset_as_name">
                             <div class="attr function"><a class="headerlink" href="#parse_dataset_as_name">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">parse_dataset_as_name</span><span class="signature">(name: str) -&gt; str</span>:
     </div>
@@ -975,7 +975,7 @@ Returns:
                 <section id="unique_names_check">
                             <div class="attr function"><a class="headerlink" href="#unique_names_check">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">unique_names_check</span><span class="signature">(name_list: Optional[List[str]])</span>:
     </div>
@@ -1019,7 +1019,7 @@ Args:
                 <section id="resolve_validation_dataloaders">
                             <div class="attr function"><a class="headerlink" href="#resolve_validation_dataloaders">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">resolve_validation_dataloaders</span><span class="signature">(model: <a href="../core/classes/modelPT.html#ModelPT">mridc.core.classes.modelPT.ModelPT</a>)</span>:
     </div>
@@ -1168,7 +1168,7 @@ Args:
                 <section id="convert_model_config_to_dict_config">
                             <div class="attr function"><a class="headerlink" href="#convert_model_config_to_dict_config">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">convert_model_config_to_dict_config</span><span class="signature">(
     cfg: Union[omegaconf.dictconfig.DictConfig, <a href="../core/conf/modelPT.html#MRIDCConfig">mridc.core.conf.modelPT.MRIDCConfig</a>]
@@ -1222,7 +1222,7 @@ The equivalent DictConfig</li>
                 <section id="_convert_config">
                             <div class="attr function"><a class="headerlink" href="#_convert_config">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">_convert_config</span><span class="signature">(cfg: omegaconf.omegaconf.OmegaConf)</span>:
     </div>
@@ -1264,7 +1264,7 @@ The equivalent DictConfig</li>
                 <section id="maybe_update_config_version">
                             <div class="attr function"><a class="headerlink" href="#maybe_update_config_version">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">maybe_update_config_version</span><span class="signature">(cfg: omegaconf.dictconfig.DictConfig)</span>:
     </div>
@@ -1328,7 +1328,7 @@ An updated DictConfig that conforms to Hydra 1.x format.</li>
                 <section id="import_class_by_path">
                             <div class="attr function"><a class="headerlink" href="#import_class_by_path">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">import_class_by_path</span><span class="signature">(path: str)</span>:
     </div>
@@ -1355,7 +1355,7 @@ An updated DictConfig that conforms to Hydra 1.x format.</li>
                 <section id="resolve_subclass_pretrained_model_info">
                             <div class="attr function"><a class="headerlink" href="#resolve_subclass_pretrained_model_info">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">resolve_subclass_pretrained_model_info</span><span class="signature">(
     base_class
@@ -1426,7 +1426,7 @@ Returns:
                 <section id="check_lib_version">
                             <div class="attr function"><a class="headerlink" href="#check_lib_version">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">check_lib_version</span><span class="signature">(
     lib_name: str,
@@ -1510,7 +1510,7 @@ Returns:
                 <section id="resolve_cache_dir">
                             <div class="attr function"><a class="headerlink" href="#resolve_cache_dir">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">resolve_cache_dir</span><span class="signature">() -&gt; pathlib.Path</span>:
     </div>

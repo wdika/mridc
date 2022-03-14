@@ -145,7 +145,7 @@
                     <h1 class="modulename">
 <a href="./../../../mridc.html">mridc</a><wbr>.<a href="./../../core.html">core</a><wbr>.<a href="./../classes.html">classes</a><wbr>.modelPT    </h1>
 
-                
+
                         <details>
             <summary>View Source</summary>
             <div class="pdoc-code codehilite"><pre><span></span><span class="c1"># encoding: utf-8</span>
@@ -1326,7 +1326,7 @@
                                 <div class="attr class">
         <a class="headerlink" href="#ModelPT">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">ModelPT</span><wbr>(<span class="base">pytorch_lightning.core.lightning.LightningModule</span>, <span class="base"><a href="common.html#Model">mridc.core.classes.common.Model</a></span>):
     </div>
@@ -2481,7 +2481,7 @@
                             <div id="ModelPT.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelPT.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">ModelPT</span><span class="signature">(
     cfg: omegaconf.dictconfig.DictConfig,
     trainer: pytorch_lightning.trainer.trainer.Trainer = None
@@ -2632,7 +2632,7 @@ _MODEL_RESTORE_PATH:
                             <div id="ModelPT.register_artifact" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelPT.register_artifact">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">register_artifact</span><span class="signature">(self, config_path: str, src: str, verify_src_exists: bool = True)</span>:
     </div>
@@ -2711,7 +2711,7 @@ str: If src is not None or empty it always returns absolute path which is guaran
                             <div id="ModelPT.save_to" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelPT.save_to">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">save_to</span><span class="signature">(self, save_path: str)</span>:
     </div>
@@ -2992,7 +2992,7 @@ Returns:</p>
                             <div id="ModelPT.setup_test_data" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelPT.setup_test_data">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">setup_test_data</span><span class="signature">(self, test_data_config: Union[omegaconf.dictconfig.DictConfig, Dict])</span>:
     </div>
@@ -3022,7 +3022,7 @@ Returns:</p>
                             <div id="ModelPT.setup_multiple_validation_data" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelPT.setup_multiple_validation_data">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">setup_multiple_validation_data</span><span class="signature">(self, val_data_config: Union[omegaconf.dictconfig.DictConfig, Dict])</span>:
     </div>
@@ -3070,7 +3070,7 @@ Returns:</p>
                             <div id="ModelPT.setup_multiple_test_data" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelPT.setup_multiple_test_data">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">setup_multiple_test_data</span><span class="signature">(self, test_data_config: Union[omegaconf.dictconfig.DictConfig, Dict])</span>:
     </div>
@@ -3113,7 +3113,7 @@ Args:
                             <div id="ModelPT.setup_optimization" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelPT.setup_optimization">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">setup_optimization</span><span class="signature">(
     self,
@@ -3292,7 +3292,7 @@ Args:
                             <div id="ModelPT.configure_optimizers" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelPT.configure_optimizers">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">configure_optimizers</span><span class="signature">(self)</span>:
     </div>
@@ -3319,7 +3319,7 @@ Args:
                             <div id="ModelPT.train_dataloader" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelPT.train_dataloader">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">train_dataloader</span><span class="signature">(self)</span>:
     </div>
@@ -3341,7 +3341,7 @@ Args:
                             <div id="ModelPT.val_dataloader" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelPT.val_dataloader">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">val_dataloader</span><span class="signature">(self)</span>:
     </div>
@@ -3363,7 +3363,7 @@ Args:
                             <div id="ModelPT.test_dataloader" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelPT.test_dataloader">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">test_dataloader</span><span class="signature">(self)</span>:
     </div>
@@ -3385,7 +3385,7 @@ Args:
                             <div id="ModelPT.validation_epoch_end" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelPT.validation_epoch_end">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">validation_epoch_end</span><span class="signature">(
     self,
@@ -3510,7 +3510,7 @@ Returns:
                             <div id="ModelPT.test_epoch_end" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelPT.test_epoch_end">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">test_epoch_end</span><span class="signature">(
     self,
@@ -3737,7 +3737,7 @@ Returns:
                             <div id="ModelPT.get_validation_dataloader_prefix" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelPT.get_validation_dataloader_prefix">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">get_validation_dataloader_prefix</span><span class="signature">(self, dataloader_idx: int = 0) -&gt; str</span>:
     </div>
@@ -3769,7 +3769,7 @@ Returns:
                             <div id="ModelPT.get_test_dataloader_prefix" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelPT.get_test_dataloader_prefix">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">get_test_dataloader_prefix</span><span class="signature">(self, dataloader_idx: int = 0) -&gt; str</span>:
     </div>
@@ -3801,7 +3801,7 @@ Returns:
                             <div id="ModelPT.load_part_of_state_dict" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelPT.load_part_of_state_dict">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">load_part_of_state_dict</span><span class="signature">(self, state_dict, include, exclude, load_from_string)</span>:
     </div>
@@ -4016,7 +4016,7 @@ Args:
                             <div id="ModelPT.teardown" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelPT.teardown">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">teardown</span><span class="signature">(self, stage: str)</span>:
     </div>
@@ -4148,7 +4148,7 @@ Returns:
                             <div id="ModelPT.prepare_test" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelPT.prepare_test">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">prepare_test</span><span class="signature">(self, trainer: pytorch_lightning.trainer.trainer.Trainer) -&gt; bool</span>:
     </div>
@@ -4207,7 +4207,7 @@ Returns:
                             <div id="ModelPT.set_trainer" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelPT.set_trainer">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">set_trainer</span><span class="signature">(self, trainer: pytorch_lightning.trainer.trainer.Trainer)</span>:
     </div>
@@ -4237,7 +4237,7 @@ Args:
                             <div id="ModelPT.set_world_size" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ModelPT.set_world_size">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">set_world_size</span><span class="signature">(self, trainer: pytorch_lightning.trainer.trainer.Trainer)</span>:
     </div>
@@ -4276,7 +4276,7 @@ Args:
         <span class="name">num_weights</span>
     </div>
 
-    
+
             <div class="docstring"><p>Utility property that returns the total number of parameters of the Model.</p>
 </div>
 
@@ -4288,7 +4288,7 @@ Args:
         <span class="name">cfg</span>
     </div>
 
-    
+
             <div class="docstring"><p>Property that holds the finalized internal config of the model.
 Note:
     Changes to this config are not reflected in the state of the model.

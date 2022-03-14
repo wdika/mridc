@@ -76,7 +76,7 @@
                     <h1 class="modulename">
 <a href="./../../../../../mridc.html">mridc</a><wbr>.<a href="./../../../../collections.html">collections</a><wbr>.<a href="./../../../reconstruction.html">reconstruction</a><wbr>.<a href="./../../models.html">models</a><wbr>.<a href="./../convrecnet.html">convrecnet</a><wbr>.crnn_block    </h1>
 
-                
+
                         <details>
             <summary>View Source</summary>
             <div class="pdoc-code codehilite"><pre><span></span><span class="c1"># coding=utf-8</span>
@@ -213,7 +213,7 @@
                                 <div class="attr class">
         <a class="headerlink" href="#DataConsistencyLayer">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">DataConsistencyLayer</span><wbr>(<span class="base">torch.nn.modules.module.Module</span>):
     </div>
@@ -248,7 +248,7 @@
                             <div id="DataConsistencyLayer.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#DataConsistencyLayer.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">DataConsistencyLayer</span><span class="signature">()</span>
     </div>
 
@@ -270,7 +270,7 @@
                             <div id="DataConsistencyLayer.forward" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#DataConsistencyLayer.forward">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">forward</span><span class="signature">(self, pred_kspace, ref_kspace, mask)</span>:
     </div>
@@ -344,7 +344,7 @@
                                 <div class="attr class">
         <a class="headerlink" href="#RecurrentConvolutionalNetBlock">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">RecurrentConvolutionalNetBlock</span><wbr>(<span class="base">torch.nn.modules.module.Module</span>):
     </div>
@@ -465,7 +465,7 @@ Imaging, vol. 38, no. 1, pp. 280-290, Jan. 2019, doi: 10.1109/TMI.2018.2863670.<
                             <div id="RecurrentConvolutionalNetBlock.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#RecurrentConvolutionalNetBlock.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">RecurrentConvolutionalNetBlock</span><span class="signature">(
     model: torch.nn.modules.module.Module,
     num_iterations: int = 10,
@@ -514,7 +514,7 @@ Imaging, vol. 38, no. 1, pp. 280-290, Jan. 2019, doi: 10.1109/TMI.2018.2863670.<
                             <div id="RecurrentConvolutionalNetBlock.sens_expand" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#RecurrentConvolutionalNetBlock.sens_expand">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">sens_expand</span><span class="signature">(self, x: torch.Tensor, sens_maps: torch.Tensor) -&gt; torch.Tensor</span>:
     </div>
@@ -552,7 +552,7 @@ Imaging, vol. 38, no. 1, pp. 280-290, Jan. 2019, doi: 10.1109/TMI.2018.2863670.<
                             <div id="RecurrentConvolutionalNetBlock.sens_reduce" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#RecurrentConvolutionalNetBlock.sens_reduce">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">sens_reduce</span><span class="signature">(self, x: torch.Tensor, sens_maps: torch.Tensor) -&gt; torch.Tensor</span>:
     </div>
@@ -591,7 +591,7 @@ Imaging, vol. 38, no. 1, pp. 280-290, Jan. 2019, doi: 10.1109/TMI.2018.2863670.<
                             <div id="RecurrentConvolutionalNetBlock.forward" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#RecurrentConvolutionalNetBlock.forward">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">forward</span><span class="signature">(
     self,

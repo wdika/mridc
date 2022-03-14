@@ -91,7 +91,7 @@
                     <h1 class="modulename">
 <a href="./../../../mridc.html">mridc</a><wbr>.<a href="./../../core.html">core</a><wbr>.<a href="./../classes.html">classes</a><wbr>.export    </h1>
 
-                
+
                         <details>
             <summary>View Source</summary>
             <div class="pdoc-code codehilite"><pre><span></span><span class="c1"># encoding: utf-8</span>
@@ -527,7 +527,7 @@
                                 <div class="attr class">
         <a class="headerlink" href="#ExportFormat">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">ExportFormat</span><wbr>(<span class="base">enum.Enum</span>):
     </div>
@@ -553,8 +553,8 @@
         <span class="name">ONNX</span><span class="default_value"> = &lt;<a href="#ExportFormat.ONNX">ExportFormat.ONNX</a>: (1,)&gt;</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div id="ExportFormat.TORCHSCRIPT" class="classattr">
@@ -563,8 +563,8 @@
         <span class="name">TORCHSCRIPT</span><span class="default_value"> = &lt;<a href="#ExportFormat.TORCHSCRIPT">ExportFormat.TORCHSCRIPT</a>: (2,)&gt;</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div class="inherited">
@@ -582,7 +582,7 @@
                                 <div class="attr class">
         <a class="headerlink" href="#Exportable">#&nbsp;&nbsp</a>
 
-        
+
         <span class="def">class</span>
         <span class="name">Exportable</span><wbr>(<span class="base">abc.ABC</span>):
     </div>
@@ -942,12 +942,12 @@
                             <div id="Exportable.__init__" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#Exportable.__init__">#&nbsp;&nbsp</a>
 
-        
+
             <span class="name">Exportable</span><span class="signature">()</span>
     </div>
 
-    
-    
+
+
 
                             </div>
                             <div id="Exportable.get_format" class="classattr">
@@ -984,7 +984,7 @@
         <span class="name">input_module</span>
     </div>
 
-    
+
             <div class="docstring"><p>Returns the input module</p>
 </div>
 
@@ -996,7 +996,7 @@
         <span class="name">output_module</span>
     </div>
 
-    
+
             <div class="docstring"><p>Returns the output module</p>
 </div>
 
@@ -1005,7 +1005,7 @@
                             <div id="Exportable.export" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#Exportable.export">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">export</span><span class="signature">(
     self,
@@ -1132,7 +1132,7 @@
         <span class="name">disabled_deployment_input_names</span>
     </div>
 
-    
+
             <div class="docstring"><p>Implement this method to return a set of input names disabled for export</p>
 </div>
 
@@ -1144,7 +1144,7 @@
         <span class="name">disabled_deployment_output_names</span>
     </div>
 
-    
+
             <div class="docstring"><p>Implement this method to return a set of output names disabled for export</p>
 </div>
 
@@ -1156,7 +1156,7 @@
         <span class="name">supported_export_formats</span>
     </div>
 
-    
+
             <div class="docstring"><p>Implement this method to return a set of export formats supported. Default is all types.</p>
 </div>
 
@@ -1165,7 +1165,7 @@
                             <div id="Exportable.forward" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#Exportable.forward">#&nbsp;&nbsp</a>
 
-        
+
             <span class="def">def</span>
             <span class="name">forward</span><span class="signature">(self, *inputs, **kwargs)</span>:
     </div>

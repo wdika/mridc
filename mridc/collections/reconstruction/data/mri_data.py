@@ -195,13 +195,12 @@ class FastMRISliceDataset(Dataset):
             files = list(Path(root).iterdir())
             for fname in sorted(files):
                 metadata, num_slices = self._retrieve_metadata(fname)
-
                 self.examples += [(fname, slice_ind, metadata) for slice_ind in range(num_slices)]
 
             if dataset_cache.get(root) is None and use_dataset_cache:
                 dataset_cache[root] = self.examples
                 logging.info(f"Saving dataset cache to {self.dataset_cache_file}.")
-                with open(self.dataset_cache_file, "wb") as f:
+                with open(self.dataset_cache_file, "wb") as f:  # type: ignore
                     yaml.dump(dataset_cache, f)  # type: ignore
         else:
             logging.info(f"Using dataset cache from {self.dataset_cache_file}.")
