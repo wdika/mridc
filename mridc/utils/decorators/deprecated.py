@@ -57,7 +57,7 @@ def deprecated(wrapped=None, version=None, explanation=None):
             # Optionally, add version and alternative.
             if version is not None:
                 msg = f"{msg} It is going to be removed in "
-                msg = msg + f"the {version} version."
+                msg = f"{msg}the {version} version."
 
             if explanation is not None:
                 msg = f"{msg} {explanation}"
