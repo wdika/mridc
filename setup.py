@@ -86,7 +86,6 @@ class StyleCommand(distutils_cmd.Command):
             level=distutils_log.INFO,
         )
 
-
         return subprocess.call(command)
 
     def _isort(self, scope, check):

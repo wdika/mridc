@@ -192,7 +192,6 @@ class MasterOptimizerWrapper(torch.optim.Optimizer):
                             f"Wrapped parameters must be one of torch.cuda.FloatTensor,  torch.cuda.HalfTensor, or torch.cuda.BFloat16Tensor. Received {param.type()}"
                         )
 
-
                 # Add gradient accumulation hook for fp32 grad accumulation
                 if self._fp32_grad_accum:
                     # Expand so we get access to grad_fn.

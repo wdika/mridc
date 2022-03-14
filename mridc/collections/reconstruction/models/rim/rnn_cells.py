@@ -110,9 +110,7 @@ class ConvGRUCellBase(nn.Module):
             None
         """
         if _input.size(1) != self.input_size:
-            raise RuntimeError(
-                f"input has inconsistent input_size: got {_input.size(1)}, expected {self.input_size}"
-            )
+            raise RuntimeError(f"input has inconsistent input_size: got {_input.size(1)}, expected {self.input_size}")
 
     def check_forward_hidden(self, _input, hx, hidden_label=""):
         """
@@ -130,7 +128,6 @@ class ConvGRUCellBase(nn.Module):
             raise RuntimeError(
                 f"Input batch size {_input.size(0)} doesn't match hidden{hidden_label} batch size {hx.size(0)}"
             )
-
 
         if hx.size(1) != self.hidden_size:
             raise RuntimeError(
@@ -297,9 +294,7 @@ class ConvMGUCellBase(nn.Module):
             None
         """
         if _input.size(1) != self.input_size:
-            raise RuntimeError(
-                f"input has inconsistent input_size: got {_input.size(1)}, expected {self.input_size}"
-            )
+            raise RuntimeError(f"input has inconsistent input_size: got {_input.size(1)}, expected {self.input_size}")
 
     def check_forward_hidden(self, _input, hx, hidden_label=""):
         """
@@ -317,7 +312,6 @@ class ConvMGUCellBase(nn.Module):
             raise RuntimeError(
                 f"Input batch size {_input.size(0)} doesn't match hidden{hidden_label} batch size {hx.size(0)}"
             )
-
 
         if hx.size(1) != self.hidden_size:
             raise RuntimeError(
@@ -482,9 +476,7 @@ class IndRNNCellBase(nn.Module):
             The input.
         """
         if _input.size(1) != self.input_size:
-            raise RuntimeError(
-                f"input has inconsistent input_size: got {_input.size(1)}, expected {self.input_size}"
-            )
+            raise RuntimeError(f"input has inconsistent input_size: got {_input.size(1)}, expected {self.input_size}")
 
     def check_forward_hidden(self, _input, hx, hidden_label=""):
         """
@@ -502,7 +494,6 @@ class IndRNNCellBase(nn.Module):
             raise RuntimeError(
                 f"Input batch size {_input.size(0)} doesn't match hidden{hidden_label} batch size {hx.size(0)}"
             )
-
 
         if hx.size(1) != self.hidden_size:
             raise RuntimeError(
