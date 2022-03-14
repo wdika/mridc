@@ -156,10 +156,16 @@ class RIMBlock(torch.nn.Module):
 
         if eta is None or eta.ndim < 3:
             eta = (
-                torch.sum(complex_mul(ifft2c(pred, fft_type=self.fft_type), complex_conj(sense)), 1)
-                if not keep_eta
-                else pred
+                pred
+                if keep_eta
+                else torch.sum(
+                    complex_mul(
+                        ifft2c(pred, fft_type=self.fft_type), complex_conj(sense)
+                    ),
+                    1,
+                )
             )
+
 
         etas = []
         for _ in range(self.time_steps):

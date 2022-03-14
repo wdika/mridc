@@ -284,25 +284,7 @@ class Typing(ABC):
                     )
 
         elif metadata.is_singular_container_type:
-            # If only a single neural type is provided, and it defines a container nest,
-            # then all elements of the returned list/tuple are assumed to belong to that
-            # singular neural type.
-            # As such, the "current" depth inside the DFS loop is counted as 1,
-            # and subsequent nesting will increase this count.
-
-            # NOTE:
-            # As the flag `is_singular_container_type` will activate only for
-            # the case where there is 1 output type defined with container nesting,
-            # this is a safe assumption to make.
-            depth = 1
-
-            # NOTE:
-            # A user may chose to explicitly wrap the single output list within an explicit tuple
-            # In such a case we reduce the "current" depth to 0 - to acknowledge the fact that
-            # the actual nest exists within a wrapper tuple.
-            if len(out_objects) == 1 and type(out_objects) is tuple:
-                depth = 0
-
+            depth = 0 if len(out_objects) == 1 and type(out_objects) is tuple else 1
             for res in out_objects:
                 self.__attach_neural_type(res, metadata, depth=depth, name=out_types_list[0][0])
         else:

@@ -35,7 +35,7 @@ STRICT_NUMBA_COMPAT_CHECK = True
 # Get environment key if available
 if "STRICT_NUMBA_COMPAT_CHECK" in os.environ:
     check_str = os.environ.get("STRICT_NUMBA_COMPAT_CHECK")
-    check_bool = str(check_str).lower() in ("yes", "true", "t", "1")
+    check_bool = str(check_str).lower() in {"yes", "true", "t", "1"}
     STRICT_NUMBA_COMPAT_CHECK = check_bool
 
 
