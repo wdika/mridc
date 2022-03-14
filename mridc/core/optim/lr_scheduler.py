@@ -630,7 +630,7 @@ def register_scheduler(name: str, scheduler: _LRScheduler, scheduler_params: Sch
 
     AVAILABLE_SCHEDULERS[name] = scheduler
 
-    sched_name = "{}_params".format(scheduler.__name__)
+    sched_name = f"{scheduler.__name__}_params"
     register_scheduler_params(name=sched_name, scheduler_params=scheduler_params)
 
 
@@ -768,7 +768,7 @@ def prepare_lr_scheduler(
             # If `auto` is passed as name for resolution of optimizer name,
             # then lookup optimizer name and resolve its parameter config
             if scheduler_args["name"] == "auto":
-                scheduler_params_name = "{}Params".format(scheduler_name)
+                scheduler_params_name = f"{scheduler_name}Params"
             else:
                 scheduler_params_name = scheduler_args["name"]
 

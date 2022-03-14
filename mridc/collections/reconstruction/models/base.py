@@ -234,48 +234,48 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
     @staticmethod
     def _setup_dataloader_from_config(cfg: DictConfig) -> DataLoader:
         """Setup the dataloader from the config."""
-        if cfg.get("dataset_type") == "FastMRI":
-
-            mask_args = cfg.get("mask_args")
-            mask_type = mask_args.get("type")
-            shift_mask = mask_args.get("shift_mask")
-
-            if mask_type is not None and mask_type != "None":
-                accelerations = mask_args.get("accelerations")
-                center_fractions = mask_args.get("center_fractions")
-                mask_center_scale = mask_args.get("scale")
-
-                if len(accelerations) > 2:
-                    mask_func = [
-                        create_mask_for_mask_type(mask_type, [cf] * 2, [acc] * 2)
-                        for acc, cf in zip(accelerations, center_fractions)
-                    ]
-                else:
-                    mask_func = [create_mask_for_mask_type(mask_type, center_fractions, accelerations)]
-            else:
-                mask_func = None  # type: ignore
-                mask_center_scale = 0.02
-
-            dataset = FastMRISliceDataset(
-                root=cfg.get("data_path"),
-                sense_root=cfg.get("sense_data_path"),
-                challenge=cfg.get("challenge"),
-                transform=MRIDataTransforms(
-                    mask_func=mask_func,
-                    shift_mask=shift_mask,
-                    mask_center_scale=mask_center_scale,
-                    normalize_inputs=cfg.get("normalize_inputs"),
-                    crop_size=cfg.get("crop_size"),
-                    crop_before_masking=cfg.get("crop_before_masking"),
-                    kspace_zero_filling_size=cfg.get("kspace_zero_filling_size"),
-                    fft_type=cfg.get("fft_type"),
-                    use_seed=cfg.get("use_seed"),
-                ),
-                sample_rate=cfg.get("sample_rate"),
-            )
-        else:
+        if cfg.get("dataset_type") != "FastMRI":
             raise ValueError(f"Unknown dataset type: {cfg.get('dataset_type')}")
 
+        mask_args = cfg.get("mask_args")
+        mask_type = mask_args.get("type")
+        shift_mask = mask_args.get("shift_mask")
+
+        if mask_type is not None and mask_type != "None":
+            accelerations = mask_args.get("accelerations")
+            center_fractions = mask_args.get("center_fractions")
+            mask_center_scale = mask_args.get("scale")
+
+            mask_func = (
+                [
+                    create_mask_for_mask_type(mask_type, [cf] * 2, [acc] * 2)
+                    for acc, cf in zip(accelerations, center_fractions)
+                ]
+                if len(accelerations) > 2
+                else [create_mask_for_mask_type(mask_type, center_fractions, accelerations)]
+            )
+
+        else:
+            mask_func = None  # type: ignore
+            mask_center_scale = 0.02
+
+        dataset = FastMRISliceDataset(
+            root=cfg.get("data_path"),
+            sense_root=cfg.get("sense_data_path"),
+            challenge=cfg.get("challenge"),
+            transform=MRIDataTransforms(
+                mask_func=mask_func,
+                shift_mask=shift_mask,
+                mask_center_scale=mask_center_scale,
+                normalize_inputs=cfg.get("normalize_inputs"),
+                crop_size=cfg.get("crop_size"),
+                crop_before_masking=cfg.get("crop_before_masking"),
+                kspace_zero_filling_size=cfg.get("kspace_zero_filling_size"),
+                fft_type=cfg.get("fft_type"),
+                use_seed=cfg.get("use_seed"),
+            ),
+            sample_rate=cfg.get("sample_rate"),
+        )
         if cfg.shuffle:
             sampler = torch.utils.data.RandomSampler(dataset)
         else:

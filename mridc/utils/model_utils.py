@@ -149,11 +149,7 @@ def parse_dataset_as_name(name: str) -> str:
     Returns:
         str prefix used to identify uniquely this data/manifest file.
     """
-    if os.path.exists(str(name)) or os.path.isdir(str(name)):
-        name = Path(name).stem
-    else:
-        name = str(name)
-
+    name = Path(name).stem if os.path.exists(name) or os.path.isdir(name) else name
     # cleanup name
     name = name.replace("-", "_")
 
@@ -233,8 +229,7 @@ def resolve_validation_dataloaders(model: ModelPT):
 
     if ds_key is None:
         logging.debug(
-            "Could not resolve file path from provided config - {}. "
-            "Disabling support for multi-dataloaders.".format(cfg.validation_ds)
+            f"Could not resolve file path from provided config - {cfg.validation_ds}. Disabling support for multi-dataloaders."
         )
 
         model.setup_validation_data(cfg.validation_ds)
@@ -300,8 +295,7 @@ def resolve_test_dataloaders(model: "ModelPT"):
 
     if ds_key is None:
         logging.debug(
-            "Could not resolve file path from provided config - {}. "
-            "Disabling support for multi-dataloaders.".format(cfg.test_ds)
+            f"Could not resolve file path from provided config - {cfg.test_ds}. Disabling support for multi-dataloaders."
         )
 
         model.setup_test_data(cfg.test_ds)
