@@ -17,7 +17,3 @@ repos:
     rev: v0.940
     hooks:
       - id: mypy
-  - repo: https://github.com/sourcery-ai/sourcery
-    rev: v0.10.3
-    hooks:
-      - id: sourcery
