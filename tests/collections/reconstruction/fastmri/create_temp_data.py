@@ -48,12 +48,12 @@ def create_temp_data(path):
     }
 
     metadata = {}
-    for dataset in data_splits:
-        for split in data_splits[dataset]:
-            fcount = 0
+    for dataset, value in data_splits.items():
+        for split in value:
             (path / dataset / split).mkdir(parents=True)
             encs = enc_sizes[split.split("_")[-1]]
             recs = recon_sizes[split.split("_")[-1]]
+            fcount = 0
             for i, _ in enumerate(encs):
                 fname = path / dataset / split / f"file{fcount}.h5"
                 num_slices = rg.integers(2, max_num_slices)

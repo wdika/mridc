@@ -28,7 +28,7 @@ class CoercionError(Exception):
     """Custom error raised when a value cannot be coerced."""
 
     def __init__(self, key, value, func):
-        msg = "Unable to coerce '{}={}' using {}.".format(key, value, func.__name__)
+        msg = f"Unable to coerce '{key}={value}' using {func.__name__}."
         super(CoercionError, self).__init__(msg)
 
 
@@ -36,7 +36,7 @@ class RequiredSettingMissingError(Exception):
     """Custom error raised when a required env var is missing."""
 
     def __init__(self, key):
-        msg = "Required env var '{}' is missing.".format(key)
+        msg = f"Required env var '{key}' is missing."
         super(RequiredSettingMissingError, self).__init__(msg)
 
 
@@ -140,7 +140,7 @@ def get_env(key, *default, **kwargs):
         raise AssertionError("Too many args supplied.")
     func = kwargs.get("coerce", lambda x: x)
     required = len(default) == 0
-    default = default[0] if not required else None
+    default = None if required else default[0]
     return _get_env(key, default=default, coerce=func, required=required)
 
 
