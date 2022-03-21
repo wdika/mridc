@@ -160,6 +160,8 @@ class KIKINet(BaseMRIReconstructionModel, ABC):
             kspace = self.kspace_model_list[idx](kspace)
             if kspace.shape[-1] != 2:
                 kspace = kspace.permute(0, 1, 3, 4, 2).to(target)
+                kspace = torch.view_as_real(kspace[..., 0] + 1j * kspace[..., 1])  # this is necessary, but why?
+
             image = complex_mul(ifft2c(kspace, fft_type=self.fft_type), complex_conj(sensitivity_maps)).sum(1)
             image = self.image_model_list[idx](image.unsqueeze(1)).squeeze(1)
 

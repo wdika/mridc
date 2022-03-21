@@ -2,7 +2,7 @@
 __author__ = "Dimitrios Karkalousos"
 
 # Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
-
+import os
 import pathlib
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from os.path import exists
@@ -259,12 +259,22 @@ if __name__ == "__main__":
         help="If set, only volumes of the specified acquisition type are used for "
         "evaluation. By default, all volumes are included.",
     )
+    parser.add_argument(
+        "--fill_pred_path", action="store_true", help="Find reconstructions folder in predictions path"
+    )
     parser.add_argument("--mask_background", action="store_true", help="Toggle to mask background")
     parser.add_argument("--type", choices=["mean_std", "all_slices"], default="mean_std", help="Output type.")
     parser.add_argument("--slice_start", type=int, help="Select to skip first slices")
     parser.add_argument("--slice_end", type=int, help="Select to skip last slices")
 
     args = parser.parse_args()
+
+    if args.fill_pred_path:
+        dir = ""
+        for root, dirs, files in os.walk(args.predictions_path, topdown=False):
+            for name in dirs:
+                dir = os.path.join(root, name)
+        args.predictions_path = pathlib.Path(f"{dir}/reconstructions/")
 
     if args.challenge == "multicoil":
         recons_key = "reconstruction_rss"
