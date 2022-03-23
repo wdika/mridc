@@ -2,11 +2,9 @@
 __author__ = "Dimitrios Karkalousos"
 
 from abc import ABC
-from typing import Dict, Generator, Tuple, Union
 
-import numpy as np
 import torch
-import torch.nn as nn
+
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch.nn import L1Loss
@@ -56,7 +54,7 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
             kspace_model_list = None
             num_dual = 1
         elif kspace_model_architecture == "CONV":
-            kspace_model_list = nn.ModuleList(
+            kspace_model_list = torch.nn.ModuleList(
                 [
                     MultiCoil(
                         Conv2d(
@@ -71,7 +69,7 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
                 ]
             )
         elif kspace_model_architecture == "DIDN":
-            kspace_model_list = nn.ModuleList(
+            kspace_model_list = torch.nn.ModuleList(
                 [
                     MultiCoil(
                         DIDN(
@@ -86,7 +84,7 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
                 ]
             )
         elif kspace_model_architecture in ["UNET", "NORMUNET"]:
-            kspace_model_list = nn.ModuleList(
+            kspace_model_list = torch.nn.ModuleList(
                 [
                     MultiCoil(
                         NormUnet(
@@ -116,9 +114,9 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
         mwcnn_batchnorm = cfg_dict.get("mwcnn_batchnorm")
 
         if image_model_architecture == "MWCNN":
-            image_model_list = nn.ModuleList(
+            image_model_list = torch.nn.ModuleList(
                 [
-                    nn.Sequential(
+                    torch.nn.Sequential(
                         MWCNN(
                             input_channels=2 * (num_primal + num_dual),
                             first_conv_hidden_channels=mwcnn_hidden_channels,
@@ -126,13 +124,13 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
                             bias=mwcnn_bias,
                             batchnorm=mwcnn_batchnorm,
                         ),
-                        nn.Conv2d(2 * (num_primal + num_dual), 2 * num_primal, kernel_size=3, padding=1),
+                        torch.nn.Conv2d(2 * (num_primal + num_dual), 2 * num_primal, kernel_size=3, padding=1),
                     )
                     for _ in range(num_iter)
                 ]
             )
         elif image_model_architecture in ["UNET", "NORMUNET"]:
-            image_model_list = nn.ModuleList(
+            image_model_list = torch.nn.ModuleList(
                 [
                     NormUnet(
                         cfg_dict.get("imspace_unet_num_filters"),

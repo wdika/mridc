@@ -3,18 +3,17 @@ __author__ = "Dimitrios Karkalousos"
 
 import math
 from abc import ABC
-from typing import Dict, Generator, Tuple, Union
+from typing import Generator, Union
 
 import numpy as np
 import torch
-import torch.nn as nn
+
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
 from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import ifft2c, fft2c
-from mridc.collections.common.parts.utils import complex_conj, complex_mul
+from mridc.collections.common.parts.fft import ifft2c
 from mridc.collections.common.parts.rnn_utils import rnn_weights_init
 from mridc.collections.common.parts.utils import coil_combination
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
@@ -52,7 +51,7 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
         self.fft_type = cfg_dict.get("fft_type")
         self.num_cascades = cfg_dict.get("num_cascades")
 
-        self.cirim = nn.ModuleList(
+        self.cirim = torch.nn.ModuleList(
             [
                 RIMBlock(
                     recurrent_layer=cfg_dict.get("recurrent_layer"),

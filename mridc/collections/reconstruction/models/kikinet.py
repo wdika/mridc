@@ -2,11 +2,9 @@
 __author__ = "Dimitrios Karkalousos"
 
 from abc import ABC
-from typing import Dict, Generator, Tuple, Union
 
-import numpy as np
 import torch
-import torch.nn as nn
+
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch.nn import L1Loss
@@ -109,8 +107,8 @@ class KIKINet(BaseMRIReconstructionModel, ABC):
         self.fft_type = cfg_dict.get("fft_type")
         self._coil_dim = 1
 
-        self.image_model_list = nn.ModuleList([image_model] * self.num_iter)
-        self.kspace_model_list = nn.ModuleList([MultiCoil(kspace_model, self._coil_dim)] * self.num_iter)
+        self.image_model_list = torch.nn.ModuleList([image_model] * self.num_iter)
+        self.kspace_model_list = torch.nn.ModuleList([MultiCoil(kspace_model, self._coil_dim)] * self.num_iter)
 
         # Initialize the sensitivity network if use_sens_net is True
         self.use_sens_net = cfg_dict.get("use_sens_net")

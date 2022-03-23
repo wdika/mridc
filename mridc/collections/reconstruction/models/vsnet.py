@@ -2,18 +2,16 @@
 __author__ = "Dimitrios Karkalousos"
 
 from abc import ABC
-from typing import Dict, Generator, Tuple, Union
 
-import numpy as np
 import torch
-import torch.nn as nn
+
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
 from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import fft2c, ifft2c
-from mridc.collections.common.parts.utils import coil_combination, complex_conj, complex_mul
+from mridc.collections.common.parts.fft import ifft2c
+from mridc.collections.common.parts.utils import coil_combination
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
 from mridc.collections.reconstruction.models.variablesplittingnet.vsnet_block import (
     DataConsistencyLayer,
@@ -82,7 +80,7 @@ class VSNet(BaseMRIReconstructionModel, ABC):
                 f"Got {image_model_architecture}."
             )
 
-        image_model = nn.ModuleList([image_model] * num_cascades)
+        image_model = torch.nn.ModuleList([image_model] * num_cascades)
         data_consistency_model = torch.nn.ModuleList([DataConsistencyLayer()] * num_cascades)
         weighted_average_model = torch.nn.ModuleList([WeightedAverageTerm()] * num_cascades)
 
