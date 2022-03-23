@@ -32,5 +32,3 @@ def recursive_assert_homogeneous_type(x, type_val):
 
     if x.neural_type.compare(type_val) != NeuralTypeComparisonResult.SAME:
         raise AssertionError
-
-
