@@ -123,7 +123,6 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
         ) * image
         # D_I(x_{k})
         image_term_2_DI = self.image_model(image.unsqueeze(1)).squeeze(1).contiguous()
-        # F^-1(D_F(f))
         image_term_2_DF = ifft2c(
             self.kspace_model(fft2c(image, fft_type=self.fft_type).unsqueeze(1)).squeeze(1).contiguous(),
             fft_type=self.fft_type,
