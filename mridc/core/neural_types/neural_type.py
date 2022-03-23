@@ -81,13 +81,13 @@ class NeuralType:
         # TRANSPOSE_SAME DIMS
         if dimensions_pass == 1 and element_comparison_result == NeuralTypeComparisonResult.SAME:
             return NeuralTypeComparisonResult.TRANSPOSE_SAME
-        elif (
+        if (
             dimensions_pass == 1
             or dimensions_pass == 2
             and element_comparison_result != NeuralTypeComparisonResult.SAME
         ):
             return NeuralTypeComparisonResult.INCOMPATIBLE
-        elif dimensions_pass == 2:
+        if dimensions_pass == 2:
             return NeuralTypeComparisonResult.DIM_INCOMPATIBLE
         return NeuralTypeComparisonResult.INCOMPATIBLE
 
