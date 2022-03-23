@@ -6,8 +6,8 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 
 from mridc.collections.reconstruction.models.ccnn import CascadeNet
-from mridc.collections.reconstruction.models.crnn import CRNNet
 from mridc.collections.reconstruction.models.cirim import CIRIM
+from mridc.collections.reconstruction.models.crnn import CRNNet
 from mridc.collections.reconstruction.models.dunet import DUNet
 from mridc.collections.reconstruction.models.jointicnet import JointICNet
 from mridc.collections.reconstruction.models.kikinet import KIKINet

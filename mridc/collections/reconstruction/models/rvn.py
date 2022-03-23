@@ -3,11 +3,9 @@ __author__ = "Dimitrios Karkalousos"
 
 import math
 from abc import ABC
-from typing import Dict, Generator, Optional, Tuple, Union
+from typing import Optional
 
-import numpy as np
 import torch
-import torch.nn as nn
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch.nn import L1Loss
@@ -84,7 +82,7 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
         self.fft_type = cfg_dict.get("fft_type")
         self.output_type = cfg_dict.get("output_type")
 
-        self.block_list: nn.Module = nn.ModuleList()
+        self.block_list: torch.nn.Module = torch.nn.ModuleList()
         for _ in range(self.num_steps if self.no_parameter_sharing else 1):
             self.block_list.append(
                 RecurrentVarNetBlock(

@@ -2,11 +2,8 @@
 __author__ = "Dimitrios Karkalousos"
 
 from abc import ABC
-from typing import Any, Dict, Tuple, Union
 
-import numpy as np
 import torch
-import torch.nn as nn
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch.nn import L1Loss
@@ -15,8 +12,8 @@ from mridc.collections.common.losses.ssim import SSIMLoss
 from mridc.collections.common.parts.fft import ifft2c
 from mridc.collections.common.parts.utils import coil_combination
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
-from mridc.collections.reconstruction.models.conv.conv2d import Conv2d
 from mridc.collections.reconstruction.models.cascadenet.ccnn_block import CascadeNetBlock
+from mridc.collections.reconstruction.models.conv.conv2d import Conv2d
 from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
 from mridc.core.classes.common import typecheck
 
@@ -44,7 +41,7 @@ class CascadeNet(BaseMRIReconstructionModel, ABC):
         self.fft_type = cfg_dict.get("fft_type")
 
         # Cascades of CascadeCNN blocks
-        self.cascades = nn.ModuleList(
+        self.cascades = torch.nn.ModuleList(
             [
                 CascadeNetBlock(
                     Conv2d(

@@ -2,11 +2,8 @@
 __author__ = "Dimitrios Karkalousos"
 
 from abc import ABC
-from typing import Dict, Generator, Tuple, Union
 
-import numpy as np
 import torch
-import torch.nn as nn
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch.nn import L1Loss
@@ -17,8 +14,6 @@ from mridc.collections.common.parts.utils import complex_conj, complex_mul
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
 from mridc.collections.reconstruction.models.unet_base.unet_block import NormUnet
 from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
-from mridc.collections.common.parts.utils import coil_combination
-
 from mridc.core.classes.common import typecheck
 
 __all__ = ["JointICNet"]
@@ -76,14 +71,14 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
             normalize=cfg_dict.get("sens_unet_normalize"),
         )
 
-        self.conv_out = nn.Conv2d(in_channels=2, out_channels=2, kernel_size=1)
+        self.conv_out = torch.nn.Conv2d(in_channels=2, out_channels=2, kernel_size=1)
 
-        self.reg_param_I = nn.Parameter(torch.ones(self.num_iter))
-        self.reg_param_F = nn.Parameter(torch.ones(self.num_iter))
-        self.reg_param_C = nn.Parameter(torch.ones(self.num_iter))
+        self.reg_param_I = torch.nn.Parameter(torch.ones(self.num_iter))
+        self.reg_param_F = torch.nn.Parameter(torch.ones(self.num_iter))
+        self.reg_param_C = torch.nn.Parameter(torch.ones(self.num_iter))
 
-        self.lr_image = nn.Parameter(torch.ones(self.num_iter))
-        self.lr_sens = nn.Parameter(torch.ones(self.num_iter))
+        self.lr_image = torch.nn.Parameter(torch.ones(self.num_iter))
+        self.lr_sens = torch.nn.Parameter(torch.ones(self.num_iter))
 
         self._coil_dim = 1
         self._spatial_dims = (2, 3)
@@ -123,7 +118,6 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
         ) * image
         # D_I(x_{k})
         image_term_2_DI = self.image_model(image.unsqueeze(1)).squeeze(1).contiguous()
-        # F^-1(D_F(f))
         image_term_2_DF = ifft2c(
             self.kspace_model(fft2c(image, fft_type=self.fft_type).unsqueeze(1)).squeeze(1).contiguous(),
             fft_type=self.fft_type,

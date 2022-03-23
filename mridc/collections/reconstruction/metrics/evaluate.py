@@ -4,7 +4,7 @@ __author__ = "Dimitrios Karkalousos"
 # Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
 import os
 import pathlib
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 from os.path import exists
 
 import h5py

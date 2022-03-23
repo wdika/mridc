@@ -2,11 +2,8 @@
 __author__ = "Dimitrios Karkalousos"
 
 from abc import ABC
-from typing import Dict, Generator, Tuple, Union
 
-import numpy as np
 import torch
-import torch.nn as nn
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch.nn import L1Loss
@@ -49,7 +46,7 @@ class LPDNet(BaseMRIReconstructionModel, ABC):
         primal_model_architecture = cfg_dict.get("primal_model_architecture")
 
         if primal_model_architecture == "MWCNN":
-            primal_model = nn.Sequential(
+            primal_model = torch.nn.Sequential(
                 *[
                     MWCNN(
                         input_channels=2 * (self.num_primal + 1),
@@ -58,7 +55,7 @@ class LPDNet(BaseMRIReconstructionModel, ABC):
                         bias=cfg_dict.get("primal_mwcnn_bias"),
                         batchnorm=cfg_dict.get("primal_mwcnn_batchnorm"),
                     ),
-                    nn.Conv2d(2 * (self.num_primal + 1), 2 * self.num_primal, kernel_size=1),
+                    torch.nn.Conv2d(2 * (self.num_primal + 1), 2 * self.num_primal, kernel_size=1),
                 ]
             )
         elif primal_model_architecture in ["UNET", "NORMUNET"]:
@@ -111,10 +108,10 @@ class LPDNet(BaseMRIReconstructionModel, ABC):
                 f"Got dual_model_architecture == {dual_model_architecture}."
             )
 
-        self.primal_net = nn.ModuleList(
+        self.primal_net = torch.nn.ModuleList(
             [PrimalNet(self.num_primal, primal_architecture=primal_model) for _ in range(self.num_iter)]
         )
-        self.dual_net = nn.ModuleList(
+        self.dual_net = torch.nn.ModuleList(
             [DualNet(self.num_dual, dual_architecture=dual_model) for _ in range(self.num_iter)]
         )
 

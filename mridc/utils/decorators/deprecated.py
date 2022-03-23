@@ -6,6 +6,7 @@ __author__ = "Dimitrios Karkalousos"
 __all__ = ["deprecated"]
 
 import functools
+import inspect
 from typing import Dict
 
 import wrapt
@@ -52,12 +53,12 @@ def deprecated(wrapped=None, version=None, explanation=None):
             _PRINTED_WARNING[_wrapped.__name__] = True
 
             # Prepare the warning message.
-            msg = f"Function ``{_wrapped.__name__}`` is deprecated."
+            entity_name = "Class" if inspect.isclass(wrapped) else "Function"
+            msg = f"{entity_name} '{_wrapped.__name__}' is deprecated."
 
-            # Optionally, add version and alternative.
+            # Optionally, add version and explanation.
             if version is not None:
-                msg = f"{msg} It is going to be removed in "
-                msg = f"{msg}the {version} version."
+                msg = f"{msg} It is going to be removed in the {version} version."
 
             if explanation is not None:
                 msg = f"{msg} {explanation}"

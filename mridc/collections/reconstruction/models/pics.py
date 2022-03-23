@@ -5,7 +5,6 @@ from abc import ABC
 from typing import Any, Dict, Tuple, Union
 
 import bart
-
 import numpy as np
 import torch
 from omegaconf import DictConfig, OmegaConf

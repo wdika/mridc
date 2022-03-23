@@ -57,7 +57,11 @@ class MRIDCConfig:
     name: str = MISSING
     model: ModelConfig = MISSING
     trainer: TrainerConfig = TrainerConfig(
-        strategy="ddp", enable_checkpointing=False, logger=False, log_every_n_steps=1
+        strategy="ddp",
+        enable_checkpointing=False,
+        logger=False,
+        log_every_n_steps=1,
+        accelerator="gpu",
     )
     exp_manager: Optional[Any] = ExpManagerConfig()
     hydra: HydraConfig = HydraConfig()
