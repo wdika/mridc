@@ -95,6 +95,7 @@ class SaveRestoreConnector:
             else:
                 map_location = torch.device("cpu")
 
+        app_state = AppState()
         with tempfile.TemporaryDirectory() as tmpdir:
             try:
                 self._unpack_mridc_file(path2file=restore_path, out_folder=tmpdir)
@@ -119,11 +120,11 @@ class SaveRestoreConnector:
                 if return_config:
                     instance = conf
                     return instance
-                app_state = AppState()
-                if app_state.model_parallel_rank is not None and app_state.model_parallel_size > 1:
-                    model_weights = self._inject_model_parallel_rank_for_ckpt(tmpdir, self.model_weights_ckpt)
                 else:
-                    model_weights = os.path.join(tmpdir, self.model_weights_ckpt)
+                    if app_state.model_parallel_rank is not None and app_state.model_parallel_size > 1:
+                        model_weights = self._inject_model_parallel_rank_for_ckpt(tmpdir, self.model_weights_ckpt)
+                    else:
+                        model_weights = os.path.join(tmpdir, self.model_weights_ckpt)
                 OmegaConf.set_struct(conf, True)
                 os.chdir(cwd)
                 # get the class
@@ -131,10 +132,11 @@ class SaveRestoreConnector:
                 instance = calling_cls.from_config_dict(config=conf, trainer=trainer)
                 instance = instance.to(map_location)
                 # add load_state_dict override
+                if app_state.model_parallel_size is not None and app_state.model_parallel_size > 1:
+                    model_weights = self._inject_model_parallel_rank_for_ckpt(tmpdir, self.model_weights_ckpt)
                 instance.load_state_dict(
                     self._load_state_dict_from_disk(model_weights, map_location=map_location), strict=strict
                 )
-
                 logging.info(f"Model {instance.__class__.__name__} was successfully restored from {restore_path}.")
                 instance._set_model_restore_state(is_being_restored=False)
             finally:
@@ -355,7 +357,7 @@ class SaveRestoreConnector:
                     OmegaConf.update(conf, conf_path, item.path)
                 else:
                     OmegaConf.update(conf, conf_path, item.hashed_path)
-            with open(path2yaml_file, "w") as fout:
+            with open(path2yaml_file, "w", encoding="utf-8") as fout:
                 OmegaConf.save(config=conf, f=fout, resolve=True)
 
     @staticmethod
@@ -363,15 +365,16 @@ class SaveRestoreConnector:
         """This method is called by ModelPT.save_to() and ModelPT.load_from() to inject the parallel rank of the
         process into the checkpoint file name.
         """
-        app_state = AppState()
-        return os.path.join(dirname, f"mp_rank_{app_state.model_parallel_rank:02}", basename)
+        model_weights = os.path.join(dirname, basename)
+        model_weights = mridc.utils.model_utils.inject_model_parallel_rank(model_weights)
+        return model_weights
 
     @staticmethod
     def _make_mridc_file_from_folder(filename, source_dir):
         """This method is called by ModelPT.save_to() and ModelPT.load_from() to create a mridc file from a folder."""
         dirname = os.path.dirname(filename)
         os.makedirs(dirname, exist_ok=True)
-        with tarfile.open(filename, "w:gz") as tar:
+        with tarfile.open(filename, "w") as tar:
             tar.add(source_dir, arcname=".")
 
     @staticmethod
@@ -379,7 +382,15 @@ class SaveRestoreConnector:
         """This method is called by ModelPT.save_to() and ModelPT.load_from() to unpack a mridc file."""
         if not os.path.exists(path2file):
             raise FileNotFoundError(f"{path2file} does not exist")
-        tar = tarfile.open(path2file, "r:gz")
+        # we start with an assumption of uncompressed tar, which should be true for versions 1.7.0 and above
+        tar_header = "r:"
+        try:
+            tar_test = tarfile.open(path2file, tar_header)
+            tar_test.close()
+        except tarfile.ReadError:
+            # can be older checkpoint => try compressed tar
+            tar_header = "r:gz"
+        tar = tarfile.open(path2file, tar_header)
         tar.extractall(path=out_folder)
         tar.close()
         return out_folder

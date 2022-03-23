@@ -33,7 +33,8 @@ class ComplexInstanceNorm(torch.nn.Module):
 
     def complex_pseudocovariance(self, data):
         """Data variable hast to be already mean-free! Operates on images x of size [nBatch, nSmaps, nFE, nPE, 2]"""
-        assert data.size(-1) == 2
+        if data.size(-1) != 2:
+            raise AssertionError
         shape = data.shape
 
         # compute number of elements

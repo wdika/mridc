@@ -22,9 +22,7 @@ class DataConsistencyLayer(torch.nn.Module):
 
     def forward(self, pred_kspace, ref_kspace, mask):
         """Forward pass of the data consistency layer."""
-        zero = torch.zeros(1, 1, 1, 1, 1).to(pred_kspace)
-        return torch.where(mask.bool(), pred_kspace - ref_kspace, zero) * self.dc_weight
-        # return ((1 - mask) * pred_kspace + mask * ref_kspace) * self.dc_weight
+        return ((1 - mask) * pred_kspace + mask * ref_kspace) * self.dc_weight
 
 
 class WeightedAverageTerm(torch.nn.Module):

@@ -23,6 +23,7 @@ from mridc.core.classes.common import Model
 __all__ = ["ModelPT"]
 
 import mridc.core.optim
+from mridc import package_info
 from mridc.core.connectors.save_restore_connector import SaveRestoreConnector
 from mridc.utils import logging
 from mridc.utils.app_state import AppState
@@ -88,12 +89,17 @@ class ModelPT(LightningModule, Model):
             cfg.target = "{0}.{1}".format(self.__class__.__module__, self.__class__.__name__)
             OmegaConf.set_struct(cfg, True)
 
+        if "mridc_version" not in cfg:
+            with open_dict(cfg):
+                cfg.mridc_version = package_info.__version__
+
         self._cfg = cfg
 
         self.save_hyperparameters("cfg")
         self._train_dl = None
         self._validation_dl = None
         self._test_dl = None
+        self._optimizer_param_groups = None
         self._optimizer = None
         self._scheduler = None
         self.trainer = trainer  # reference required for self.*_rank
@@ -388,32 +394,39 @@ class ModelPT(LightningModule, Model):
                 The list of "arg_value" will be parsed and a dictionary of optimizer kwargs \
                 will be built and supplied to instantiate the optimizer.
         """
-        # If config was not explicitly passed to us
-        if optim_config is None and self._cfg is not None and hasattr(self._cfg, "optim"):
-            optim_config = self._cfg.optim
+        if self._optimizer_param_groups is None:
+            self.setup_optimizer_param_groups()
 
+        # If config was not explicitly provided, use default
+        if optim_config is None:
+            # See if internal config has 'optim' namespace
+            if self._cfg is not None and hasattr(self._cfg, "optim"):
+                optim_config = self._cfg.optim
+
+        # If config is still None, or internal config has no Optim, return without instantiation
         if optim_config is None:
             logging.info("No optimizer config provided, therefore no optimizer was created")
-            return None
+            return
 
-        # Preserve the configuration
-        if not isinstance(optim_config, DictConfig):
-            optim_config = OmegaConf.create(optim_config)
+        else:
+            # Preserve the configuration
+            if not isinstance(optim_config, DictConfig):
+                optim_config = OmegaConf.create(optim_config)
 
-        # See if internal config has `optim` namespace before preservation
-        if self._cfg is not None and hasattr(self._cfg, "optim"):
-            if self._cfg.optim is None:
-                self._cfg.optim = copy.deepcopy(optim_config)
-            else:
-                with open_dict(self._cfg.optim):
+            # See if internal config has `optim` namespace before preservation
+            if self._cfg is not None and hasattr(self._cfg, "optim"):
+                if self._cfg.optim is None:
                     self._cfg.optim = copy.deepcopy(optim_config)
+                else:
+                    with open_dict(self._cfg.optim):
+                        self._cfg.optim = copy.deepcopy(optim_config)
 
         # Setup optimizer and scheduler
         if optim_config is not None and isinstance(optim_config, DictConfig):
             optim_config = OmegaConf.to_container(optim_config, resolve=True)
 
         if self._trainer is None:
-            logging.warning("Trainer wasn't specified in model constructor. Make sure that you really wanted it.")
+            logging.warning(f"Trainer wasn't specified in model constructor. Make sure that you really wanted it.")
 
         if "sched" in optim_config and self._trainer is not None:
             if not isinstance(self._trainer.accumulate_grad_batches, int):
@@ -482,51 +495,73 @@ class ModelPT(LightningModule, Model):
         if lr is not None:
             optimizer_args["lr"] = lr
 
-        # Actually instantiate the optimizer
-        if optimizer_cls is None:
-            optimizer = mridc.core.optim.optimizers.get_optimizer(optimizer_name)
-            optimizer = optimizer(self.parameters(), **optimizer_args)
+            # Actually instantiate the optimizer
+            if optimizer_cls is not None:
+                if inspect.isclass(optimizer_cls):
+                    optimizer = optimizer_cls(self._optimizer_param_groups, **optimizer_args)
+                    logging.info("Optimizer config = %s", str(optimizer))
 
-            logging.info("Optimizer config = %s", str(optimizer))
+                    self._optimizer = optimizer
 
-            self._optimizer = optimizer  # type: ignore
+                else:
+                    # Attempt class path resolution
+                    try:
+                        optimizer_cls = OmegaConf.create({"_target_": optimizer_cls})
+                        if lr is not None:
+                            optimizer_config = {"lr": lr}
+                        else:
+                            optimizer_config = {}
+                        optimizer_config.update(optimizer_args)
 
-        elif inspect.isclass(optimizer_cls):
-            optimizer = optimizer_cls(self.parameters(), **optimizer_args)
-            logging.info("Optimizer config = %s", str(optimizer))
+                        optimizer_instance = hydra.utils.instantiate(
+                            optimizer_cls, self._optimizer_param_groups, **optimizer_config
+                        )  # type: DictConfig
 
-            self._optimizer = optimizer  # type: ignore
+                        logging.info("Optimizer config = %s", str(optimizer_instance))
 
-        else:
-            # Attempt class path resolution
-            try:
-                optimizer_cls = OmegaConf.create({"_target_": optimizer_cls})
-                optimizer_config = {"lr": lr} if lr is not None else {}
-                optimizer_config.update(optimizer_args)
+                        self._optimizer = optimizer_instance
 
-                optimizer_instance = hydra.utils.instantiate(
-                    optimizer_cls, self.parameters(), **optimizer_config
-                )  # type: DictConfig
+                    except Exception as e:
+                        logging.error(
+                            "Could not instantiate class path - {} with kwargs {}".format(
+                                optimizer_cls, str(optimizer_config)
+                            )
+                        )
+                        raise e
 
-                logging.info("Optimizer config = %s", str(optimizer_instance))
+            else:
+                optimizer = mridc.core.optim.optimizers.get_optimizer(optimizer_name)
+                optimizer = optimizer(self._optimizer_param_groups, **optimizer_args)
 
-                self._optimizer = optimizer_instance
+                logging.info("Optimizer config = %s", str(optimizer))
 
-            except Exception as e:
-                logging.error(f"Could not instantiate class path - {optimizer_cls} with kwargs {optimizer_config}")
+                self._optimizer = optimizer
 
-                raise e
+            # Try to instantiate scheduler for optimizer
+            self._scheduler = mridc.core.optim.lr_scheduler.prepare_lr_scheduler(  # type: ignore
+                optimizer=self._optimizer, scheduler_config=scheduler_config, train_dataloader=self._train_dl
+            )
 
-        # Try to instantiate scheduler for optimizer
-        self._scheduler = mridc.core.optim.lr_scheduler.prepare_lr_scheduler(  # type: ignore
-            optimizer=self._optimizer,
-            scheduler_config=scheduler_config,
-            train_dataloader=self._train_dl,
-        )
+            # Return the optimizer with/without scheduler
+            # This return allows multiple optimizers or schedulers to be created
+            return self._optimizer, self._scheduler
 
-        # Return the optimizer with/without scheduler
-        # This return allows multiple optimizers or schedulers to be created
-        return self._optimizer, self._scheduler
+    def setup_optimizer_param_groups(self):
+        """
+        Used to create param groups for the optimizer.
+        As an example, this can be used to specify per-layer learning rates:
+        optim.SGD([
+                    {'params': model.base.parameters()},
+                    {'params': model.classifier.parameters(), 'lr': 1e-3}
+                    ], lr=1e-2, momentum=0.9)
+        See https://pytorch.org/docs/stable/optim.html for more information.
+        By default, ModelPT will use self.parameters().
+        Override this method to add custom param groups.
+        """
+        param_groups = None
+        if hasattr(self, "parameters"):
+            param_groups = [{"params": self.parameters()}]
+        self._optimizer_param_groups = param_groups
 
     def configure_optimizers(self):
         """Configure optimizers and schedulers for training."""
@@ -1037,8 +1072,7 @@ class ModelPT(LightningModule, Model):
             DDP_WARN = """\n\nDuring testing, it is currently advisable to construct a new Trainer "
                     "with single GPU and no DDP to obtain accurate results.
                     "Following pattern should be used: "
-                    "gpu = 1 if cfg.trainer.gpus != 0 else 0"
-                    "trainer = Trainer(gpus=gpu)"
+                    "trainer = Trainer(devices=1, accelerator='gpu')
                     "if model.prepare_test(trainer):"
                     "  trainer.test(model)\n\n"""
 
@@ -1130,6 +1164,10 @@ class ModelPT(LightningModule, Model):
         """
         self._cfg = cfg
         self._set_hparams(OmegaConf.create({"cfg": self._cfg}))
+
+        # TODO: Remove this when we have a better way to handle this
+        if hasattr(self, "_hparams_initial") and "cfg" in self._hparams_initial:
+            self._hparams_initial["cfg"] = OmegaConf.to_object(self._cfg)
 
     @staticmethod
     def _is_model_being_restored() -> bool:

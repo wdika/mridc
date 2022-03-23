@@ -25,6 +25,7 @@ class AppState(metaclass=Singleton):
     def __init__(self):
         """Initializes the AppState class."""
         # method call lock
+        self.model_parallel_rank = None
         self.__lock = Lock()
 
         # TODO: should we store global config in hydra_runner?
@@ -35,10 +36,16 @@ class AppState(metaclass=Singleton):
         self._local_rank = None
         self._global_rank = None
         self._model_parallel_rank = None
+        self._tensor_model_parallel_rank = None
+        self._pipeline_model_parallel_rank = None
         self._data_parallel_rank = None
 
         self._world_size = None
         self._model_parallel_size = None
+        self._tensor_model_parallel_size = None
+        self._tensor_model_parallel_group = None
+        self._pipeline_model_parallel_size = None
+        self._pipeline_model_parallel_group = None
         self._model_parallel_group = None
         self._data_parallel_size = None
         self._data_parallel_group = None
@@ -93,6 +100,38 @@ class AppState(metaclass=Singleton):
         self._model_parallel_size = size
 
     @property
+    def tensor_model_parallel_size(self):
+        """Property returns the number of GPUs in each model parallel group.
+        Returns:
+            Number of GPUs in each model parallel group.
+        """
+        return self._tensor_model_parallel_size
+
+    @tensor_model_parallel_size.setter
+    def tensor_model_parallel_size(self, size):
+        """Property sets the number of GPUs in each model parallel group.
+        Args:
+            size (int):  Number of GPUs in each model parallel group.
+        """
+        self._tensor_model_parallel_size = size
+
+    @property
+    def pipeline_model_parallel_size(self):
+        """Property returns the number of GPUs in each model parallel group.
+        Returns:
+            Number of GPUs in each model parallel group.
+        """
+        return self._pipeline_model_parallel_size
+
+    @pipeline_model_parallel_size.setter
+    def pipeline_model_parallel_size(self, size):
+        """Property sets the number of GPUs in each model parallel group.
+        Args:
+            size (int):  Number of GPUs in each model parallel group.
+        """
+        self._pipeline_model_parallel_size = size
+
+    @property
     def data_parallel_size(self):
         """Property returns the number of GPUs in each data parallel group."""
         return self._data_parallel_size
@@ -123,24 +162,68 @@ class AppState(metaclass=Singleton):
         self._global_rank = rank
 
     @property
-    def model_parallel_rank(self):
-        """Property returns the model parallel rank."""
-        return self._model_parallel_rank
+    def tensor_model_parallel_rank(self):
+        """Property returns the model parallel rank.
+        Returns:
+            Model parallel rank.
+        """
+        return self._tensor_model_parallel_rank
 
-    @model_parallel_rank.setter
-    def model_parallel_rank(self, rank: int):
-        """Property sets the model parallel rank."""
-        self._model_parallel_rank = rank
+    @tensor_model_parallel_rank.setter
+    def tensor_model_parallel_rank(self, rank):
+        """Property sets the model parallel rank.
+        Args:
+            rank (int):  Model parallel rank.
+        """
+        self._tensor_model_parallel_rank = rank
 
     @property
-    def model_parallel_group(self):
-        """Property returns the model parallel group."""
-        return self._model_parallel_group
+    def tensor_model_parallel_group(self):
+        """Property returns the model parallel group.
+        Returns:
+            Model parallel group.
+        """
+        return self._tensor_model_parallel_group
 
-    @model_parallel_group.setter
-    def model_parallel_group(self, group):
-        """Property sets the model parallel group."""
-        self._model_parallel_group = group
+    @tensor_model_parallel_group.setter
+    def tensor_model_parallel_group(self, group):
+        """Property sets the model parallel group.
+        Args:
+            group:  Model parallel group.
+        """
+        self._tensor_model_parallel_group = group
+
+    @property
+    def pipeline_model_parallel_rank(self):
+        """Property returns the model parallel rank.
+        Returns:
+            Model parallel rank.
+        """
+        return self._pipeline_model_parallel_rank
+
+    @pipeline_model_parallel_rank.setter
+    def pipeline_model_parallel_rank(self, rank):
+        """Property sets the model parallel rank.
+        Args:
+            rank (int):  Model parallel rank.
+        """
+        self._pipeline_model_parallel_rank = rank
+
+    @property
+    def pipeline_model_parallel_group(self):
+        """Property returns the model parallel group.
+        Returns:
+            Model parallel group.
+        """
+        return self._pipeline_model_parallel_group
+
+    @pipeline_model_parallel_group.setter
+    def pipeline_model_parallel_group(self, group):
+        """Property sets the model parallel group.
+        Args:
+            group:  Model parallel group.
+        """
+        self._pipeline_model_parallel_group = group
 
     @property
     def data_parallel_rank(self):

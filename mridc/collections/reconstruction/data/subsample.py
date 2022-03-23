@@ -7,7 +7,6 @@ from typing import Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
-from numpy import linalg as LA, ndarray
 
 
 @contextlib.contextmanager
@@ -233,7 +232,7 @@ class Gaussian1DMaskFunc(MaskFunc):
 
     def __call__(
         self,
-        shape: Union[Sequence[int], ndarray],
+        shape: Union[Sequence[int], np.ndarray],
         seed: Optional[Union[int, Tuple[int, ...]]] = None,
         half_scan_percentage: Optional[float] = 0.0,
         scale: Optional[float] = 0.02,
@@ -331,7 +330,7 @@ class Gaussian2DMaskFunc(MaskFunc):
 
     def __call__(
         self,
-        shape: Union[Sequence[int], ndarray],
+        shape: Union[Sequence[int], np.ndarray],
         seed: Optional[Union[int, Tuple[int, ...]]] = None,
         half_scan_percentage: Optional[float] = 0.0,
         scale: Optional[float] = 0.02,
@@ -428,7 +427,7 @@ class Poisson2DMaskFunc(MaskFunc):
 
     def __call__(
         self,
-        shape: Union[Sequence[int], ndarray],
+        shape: Union[Sequence[int], np.ndarray],
         seed: Optional[Union[int, Tuple[int, ...]]] = None,
         half_scan_percentage: Optional[float] = 0.0,
         scale: Optional[float] = 0.02,
@@ -543,11 +542,11 @@ class Poisson2DMaskFunc(MaskFunc):
         # Initialize the dictionary of cells: each key is a cell's coordinates, the corresponding value is the index
         # of that cell's point's that might cause conflict when adding a new point.
         cells = {coords: [] for coords in coords_list}
-        centernorm = LA.norm(center)
+        centernorm = np.linalg.norm(center)
 
         def calc_r(coords):
             """Calculate r for the given coordinates."""
-            return ((LA.norm(np.asarray(coords) - center) / centernorm) * 240 + 50) / self.r
+            return ((np.linalg.norm(np.asarray(coords) - center) / centernorm) * 240 + 50) / self.r
 
         def get_cell_coords(pt):
             """Get the coordinates of the cell that pt = (x,y) falls in."""
@@ -585,7 +584,7 @@ class Poisson2DMaskFunc(MaskFunc):
             """Check if the point is valid."""
             rx = calc_r(pt)
             if rx < 1:
-                if LA.norm(pt - center) < self.scale * width:
+                if np.linalg.norm(pt - center) < self.scale * width:
                     return False
                 rx = 1
 
