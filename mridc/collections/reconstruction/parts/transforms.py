@@ -239,15 +239,6 @@ class MRIDataTransforms:
 
             if mask.shape[-2] == 1:  # 1D mask
                 mask = torch.from_numpy(mask.astype(np.float32)).unsqueeze(0).unsqueeze(-1)
-                # shape = np.array(kspace.shape)
-                # num_cols = shape[-2]
-                # shape[:-3] = 1
-                # mask_shape = [1] * len(shape)
-                # mask_shape[-2] = num_cols
-                # mask = torch.from_numpy(mask.reshape(*mask_shape).astype(np.float32))
-                # mask = mask.reshape(*mask_shape)
-                # mask[:, :, :acq_start] = 0
-                # mask[:, :, acq_end:] = 0
             else:  # 2D mask
                 mask = torch.from_numpy(mask.astype(np.float32))
 
