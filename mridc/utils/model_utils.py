@@ -22,6 +22,7 @@ from mridc.constants import MRIDC_ENV_CACHE_DIR
 from mridc.core.classes.common import PretrainedModelInfo
 from mridc.core.classes.modelPT import ModelPT
 from mridc.core.conf.modelPT import MRIDCConfig
+from mridc.utils.app_state import AppState
 from mridc.utils import logging
 
 _HAS_HYDRA = True
@@ -43,6 +44,8 @@ __all__ = [
     "resolve_subclass_pretrained_model_info",
     "check_lib_version",
     "resolve_cache_dir",
+    "inject_model_parallel_rank",
+    "uninject_model_parallel_rank",
 ]
 
 
@@ -158,6 +161,15 @@ def parse_dataset_as_name(name: str) -> str:
 
     if "dataset" in name:
         name = name.replace("dataset", "")
+
+    # Test if the manifest/dataset name was simply `manifest.yaml` or `dataset.yaml`: Invalid names.
+    if name == "":
+        raise ValueError(
+            "Provided dataset / manifest filename was `manifest.json` or `dataset.json`.\n"
+            "Such a name is invalid, since multiple datasets/manifests can share the same name,\n"
+            "thereby overriding their results during logging. Please pick a more descriptive filename \n"
+            "for the provided dataset / manifest file."
+        )
 
     if name[-1] != "_":
         name = f"{name}_"
@@ -551,3 +563,32 @@ def resolve_cache_dir() -> Path:
         if override_dir == ""
         else Path(override_dir).resolve()
     )
+
+
+def inject_model_parallel_rank(filepath):
+    """
+    Injects tensor/pipeline model parallel ranks into the filepath.
+    Does nothing if not using model parallelism.
+    """
+    app_state = AppState()
+    if app_state.model_parallel_size is not None and app_state.model_parallel_size > 1:
+        # filepath needs to be updated to include mp_rank
+        dirname = os.path.dirname(filepath)
+        basename = os.path.basename(filepath)
+        if app_state.pipeline_model_parallel_size is None or app_state.pipeline_model_parallel_size == 1:
+            filepath = f"{dirname}/mp_rank_{app_state.tensor_model_parallel_rank:02d}/{basename}"
+        else:
+            filepath = (
+                f"{dirname}/tp_rank_{app_state.tensor_model_parallel_rank:02d}_pp_rank_"
+                f"{app_state.pipeline_model_parallel_rank:03d}/{basename} "
+            )
+        return filepath
+    return filepath
+
+
+def uninject_model_parallel_rank(filepath):
+    """Uninjects tensor/pipeline model parallel ranks from the filepath."""
+    dirname = os.path.dirname(os.path.dirname(filepath))
+    basename = os.path.basename(filepath)
+    filepath = os.path.join(dirname, basename)
+    return filepath

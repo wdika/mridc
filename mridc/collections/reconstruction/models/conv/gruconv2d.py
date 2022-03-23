@@ -1,12 +1,13 @@
 # coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
-import torch.nn as nn
-from torch import Tensor, cat
 from typing import Optional
 
-from mridc.collections.reconstruction.models.rim.rnn_cells import ConvGRUCell
+import torch.nn as nn
+from torch import Tensor
+
 from mridc.collections.reconstruction.models.rim.conv_layers import ConvNonlinear
+from mridc.collections.reconstruction.models.rim.rnn_cells import ConvGRUCell
 
 
 class GRUConv2d(nn.Module):

@@ -2,11 +2,8 @@
 __author__ = "Dimitrios Karkalousos"
 
 from abc import ABC
-from typing import Any, Dict, Tuple, Union
 
-import numpy as np
 import torch
-import torch.nn as nn
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch.nn import L1Loss
@@ -45,7 +42,7 @@ class VarNet(BaseMRIReconstructionModel, ABC):
         self.num_cascades = cfg_dict.get("num_cascades")
 
         # Cascades of VN blocks
-        self.cascades = nn.ModuleList(
+        self.cascades = torch.nn.ModuleList(
             [
                 VarNetBlock(
                     NormUnet(

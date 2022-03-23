@@ -134,7 +134,6 @@ class ConjugateGradient(torch.autograd.Function):
         ctx.fft_type = fft_type
 
         def A(x):
-            # x = x.unsqueeze(-5)
             x = fft2c(complex_mul(x.expand_as(smaps), smaps), fft_type=fft_type) * mask
             return torch.sum(x, dim=-4, keepdim=True)
 

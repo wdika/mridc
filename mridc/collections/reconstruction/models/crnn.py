@@ -2,11 +2,10 @@
 __author__ = "Dimitrios Karkalousos"
 
 from abc import ABC
-from typing import Any, Dict, Generator, Tuple, Union
+from typing import Generator, Union
 
 import numpy as np
 import torch
-import torch.nn as nn
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch.nn import L1Loss

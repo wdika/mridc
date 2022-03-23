@@ -19,7 +19,7 @@ class SchedulerParams:
 class SquareRootConstantSchedulerParams(SchedulerParams):
     """
     Base configuration for all schedulers.
-    It is not derived from Config as it is not a NeMo object (and in particular it doesn't need a name).
+    It is not derived from Config as it is not a mridc object (and in particular it doesn't need a name).
     """
 
     constant_steps: Optional[float] = None
