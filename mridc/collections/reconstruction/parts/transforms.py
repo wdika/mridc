@@ -233,14 +233,20 @@ class MRIDataTransforms:
             masked_kspace = kspace
             acc = torch.tensor([np.around(mask.size / mask.sum())]) if mask is not None else torch.tensor([1])
 
+            if mask is not None:
+                mask = torch.from_numpy(mask)
+
+            if mask.shape[0] == masked_kspace.shape[-2]:
+                mask = mask.permute(1, 0)
+            elif (mask is None) or (mask.shape[0] != masked_kspace.shape[-3] or mask.shape[1] != masked_kspace.shape[-2]):
+                mask = torch.ones([masked_kspace.shape[-3], masked_kspace.shape[-2]], dtype=torch.float32)
+
             if mask.ndim == 1:
                 mask = np.expand_dims(mask, axis=0)
 
             if mask.shape[-2] == 1:  # 1D mask
-                mask = torch.from_numpy(mask.astype(np.float32)).unsqueeze(0).unsqueeze(-1)
+                mask = torch.from_numpy(mask).unsqueeze(0).unsqueeze(-1)
             else:  # 2D mask
-                mask = torch.from_numpy(mask.astype(np.float32))
-
                 # Crop loaded mask.
                 if self.crop_size is not None and self.crop_size not in ("", "None"):
                     mask = center_crop(mask, self.crop_size)
@@ -251,7 +257,6 @@ class MRIDataTransforms:
                 mask = torch.fft.fftshift(mask, dim=[-3, -2])
 
             masked_kspace = masked_kspace * mask
-
             mask = mask.byte()
 
         # Cropping after masking.
