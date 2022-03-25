@@ -238,7 +238,9 @@ class MRIDataTransforms:
 
             if mask.shape[0] == masked_kspace.shape[-2]:
                 mask = mask.permute(1, 0)
-            elif (mask is None) or (mask.shape[0] != masked_kspace.shape[-3] or mask.shape[1] != masked_kspace.shape[-2]):
+            elif (mask is None) or (
+                mask.shape[0] != masked_kspace.shape[-3] or mask.shape[1] != masked_kspace.shape[-2]
+            ):
                 mask = torch.ones([masked_kspace.shape[-3], masked_kspace.shape[-2]], dtype=torch.float32)
 
             if mask.ndim == 1:
