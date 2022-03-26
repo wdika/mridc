@@ -120,11 +120,10 @@ class SaveRestoreConnector:
                 if return_config:
                     instance = conf
                     return instance
+                if app_state.model_parallel_rank is not None and app_state.model_parallel_size > 1:
+                    model_weights = self._inject_model_parallel_rank_for_ckpt(tmpdir, self.model_weights_ckpt)
                 else:
-                    if app_state.model_parallel_rank is not None and app_state.model_parallel_size > 1:
-                        model_weights = self._inject_model_parallel_rank_for_ckpt(tmpdir, self.model_weights_ckpt)
-                    else:
-                        model_weights = os.path.join(tmpdir, self.model_weights_ckpt)
+                    model_weights = os.path.join(tmpdir, self.model_weights_ckpt)
                 OmegaConf.set_struct(conf, True)
                 os.chdir(cwd)
                 # get the class

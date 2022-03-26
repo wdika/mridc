@@ -407,19 +407,17 @@ class ModelPT(LightningModule, Model):
         if optim_config is None:
             logging.info("No optimizer config provided, therefore no optimizer was created")
             return
+        # Preserve the configuration
+        if not isinstance(optim_config, DictConfig):
+            optim_config = OmegaConf.create(optim_config)
 
-        else:
-            # Preserve the configuration
-            if not isinstance(optim_config, DictConfig):
-                optim_config = OmegaConf.create(optim_config)
-
-            # See if internal config has `optim` namespace before preservation
-            if self._cfg is not None and hasattr(self._cfg, "optim"):
-                if self._cfg.optim is None:
+        # See if internal config has `optim` namespace before preservation
+        if self._cfg is not None and hasattr(self._cfg, "optim"):
+            if self._cfg.optim is None:
+                self._cfg.optim = copy.deepcopy(optim_config)
+            else:
+                with open_dict(self._cfg.optim):
                     self._cfg.optim = copy.deepcopy(optim_config)
-                else:
-                    with open_dict(self._cfg.optim):
-                        self._cfg.optim = copy.deepcopy(optim_config)
 
         # Setup optimizer and scheduler
         if optim_config is not None and isinstance(optim_config, DictConfig):

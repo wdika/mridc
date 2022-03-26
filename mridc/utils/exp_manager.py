@@ -416,7 +416,7 @@ def check_resume(
             raise NotFoundError(f"There was no checkpoint folder at checkpoint_dir :{checkpoint_dir}. Cannot resume.")
         logging.warning(f"There was no checkpoint folder at checkpoint_dir :{checkpoint_dir}. Training from scratch.")
         return
-    elif len(end_checkpoints) > 0:
+    if len(end_checkpoints) > 0:
         if not resume_past_end:
             raise ValueError(
                 f"Found {end_checkpoints[0]} indicating that the last training run has already completed."

@@ -62,8 +62,7 @@ def forward_method(self):
     """Forward method for export"""
     if hasattr(self, "forward_for_export"):
         return self.forward_for_export
-    else:
-        return self.forward
+    return self.forward
 
 
 def wrap_forward_method(self):

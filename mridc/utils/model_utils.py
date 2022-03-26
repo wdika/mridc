@@ -583,8 +583,7 @@ def inject_model_parallel_rank(filepath):
                 f"{app_state.pipeline_model_parallel_rank:03d}/{basename} "
             )
         return filepath
-    else:
-        return filepath
+    return filepath
 
 
 def uninject_model_parallel_rank(filepath):
