@@ -55,7 +55,7 @@ class GradBucket:
 
     def __init__(self, numel):
         if not HAVE_APEX:
-            logging.warning("Apex was not found. Using model parallel models will error out.")
+            raise ImportError("Apex was not found. Using model parallel models will error out.")
 
         self.numel = numel
         self.data = torch.zeros(self.numel, dtype=torch.float, device=torch.cuda.current_device(), requires_grad=False)
@@ -79,10 +79,10 @@ class GradBucket:
         return buffer_tensor
 
 
-class MasterOptimizerWrapper(torch.optim.Optimizer):
+class MainParamsOptimizerWrapper(torch.optim.Optimizer):
     """
     Float16 optimizer wrapper for half precision (fp16 and bf16) data types.
-    This optimizer wrapper holds master parameters and gradients in fp32 to support
+    This optimizer wrapper holds main parameters and gradients in fp32 to support
     stable convergence.
 
     Arguments:
@@ -103,7 +103,7 @@ class MasterOptimizerWrapper(torch.optim.Optimizer):
     ):
         super().__init__(optimizer.param_groups)
         if not HAVE_APEX:
-            logging.warning("Apex was not found. Using model parallel models will error out.")
+            raise ImportError("Apex was not found. Using model parallel models will error out.")
 
         self.optimizer = optimizer
         if not self.optimizer:
@@ -117,7 +117,9 @@ class MasterOptimizerWrapper(torch.optim.Optimizer):
                     "which is supposed to be accumulated after grad op."
                 )
             if not contiguous_grad_bucket:
-                raise AssertionError("currently async_grad_allreduce is supported only " "with async_grad_allreduce.")
+                raise AssertionError(
+                    "currently async_grad_allreduce is supported only " "with contiguous_grad_bucket."
+                )
 
         self._fp32_grad_accum = fp32_grad_accum
         self._contiguous_grad_bucket = contiguous_grad_bucket
@@ -134,8 +136,8 @@ class MasterOptimizerWrapper(torch.optim.Optimizer):
         if self._contiguous_grad_bucket:
             self._main_grad_buffers = {}
             # get the size of buffers
+            num_elements = {}
             for i, param_group in enumerate(self.optimizer.param_groups):
-                num_elements = {}
                 for param in param_group["params"]:
                     if param.requires_grad:
                         num_elements[i] = num_elements.get(i, 0) + param.data.nelement()
@@ -176,6 +178,7 @@ class MasterOptimizerWrapper(torch.optim.Optimizer):
                         if self._contiguous_grad_bucket:
                             num_elements[i] -= param.data.nelement()
                             main_param.grad = self._main_grad_buffers[i].get(param.data.shape, num_elements[i])
+                            param.main_grad = main_param.grad
 
                         # Replace the optimizer params with the new fp32 copy.
                         param_group["params"][j] = main_param

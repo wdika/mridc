@@ -394,14 +394,13 @@ class Serialization(ABC):
         if ("cls" in config or "target" in config) and "params" in config and _HAS_HYDRA:
             # regular hydra-based instantiation
             instance = hydra.utils.instantiate(config=config)
-        # Hydra 1.x API
         elif "_target_" in config and _HAS_HYDRA:
             # regular hydra-based instantiation
             instance = hydra.utils.instantiate(config=config)
         else:
             instance = None
-            imported_cls_tb = None
-            instance_init_error = None
+            prev_error = ""
+
             # Attempt class path resolution from config `target` class (if it exists)
             if "target" in config:
                 target_cls = config["target"]  # No guarantee that this is a omegaconf class
@@ -409,48 +408,33 @@ class Serialization(ABC):
                 try:
                     # try to import the target class
                     imported_cls = mridc.utils.model_utils.import_class_by_path(target_cls)  # type: ignore
-                except AttributeError:
-                    imported_cls_tb = traceback.format_exc()
 
-                # try instantiating model with target class
-                if imported_cls is not None:
-                    # if calling class (cls) is subclass of imported class,
                     # use subclass instead
                     if issubclass(cls, imported_cls):
                         imported_cls = cls
-
-                    try:
                         accepts_trainer = Serialization._inspect_signature_for_trainer(imported_cls)
+
                         if accepts_trainer:
                             instance = imported_cls(cfg=config, trainer=trainer)  # type: ignore
                         else:
                             instance = imported_cls(cfg=config)  # type: ignore
 
-                    except Exception as e:
-                        imported_cls_tb = traceback.format_exc()
-                        instance_init_error = str(e)
-                        instance = None
+                except Exception as e:
+                    # record previous error
+                    tb = traceback.format_exc()
+                    prev_error = f"Model instantiation failed.\nTarget class: {target_cls}\nError: {e}\n{tb}"
+                    logging.debug(prev_error + "\n falling back to 'cls'.")
 
             # target class resolution was unsuccessful, fall back to current `cls`
             if instance is None:
-                if imported_cls_tb is not None:
-                    logging.info(
-                        f"Model instantiation from target class {target_cls} failed with following error.\n"
-                        f"Falling back to `cls`.\n"
-                        f"{imported_cls_tb}"
-                    )
-
                 try:
                     accepts_trainer = Serialization._inspect_signature_for_trainer(cls)
                     if accepts_trainer:
-                        instance = cls(cfg=config, trainer=trainer)  # type: ignore
-                    else:
                         instance = cls(cfg=config)  # type: ignore
-
                 except Exception as e:
-                    if imported_cls_tb is not None:
-                        logging.error(f"Instance failed restore_from due to: {instance_init_error}")
-                        logging.error(f"{imported_cls_tb}")
+                    # report saved errors, if any, and raise the current error
+                    if prev_error:
+                        logging.error(f"{prev_error}")
                     raise e
 
         if not hasattr(instance, "_cfg"):
@@ -528,7 +512,7 @@ class FileIO(ABC):
         """
         if hasattr(self, "_cfg"):
             self._cfg = mridc.utils.model_utils.maybe_update_config_version(self._cfg)  # type: ignore
-            with open(path2yaml_file, "w") as fout:
+            with open(path2yaml_file, "w", encoding="utf-8") as fout:
                 OmegaConf.save(config=self._cfg, f=fout, resolve=True)
         else:
             raise NotImplementedError()

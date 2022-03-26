@@ -26,6 +26,7 @@ from pytorch_lightning.plugins.training_type.ddp import DDPPlugin
 from pytorch_lightning.trainer.states import RunningStage
 from pytorch_lightning.utilities.distributed import rank_zero_info
 
+import mridc.utils
 from mridc.constants import MRIDC_ENV_VARNAME_TESTING, MRIDC_ENV_VARNAME_VERSION
 from mridc.utils import logging, timers
 from mridc.utils.app_state import AppState
@@ -73,7 +74,7 @@ class CallbackParams:
     save_best_model: bool = False
     always_save_mridc: bool = False
     save_mridc_on_train_end: Optional[bool] = True  # Automatically save .mridc file during on_train_end hook
-    model_parallel_size: Optional[int] = None
+    model_parallel_size: Optional[int] = None  # tensor parallel size * pipeline parallel size
 
 
 @dataclass
@@ -333,13 +334,13 @@ def exp_manager(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None)
                 copy(Path(_file), log_dir)
 
         # Create files for cmd args and git info
-        with open(log_dir / "cmd-args.log", "w") as _file:
+        with open(log_dir / "cmd-args.log", "w", encoding="utf-8") as _file:
             _file.write(" ".join(sys.argv))
 
         # Try to get git hash
         git_repo, git_hash = get_git_hash()
         if git_repo:
-            with open(log_dir / "git-info.log", "w") as _file:
+            with open(log_dir / "git-info.log", "w", encoding="utf-8") as _file:
                 _file.write(f"commit hash: {git_hash}")
                 _file.write(get_git_diff())
 
@@ -411,13 +412,11 @@ def check_resume(
     end_checkpoints = list(checkpoint_dir.rglob("*end.ckpt"))
     last_checkpoints = list(checkpoint_dir.rglob("*last.ckpt"))
     if not checkpoint_dir.exists():
-        if resume_ignore_no_checkpoint:
-            logging.warning(
-                f"There was no checkpoint folder at checkpoint_dir :{checkpoint_dir}. Training from scratch."
-            )
-            return
-        raise NotFoundError(f"There was no checkpoint folder at checkpoint_dir :{checkpoint_dir}. Cannot resume.")
-    if end_checkpoints:
+        if not resume_ignore_no_checkpoint:
+            raise NotFoundError(f"There was no checkpoint folder at checkpoint_dir :{checkpoint_dir}. Cannot resume.")
+        logging.warning(f"There was no checkpoint folder at checkpoint_dir :{checkpoint_dir}. Training from scratch.")
+        return
+    elif len(end_checkpoints) > 0:
         if not resume_past_end:
             raise ValueError(
                 f"Found {end_checkpoints[0]} indicating that the last training run has already completed."
@@ -429,15 +428,15 @@ def check_resume(
                 raise ValueError(f"Multiple checkpoints {end_checkpoints} that matches *end.ckpt.")
         logging.info(f"Resuming from {end_checkpoints[0]}")
     elif not last_checkpoints:
-        if resume_ignore_no_checkpoint:
-            logging.warning(f"There were no checkpoints found in {checkpoint_dir}. Training from scratch.")
-            return
-        raise NotFoundError(f"There were no checkpoints found in {checkpoint_dir}. Cannot resume.")
+        if not resume_ignore_no_checkpoint:
+            raise NotFoundError(f"There were no checkpoints found in {checkpoint_dir}. Cannot resume.")
+        logging.warning(f"There were no checkpoints found in {checkpoint_dir}. Training from scratch.")
+        return
     elif len(last_checkpoints) > 1:
-        if "mp_rank" in str(last_checkpoints[0]):
-            checkpoint = last_checkpoints[0]
-        else:
+        if "mp_rank" not in str(last_checkpoints[0]) and "tp_rank" not in str(last_checkpoints[0]):
             raise ValueError(f"Multiple checkpoints {last_checkpoints} that matches *last.ckpt.")
+        checkpoint = last_checkpoints[0]
+        checkpoint = mridc.utils.model_utils.uninject_model_parallel_rank(checkpoint)
     else:
         logging.info(f"Resuming from {last_checkpoints[0]}")
         checkpoint = last_checkpoints[0]
@@ -708,8 +707,8 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
 
         checkpoints = list(Path(self.dirpath).rglob("*.ckpt"))
         for checkpoint in checkpoints:
-            if self.model_parallel_size is not None and self.model_parallel_size > 1:
-                checkpoint = self._uninject_mp_rank(checkpoint)
+            if "mp_rank" in str(checkpoint) or "tp_rank" in str(checkpoint):
+                checkpoint = mridc.utils.model_utils.uninject_model_parallel_rank(checkpoint)
             checkpoint = str(checkpoint)
             if checkpoint[-10:] == "-last.ckpt":
                 continue
@@ -742,35 +741,6 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
         self.best_model_path = best_k_models[0]
         self.best_model_score = self.best_k_models[self.best_model_path]
 
-    @staticmethod
-    def _uninject_mp_rank(filepath):
-        """
-        Injects the rank of the current process into the checkpoint filepath.
-
-        Args:
-            filepath (): Path to the checkpoint file.
-
-        Returns:
-            str: Path to the checkpoint file with the rank of the current process injected.
-        """
-        dirname = os.path.dirname(os.path.dirname(filepath))
-        basename = os.path.basename(filepath)
-        filepath = os.path.join(dirname, basename)
-        return filepath
-
-    # TODO: remove _save_last_checkpoint after fix https://github.com/PyTorchLightning/pytorch-lightning/issues/11451
-    def _save_last_checkpoint(self, trainer, monitor_candidates) -> None:
-        """Save the last checkpoint."""
-        if not self.save_last:
-            return
-
-        filepath = self.format_checkpoint_name(monitor_candidates, self.CHECKPOINT_NAME_LAST)
-        if self.last_model_path and self.last_model_path != filepath:
-            trainer.training_type_plugin.remove_checkpoint(self.last_model_path)
-
-        self.last_model_path = filepath
-        trainer.save_checkpoint(filepath, self.save_weights_only)
-
     def on_save_checkpoint(self, trainer, pl_module, checkpoint):
         """
         Override the default on_save_checkpoint to save the best model if needed.
@@ -790,9 +760,9 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
         app_state = AppState()
 
         if app_state.model_parallel_size is not None and app_state.model_parallel_size > 1:
-            raise ValueError("always_save_nemo is not implemented for model parallel models.")
+            raise ValueError("always_save_mridc is not implemented for model parallel models.")
 
-        # since we are creating tarfile artifacts we need to update .nemo path
+        # since we are creating tarfile artifacts we need to update .mridc path
         app_state.model_restore_path = os.path.abspath(
             os.path.expanduser(os.path.join(self.dirpath, self.prefix + self.postfix))
         )
@@ -861,9 +831,7 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
         app_state = AppState()
         if app_state.model_parallel_size is not None and app_state.model_parallel_size > 1:
             # filepath needs to be updated to include mp_rank
-            dirname = os.path.dirname(filepath)
-            basename = os.path.basename(filepath)
-            filepath = f"{dirname}/mp_rank_{app_state.model_parallel_rank:02d}/{basename}"
+            filepath = mridc.utils.model_utils.inject_model_parallel_rank(filepath)
 
         # each model parallel rank needs to remove its model
         if is_global_rank_zero() or (app_state.model_parallel_size is not None and app_state.data_parallel_rank == 0):
@@ -934,10 +902,9 @@ def configure_checkpointing(trainer: Trainer, log_dir: Path, name: str, resume: 
 
     checkpoint_callback = MRIDCModelCheckpoint(n_resume=resume, **params)
     checkpoint_callback.last_model_path = trainer.checkpoint_connector.resume_from_checkpoint_fit_path or ""
-    if params.model_parallel_size is not None and params.model_parallel_size > 1:
-        checkpoint_callback.last_model_path = MRIDCModelCheckpoint._uninject_mp_rank(
-            checkpoint_callback.last_model_path
-        )
+    if "mp_rank" in checkpoint_callback.last_model_path or "tp_rank" in checkpoint_callback.last_model_path:
+        checkpoint_callback.last_model_path = mridc.utils.model_utils.uninject_model_parallel_rank(
+            checkpoint_callback.last_model_path)
     trainer.callbacks.append(checkpoint_callback)
 
 

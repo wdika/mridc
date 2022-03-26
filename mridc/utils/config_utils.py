@@ -76,6 +76,11 @@ def update_model_config(model_cls: MRIDCConfig, update_cfg: "DictConfig", drop_m
         with open_dict(update_cfg.model):
             update_cfg.model.pop("target")
 
+    # Remove ModelPT artifact `mridc_version`
+    if "mridc_version" in update_cfg.model and "mridc_version" not in model_cls.model:
+        with open_dict(update_cfg.model):
+            update_cfg.model.pop("mridc_version")
+
     return OmegaConf.merge(model_cls, update_cfg)
 
 
