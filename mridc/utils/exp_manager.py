@@ -904,7 +904,8 @@ def configure_checkpointing(trainer: Trainer, log_dir: Path, name: str, resume: 
     checkpoint_callback.last_model_path = trainer.checkpoint_connector.resume_from_checkpoint_fit_path or ""
     if "mp_rank" in checkpoint_callback.last_model_path or "tp_rank" in checkpoint_callback.last_model_path:
         checkpoint_callback.last_model_path = mridc.utils.model_utils.uninject_model_parallel_rank(
-            checkpoint_callback.last_model_path)
+            checkpoint_callback.last_model_path
+        )
     trainer.callbacks.append(checkpoint_callback)
 
 
