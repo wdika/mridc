@@ -100,7 +100,7 @@ class PICS(BaseMRIReconstructionModel, ABC):
         sensitivity_maps = torch.view_as_complex(sensitivity_maps)
         if self.fft_type != "orthogonal":
             sensitivity_maps = torch.fft.fftshift(sensitivity_maps, dim=(-2, -1))
-        sensitivity_maps = sensitivity_maps.permute(0, 2, 3, 1).detach().cpu().numpy() # type: ignore
+        sensitivity_maps = sensitivity_maps.permute(0, 2, 3, 1).detach().cpu().numpy()  # type: ignore
 
         prediction = torch.from_numpy(self.forward(y, sensitivity_maps, mask, target)).unsqueeze(0)
         if self.fft_type != "orthogonal":
