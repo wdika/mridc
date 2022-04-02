@@ -44,6 +44,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
 
+    # skipcq: PYL-R0201
     def process_loss(self, target, pred, _loss_fn):
         """Calculate the loss."""
         target = torch.abs(target / torch.max(torch.abs(target)))

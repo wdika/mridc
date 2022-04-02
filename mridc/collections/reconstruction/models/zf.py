@@ -88,7 +88,7 @@ class ZF(BaseMRIReconstructionModel, ABC):
 
     def test_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Tuple[str, int, torch.Tensor]:
         """Test step for ZF."""
-        y, sensitivity_maps, mask, _, target, fname, slice_num, _, _, _ = batch
+        y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
         y, mask, _ = self.process_inputs(y, mask)
         prediction = self.forward(y, sensitivity_maps, mask, target)
 
