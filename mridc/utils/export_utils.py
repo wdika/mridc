@@ -89,15 +89,12 @@ def parse_input_example(input_example):
     return input_list, input_dict
 
 
-def to_onnxrt_input(input_names, input_list, input_dict):
+def to_onnxrt_input(input_names, input_dict, input_list):
     """Transforms input to onnxrt input format"""
-    odict = {k: v.cpu().numpy() for k, v in input_dict.items()}
-    for i, input in enumerate(input_list):
-        if type(input) in (list, tuple):
-            odict[input_names[i]] = tuple(ip.cpu().numpy() for ip in input)
-        else:
-            odict[input_names[i]] = input.cpu().numpy()
-    return odict
+    return {
+        k: input_dict[k].cpu().numpy() if k in input_dict else input_list.pop().cpu().numpy()
+        for k in reversed(input_names)
+    }
 
 
 def verify_runtime(
@@ -111,6 +108,7 @@ def verify_runtime(
 ):
     # Verify the model can be read, and is valid
     onnx_model = onnx.load(output)
+    input_names = [node.name for node in onnx_model.graph.input]
     global ort_available
     if not ort_available:
         logging.warning(f"ONNX generated at {output}, not verified - please install onnxruntime_gpu package.\n")
@@ -123,7 +121,7 @@ def verify_runtime(
     sess = onnxruntime.InferenceSession(
         onnx_model.SerializeToString(), sess_options=onnx_session_opt, providers=["CUDAExecutionProvider"]
     )
-    ort_out = sess.run(output_names, to_onnxrt_input(input_names, input_list, input_dict))
+    ort_out = sess.run(output_names, to_onnxrt_input(input_names, input_dict, input_list))
     all_good = True
 
     for i, out in enumerate(ort_out[0]):
@@ -135,6 +133,7 @@ def verify_runtime(
                 logging.info(f"onnxruntime results mismatch! PyTorch(expected):\n{expected}\nONNXruntime:\n{tout}")
     status = "SUCCESS" if all_good else "FAIL"
     logging.info(f"ONNX generated at {output} verified with onnxruntime : " + status)
+    return all_good
 
 
 def simple_replace(BaseT: Type[nn.Module], DestT: Type[nn.Module]) -> Callable[[nn.Module], Optional[nn.Module]]:

@@ -46,6 +46,7 @@ class AppState(metaclass=Singleton):
         self._tensor_model_parallel_group = None
         self._pipeline_model_parallel_size = None
         self._pipeline_model_parallel_group = None
+        self._pipeline_model_parallel_split_rank = None
         self._model_parallel_group = None
         self._data_parallel_size = None
         self._data_parallel_group = None
@@ -208,6 +209,22 @@ class AppState(metaclass=Singleton):
             rank (int):  Model parallel rank.
         """
         self._pipeline_model_parallel_rank = rank
+
+    @property
+    def pipeline_model_parallel_split_rank(self):
+        """Property returns the model parallel split rank.
+        Returns:
+            Model parallel split rank.
+        """
+        return self._pipeline_model_parallel_split_rank
+
+    @pipeline_model_parallel_split_rank.setter
+    def pipeline_model_parallel_split_rank(self, rank):
+        """Property sets the model parallel split rank.
+        Args:
+            rank (int):  Model parallel split rank.
+        """
+        self._pipeline_model_parallel_split_rank = rank
 
     @property
     def pipeline_model_parallel_group(self):

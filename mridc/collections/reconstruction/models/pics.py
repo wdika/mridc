@@ -36,6 +36,7 @@ class PICS(BaseMRIReconstructionModel, ABC):
         self.reg_wt = cfg_dict.get("reg_wt")
         self.num_iters = cfg_dict.get("num_iters")
         self._device = cfg_dict.get("device")
+        self.fft_type = cfg_dict.get("fft_type")
 
         # Initialize the sensitivity network if use_sens_net is True
         self.use_sens_net = cfg_dict.get("use_sens_net")
@@ -43,7 +44,7 @@ class PICS(BaseMRIReconstructionModel, ABC):
             self.sens_net = BaseSensitivityModel(
                 cfg_dict.get("sens_chans"),
                 cfg_dict.get("sens_pools"),
-                fft_type=cfg_dict.get("fft_type"),
+                fft_type=self.fft_type,
                 mask_type=cfg_dict.get("sens_mask_type"),
                 normalize=cfg_dict.get("sens_normalize"),
             )
@@ -92,16 +93,18 @@ class PICS(BaseMRIReconstructionModel, ABC):
         y, mask, _ = self.process_inputs(y, mask)
 
         y = torch.view_as_complex(y).permute(0, 2, 3, 1).detach().cpu().numpy()
-        sensitivity_maps = (
-            torch.fft.fftshift(torch.view_as_complex(sensitivity_maps), dim=(-2, -1))
-            .permute(0, 2, 3, 1)
-            .detach()
-            .cpu()
-            .numpy()
-        )
 
-        prediction = self.forward(y, sensitivity_maps, mask, target)
-        prediction = torch.fft.fftshift(torch.from_numpy(prediction), dim=(-2, -1)).unsqueeze(0)
+        if sensitivity_maps is None:
+            raise ValueError("Sensitivity maps are required for PICS.")
+
+        sensitivity_maps = torch.view_as_complex(sensitivity_maps)
+        if self.fft_type != "orthogonal":
+            sensitivity_maps = torch.fft.fftshift(sensitivity_maps, dim=(-2, -1))
+        sensitivity_maps = sensitivity_maps.permute(0, 2, 3, 1).detach().cpu().numpy() # type: ignore
+
+        prediction = torch.from_numpy(self.forward(y, sensitivity_maps, mask, target)).unsqueeze(0)
+        if self.fft_type != "orthogonal":
+            prediction = torch.fft.fftshift(prediction, dim=(-2, -1))
 
         slice_num = int(slice_num)
         name = str(fname[0])  # type: ignore
