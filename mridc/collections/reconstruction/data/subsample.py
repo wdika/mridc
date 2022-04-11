@@ -251,8 +251,8 @@ class Gaussian1DMaskFunc(MaskFunc):
             A tuple of the mask and the number of columns selected.
         """
         dims = [1 for _ in shape]
-        self.shape = tuple(shape[-4:-1])
-        dims[-4:-1] = self.shape
+        self.shape = tuple(shape[-3:-1])
+        dims[-3:-1] = self.shape
 
         full_width_half_maximum, acceleration = self.choose_acceleration()
         if not isinstance(full_width_half_maximum, list):
@@ -352,8 +352,8 @@ class Gaussian2DMaskFunc(MaskFunc):
             A tuple of the mask and the number of columns selected.
         """
         dims = [1 for _ in shape]
-        self.shape = tuple(shape[-4:-1])
-        dims[-4:-1] = self.shape
+        self.shape = tuple(shape[-3:-1])
+        dims[-3:-1] = self.shape
 
         full_width_half_maximum, acceleration = self.choose_acceleration()
 
@@ -451,8 +451,8 @@ class Poisson2DMaskFunc(MaskFunc):
             A tuple of the mask and the number of columns selected.
         """
         dims = [1 for _ in shape]
-        self.shape = tuple(shape[-4:-1])
-        dims[-4:-1] = self.shape
+        self.shape = tuple(shape[-3:-1])
+        dims[-3:-1] = self.shape
 
         _, acceleration = self.choose_acceleration()
         if acceleration > 21.5 or acceleration < 3.5:
