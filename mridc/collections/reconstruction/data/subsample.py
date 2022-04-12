@@ -140,7 +140,7 @@ class RandomMaskFunc(MaskFunc):
             mask_shape = [1 for _ in shape]
             mask_shape[-2] = num_cols
             mask = torch.from_numpy(mask.reshape(*mask_shape).astype(np.float32))
-  
+
         return mask, acceleration
 
 
