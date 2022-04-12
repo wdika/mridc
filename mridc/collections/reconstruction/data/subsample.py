@@ -140,7 +140,7 @@ class RandomMaskFunc(MaskFunc):
             mask_shape = [1 for _ in shape]
             mask_shape[-2] = num_cols
             mask = torch.from_numpy(mask.reshape(*mask_shape).astype(np.float32))
-
+  
         return mask, acceleration
 
 
@@ -250,7 +250,9 @@ class Gaussian1DMaskFunc(MaskFunc):
         Returns:
             A tuple of the mask and the number of columns selected.
         """
+        dims = [1 for _ in shape]
         self.shape = tuple(shape[-3:-1])
+        dims[-2] = self.shape[-1]
 
         full_width_half_maximum, acceleration = self.choose_acceleration()
         if not isinstance(full_width_half_maximum, list):
@@ -268,7 +270,7 @@ class Gaussian1DMaskFunc(MaskFunc):
         if half_scan_percentage != 0:
             mask[: int(np.round(mask.shape[0] * half_scan_percentage)), :] = 0.0
 
-        return torch.from_numpy(mask[..., 0].astype(np.float32)).unsqueeze(0).unsqueeze(-1), acceleration
+        return torch.from_numpy(mask[0].reshape(dims).astype(np.float32)), acceleration
 
     def gaussian_kspace(self):
         """

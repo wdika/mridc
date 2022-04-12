@@ -40,12 +40,13 @@ def test_create_mask_for_random_type(
 
     mask, acc = mask_func(x, seed, half_scan_percentage)
     mask = mask.squeeze(0).numpy()
+    x[-2] = 1
 
     if not isinstance(mask_func, expected_mask_func):
         raise AssertionError
     if not accelerations[0] <= mask_func.choose_acceleration()[1] <= accelerations[1]:
         raise AssertionError
-    if mask.shape != (x[1], 1):
+    if mask.shape != (*x[2:], 1):
         raise AssertionError
     if mask.dtype != np.float32:
         raise AssertionError
@@ -79,12 +80,13 @@ def test_create_mask_for_equispaced_type(
 
     mask, acc = mask_func(x, seed, half_scan_percentage)
     mask = mask.squeeze(0).numpy()
+    x[-2] = 1
 
     if not isinstance(mask_func, expected_mask_func):
         raise AssertionError
     if not accelerations[0] <= mask_func.choose_acceleration()[1] <= accelerations[1]:
         raise AssertionError
-    if mask.shape != (x[1], 1):
+    if mask.shape != (*x[2:], 1):
         raise AssertionError
     if mask.dtype != np.float32:
         raise AssertionError
@@ -119,12 +121,13 @@ def test_create_mask_for_gaussian1d_type(
 
     mask, acc = mask_func(x, seed, half_scan_percentage, scale)
     mask = mask.squeeze(0).numpy()
+    x[-3] = 1
 
     if not isinstance(mask_func, expected_mask_func):
         raise AssertionError
     if not accelerations[0] <= mask_func.choose_acceleration()[1] <= accelerations[1]:
         raise AssertionError
-    if mask.shape != (x[1], 1):
+    if mask.shape != tuple(x[1:]):
         raise AssertionError
     if mask.dtype != np.float32:
         raise AssertionError
