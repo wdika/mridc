@@ -54,7 +54,7 @@ class SaveRestoreConnector:
         else:
             return
 
-    def restore_from(
+    def load_config_and_state_dict(
         self,
         calling_cls,
         restore_path: str,
@@ -127,7 +127,7 @@ class SaveRestoreConnector:
                 OmegaConf.set_struct(conf, True)
                 os.chdir(cwd)
                 # get the class
-                calling_cls._set_model_restore_state(is_being_restored=True, folder=tmpdir)
+                calling_cls._set_model_restore_state(is_being_restored=True, folder=tmpdir)  # type: ignore
                 instance = calling_cls.from_config_dict(config=conf, trainer=trainer)
                 instance = instance.to(map_location)
                 # add load_state_dict override
@@ -137,10 +137,63 @@ class SaveRestoreConnector:
                     self._load_state_dict_from_disk(model_weights, map_location=map_location), strict=strict
                 )
                 logging.info(f"Model {instance.__class__.__name__} was successfully restored from {restore_path}.")
-                instance._set_model_restore_state(is_being_restored=False)
+                instance._set_model_restore_state(is_being_restored=False)  # type: ignore
             finally:
                 os.chdir(cwd)
 
+        return instance
+
+    @staticmethod
+    def load_instance_with_state_dict(instance, state_dict, strict):
+        """Loads the state dict into the instance."""
+        instance.load_state_dict(state_dict, strict=strict)
+        instance._set_model_restore_state(is_being_restored=False)  # type: ignore
+
+    def restore_from(
+        self,
+        calling_cls,
+        restore_path: str,
+        override_config_path: Optional[Union[OmegaConf, str]] = None,
+        map_location: Optional[torch.device] = None,
+        strict: bool = True,
+        return_config: bool = False,
+        trainer: Trainer = None,
+    ):
+        """
+        Restores model instance (weights and configuration) into .mridc file
+        Args:
+            calling_cls: The class of the model to be restored.
+            restore_path: path to .mridc file from which model should be instantiated
+            override_config_path: path to a yaml config that will override the internal
+                config file or an OmegaConf / DictConfig object representing the model config.
+            map_location: Optional torch.device() to map the instantiated model to a device.
+                By default (None), it will select a GPU if available, falling back to CPU otherwise.
+            strict: Passed to load_state_dict. By default True
+            return_config: If set to true, will return just the underlying config of the restored
+                model as an OmegaConf DictConfig object without instantiating the model.
+            trainer: Optional trainer object to be used for restoring the model.
+        Returns:
+            An instance of type cls or its underlying config (if return_config is set).
+
+        ----------
+        """
+        # Get path where the command is executed - the artifacts will be "retrieved" there (original .mridc behavior)
+        loaded_params = self.load_config_and_state_dict(
+            calling_cls,
+            restore_path,
+            override_config_path,
+            map_location,
+            strict,
+            return_config,
+            trainer,
+        )
+
+        if not isinstance(loaded_params, tuple):
+            return loaded_params
+
+        _, instance, state_dict = loaded_params
+        self.load_instance_with_state_dict(instance, state_dict, strict)
+        logging.info(f"Model {instance.__class__.__name__} was successfully restored from {restore_path}.")
         return instance
 
     def extract_state_dict_from(self, restore_path: str, save_dir: str, split_by_module: bool = False):

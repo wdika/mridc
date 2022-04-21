@@ -18,13 +18,12 @@ class TrainerConfig:
     """TrainerConfig is a dataclass that holds all the hyperparameters for the training process."""
 
     logger: Any = True
-    enable_checkpointing: Any = True
+    checkpoint_callback: Any = True
     callbacks: Optional[Any] = None
     default_root_dir: Optional[str] = None
     gradient_clip_val: float = 0
     process_position: int = 0
     num_nodes: int = 1
-    num_processes: int = 1
     gpus: Optional[Any] = None
     auto_select_gpus: bool = False
     tpu_cores: Optional[Any] = None
@@ -46,7 +45,7 @@ class TrainerConfig:
     val_check_interval: Any = 1.0
     flush_logs_every_n_steps: int = 100
     log_every_n_steps: int = 50
-    accelerator: Optional[str] = "ddp"
+    accelerator: Optional[str] = None
     sync_batchnorm: bool = False
     precision: Any = 32
     weights_summary: Optional[str] = "full"  # ModelSummary.MODE_DEFAULT
@@ -56,7 +55,6 @@ class TrainerConfig:
     profiler: Optional[Any] = None
     benchmark: bool = False
     deterministic: bool = False
-    reload_dataloaders_every_epoch: bool = False
     auto_lr_find: Any = False
     replace_sampler_ddp: bool = True
     detect_anomaly: bool = False
@@ -72,9 +70,11 @@ class TrainerConfig:
     stochastic_weight_avg: bool = False
     gradient_clip_algorithm: str = "norm"
     max_time: Optional[Any] = None  # can be one of Union[str, timedelta, Dict[str, int], None]
+    reload_dataloaders_every_n_epochs: int = 0
     ipus: Optional[int] = None
     devices: Any = None
-    strategy: Any = "ddp"
+    strategy: Any = None
+    enable_checkpointing: bool = True
     enable_model_summary: bool = True
 
 

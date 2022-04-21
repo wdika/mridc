@@ -21,6 +21,7 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
 import mridc.utils
+from mridc.core.conf.trainer import TrainerConfig
 from mridc.core.connectors.save_restore_connector import SaveRestoreConnector
 from mridc.core.neural_types.comparison import NeuralTypeComparisonResult
 from mridc.core.neural_types.neural_type import NeuralType
@@ -233,7 +234,7 @@ class Typing(ABC):
         mandatory_out_types_list = list(metadata.mandatory_types.items())
 
         # First convert all outputs to list/tuple format to check correct number of outputs
-        if type(out_objects) in (list, tuple):
+        if isinstance(out_objects, (list, tuple)):
             out_container = out_objects  # can be any rank nested structure
         else:
             out_container = [out_objects]
@@ -415,6 +416,12 @@ class Serialization(ABC):
                         accepts_trainer = Serialization._inspect_signature_for_trainer(imported_cls)
 
                         if accepts_trainer:
+                            if trainer is None:
+                                # Create a dummy PL trainer object
+                                cfg_trainer = TrainerConfig(
+                                    gpus=1, accelerator="ddp", num_nodes=1, logger=False, checkpoint_callback=False
+                                )
+                                trainer = Trainer(cfg_trainer)
                             instance = imported_cls(cfg=config, trainer=trainer)  # type: ignore
                         else:
                             instance = imported_cls(cfg=config)  # type: ignore
@@ -435,7 +442,7 @@ class Serialization(ABC):
                     # report saved errors, if any, and raise the current error
                     if prev_error:
                         logging.error(f"{prev_error}")
-                    raise e
+                    raise e from e
 
         if not hasattr(instance, "_cfg"):
             instance._cfg = config
