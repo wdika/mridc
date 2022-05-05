@@ -14,7 +14,7 @@
 **MRIDC is a toolbox for applying AI methods on MR imaging. A collection of tools for data consistency and data quality
 is provided for MRI data analysis. Primarily it focuses on the following tasks:**
 
-### **Reconstruction**: 
+### **Reconstruction**:
 1.[Cascades of Independently Recurrent Inference Machines (CIRIM)](https://iopscience.iop.org/article/10.1088/1361-6560/ac6cc2),
 2.[Compressed Sensing (CS)](https://ieeexplore.ieee.org/document/4472246),
 3.[Convolutional Recurrent Neural Networks (CRNN)](https://ieeexplore.ieee.org/document/8425639),
@@ -33,15 +33,15 @@ is provided for MRI data analysis. Primarily it focuses on the following tasks:*
 16.[XPDNet](https://arxiv.org/abs/2010.07290),
 17.and Zero-Filled reconstruction (ZF).
 
-### **Segmentation**: 
+### **Segmentation**:
 _Coming soon..._
 
-### **Acknowledgements** 
+### **Acknowledgements**
 
-MRIDC is based on the [NeMo](https://github.com/NVIDIA/NeMo) framework, using PyTorch Lightning for feasible 
-high-performance multi-GPU/multi-node mixed-precision training. 
+MRIDC is based on the [NeMo](https://github.com/NVIDIA/NeMo) framework, using PyTorch Lightning for feasible
+high-performance multi-GPU/multi-node mixed-precision training.
 
-For the reconstruction methods: 
+For the reconstruction methods:
 - the implementations of 6 and 14 are thanks to and based on the [fastMRI repo](https://github.com/facebookresearch/fastMRI).
 - The implementations of 7, 9, 10, 11, 13, and 16 are thanks to and based on the [DIRECT repo](https://github.com/NKI-AI/direct).
 
@@ -103,5 +103,5 @@ Please cite MRIDC using the "_Cite this repository_" button or as
 
 The following papers use the MRIDC repo:
 
-[1] [Karkalousos, D. et al. (2021) ‘Assessment of Data Consistency through Cascades of Independently Recurrent 
+[1] [Karkalousos, D. et al. (2021) ‘Assessment of Data Consistency through Cascades of Independently Recurrent
 Inference Machines for fast and robust accelerated MRI reconstruction’](https://iopscience.iop.org/article/10.1088/1361-6560/ac6cc2)
