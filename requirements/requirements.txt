@@ -1,8 +1,6 @@
 defusedxml>=0.7.1
 h5py>=3.6.0
 hydra-core>=1.1.1
-matplotlib>=3.4.3
-mridc~=0.0.1
 numpy>=1.20.3
 omegaconf>=2.1.1
 onnx>=1.10.2
@@ -18,7 +16,5 @@ setuptools>=59.5.0
 torch>=1.8.0
 torchmetrics~=0.6.1
 tqdm>=4.62.3
-types-python-dateutil>=2.8.3
-types-PyYAML>=6.0.1
 wget>=1.20.1
 wrapt>=1.13.3

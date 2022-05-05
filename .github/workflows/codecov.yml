@@ -4,7 +4,7 @@ on:
   - pull_request
 
 jobs:
-  run:
+  build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -22,12 +22,11 @@ jobs:
         pytest --cov=./ --cov-report=xml
     - name: Run Coverage
       run: |
-        coverage run -m pytest tests --ignore=projects
+        coverage run -m pytest --ignore=projects
     - name: Upload Coverage to Codecov
-      env:
-        CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
-      run: |
-       curl -Os https://uploader.codecov.io/latest/linux/codecov
-       find . -iregex "codecov.*"
-       chmod +x codecov
-       ./codecov -t ${CODECOV_TOKEN}
+      uses: codecov/codecov-action@v2
+      with:
+        fail_ci_if_error: true
+        flags: pytests # optional
+        name: codecov-umbrella # optional
+        verbose: true # optional (default = false)
