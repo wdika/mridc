@@ -21,14 +21,12 @@ __all__ = ["JointICNet"]
 
 class JointICNet(BaseMRIReconstructionModel, ABC):
     """
-    Joint Deep Model-Based MR Image and Coil Sensitivity Reconstruction Network (Joint-ICNet) implementation as
-    presented in [1]_.
+    Implementation of the Joint Deep Model-Based MR Image and Coil Sensitivity Reconstruction Network (Joint-ICNet), as
+    presented in [1].
 
     References
     ----------
-    .. [1] Jun, Yohan, et al. “Joint Deep Model-Based MR Image and Coil Sensitivity Reconstruction Network
-    (Joint-ICNet) for Fast MRI.” 2021 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR),
-    IEEE, 2021, pp. 5266–75. DOI.org (Crossref), https://doi.org/10.1109/CVPR46437.2021.00523.
+    .. [1] Jun, Yohan, et al. “Joint Deep Model-Based MR Image and Coil Sensitivity Reconstruction Network (Joint-ICNet) for Fast MRI.” 2021 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), IEEE, 2021, pp. 5266–75. DOI.org (Crossref), https://doi.org/10.1109/CVPR46437.2021.00523.
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
@@ -89,8 +87,39 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
 
         self.accumulate_estimates = False
 
-    def update_C(self, idx, DC_sens, sensitivity_maps, image, y, mask):
-        """Update the coil sensitivity maps."""
+    def update_C(self, idx, DC_sens, sensitivity_maps, image, y, mask) -> torch.Tensor:
+        """
+        Update the coil sensitivity maps.
+
+        .. math::
+            C = (1 - 2 * \lambda_{k}^{C} * ni_{k}) * C_{k}
+
+            C = 2 * \lambda_{k}^{C} * ni_{k} * D_{C}(F^-1(b))
+
+            A(x_{k}) = M * F * (C * x_{k})
+
+            C = 2 * ni_{k} * F^-1(M.T * (M * F * (C * x_{k}) - b)) * x_{k}^*
+
+        Parameters
+        ----------
+        idx: int
+            The current iteration index.
+        DC_sens: torch.Tensor [batch_size, num_coils, num_sens_maps, num_rows, num_cols]
+            The initial coil sensitivity maps.
+        sensitivity_maps: torch.Tensor [batch_size, num_coils, num_sens_maps, num_rows, num_cols]
+            The coil sensitivity maps.
+        image: torch.Tensor [batch_size, num_coils, num_rows, num_cols]
+            The predicted image.
+        y: torch.Tensor [batch_size, num_coils, num_rows, num_cols]
+            The subsampled k-space data.
+        mask: torch.Tensor [batch_size, 1, num_rows, num_cols]
+            The subsampled mask.
+
+        Returns
+        -------
+        sensitivity_maps: torch.Tensor [batch_size, num_coils, num_sens_maps, num_rows, num_cols]
+            The updated coil sensitivity maps.
+        """
         # (1 - 2 * lambda_{k}^{C} * ni_{k}) * C_{k}
         sense_term_1 = (1 - 2 * self.reg_param_C[idx] * self.lr_sens[idx]) * sensitivity_maps
         # 2 * lambda_{k}^{C} * ni_{k} * D_{C}(F^-1(b))
@@ -111,7 +140,36 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
         return sensitivity_maps
 
     def update_X(self, idx, image, sensitivity_maps, y, mask):
-        """Update the image."""
+        """
+        Update the image.
+
+        .. math::
+            x_{k} = (1 - 2 * \lamdba_{{k}_{I}} * mi_{k} - 2 * \lamdba_{{k}_{F}} * mi_{k}) * x_{k}
+
+            x_{k} = 2 * mi_{k} * (\lambda_{{k}_{I}} * D_I(x_{k}) + \lambda_{{k}_{F}} * F^-1(D_F(f)))
+
+            A(x{k} - b) = M * F * (C * x{k}) - b
+
+            x_{k} = 2 * mi_{k} * A^* * (A(x{k} - b))
+
+        Parameters
+        ----------
+        idx: int
+            The current iteration index.
+        image: torch.Tensor [batch_size, num_coils, num_rows, num_cols]
+            The predicted image.
+        sensitivity_maps: torch.Tensor [batch_size, num_coils, num_sens_maps, num_rows, num_cols]
+            The coil sensitivity maps.
+        y: torch.Tensor [batch_size, num_coils, num_rows, num_cols]
+            The subsampled k-space data.
+        mask: torch.Tensor [batch_size, 1, num_rows, num_cols]
+            The subsampled mask.
+
+        Returns
+        -------
+        image: torch.Tensor [batch_size, num_coils, num_rows, num_cols]
+            The updated image.
+        """
         # (1 - 2 * lamdba_{k}_{I} * mi_{k} - 2 * lamdba_{k}_{F} * mi_{k}) * x_{k}
         image_term_1 = (
             1 - 2 * self.reg_param_I[idx] * self.lr_image[idx] - 2 * self.reg_param_F[idx] * self.lr_image[idx]
@@ -150,14 +208,23 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
     ) -> torch.Tensor:
         """
         Forward pass of the network.
-        Args:
-            y: torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2], masked kspace data
-            sensitivity_maps: torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2], coil sensitivity maps
-            mask: torch.Tensor, shape [1, 1, n_x, n_y, 1], sampling mask
-            init_pred: torch.Tensor, shape [batch_size, n_x, n_y, 2], initial guess for pred
-            target: torch.Tensor, shape [batch_size, n_x, n_y, 2], target data
-        Returns:
-             Final estimation of the network.
+
+        Parameters
+        ----------
+        y: Subsampled k-space data.
+            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+        sensitivity_maps: Coil sensitivity maps.
+            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+        mask: Sampling mask.
+            torch.Tensor, shape [1, 1, n_x, n_y, 1]
+        init_pred: Initial prediction.
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        target: Target data to compute the loss.
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+
+        Returns
+        -------
+        pred: list of torch.Tensor, shape [batch_size, n_x, n_y, 2], or  torch.Tensor, shape [batch_size, n_x, n_y, 2]
              If self.accumulate_loss is True, returns a list of all intermediate estimates.
              If False, returns the final estimate.
         """

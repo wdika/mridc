@@ -13,21 +13,23 @@ from mridc.core.neural_types.elements import ElementType, VoidType
 
 
 class NeuralType:
-    """This is the main class which would represent neural type concept.
-    It is used to represent *the types* of inputs and outputs.
-    Args:
-        axes (Optional[Tuple]): a tuple of AxisTypes objects representing the semantics of what varying each axis means
-            You can use a short, string-based form here. For example: ('B', 'C', 'H', 'W') would correspond to an NCHW
-            format frequently used in computer vision. ('B', 'T', 'D') is frequently used for signal processing and
-            means [batch, time, dimension/channel].
-        elements_type (ElementType): an instance of ElementType class representing the semantics of what is stored
-            inside the tensor. For example: logits (LogitsType), log probabilities (LogprobType), etc.
-        optional (bool): By default, this is false. If set to True, it would means that input to the port of this
-            type can be optional.
+    """
+    This is the main class which would represent neural type concept. It is used to represent *the types* of inputs and
+     outputs.
+
+    Parameters
+    ----------
+    axes: a tuple of AxisTypes objects representing the semantics of what varying each axis means. You can use a short,
+     string-based form here. For example: ('B', 'C', 'H', 'W') would correspond to an NCHW format frequently used in
+     computer vision. ('B', 'T', 'D') is frequently used for signal processing and means
+     [batch, time, dimension/channel].
+    elements_type: an instance of ElementType class representing the semantics of what is stored inside the tensor.
+    For example: logits (LogitsType), log probabilities (LogprobType), etc.
+    optional: By default, this is false. If set to True, it would mean that input to the port of this type can be
+    optional.
     """
 
     def __str__(self):
-
         if self.axes is not None:
             return f"axes: {self.axes}; elements_type: {self.elements_type.__class__.__name__}"
         return f"axes: None; elements_type: {self.elements_type.__class__.__name__}"
@@ -136,13 +138,11 @@ class NeuralType:
         Returns:
             0 - if they are exactly the same
             1 - if they are "TRANSPOSE_SAME"
-            2 - if the are "DIM_INCOMPATIBLE"
+            2 - if they are "DIM_INCOMPATIBLE"
             3 - if they are different
         """
-        if axes_a is None and axes_b is None:
-            return 0
         if axes_a is None:
-            return 3
+            return 0 if axes_b is None else 3
         if axes_b is None:
             return 3
         if len(axes_a) != len(axes_b):

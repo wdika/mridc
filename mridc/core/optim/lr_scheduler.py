@@ -23,25 +23,29 @@ from mridc.utils.model_utils import maybe_update_config_version
 
 
 class WarmupPolicy(_LRScheduler):
-    """Adds warmup kwargs and warmup logic to lr policy.
-    All arguments should be passed as kwargs for clarity,
-    Args:
-        warmup_steps: Number of training steps in warmup stage
-        warmup_ratio: Ratio of warmup steps to total steps
-        max_steps: Total number of steps while training or `None` for
-            infinite training
+    """Adds warmup kwargs and warmup logic to lr policy. All arguments should be passed as kwargs for clarity.
+
+    Parameters
+    ----------
+    warmup_steps: Number of training steps in warmup stage.
+    warmup_ratio: Ratio of warmup steps to total steps.
+    max_steps: Total number of steps while training or `None` for infinite training.
+
+    Returns
+    -------
+    lr: Learning rate for current step.
     """
 
     def __init__(self, optimizer, *, warmup_steps=None, warmup_ratio=None, max_steps=None, min_lr=0.0, last_epoch=-1):
         """
-
-        Args:
-            optimizer (): optimizer
-            warmup_steps (): Number of training steps in warmup stage
-            warmup_ratio (): Ratio of warmup steps to total steps
-            max_steps (): Total number of steps while training or `None` for infinite training
-            min_lr (): Minimum learning rate
-            last_epoch (): Last epoch
+        Parameters
+        ----------
+        optimizer: optimizer
+        warmup_steps: Number of training steps in warmup stage
+        warmup_ratio: Ratio of warmup steps to total steps
+        max_steps: Total number of steps while training or `None` for infinite training
+        min_lr: Minimum learning rate
+        last_epoch: Last epoch
         """
         if warmup_steps is not None and warmup_ratio is not None:
             raise AssertionError("Either use particular number of step or ratio")
@@ -91,24 +95,25 @@ class WarmupPolicy(_LRScheduler):
 class SquareRootConstantPolicy(_LRScheduler):
     """Adds warmup kwargs and warmup logic to lr policy. All arguments should be passed as kwargs for clarity.
 
-    Args:
-        warmup_steps: Number of training steps in warmup stage
-        warmup_ratio: Ratio of warmup steps to total steps
-        max_steps: Total number of steps while training or `None` for infinite training
+    Parameters
+    ----------
+    warmup_steps: Number of training steps in warmup stage
+    warmup_ratio: Ratio of warmup steps to total steps
+    max_steps: Total number of steps while training or `None` for infinite training
     """
 
     def __init__(
         self, optimizer, *, constant_steps=None, constant_ratio=None, max_steps=None, min_lr=0.0, last_epoch=-1
     ):
         """
-
-        Args:
-            optimizer (): optimizer
-            constant_steps (): Number of training steps in constant stage
-            constant_ratio (): Ratio of constant steps to total steps
-            max_steps (): Total number of steps while training or `None` for infinite training
-            min_lr (): Minimum learning rate
-            last_epoch (): Last epoch
+        Parameters
+        ----------
+        optimizer: optimizer
+        constant_steps: Number of training steps in constant stage
+        constant_ratio: Ratio of constant steps to total steps
+        max_steps: Total number of steps while training or `None` for infinite training
+        min_lr: Minimum learning rate
+        last_epoch: Last epoch
         """
         if constant_steps is not None and constant_ratio is not None:
             raise AssertionError("Either use particular number of step or ratio")
@@ -116,8 +121,7 @@ class SquareRootConstantPolicy(_LRScheduler):
         if constant_ratio is not None and max_steps is None:
             raise AssertionError("If there is a ratio, there should be a total steps")
 
-        # It is necessary to assign all attributes *before* __init__,
-        # as class is wrapped by an inner class.
+        # It is necessary to assign all attributes *before* __init__, as class is wrapped by an inner class.
         self.max_steps = max_steps
         if constant_steps is not None:
             self.constant_steps = constant_steps
@@ -153,15 +157,22 @@ class SquareRootConstantPolicy(_LRScheduler):
 
 
 class WarmupHoldPolicy(WarmupPolicy):
-    """Variant of WarmupPolicy which maintains high learning rate for a defined number of steps.
-    All arguments should be passed as kwargs for clarity,
-    Args:
-        warmup_steps: Number of training steps in warmup stage
-        warmup_ratio: Ratio of warmup steps to total steps
-        hold_steps: Number of training steps to hold the learning rate after warm up
-        hold_ratio: Ratio of hold steps to total steps
-        max_steps: Total number of steps while training or `None` for
-            infinite training
+    """
+    Variant of WarmupPolicy which maintains high learning rate for a defined number of steps. All arguments should be
+    passed as kwargs for clarity,
+
+    Parameters
+    ----------
+    warmup_steps: Number of training steps in warmup stage
+    warmup_ratio: Ratio of warmup steps to total steps
+    hold_steps: Number of training steps to hold the learning rate after warm up
+    hold_ratio: Ratio of hold steps to total steps
+    max_steps: Total number of steps while training or `None` for infinite training
+
+    Results
+    -------
+    Learning rate is linearly increased from 0 to 1 over warmup steps, then linearly decreased from 1 to 0 over hold
+    steps.
     """
 
     def __init__(
@@ -176,6 +187,19 @@ class WarmupHoldPolicy(WarmupPolicy):
         min_lr=0.0,
         last_epoch=-1,
     ):
+        """
+
+        Parameters
+        ----------
+        optimizer: optimizer
+        warmup_steps: Number of training steps in warmup stage.
+        warmup_ratio: Ratio of warmup steps to total steps.
+        hold_steps: Number of training steps to hold the learning rate after warm up.
+        hold_ratio: Ratio of hold steps to total steps.
+        max_steps: Total number of steps while training or `None` for infinite training.
+        min_lr: Minimum learning rate.
+        last_epoch: Last epoch.
+        """
         if hold_steps is not None and hold_ratio is not None:
             raise AssertionError("Either use particular number of step or ratio")
         if hold_ratio is not None and max_steps is None:
@@ -233,16 +257,17 @@ class WarmupHoldPolicy(WarmupPolicy):
 
 
 class WarmupAnnealHoldPolicy(_LRScheduler):
-    """Adds warmup kwargs and warmup logic to lr policy.
-    All arguments should be passed as kwargs for clarity,
-    Args:
-        warmup_steps: Number of training steps in warmup stage
-        warmup_ratio: Ratio of warmup steps to total steps
-        max_steps: Total number of steps while training or `None` for
-            infinite training
-        min_lr: Minimum lr to hold the learning rate after decay at.
-        constant_steps: Number of steps to keep lr constant at.
-        constant_ratio: Ratio of steps to keep lr constant.
+    """
+    Adds warmup kwargs and warmup logic to lr policy. All arguments should be passed as kwargs for clarity.
+
+    Parameters
+    ----------
+    warmup_steps: Number of training steps in warmup stage
+    warmup_ratio: Ratio of warmup steps to total steps
+    max_steps: Total number of steps while training or `None` for infinite training
+    min_lr: Minimum lr to hold the learning rate after decay at.
+    constant_steps: Number of steps to keep lr constant at.
+    constant_ratio: Ratio of steps to keep lr constant.
     """
 
     def __init__(
@@ -257,6 +282,18 @@ class WarmupAnnealHoldPolicy(_LRScheduler):
         min_lr=0.0,
         last_epoch=-1,
     ):
+        """
+        Parameters
+        ----------
+        optimizer: Optimizer
+        warmup_steps: Number of training steps in warmup stage.
+        warmup_ratio: Ratio of warmup steps to total steps.
+        constant_steps: Number of steps to keep lr constant at.
+        constant_ratio: Ratio of steps to keep lr constant.
+        max_steps: Total number of steps while training or `None` for infinite training.
+        min_lr: Minimum lr to hold the learning rate after decay at.
+        last_epoch: The index of last epoch.
+        """
         if warmup_steps is not None and warmup_ratio is not None:
             raise AssertionError("Either use particular number of step or ratio")
         if constant_steps is not None and constant_ratio is not None:
@@ -264,8 +301,7 @@ class WarmupAnnealHoldPolicy(_LRScheduler):
         if warmup_ratio is not None and max_steps is None:
             raise AssertionError("If there is a ratio, there should be a total steps")
 
-        # It is necessary to assign all attributes *before* __init__,
-        # as class is wrapped by an inner class.
+        # It is necessary to assign all attributes *before* __init__, as class is wrapped by an inner class.
         self.max_steps = max_steps
 
         if warmup_steps is not None:
@@ -618,12 +654,14 @@ class PolynomialHoldDecayAnnealing(WarmupHoldPolicy):
 
 def register_scheduler(name: str, scheduler: _LRScheduler, scheduler_params: SchedulerParams):
     """
-    Checks if the scheduler name exists in the registry, and if it doesnt, adds it.
+    Checks if the scheduler name exists in the registry, and if it doesn't, adds it.
     This allows custom schedulers to be added and called by name during instantiation.
-    Args:
-        name: Name of the optimizer. Will be used as key to retrieve the optimizer.
-        scheduler: Scheduler class (inherits from _LRScheduler)
-        scheduler_params: The parameters as a dataclass of the scheduler
+
+    Parameters
+    ----------
+    name: Name of the optimizer. Will be used as key to retrieve the optimizer.
+    scheduler: Scheduler class (inherits from _LRScheduler)
+    scheduler_params: The parameters as a dataclass of the scheduler
     """
     if name in AVAILABLE_SCHEDULERS:
         raise ValueError(f"Cannot override pre-existing schedulers. Conflicting scheduler name = {name}")
@@ -637,11 +675,15 @@ def register_scheduler(name: str, scheduler: _LRScheduler, scheduler_params: Sch
 def get_scheduler(name: str, **kwargs: Optional[Dict[str, Any]]) -> _LRScheduler:
     """
     Convenience method to obtain an _LRScheduler class and partially instantiate it with optimizer kwargs.
-    Args:
-        name: Name of the scheduler in the registry.
-        kwargs: Optional kwargs of the scheduler used during instantiation.
-    Returns:
-        a partially instantiated _LRScheduler
+
+    Parameters
+    ----------
+    name: Name of the scheduler in the registry.
+    kwargs: Optional kwargs of the scheduler used during instantiation.
+
+    Returns
+    -------
+    A partially instantiated _LRScheduler
     """
     if name not in AVAILABLE_SCHEDULERS:
         raise ValueError(
@@ -658,8 +700,11 @@ def prepare_lr_scheduler(
     train_dataloader: Optional[dataloader.DataLoader] = None,
 ) -> Optional[Dict[str, Any]]:
     """
-    Constructs an LR Scheduler (optionally) for a given optimizer, based on a config with the following schema
-    optim:
+    Constructs an LR Scheduler (optionally) for a given optimizer, based on a config with the following schema.
+
+    Parameters
+    ----------
+    optimizer: The optimizer to use for the scheduler.
       name: <name of optimizer>
       lr: <maximal learning rate>
       # <additional optimizer arguments>
@@ -669,8 +714,7 @@ def prepare_lr_scheduler(
         params:  # optional override parameters for the optimizer config
           betas: [0.8, 0.5]
           weight_decay: 0.001
-      # scheduler setup
-      sched:
+    scheduler_config: The scheduler config.
         name: <name of scheduler>
         iters_per_batch: null # computed at runtime; mandatory to have
         max_steps: null # computed at runtime or explicitly set here; mandatory to have
@@ -686,14 +730,13 @@ def prepare_lr_scheduler(
             warmup_ratio: null
             min_lr: 0.0
             last_epoch: -1
-    Args:
-        optimizer: An instantiated Optimizer.
-        scheduler_config: A dictionary / config dict which follows the above schema.
-        train_dataloader: Optional requirement, must be passed if "iters_per_batch" is defined
-            instead of "max_steps". Used to compute effective "max_steps".
-    Returns:
-        A dictionary containing the LR Scheduler implementation if the config was successfully parsed
-        along with other parameters required by Pytorch Lightning, otherwise None.
+    train_dataloader: Optional requirement, must be passed if "iters_per_batch" is defined instead of "max_steps".
+    Used to compute effective "max_steps".
+
+    Returns
+    -------
+    A dictionary containing the LR Scheduler implementation if the config was successfully parsed along with other
+    parameters required by Pytorch Lightning, otherwise None.
     """
     if scheduler_config is not None:
         scheduler_config = maybe_update_config_version(scheduler_config)
@@ -874,7 +917,7 @@ def prepare_lr_scheduler(
 
     # Wrap the schedule in PTL arguments to perform stepwise computation
     # Rather than epoch level computation
-    reduce_lr_on_plateau = bool(isinstance(schedule, optim.lr_scheduler.ReduceLROnPlateau))
+    reduce_lr_on_plateau = isinstance(schedule, optim.lr_scheduler.ReduceLROnPlateau)
 
     return {
         "scheduler": schedule,

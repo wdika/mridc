@@ -21,14 +21,12 @@ __all__ = ["UNet"]
 
 class UNet(BaseMRIReconstructionModel, ABC):
     """
-    UNet model implementation as presented in [1]_.
+    Implementation of the UNet, as presented in [1].
 
     References
     ----------
 
-    .. [1] O. Ronneberger, P. Fischer, and Thomas Brox. U-net: Convolutional networks for biomedical image
-    segmentation. In International Conference on Medical image computing and computer-assisted intervention,
-    pages 234–241. Springer, 2015.
+    .. [1] O. Ronneberger, P. Fischer, and Thomas Brox. U-net: Convolutional networks for biomedical image segmentation. In International Conference on Medical image computing and computer-assisted intervention, pages 234–241. Springer, 2015.
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
@@ -78,14 +76,25 @@ class UNet(BaseMRIReconstructionModel, ABC):
     ) -> torch.Tensor:
         """
         Forward pass of the network.
-        Args:
-            y: torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2], masked kspace data
-            sensitivity_maps: torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2], coil sensitivity maps
-            mask: torch.Tensor, shape [1, 1, n_x, n_y, 1], sampling mask
-            init_pred: torch.Tensor, shape [batch_size, n_x, n_y, 2], initial guess for pred
-            target: torch.Tensor, shape [batch_size, n_x, n_y, 2], target data
-        Returns:
-             Final prediction of the network.
+
+        Parameters
+        ----------
+        y: Subsampled k-space data.
+            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+        sensitivity_maps: Coil sensitivity maps.
+            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+        mask: Sampling mask.
+            torch.Tensor, shape [1, 1, n_x, n_y, 1]
+        init_pred: Initial prediction.
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        target: Target data to compute the loss.
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+
+        Returns
+        -------
+        pred: list of torch.Tensor, shape [batch_size, n_x, n_y, 2], or  torch.Tensor, shape [batch_size, n_x, n_y, 2]
+             If self.accumulate_loss is True, returns a list of all intermediate estimates.
+             If False, returns the final estimate.
         """
         sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         eta = torch.view_as_complex(

@@ -18,9 +18,11 @@ from mridc.core.neural_types.neural_type import NeuralType
 class AggregatorLoss(Loss):
     """
     Sums several losses into one.
-    Args:
-        num_inputs: number of input losses
-        weights: a list of coefficient for merging losses
+
+    Parameters
+    ----------
+    num_inputs: number of input losses
+    weights: a list of coefficient for merging losses
     """
 
     @property

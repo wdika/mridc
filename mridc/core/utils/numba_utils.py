@@ -55,8 +55,10 @@ def set_numba_compat_strictness(strict: bool):
     If value is true, numba cuda compatibility matrix must be satisfied.
     If value is false, only cuda availability is checked, not compatibility.
     Numba Cuda may still compile and run without issues in such a case, or it may fail.
-    Args:
-        strict: bool value, whether to enforce strict compatibility checks or relax them.
+
+    Parameters
+    ----------
+    strict: Whether to enforce strict compatibility checks or relax them.
     """
     global STRICT_NUMBA_COMPAT_CHECK
     STRICT_NUMBA_COMPAT_CHECK = strict
@@ -74,10 +76,14 @@ def with_numba_compat_strictness(strict: bool):
 def numba_cpu_is_supported(min_version: str) -> bool:
     """
     Tests if an appropriate version of numba is installed.
-    Args:
-        min_version: The minimum version of numba that is required.
-    Returns:
-        bool, whether numba CPU supported with this current installation or not.
+
+    Parameters
+    ----------
+    min_version: The minimum version of numba that is required.
+
+    Returns
+    -------
+    bool, whether numba CPU supported with this current installation or not.
     """
     module_available, _ = check_lib_version("numba", checked_version=min_version, operator=operator.ge)
 
@@ -92,10 +98,13 @@ def numba_cuda_is_supported(min_version: str) -> bool:
     Tests if an appropriate version of numba is installed, and if it is,
     if cuda is supported properly within it.
 
-    Args:
-        min_version: The minimum version of numba that is required.
-    Returns:
-        bool, whether cuda is supported with this current installation or not.
+    Parameters
+    ----------
+    min_version: The minimum version of numba that is required.
+
+    Returns
+    -------
+    Whether cuda is supported with this current installation or not.
     """
     module_available = numba_cpu_is_supported(min_version)
 
@@ -127,8 +136,9 @@ def skip_numba_cuda_test_if_unsupported(min_version: str):
     """
     Helper method to skip pytest test case if numba cuda is not supported.
 
-    Args:
-        min_version: The minimum version of numba that is required.
+    Parameters
+    ----------
+    min_version: The minimum version of numba that is required.
     """
     numba_cuda_support = numba_cuda_is_supported(min_version)
     if not numba_cuda_support:

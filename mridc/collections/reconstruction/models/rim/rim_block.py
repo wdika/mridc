@@ -33,21 +33,24 @@ class RIMBlock(torch.nn.Module):
         fft_type: str = "orthogonal",
     ):
         """
-        Args:
-            recurrent_layer: Type of recurrent layer.
-            conv_filters: Number of filters in the convolutional layers.
-            conv_kernels: Kernel size of the convolutional layers.
-            conv_dilations: Dilation of the convolutional layers.
-            conv_bias: Bias of the convolutional layers.
-            recurrent_filters: Number of filters in the recurrent layers.
-            recurrent_kernels: Kernel size of the recurrent layers.
-            recurrent_dilations: Dilation of the recurrent layers.
-            recurrent_bias: Bias of the recurrent layers.
-            depth: Number of layers in the block.
-            time_steps: Number of time steps in the block.
-            conv_dim: Dimension of the convolutional layers.
-            no_dc: If True, the DC component is removed from the input.
-            fft_type: Type of FFT.
+        Initialize the RIMBlock.
+
+        Parameters
+        ----------
+        recurrent_layer: Type of recurrent layer.
+        conv_filters: Number of filters in the convolutional layers.
+        conv_kernels: Kernel size of the convolutional layers.
+        conv_dilations: Dilation of the convolutional layers.
+        conv_bias: Bias of the convolutional layers.
+        recurrent_filters: Number of filters in the recurrent layers.
+        recurrent_kernels: Kernel size of the recurrent layers.
+        recurrent_dilations: Dilation of the recurrent layers.
+        recurrent_bias: Bias of the recurrent layers.
+        depth: Number of layers in the block.
+        time_steps: Number of time steps in the block.
+        conv_dim: Dimension of the convolutional layers.
+        no_dc: If True, the DC component is removed from the input.
+        fft_type: Type of FFT.
         """
         super(RIMBlock, self).__init__()
 
@@ -130,19 +133,20 @@ class RIMBlock(torch.nn.Module):
         """
         Forward pass of the RIMBlock.
 
-        Args:
-            pred: torch.Tensor
-            masked_kspace: torch.Tensor
-            sense: torch.Tensor
-            mask: torch.Tensor
-            eta: torch.Tensor
-            hx: torch.Tensor
-            sigma: float
-            keep_eta: bool
+        Parameters
+        ----------
+        pred: Predicted k-space.
+        masked_kspace: Subsampled k-space.
+        sense: Coil sensitivity maps.
+        mask: Sample mask.
+        eta: Initial guess for the eta.
+        hx: Initial guess for the hidden state.
+        sigma: Noise level.
+        keep_eta: Whether to keep the eta.
 
         Returns
         -------
-            Reconstructed image and hidden states.
+        Reconstructed image and hidden states.
         """
         if hx is None:
             hx = [

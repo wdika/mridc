@@ -13,17 +13,27 @@ def add_optimizer_args(
     default_lr: float = None,
     default_opt_args: Optional[Union[Dict[str, Any], List[str]]] = None,
 ) -> ArgumentParser:
-    """Extends existing argparse with support for optimizers.
-    # Example of adding optimizer args to command line :
-    python train_script.py ... --optimizer "novograd" --lr 0.01 \
-        --opt_args betas=0.95,0.5 weight_decay=0.001
-    Args:
-        parent_parser (ArgumentParser): Custom CLI parser that will be extended.
-        optimizer (str): Default optimizer required.
-        default_lr (float): Default learning rate that should be overridden during training.
-        default_opt_args (list(str)): List of overriding arguments for the instantiated optimizer.
-    Returns:
-        ArgumentParser: Parser extended by Optimizers arguments.
+    """
+    Extends existing argparse with default optimizer args.
+
+    # Example of adding optimizer args to command line:
+    python train_script.py ... --optimizer "novograd" --lr 0.01 --opt_args betas=0.95,0.5 weight_decay=0.001
+
+    Parameters
+    ----------
+    parent_parser: Custom CLI parser that will be extended.
+        ArgumentParser
+    optimizer: Default optimizer required.
+        str, default "adam"
+    default_lr: Default learning rate.
+        float, default None
+    default_opt_args: Default optimizer arguments.
+        Optional[Union[Dict[str, Any], List[str]]], default None
+
+    Returns
+    -------
+    Parser extended by Optimizers arguments.
+        ArgumentParser
     """
     if default_opt_args is None:
         default_opt_args = []
@@ -45,11 +55,18 @@ def add_optimizer_args(
 
 
 def add_scheduler_args(parent_parser: ArgumentParser) -> ArgumentParser:
-    """Extends existing argparse with default LR scheduler args.
-    Args:
-        parent_parser (ArgumentParser): Custom CLI parser that will be extended.
-    Returns:
-        ArgumentParser: Parser extended by LR Scheduler arguments.
+    """
+    Extends existing argparse with default scheduler args.
+
+    Parameters
+    ----------
+    parent_parser: Custom CLI parser that will be extended.
+        ArgumentParser
+
+    Returns
+    -------
+    Parser extended by Schedulers arguments.
+        ArgumentParser
     """
     parser = ArgumentParser(parents=[parent_parser], add_help=False, conflict_handler="resolve")
     parser.add_argument("--warmup_steps", type=int, required=False, default=None, help="Number of warmup steps")
@@ -76,11 +93,18 @@ def add_scheduler_args(parent_parser: ArgumentParser) -> ArgumentParser:
 
 
 def add_recon_args(parent_parser: ArgumentParser) -> ArgumentParser:
-    """Extends existing argparse with default recon collection args.
-    Args:
-        parent_parser (ArgumentParser): Custom CLI parser that will be extended.
-    Returns:
-        ArgumentParser: Parser extended by MRIDC recon Collection arguments.
+    """
+    Extends existing argparse with default reconstruction args.
+
+    Parameters
+    ----------
+    parent_parser: Custom CLI parser that will be extended.
+        ArgumentParser
+
+    Returns
+    -------
+    Parser extended by Reconstruction arguments.
+        ArgumentParser
     """
     parser = ArgumentParser(parents=[parent_parser], add_help=False, conflict_handler="resolve")
     parser.add_argument(

@@ -26,27 +26,27 @@ class Conv2dGRU(nn.Module):
         dense_connect: int = 0,
         replication_padding: bool = True,
     ):
-        """Inits Conv2dGRU.
+        """
+        Inits Conv2dGRU.
+
         Parameters
         ----------
-        in_channels: int
-            Number of input channels.
-        hidden_channels: int
-            Number of hidden channels.
-        out_channels: Optional[int]
-            Number of output channels. If None, same as in_channels. Default: None.
-        num_layers: int
-            Number of layers. Default: 2.
-        gru_kernel_size: int
-            Size of the GRU kernel. Default: 1.
-        orthogonal_initialization: bool
-            Orthogonal initialization is used if set to True. Default: True.
-        instance_norm: bool
-            Instance norm is used if set to True. Default: False.
-        dense_connect: int
-            Number of dense connections.
-        replication_padding: bool
-            If set to true replication padding is applied.
+        in_channels: Number of input channels.
+            int
+        hidden_channels: Number of hidden channels.
+            int
+        out_channels: Number of output channels. If None, same as in_channels.
+            int (optional), Default: None.
+        num_layers: Number of layers.
+            int, Default: 2.
+        gru_kernel_size: Size of the GRU kernel.
+            int, Default: 1.
+        orthogonal_initialization: Orthogonal initialization is used if set to True.
+            bool, Default: True.
+        instance_norm: Instance norm is used if set to True.
+            bool, Default: False.
+        dense_connect: Number of dense connections.
+        replication_padding: If set to true replication padding is applied.
         """
         super().__init__()
 
@@ -114,17 +114,17 @@ class Conv2dGRU(nn.Module):
         cell_input: torch.Tensor,
         previous_state: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Computes Conv2dGRU forward pass given tensors `cell_input` and `previous_state`.
+        """
+        Computes Conv2dGRU forward pass given tensors `cell_input` and `previous_state`.
+
         Parameters
         ----------
-        cell_input: torch.Tensor
-            Reconstruction input
-        previous_state: torch.Tensor
-            Tensor of previous states.
+        cell_input: Reconstruction input
+        previous_state: Tensor of previous states.
+
         Returns
         -------
-        out, new_states: (torch.Tensor, torch.Tensor)
-            Output and new states.
+        Output and new states.
         """
         new_states: List[torch.Tensor] = []
         conv_skip: List[torch.Tensor] = []

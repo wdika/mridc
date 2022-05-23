@@ -16,15 +16,16 @@ class ConcatDataset(pt_data.IterableDataset, ABC):
     """
     A dataset that accepts as argument multiple datasets and then samples from them based on the specified
     sampling technique.
-    Args:
-        datasets (list): A list of datasets to sample from.
-        shuffle (bool): Whether to shuffle individual datasets. Only works with non-iterable datasets.
-            Defaults to True.
-        sampling_technique (str): Sampling technique to choose which dataset to draw a sample from.
-            Defaults to 'random'. Currently supports 'random' and 'round-robin'.
-        sampling_probabilities (list): Probability values for sampling. Only used when sampling_technique = 'random'.
-        global_rank (int): Worker rank, used for partitioning map style datasets. Defaults to 0.
-        world_size (int): Total number of processes, used for partitioning map style datasets. Defaults to 1.
+
+    Parameters
+    ----------
+    datasets: A list of datasets to sample from.
+    shuffle: Whether to shuffle individual datasets. Only works with non-iterable datasets. Defaults to True.
+    sampling_technique: Sampling technique to choose which dataset to draw a sample from. Defaults to 'random'.
+    Currently supports 'random' and 'round-robin'.
+    sampling_probabilities: Probability values for sampling. Only used when sampling_technique = 'random'.
+    global_rank: Worker rank, used for partitioning map style datasets. Defaults to 0.
+    world_size: Total number of processes, used for partitioning map style datasets. Defaults to 1.
     """
 
     def __init__(

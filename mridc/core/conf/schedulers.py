@@ -158,11 +158,13 @@ class CyclicLRParams(SchedulerParams):
 
 def register_scheduler_params(name: str, scheduler_params: SchedulerParams):
     """
-    Checks if the schduler config name exists in the registry, and if it doesnt, adds it.
+    Checks if the scheduler config name exists in the registry, and if it doesn't, adds it.
     This allows custom schedulers to be added and called by name during instantiation.
-    Args:
-        name: Name of the optimizer. Will be used as key to retrieve the optimizer.
-        scheduler_params: SchedulerParams class
+
+    Parameters
+    ----------
+    name: Name of the optimizer. Will be used as key to retrieve the optimizer.
+    scheduler_params: SchedulerParams class
     """
     if name in AVAILABLE_SCHEDULER_PARAMS:
         raise ValueError(f"Cannot override pre-existing optimizers. Conflicting optimizer name = {name}")
@@ -173,12 +175,15 @@ def register_scheduler_params(name: str, scheduler_params: SchedulerParams):
 def get_scheduler_config(name: str, **kwargs: Optional[Dict[str, Any]]) -> partial:
     """
     Convenience method to obtain a SchedulerParams class and partially instantiate it with optimizer kwargs.
-    Args:
-        name: Name of the SchedulerParams in the registry.
-        kwargs: Optional kwargs of the optimizer used during instantiation.
-    Returns:
-        object:
-        a partially instantiated SchedulerParams
+
+    Parameters
+    ----------
+    name: Name of the SchedulerParams in the registry.
+    kwargs: Optional kwargs of the optimizer used during instantiation.
+
+    Returns
+    -------
+    A partially instantiated SchedulerParams.
     """
     if name not in AVAILABLE_SCHEDULER_PARAMS:
         raise ValueError(

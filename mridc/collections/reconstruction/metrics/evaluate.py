@@ -63,11 +63,12 @@ class Metrics:
 
     def __init__(self, metric_funcs, output_path, method):
         """
-        Args:
-            metric_funcs (dict): A dict where the keys are metric names and the
-                values are Python functions for evaluating that metric.
-            output_path:
-            method:
+        Parameters
+        ----------
+        metric_funcs (dict): A dict where the keys are metric names and the values are Python functions for evaluating
+        that metric.
+        output_path: path to the output directory
+        method: reconstruction method
         """
         self.metrics_scores = {metric: Statistics() for metric in metric_funcs}
         self.output_path = output_path
@@ -77,41 +78,28 @@ class Metrics:
         """
         Pushes a new batch of metrics to the running statistics.
 
-        Args:
-            target: target image
-            recons: reconstructed image
+        Parameters
+        ----------
+        target: target image
+        recons: reconstructed image
 
-        Returns:
-            dict: A dict where the keys are metric names and the values are
+        Returns
+        -------
+        dict: A dict where the keys are metric names and the values are
         """
         for metric, func in METRIC_FUNCS.items():
             self.metrics_scores[metric].push(func(target, recons))
 
     def means(self):
-        """
-        Mean of the means of each metric.
-
-        Returns:
-            dict: A dict where the keys are metric names and the values are
-        """
+        """Mean of the means of each metric."""
         return {metric: stat.mean() for metric, stat in self.metrics_scores.items()}
 
     def stddevs(self):
-        """
-        Standard deviation of the means of each metric.
-
-        Returns:
-            dict: A dict where the keys are metric names and the values are
-        """
+        """Standard deviation of the means of each metric."""
         return {metric: stat.stddev() for metric, stat in self.metrics_scores.items()}
 
     def __repr__(self):
-        """
-        Representation of the metrics.
-
-        Returns:
-            str: A string representation of the metrics.
-        """
+        """Representation of the metrics."""
         means = self.means()
         stddevs = self.stddevs()
         metric_names = sorted(list(means))
@@ -136,8 +124,23 @@ def evaluate(
     slice_end,
 ):
     """
-    Evaluate the reconstruction.
-    TODO: Refine this function.
+    Evaluates the reconstructions.
+
+    Parameters
+    ----------
+    arguments: The CLI arguments.
+    reconstruction_key: The key of the reconstruction to evaluate.
+    mask_background: The background mask.
+    output_path: The output path.
+    method: The reconstruction method.
+    acc: The acceleration factor.
+    no_params: The number of parameters.
+    slice_start: The start slice. (optional)
+    slice_end: The end slice. (optional)
+
+    Returns
+    -------
+    dict: A dict where the keys are metric names and the values are the mean of the metric.
     """
     _metrics = Metrics(METRIC_FUNCS, output_path, method) if arguments.type == "mean_std" else {}
 

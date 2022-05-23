@@ -14,8 +14,7 @@ __all__ = ["NamedTimer"]
 class NamedTimer:
     """
     A timer class that supports multiple named timers.
-    A named timer can be used multiple times, in which case the average
-    dt will be returned.
+    A named timer can be used multiple times, in which case the average dt will be returned.
     A named timer cannot be started if it is already currently running.
     Use case: measuring execution of multiple code blocks.
     """
@@ -24,11 +23,12 @@ class NamedTimer:
 
     def __init__(self, reduction="mean", sync_cuda=False, buffer_size=-1):
         """
-        Args:
-            reduction (str): reduction over multiple timings of the same timer
-                             (none - returns the list instead of a scalar)
-            sync_cuda (bool): if True torch.cuda.synchronize() is called for start/stop
-            buffer_size (int): if positive, limits the number of stored measures per name
+
+        Parameters
+        ----------
+        reduction: Reduction over multiple timings of the same timer (none - returns the list instead of a scalar).
+        sync_cuda: If True torch.cuda.synchronize() is called for start/stop
+        buffer_size: If positive, limits the number of stored measures per name
         """
         if reduction not in self._REDUCTION_TYPE:
             raise ValueError(f"Unknown reduction={reduction} please use one of {self._REDUCTION_TYPE}")
@@ -44,10 +44,12 @@ class NamedTimer:
 
     @property
     def buffer_size(self):
+        """Returns the buffer size of the timer."""
         return self._buffer_size
 
     @property
     def _reduction_fn(self):
+        """Returns the reduction function for the timer."""
         if self._reduction == "none":
 
             def fn(x):
@@ -61,8 +63,10 @@ class NamedTimer:
     def reset(self, name=None):
         """
         Resents all / specific timer
-        Args:
-            name (str): timer name to reset (if None all timers are reset)
+
+        Parameters
+        ----------
+        name: Timer name to reset (if None all timers are reset)
         """
         if name is None:
             self.timers = {}
@@ -72,8 +76,10 @@ class NamedTimer:
     def start(self, name=""):
         """
         Starts measuring a named timer.
-        Args:
-            name (str): timer name to start
+
+        Parameters
+        ----------
+        name: timer name to start
         """
         timer_data = self.timers.get(name, {})
 
@@ -91,8 +97,10 @@ class NamedTimer:
     def stop(self, name=""):
         """
         Stops measuring a named timer.
-        Args:
-            name (str): timer name to stop
+
+        Parameters
+        ----------
+        name: timer name to stop
         """
         timer_data = self.timers.get(name)
         if (timer_data is None) or ("start" not in timer_data):
@@ -121,8 +129,10 @@ class NamedTimer:
     def get(self, name=""):
         """
         Returns the value of a named timer
-        Args:
-            name (str): timer name to return
+
+        Parameters
+        ----------
+        name: timer name to return
         """
         dt_list = self.timers[name].get("dt", [])
 

@@ -9,12 +9,32 @@ from mridc.utils import logging
 
 
 def experimental(cls):
-    """Decorator which indicates that module is experimental.
-    Use it to mark experimental or research modules.
+    """
+    Decorator to mark a class as experimental.
+
+    Parameters
+    ----------
+    cls: The class to be decorated.
+        class
+
+    Returns
+    -------
+    The decorated class.
     """
 
     def wrapped(x):
-        """Wrapper function."""
+        """
+        Wrapper function.
+
+        Parameters
+        ----------
+        x: The class to be decorated.
+            class
+
+        Returns
+        -------
+        The decorated class with the experimental flag set.
+        """
         logging.warning(
             f"Module {x} is experimental, not ready for production and is not fully supported. Use at your own risk."
         )

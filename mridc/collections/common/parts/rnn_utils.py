@@ -10,12 +10,13 @@ def rnn_weights_init(module, std_init_range=0.02, xavier=True):
     """
     # TODO: check if this is the correct way to initialize RNN weights
     Initialize different weights in Transformer model.
-    Args:
-        module: torch.nn.Module to be initialized
-        std_init_range: standard deviation of normal initializer
-        xavier: if True, xavier initializer will be used in Linear layers
-            as was proposed in AIAYN paper, otherwise normal initializer
-            will be used (like in BERT paper)
+
+    Parameters
+    ----------
+    module: torch.nn.Module to be initialized
+    std_init_range: standard deviation of normal initializer
+    xavier: if True, xavier initializer will be used in Linear layers as was proposed in AIAYN paper, otherwise normal
+    initializer will be used (like in BERT paper)
     """
     if isinstance(module, nn.Linear):
         if xavier:

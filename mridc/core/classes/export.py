@@ -58,22 +58,18 @@ class Exportable(ABC):
 
         Parameters
         ----------
-        output : str
-        input_example : dict
-        verbose : bool
-        export_params : bool
-        do_constant_folding : bool
-        onnx_opset_version : int
-        try_script : bool
-        training : TrainingMode
-        check_trace : bool
-        use_dynamic_axes : bool
-        dynamic_axes : dict
-        check_tolerance : float
-
-        Returns
-        -------
-            None
+        output: The output file path.
+        input_example: A dictionary of input names and values.
+        verbose: If True, print out the export process.
+        export_params: If True, export the parameters of the module.
+        do_constant_folding: If True, do constant folding.
+        onnx_opset_version: The ONNX opset version to use.
+        try_script: If True, try to export as TorchScript.
+        training: Training mode for the export.
+        check_trace: If True, check the trace of the exported model.
+        use_dynamic_axes: If True, use dynamic axes for the export.
+        dynamic_axes: A dictionary of input names and dynamic axes.
+        check_tolerance: The tolerance for the check_trace.
         """
         my_args = locals().copy()
         my_args.pop("self")

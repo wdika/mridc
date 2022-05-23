@@ -13,10 +13,11 @@ from mridc.utils.env_var_parsing import get_envbool
 
 def check_color_support():
     """
-    Returns True if the terminal supports color, False otherwise.
 
-    Returns:
-        bool: True if the terminal supports color, False otherwise.
+    Returns
+    -------
+    True if the terminal supports color, False otherwise.
+        bool
     """
     # Colors can be forced with an env variable
     return bool(not sys.platform.lower().startswith("win") and get_envbool(MRIDC_ENV_VARNAME_ENABLE_COLORING, False))
@@ -24,9 +25,18 @@ def check_color_support():
 
 def to_unicode(value):
     """
-    Converts a string argument to a unicode string.
-    If the argument is already a unicode string or None, it is returned
-    unchanged.  Otherwise it must be a byte string and is decoded as utf8.
+    Converts a string to unicode. If the string is already unicode, it is returned as is. If it is a byte string, it is
+    decoded using utf-8.
+
+    Parameters
+    ----------
+    value: The string to convert.
+        str
+
+    Returns
+    -------
+    The converted string.
+        str
     """
     try:
         if isinstance(value, (str, type(None))):

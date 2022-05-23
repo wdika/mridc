@@ -22,13 +22,18 @@ def deprecated(wrapped=None, version=None, explanation=None):
     This is a decorator which can be used to mark functions as deprecated. It will result in a warning being emitted
     when the function is used.
 
-    Args:
-        wrapped (): The function to be decorated.
-        version (str): The version in which the function will be marked as deprecated.
-        explanation (str): The explanation of the deprecation.
+    Parameters
+    ----------
+    wrapped: The function to be decorated.
+        function
+    version: The version of the package where the function was deprecated.
+        str
+    explanation: The explanation of the deprecation.
+        str
 
-    Returns:
-        The decorated function.
+    Returns
+    -------
+    The decorated function.
     """
     if wrapped is None:
         return functools.partial(deprecated, version=version, explanation=explanation)
@@ -36,16 +41,18 @@ def deprecated(wrapped=None, version=None, explanation=None):
     @wrapt.decorator
     def wrapper(_wrapped, args, kwargs):
         """
-        Method prints the adequate warning (only once per function) when required and calls the function func,
-        passing the original arguments, i.e. version and explanation.
+        Prints the adequate warning (only once per function) when required and calls the function func, passing the
+        original arguments, i.e. version and explanation.
 
-        Args:
-            _wrapped (): The function to be decorated.
-            args (): The arguments of the function to be decorated.
-            kwargs (): The keyword arguments of the function to be decorated.
+        Parameters
+        ----------
+        _wrapped: The function to be decorated.
+        args: The arguments passed to the function to be decorated.
+        kwargs: The keyword arguments passed to the function to be decorated.
 
-        Returns:
-            The decorated function.
+        Returns
+        -------
+        The decorated function.
         """
         # Check if we already warned about that function.
         if _wrapped.__name__ not in _PRINTED_WARNING:

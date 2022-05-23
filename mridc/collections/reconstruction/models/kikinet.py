@@ -25,13 +25,11 @@ __all__ = ["KIKINet"]
 
 class KIKINet(BaseMRIReconstructionModel, ABC):
     """
-    Based on KIKINet implementation [1]_. Modified to work with multi-coil k-space data.
+    Based on KIKINet implementation [1]. Modified to work with multi-coil k-space data.
 
     References
     ----------
-    .. [1] Eo, Taejoon, et al. “KIKI-Net: Cross-Domain Convolutional Neural Networks for Reconstructing Undersampled
-    Magnetic Resonance Images.” Magnetic Resonance in Medicine, vol. 80, no. 5, Nov. 2018, pp. 2188–201. PubMed,
-    https://doi.org/10.1002/mrm.27201.
+    .. [1] Eo, Taejoon, et al. “KIKI-Net: Cross-Domain Convolutional Neural Networks for Reconstructing Undersampled Magnetic Resonance Images.” Magnetic Resonance in Medicine, vol. 80, no. 5, Nov. 2018, pp. 2188–201. PubMed, https://doi.org/10.1002/mrm.27201.
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
@@ -138,14 +136,25 @@ class KIKINet(BaseMRIReconstructionModel, ABC):
     ) -> torch.Tensor:
         """
         Forward pass of the network.
-        Args:
-            y: torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2], masked kspace data
-            sensitivity_maps: torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2], coil sensitivity maps
-            mask: torch.Tensor, shape [1, 1, n_x, n_y, 1], sampling mask
-            init_pred: torch.Tensor, shape [batch_size, n_x, n_y, 2], initial guess for pred
-            target: torch.Tensor, shape [batch_size, n_x, n_y, 2], target data
-        Returns:
-             Final prediction of the network.
+
+        Parameters
+        ----------
+        y: Subsampled k-space data.
+            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+        sensitivity_maps: Coil sensitivity maps.
+            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+        mask: Sampling mask.
+            torch.Tensor, shape [1, 1, n_x, n_y, 1]
+        init_pred: Initial prediction.
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        target: Target data to compute the loss.
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+
+        Returns
+        -------
+        pred: list of torch.Tensor, shape [batch_size, n_x, n_y, 2], or  torch.Tensor, shape [batch_size, n_x, n_y, 2]
+             If self.accumulate_loss is True, returns a list of all intermediate estimates.
+             If False, returns the final estimate.
         """
         sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         kspace = y.clone()

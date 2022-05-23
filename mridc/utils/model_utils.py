@@ -71,48 +71,52 @@ class ArtifactItem:
 
 def resolve_dataset_name_from_cfg(cfg: "DictConfig") -> Union[Union[str, int, Enum, float, bool, None], Any]:
     """
-    Parses items of the provided sub-config to find the first potential key that
-    resolves to an existing file or directory.
+    Parses items of the provided sub-config to find the first potential key that resolves to an existing file or
+    directory.
+
     # Fast-path Resolution
     In order to handle cases where we need to resolve items that are not paths, a fastpath
     key can be provided as defined in the global `_VAL_TEST_FASTPATH_KEY`.
+
     This key can be used in two ways :
-    ## _VAL_TEST_FASTPATH_KEY points to another key in the config
-    If this _VAL_TEST_FASTPATH_KEY points to another key in this config itself,
-    then we assume we want to loop through the values of that key.
-    This allows for any key in the config to become a fastpath key.
+        ## _VAL_TEST_FASTPATH_KEY points to another key in the config
+    If this _VAL_TEST_FASTPATH_KEY points to another key in this config itself, then we assume we want to loop through
+    the values of that key. This allows for any key in the config to become a fastpath key.
+
     Example:
     validation_ds:
         splits: "val"
         ...
         <_VAL_TEST_FASTPATH_KEY>: "splits"  <-- this points to the key name "splits"
+
     Then we can write the following when overriding in hydra:
     ```python
-    python train_file.py ... \
-        model.validation_ds.splits=[val1, val2, dev1, dev2] ...
+    python train_file.py ... model.validation_ds.splits=[val1, val2, dev1, dev2] ...
     ```
     ## _VAL_TEST_FASTPATH_KEY itself acts as the resolved key
-    If this _VAL_TEST_FASTPATH_KEY does not point to another key in the config, then
-    it is assumed that the items of this key itself are used for resolution.
+    If this _VAL_TEST_FASTPATH_KEY does not point to another key in the config, then it is assumed that the items of
+    this key itself are used for resolution.
+
     Example:
     validation_ds:
         ...
         <_VAL_TEST_FASTPATH_KEY>: "val"  <-- this points to the key name "splits"
     Then we can write the following when overriding in hydra:
     ```python
-    python train_file.py ... \
-        model.validation_ds.<_VAL_TEST_FASTPATH_KEY>=[val1, val2, dev1, dev2] ...
+    python train_file.py ... model.validation_ds.<_VAL_TEST_FASTPATH_KEY>=[val1, val2, dev1, dev2] ...
     ```
     # IMPORTANT NOTE:
-    It <can> potentially mismatch if there exist more than 2 valid paths, and the
-    first path does *not* resolve the the path of the data file (but does resolve to
-    some other valid path).
-    To avoid this side-effect, place the data path as the first item on the config file.
-    Args:
-        cfg: DictConfig (Sub-config) that should be parsed.
-    Returns:
-        A str representing the `key` of the config which hosts the filepath(s),
-        or None in case path could not be resolved.
+    It <can> potentially mismatch if there exist more than 2 valid paths, and the first path does *not* resolve the
+    path of the data file (but does resolve to some other valid path).
+    To avoid this side effect, place the data path as the first item on the config file.
+
+    Parameters
+    ----------
+    cfg: Sub-config of the config file.
+
+    Returns
+    -------
+    A str representing the `key` of the config which hosts the filepath(s), or None in case path could not be resolved.
     """
     if _VAL_TEST_FASTPATH_KEY in cfg and cfg[_VAL_TEST_FASTPATH_KEY] is not None:
         fastpath_key = cfg[_VAL_TEST_FASTPATH_KEY]
@@ -146,11 +150,15 @@ def resolve_dataset_name_from_cfg(cfg: "DictConfig") -> Union[Union[str, int, En
 def parse_dataset_as_name(name: str) -> str:
     """
     Constructs a valid prefix-name from a provided file path.
-    Args:
-        name: str path to some valid data/manifest file or a python object that
-            will be used as a name for the data loader (via str() cast).
-    Returns:
-        str prefix used to identify uniquely this data/manifest file.
+
+    Parameters
+    ----------
+    name: Path to some valid data/manifest file or a python object that will be used as a name for the data loader (via
+    str() cast).
+
+    Returns
+    -------
+    A valid prefix-name for the data loader.
     """
     name = Path(name).stem if os.path.exists(name) or os.path.isdir(name) else name
     # cleanup name
@@ -179,10 +187,11 @@ def parse_dataset_as_name(name: str) -> str:
 
 def unique_names_check(name_list: Optional[List[str]]):
     """
-    Performs a uniqueness check on the name list resolved, so that it can warn users
-    about non-unique keys.
-    Args:
-        name_list: List of strings resolved for data loaders.
+    Performs a uniqueness check on the name list resolved, so that it can warn users about non-unique keys.
+
+    Parameters
+    ----------
+    name_list: List of strings resolved for data loaders.
     """
     if name_list is None:
         return
@@ -203,8 +212,8 @@ def unique_names_check(name_list: Optional[List[str]]):
 
 def resolve_validation_dataloaders(model: ModelPT):
     """
-    Helper method that operates on the ModelPT class to automatically support
-    multiple dataloaders for the validation set.
+    Helper method that operates on the ModelPT class to automatically support multiple dataloaders for the validation
+    set.
     It does so by first resolving the path to one/more data files via `resolve_dataset_name_from_cfg()`.
     If this resolution fails, it assumes the data loader is prepared to manually support / not support
     multiple data loaders and simply calls the appropriate setup method.
@@ -216,9 +225,11 @@ def resolve_validation_dataloaders(model: ModelPT):
             Calls the appropriate setup method to set the data loader.
             Collects the initialized data loader in a list and preserves it.
             Once all data loaders are processed, assigns the list of loaded loaders to the ModelPT.
-            Finally assigns a list of unique names resolved from the file paths to the ModelPT.
-    Args:
-        model: ModelPT subclass, which requires >=1 Validation Dataloaders to be setup.
+            Finally, assigns a list of unique names resolved from the file paths to the ModelPT.
+
+    Parameters
+    ----------
+    model: ModelPT subclass, which requires >=1 Validation Dataloaders to be setup.
     """
     if not _HAS_HYDRA:
         logging.error("This function requires Hydra/OmegaConf and it was not installed.")
@@ -283,9 +294,11 @@ def resolve_test_dataloaders(model: "ModelPT"):
             Calls the appropriate setup method to set the data loader.
             Collects the initialized data loader in a list and preserves it.
             Once all data loaders are processed, assigns the list of loaded loaders to the ModelPT.
-            Finally assigns a list of unique names resolved from the file paths to the ModelPT.
-    Args:
-        model: ModelPT subclass, which requires >=1 Test Dataloaders to be setup.
+            Finally, assigns a list of unique names resolved from the file paths to the ModelPT.
+
+    Parameters
+    ----------
+    model: ModelPT subclass, which requires >=1 Test Dataloaders to be setup.
     """
     if not _HAS_HYDRA:
         logging.error("This function requires Hydra/OmegaConf and it was not installed.")
@@ -340,14 +353,16 @@ def wrap_training_step(wrapped, instance: LightningModule, args, kwargs):
     """
     Wraps the training step of the LightningModule.
 
-    Args:
-        wrapped (): The wrapped function.
-        instance (): The LightningModule instance.
-        args (): The arguments passed to the wrapped function.
-        kwargs (): The keyword arguments passed to the wrapped function.
+    Parameters
+    ----------
+    wrapped: The wrapped function.
+    instance: The LightningModule instance.
+    args: The arguments passed to the wrapped function.
+    kwargs: The keyword arguments passed to the wrapped function.
 
-    Returns:
-        The return value of the wrapped function.
+    Returns
+    -------
+    The return value of the wrapped function.
     """
     output_dict = wrapped(*args, **kwargs)
 
@@ -362,12 +377,16 @@ def convert_model_config_to_dict_config(cfg: Union[DictConfig, MRIDCConfig]) -> 
     """
     Converts its input into a standard DictConfig.
     Possible input values are:
-    -   DictConfig
-    -   A dataclass which is a subclass of MRIDCConfig
-    Args:
-        cfg: A dict-like object.
-    Returns:
-        The equivalent DictConfig
+        -   DictConfig
+        -   A dataclass which is a subclass of MRIDCConfig
+
+    Parameters
+    ----------
+    cfg: A dict-like object.
+
+    Returns
+    -------
+    The equivalent DictConfig
     """
     if not _HAS_HYDRA:
         logging.error("This function requires Hydra/OmegaConf and it was not installed.")
@@ -412,13 +431,17 @@ def maybe_update_config_version(cfg: "DictConfig"):
     """
     Recursively convert Hydra 0.x configs to Hydra 1.x configs.
     Changes include:
-    -   `cls` -> `_target_`.
-    -   `params` -> drop params and shift all arguments to parent.
-    -   `target` -> `_target_` cannot be performed due to ModelPT injecting `target` inside class.
-    Args:
-        cfg: Any Hydra compatible DictConfig
-    Returns:
-        An updated DictConfig that conforms to Hydra 1.x format.
+        -   `cls` -> `_target_`.
+        -   `params` -> drop params and shift all arguments to parent.
+        -   `target` -> `_target_` cannot be performed due to ModelPT injecting `target` inside class.
+
+    Parameters
+    ----------
+    cfg: Any Hydra compatible DictConfig
+
+    Returns
+    -------
+    An updated DictConfig that conforms to Hydra 1.x format.
     """
     if not _HAS_HYDRA:
         logging.error("This function requires Hydra/OmegaConf and it was not installed.")
@@ -459,11 +482,14 @@ def resolve_subclass_pretrained_model_info(base_class) -> Union[List[PretrainedM
     Recursively traverses the inheritance graph of subclasses to extract all pretrained model info.
     First constructs a set of unique pretrained model info by performing DFS over the inheritance graph.
     All model info belonging to the same class is added together.
-    Args:
-        base_class: The root class, whose subclass graph will be traversed.
-    Returns:
-        A list of unique pretrained model infos belonging to all of the inherited subclasses of
-        this baseclass.
+
+    Parameters
+    ----------
+    base_class: The root class, whose subclass graph will be traversed.
+
+    Returns
+    -------
+    A list of unique pretrained model infos belonging to all the inherited subclasses of this baseclass.
     """
     list_of_models = set()
 
@@ -471,12 +497,13 @@ def resolve_subclass_pretrained_model_info(base_class) -> Union[List[PretrainedM
         """
         Recursively traverses the inheritance graph of subclasses to extract all pretrained model info.
 
-        Args:
-            cls (): The class to be traversed.
+        Parameters
+        ----------
+        cls: The class to be traversed.
 
-        Returns:
-            A list of unique pretrained model infos belonging to all of the inherited subclasses of
-            this baseclass.
+        Returns
+        -------
+        A list of unique pretrained model infos belonging to all the inherited subclasses of this baseclass.
         """
         for subclass in cls.__subclasses__():
             # step into its immediate subclass
@@ -505,13 +532,17 @@ def check_lib_version(lib_name: str, checked_version: str, operator) -> Tuple[Op
     This bool result along with a string analysis of result is returned.
     If the library is not installed at all, then returns None instead, along with a string explaining
     that the library is not installed
-    Args:
-        lib_name: lower case str name of the library that must be imported.
-        checked_version: semver string that is compared against lib.__version__.
-        operator: binary callable function func(a, b) -> bool; that compares lib.__version__ against version in
-            some manner. Must return a boolean.
-    Returns:
-        A tuple of results:
+
+    Parameters
+    ----------
+    lib_name: lower case str name of the library that must be imported.
+    checked_version: semver string that is compared against lib.__version__.
+    operator: binary callable function func(a, b) -> bool; that compares lib.__version__ against version in some
+    manner. Must return a boolean.
+
+    Returns
+    -------
+    A tuple of results:
         -   Bool or None. Bool if the library could be imported, and the result of
             operator(lib.__version__, checked_version) or False if __version__ is not implemented in lib.
             None is passed if the library is not installed at all.
@@ -553,9 +584,11 @@ def resolve_cache_dir() -> Path:
     Utility method to resolve a cache directory for MRIDC that can be overridden by an environment variable.
     Example:
         MRIDC_CACHE_DIR="~/mridc_cache_dir/" python mridc_example_script.py
-    Returns:
-        A Path object, resolved to the absolute path of the cache directory. If no override is provided,
-        uses an inbuilt default which adapts to mridc versions strings.
+
+    Returns
+    -------
+    A Path object, resolved to the absolute path of the cache directory. If no override is provided, uses an inbuilt
+    default which adapts to mridc versions strings.
     """
     override_dir = os.environ.get(MRIDC_ENV_CACHE_DIR, "")
     return (
@@ -576,10 +609,7 @@ def uninject_model_parallel_rank(filepath):
 
 
 def inject_model_parallel_rank(filepath):
-    """
-    Injects tensor/pipeline model parallel ranks into the filepath.
-    Does nothing if not using model parallelism.
-    """
+    """Injects tensor/pipeline model parallel ranks into the filepath. Does nothing if not using model parallelism."""
     filepath = uninject_model_parallel_rank(filepath)
     app_state = AppState()
     if app_state.model_parallel_size is not None and app_state.model_parallel_size > 1:

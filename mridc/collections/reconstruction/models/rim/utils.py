@@ -17,17 +17,18 @@ def log_likelihood_gradient(
     """
     Computes the gradient of the log-likelihood function.
 
-    Args:
-        eta: Initial guess for the reconstruction.
-        masked_kspace: Masked k-space data.
-        sense: Sensing matrix.
-        mask: Mask.
-        sigma: Noise level.
-        fft_type: Type of FFT to use.
+    Parameters
+    ----------
+    eta: Initial guess for the reconstruction.
+    masked_kspace: Subsampled k-space data.
+    sense: Sensing matrix.
+    mask: Sampling mask.
+    sigma: Noise level.
+    fft_type: Type of FFT to use.
 
     Returns
     -------
-    torch.Tensor: Gradient of the log-likelihood function.
+    Gradient of the log-likelihood function.
     """
     eta_real, eta_imag = map(lambda x: torch.unsqueeze(x, 0), eta.chunk(2, -1))
     sense_real, sense_imag = sense.chunk(2, -1)

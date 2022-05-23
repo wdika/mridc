@@ -29,7 +29,7 @@ __all__ = ["BaseMRIReconstructionModel", "BaseSensitivityModel"]
 
 
 class BaseMRIReconstructionModel(ModelPT, ABC):
-    """Base class for all MRIReconstruction models."""
+    """Base class of all MRIReconstruction models."""
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
 
@@ -46,7 +46,24 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
 
     # skipcq: PYL-R0201
     def process_loss(self, target, pred, _loss_fn):
-        """Calculate the loss."""
+        """
+        Processes the loss.
+
+        Parameters
+        ----------
+        target: Target data.
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        pred: Final prediction(s).
+            list of torch.Tensor, shape [batch_size, n_x, n_y, 2], or
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        _loss_fn: Loss function.
+            torch.nn.Module, default torch.nn.L1Loss()
+
+        Returns
+        -------
+        loss: torch.FloatTensor, shape [1]
+            If self.accumulate_loss is True, returns an accumulative result of all intermediate losses.
+        """
         target = torch.abs(target / torch.max(torch.abs(target)))
         if "ssim" in str(_loss_fn).lower():
             max_value = np.array(torch.max(torch.abs(target)).item()).astype(np.float32)
@@ -69,7 +86,24 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
 
     @staticmethod
     def process_inputs(y, mask):
-        """Process the inputs to the network."""
+        """
+        Processes the inputs to the method.
+
+        Parameters
+        ----------
+        y: Subsampled k-space data.
+            list of torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+        mask: Sampling mask.
+            list of torch.Tensor, shape [1, 1, n_x, n_y, 1]
+
+        Returns
+        -------
+        y: Subsampled k-space data.
+            randomly selected y
+        mask: Sampling mask.
+            randomly selected mask
+        r: Random index.
+        """
         if isinstance(y, list):
             r = np.random.randint(len(y))
             y = y[r]
@@ -80,26 +114,43 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
 
     def training_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
         """
-        Training step for the model.
-        Args:
-            batch: A dictionary of the form {
-                'y': subsampled kspace
-                'sensitivity_maps': sensitivity_maps
-                'mask': mask
-                'init_pred': initial prediction. For example zero-filled or PICS.
-                'target': target
-                'fname': filename
-                'slice_idx': slice_idx
-                'acc': acceleration factor
-                'max_value': maximum value of the magnitude image space
-                'crop_size': crop size
-                }
-            batch_idx: The index of the batch.
-        Returns:
-            A dictionary of the form {
-                'loss': loss value,
-                'log': log,
-            }
+        Performs a training step.
+
+        Parameters
+        ----------
+        batch: Batch of data.
+            Dict[str, torch.Tensor], with keys,
+
+            'y': subsampled kspace,
+                torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+            'sensitivity_maps': sensitivity_maps,
+                torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+            'mask': sampling mask,
+                torch.Tensor, shape [1, 1, n_x, n_y, 1]
+            'init_pred': initial prediction. For example zero-filled or PICS.
+                torch.Tensor, shape [batch_size, n_x, n_y, 2]
+            'target': target data,
+                torch.Tensor, shape [batch_size, n_x, n_y, 2]
+            'fname': filename,
+                str, shape [batch_size]
+            'slice_idx': slice_idx,
+                torch.Tensor, shape [batch_size]
+            'acc': acceleration factor,
+                torch.Tensor, shape [batch_size]
+            'max_value': maximum value of the magnitude image space,
+                torch.Tensor, shape [batch_size]
+            'crop_size': crop size,
+                torch.Tensor, shape [n_x, n_y]
+        batch_idx: Batch index.
+            int
+
+        Returns
+        -------
+        Dict[str, torch.Tensor], with keys,
+        'loss': loss,
+            torch.Tensor, shape [1]
+        'log': log,
+            dict, shape [1]
         """
         y, sensitivity_maps, mask, init_pred, target, _, _, acc = batch
         y, mask, r = self.process_inputs(y, mask)
@@ -123,7 +174,45 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         return {"loss": train_loss, "log": tensorboard_logs}
 
     def validation_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict:
-        """Validation step for the model."""
+        """
+        Performs a validation step.
+
+        Parameters
+        ----------
+        batch: Batch of data.
+            Dict[str, torch.Tensor], with keys,
+
+            'y': subsampled kspace,
+                torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+            'sensitivity_maps': sensitivity_maps,
+                torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+            'mask': sampling mask,
+                torch.Tensor, shape [1, 1, n_x, n_y, 1]
+            'init_pred': initial prediction. For example zero-filled or PICS.
+                torch.Tensor, shape [batch_size, n_x, n_y, 2]
+            'target': target data,
+                torch.Tensor, shape [batch_size, n_x, n_y, 2]
+            'fname': filename,
+                str, shape [batch_size]
+            'slice_idx': slice_idx,
+                torch.Tensor, shape [batch_size]
+            'acc': acceleration factor,
+                torch.Tensor, shape [batch_size]
+            'max_value': maximum value of the magnitude image space,
+                torch.Tensor, shape [batch_size]
+            'crop_size': crop size,
+                torch.Tensor, shape [n_x, n_y]
+        batch_idx: Batch index.
+            int
+
+        Returns
+        -------
+        Dict[str, torch.Tensor], with keys,
+        'loss': loss,
+            torch.Tensor, shape [1]
+        'log': log,
+            dict, shape [1]
+        """
         y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
         y, mask, _ = self.process_inputs(y, mask)
         preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
@@ -159,7 +248,46 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         return {"val_loss": val_loss}
 
     def test_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Tuple[str, int, torch.Tensor]:
-        """Test step for the model."""
+        """
+        Performs a test step.
+
+        Parameters
+        ----------
+        batch: Batch of data.
+            Dict[str, torch.Tensor], with keys,
+
+            'y': subsampled kspace,
+                torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+            'sensitivity_maps': sensitivity_maps,
+                torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+            'mask': sampling mask,
+                torch.Tensor, shape [1, 1, n_x, n_y, 1]
+            'init_pred': initial prediction. For example zero-filled or PICS.
+                torch.Tensor, shape [batch_size, n_x, n_y, 2]
+            'target': target data,
+                torch.Tensor, shape [batch_size, n_x, n_y, 2]
+            'fname': filename,
+                str, shape [batch_size]
+            'slice_idx': slice_idx,
+                torch.Tensor, shape [batch_size]
+            'acc': acceleration factor,
+                torch.Tensor, shape [batch_size]
+            'max_value': maximum value of the magnitude image space,
+                torch.Tensor, shape [batch_size]
+            'crop_size': crop size,
+                torch.Tensor, shape [n_x, n_y]
+        batch_idx: Batch index.
+            int
+
+        Returns
+        -------
+        name: Name of the volume.
+            str
+        slice_num: Slice number.
+            int
+        pred: Predicted data.
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        """
         y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
         y, mask, _ = self.process_inputs(y, mask)
         preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
@@ -197,16 +325,48 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         return name, slice_num, preds.detach().cpu().numpy()
 
     def log_image(self, name, image):
-        """Log an image."""
-        # TODO: Add support for wandb logging
+        """
+        Logs an image.
+
+        Parameters
+        ----------
+        name: Name of the image.
+            str
+        image: Image to log.
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+
+        """
         self.logger.experiment.add_image(name, image, global_step=self.global_step)
 
     def validation_epoch_end(self, outputs):
-        """Validation epoch end. Called at the end of validation to aggregate outputs."""
+        """
+        Called at the end of validation epoch to aggregate outputs.
+
+        Parameters
+        ----------
+        outputs: List of outputs of the validation batches.
+            list of dicts
+
+        Returns
+        -------
+        metrics: Dictionary of metrics.
+            dict
+        """
         self.log("val_loss", torch.stack([x["val_loss"] for x in outputs]).mean())
 
     def test_epoch_end(self, outputs):
-        """Test epoch end."""
+        """
+        Called at the end of test epoch to aggregate outputs.
+
+        Parameters
+        ----------
+        outputs: List of outputs of the test batches.
+            list of dicts
+
+        Returns
+        -------
+        Saves the reconstructed images to .h5 files.
+        """
         reconstructions = defaultdict(list)
         for fname, slice_num, output in outputs:
             reconstructions[fname].append((slice_num, output))
@@ -221,20 +381,68 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                 hf.create_dataset("reconstruction", data=recons)
 
     def setup_training_data(self, train_data_config: Optional[DictConfig]):
-        """Setup the training data."""
+        """
+        Setups the training data.
+
+        Parameters
+        ----------
+        train_data_config: Training data configuration.
+            dict
+
+        Returns
+        -------
+        train_data: Training data.
+            torch.utils.data.DataLoader
+        """
         self._train_dl = self._setup_dataloader_from_config(cfg=train_data_config)
 
     def setup_validation_data(self, val_data_config: Optional[DictConfig]):
-        """Setup the validation data."""
+        """
+        Setups the validation data.
+
+        Parameters
+        ----------
+        val_data_config: Validation data configuration.
+            dict
+
+        Returns
+        -------
+        val_data: Validation data.
+            torch.utils.data.DataLoader
+        """
         self._validation_dl = self._setup_dataloader_from_config(cfg=val_data_config)
 
     def setup_test_data(self, test_data_config: Optional[DictConfig]):
-        """Setup the test data."""
+        """
+        Setups the test data.
+
+        Parameters
+        ----------
+        test_data_config: Test data configuration.
+            dict
+
+        Returns
+        -------
+        test_data: Test data.
+            torch.utils.data.DataLoader
+        """
         self._test_dl = self._setup_dataloader_from_config(cfg=test_data_config)
 
     @staticmethod
     def _setup_dataloader_from_config(cfg: DictConfig) -> DataLoader:
-        """Setup the dataloader from the config."""
+        """
+        Setups the dataloader from the configuration (yaml) file.
+
+        Parameters
+        ----------
+        cfg: Configuration file.
+            dict
+
+        Returns
+        -------
+        dataloader: DataLoader.
+            torch.utils.data.DataLoader
+        """
         if cfg.get("dataset_type") != "FastMRI":
             raise ValueError(f"Unknown dataset type: {cfg.get('dataset_type')}")
 
@@ -314,19 +522,30 @@ class BaseSensitivityModel(nn.Module, ABC):
         mask_center: bool = True,
     ):
         """
-        Initialize the model.
+        Initializes the model.
 
-        Args:
-            chans : Number of output channels of the first convolution layer.
-            num_pools : Number of down-sampling and up-sampling layers.
-            in_chan s: Number of channels in the input to the U-Net model.
-            out_chans : Number of channels in the output to the U-Net model.
-            drop_prob : Dropout probability.
-            padding_size: Size of the zero-padding.
-            mask_type : Type of mask to use.
-            fft_type : Type of FFT to use.
-            normalize : Whether to normalize the data.
-            mask_center: Whether to mask the center of the sensitivity map.
+        Parameters
+        ----------
+        chans: Number of channels in the input k-space data.
+            int
+        num_pools: Number of U-Net downsampling/upsampling operations.
+            int
+        in_chans: Number of channels in the input data.
+            int
+        out_chans: Number of channels in the output data.
+            int
+        drop_prob: Dropout probability.
+            float
+        padding_size: Size of the zero-padding.
+            int
+        mask_type: Type of mask to use.
+            str
+        fft_type: Type of FFT to use.
+            str
+        normalize: Whether to normalize the input data.
+            bool
+        mask_center: Whether mask the center of the image.
+            bool
         """
         super().__init__()
 
@@ -349,13 +568,17 @@ class BaseSensitivityModel(nn.Module, ABC):
     @staticmethod
     def chans_to_batch_dim(x: torch.Tensor) -> Tuple[torch.Tensor, int]:
         """
-        Convert the last dimension of the input to the batch dimension.
+        Converts the number of channels in a tensor to the batch dimension.
 
-        Args:
-            x: Input tensor.
+        Parameters
+        ----------
+        x: Tensor to convert.
+            torch.Tensor
 
-        Returns:
-            Tuple of the converted tensor and the original last dimension.
+        Returns
+        -------
+        Tuple of the converted tensor and the original last dimension.
+            Tuple[torch.Tensor, int]
         """
         b, c, h, w, comp = x.shape
 
@@ -364,14 +587,19 @@ class BaseSensitivityModel(nn.Module, ABC):
     @staticmethod
     def batch_chans_to_chan_dim(x: torch.Tensor, batch_size: int) -> torch.Tensor:
         """
-        Convert the batch dimension of the input to the last dimension.
+        Converts the number of channels in a tensor to the channel dimension.
 
-        Args:
-            x: Input tensor.
-            batch_size: Original batch size.
+        Parameters
+        ----------
+        x: Tensor to convert.
+            torch.Tensor
+        batch_size: Original batch size.
+            int
 
-        Returns:
-            Converted tensor.
+        Returns
+        -------
+        Converted tensor.
+            torch.Tensor
         """
         bc, _, h, w, comp = x.shape
         c = torch.div(bc, batch_size, rounding_mode="trunc")
@@ -383,11 +611,15 @@ class BaseSensitivityModel(nn.Module, ABC):
         """
         Divide the input by the root of the sum of squares of the magnitude of each complex number.
 
-        Args:
-            x: Input tensor.
+        Parameters
+        ----------
+        x: Tensor to divide.
+            torch.Tensor
 
-        Returns:
-            RSS output tensor.
+        Returns
+        -------
+        RSS output tensor.
+            torch.Tensor
         """
         return x / rss_complex(x, dim=1).unsqueeze(-1).unsqueeze(1)
 
@@ -398,12 +630,17 @@ class BaseSensitivityModel(nn.Module, ABC):
         """
         Get the padding to apply to the input to make it square and the number of low frequencies to keep.
 
-        Args:
-            mask (): Mask to use.
-            num_low_frequencies (): Number of low frequencies to keep. If None, keep all.
+        Parameters
+        ----------
+        mask: Mask to use.
+            torch.Tensor
+        num_low_frequencies: Number of low frequencies to keep.
+            int
 
-        Returns:
-            Tuple of the padding and the number of low frequencies to keep.
+        Returns
+        -------
+        Tuple of the padding and the number of low frequencies to keep.
+            Tuple[torch.Tensor, torch.Tensor]
         """
         if num_low_frequencies is None or num_low_frequencies == 0:
             # get low frequency line locations and mask them out
@@ -433,13 +670,19 @@ class BaseSensitivityModel(nn.Module, ABC):
         """
         Forward pass of the model.
 
-        Args:
-            masked_kspace: Masked k-space data.
-            mask: Mask to apply to the k-space data.
-            num_low_frequencies: Number of low frequencies to use.
+        Parameters
+        ----------
+        masked_kspace: Subsampled k-space data.
+            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+        mask: Sampling mask.
+            torch.Tensor, shape [batch_size, 1, n_x, n_y, 1]
+        num_low_frequencies: Number of low frequencies to keep.
+            int
 
-        Returns:
-            Normalized UNet output tensor.
+        Returns
+        -------
+        Normalized UNet output tensor.
+            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
         """
         if self.mask_center:
             pad, num_low_freqs = self.get_pad_and_num_low_freqs(mask, num_low_frequencies)

@@ -27,7 +27,14 @@ from mridc.utils.exp_manager import exp_manager
 
 @hydra_runner(config_path=".", config_name="config")
 def main(cfg: DictConfig) -> None:
-    """Main function for training and running a model."""
+    """
+    Main function for training and running a model
+
+    Parameters
+    ----------
+    cfg: Configuration (yaml) file.
+        DictConfig
+    """
     logging.info(f"Config: {OmegaConf.to_yaml(cfg)}")
 
     trainer = pl.Trainer(**cfg.trainer)

@@ -10,9 +10,10 @@ class ConvRNNStack(nn.Module):
 
     def __init__(self, convs, rnn):
         """
-        Args:
-            convs: list of convolutional layers
-            rnn: list of RNN layers
+        Parameters
+        ----------
+        convs: list of convolutional layers
+        rnn: list of RNN layers
         """
         super(ConvRNNStack, self).__init__()
         self.convs = convs
@@ -20,12 +21,14 @@ class ConvRNNStack(nn.Module):
 
     def forward(self, x, hidden):
         """
-        Args:
-            x: (batch_size, seq_len, input_size)
-            hidden: (num_layers * num_directions, batch_size, hidden_size)
+        Parameters
+        ----------
+        x: [batch_size, seq_len, input_size]
+        hidden: [num_layers * num_directions, batch_size, hidden_size
 
-        Returns:
-            output: (batch_size, seq_len, hidden_size)
+        Returns
+        -------
+        output: [batch_size, seq_len, hidden_size]
         """
         return self.rnn(self.convs(x), hidden)
 
@@ -37,14 +40,15 @@ class ConvNonlinear(nn.Module):
         """
         Initializes the convolutional layer.
 
-        Args:
-            input_size: number of input channels.
-            features: number of output channels.
-            conv_dim: number of dimensions of the convolutional layer.
-            kernel_size: size of the convolutional kernel.
-            dilation: dilation of the convolutional kernel.
-            bias: whether to use bias.
-            nonlinear: nonlinearity of the convolutional layer.
+        Parameters
+        ----------
+        input_size: number of input channels.
+        features: number of output channels.
+        conv_dim: number of dimensions of the convolutional layer.
+        kernel_size: size of the convolutional kernel.
+        dilation: dilation of the convolutional kernel.
+        bias: whether to use bias.
+        nonlinear: nonlinearity of the convolutional layer.
         """
         super(ConvNonlinear, self).__init__()
 
@@ -81,12 +85,7 @@ class ConvNonlinear(nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self):
-        """
-        Resets the parameters of the convolutional layer.
-
-        Returns:
-            None.
-        """
+        """Resets the parameters of the convolutional layer."""
         torch.nn.init.kaiming_normal_(self.conv_layer.weight, nonlinearity="relu")
 
         if self.conv_layer.bias is not None:
@@ -94,15 +93,7 @@ class ConvNonlinear(nn.Module):
 
     @staticmethod
     def determine_conv_class(n_dim):
-        """
-        Determines the convolutional layer class.
-
-        Args:
-            n_dim: number of dimensions.
-
-        Returns:
-            conv_class: convolutional layer class.
-        """
+        """Determines the convolutional layer class."""
         if n_dim == 1:
             return nn.Conv1d
         if n_dim == 2:
@@ -112,12 +103,7 @@ class ConvNonlinear(nn.Module):
         raise ValueError(f"Convolution of: {n_dim} dims is not implemented")
 
     def extra_repr(self):
-        """
-        Extra information about the layer.
-
-        Returns:
-            str: extra information about the layer.
-        """
+        """Extra information about the layer."""
         s = "{input_size}, {features}"
         if "bias" in self.__dict__ and self.bias is not True:
             s += ", bias={bias}"
@@ -126,26 +112,10 @@ class ConvNonlinear(nn.Module):
         return s.format(**self.__dict__)
 
     def check_forward_input(self, _input):
-        """
-        Checks input for correct size and shape.
-
-        Args:
-            _input: input to the convolutional layer.
-
-        Returns:
-            _input: input to the convolutional layer.
-        """
+        """Checks input for correct size and shape."""
         if _input.size(1) != self.input_size:
             raise RuntimeError(f"input has inconsistent input_size: got {_input.size(1)}, expected {self.input_size}")
 
     def forward(self, _input):
-        """
-        Forward pass of the convolutional layer.
-
-        Args:
-            _input: input to the convolutional layer.
-
-        Returns:
-            _output: output of the convolutional layer.
-        """
+        """Forward pass of the convolutional layer."""
         return self.nonlinear(self.conv_layer(self.padding(_input)))

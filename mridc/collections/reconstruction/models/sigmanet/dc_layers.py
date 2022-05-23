@@ -11,25 +11,22 @@ from mridc.collections.common.parts.utils import complex_abs, complex_conj, comp
 
 
 class DataIDLayer(torch.nn.Module):
-    """
-    Placeholder for data layer
-    """
+    """Placeholder for the data layer."""
 
     def __init__(self, *args, **kwargs):
         super().__init__()
 
 
 class DataGDLayer(torch.nn.Module):
-    """
-    DataLayer computing the gradient on the L2 dataterm.
-    """
+    """DataLayer computing the gradient on the L2 dataterm."""
 
     def __init__(self, lambda_init, learnable=True, fft_type="orthogonal"):
         """
-        Args:
-            lambda_init (float): Init value of data term weight lambda.
-            learnable (bool): If True, the data term weight lambda is learnable.
-            fft_type (str): Type of FFT to use.
+        Parameters
+        ----------
+        lambda_init: Init value of data term weight lambda.
+        learnable: If True, the data term weight lambda is learnable.
+        fft_type: Type of FFT to use.
         """
         super(DataGDLayer, self).__init__()
         self.lambda_init = lambda_init
@@ -43,6 +40,19 @@ class DataGDLayer(torch.nn.Module):
         self.fft_type = fft_type
 
     def forward(self, x, y, smaps, mask):
+        """
+
+        Parameters
+        ----------
+        x: Input image.
+        y: Subsampled k-space data.
+        smaps: Coil sensitivity maps.
+        mask: Sampling mask.
+
+        Returns
+        -------
+        data_loss: Data term loss.
+        """
         A_x_y = (
             torch.sum(
                 fft2c(complex_mul(x.unsqueeze(-5).expand_as(smaps), smaps), fft_type=self.fft_type) * mask,
@@ -73,6 +83,19 @@ class DataProxCGLayer(torch.nn.Module):
         self.fft_type = fft_type
 
     def forward(self, x, f, smaps, mask):
+        """
+
+        Parameters
+        ----------
+        x: Input image.
+        f: Subsampled k-space data.
+        smaps: Coil sensitivity maps.
+        mask: Sampling mask.
+
+        Returns
+        -------
+        data_loss: Data term loss.
+        """
         return self.op.apply(
             x,
             self.lambdaa,
@@ -93,6 +116,7 @@ class ConjugateGradient(torch.autograd.Function):
 
     @staticmethod
     def complexDot(data1, data2):
+        """Complex dot product of two tensors."""
         nBatch = data1.shape[0]
         mult = complex_mul(data1, complex_conj(data2))
         re, im = torch.unbind(mult, dim=-1)
@@ -100,6 +124,7 @@ class ConjugateGradient(torch.autograd.Function):
 
     @staticmethod
     def solve(x0, M, tol, max_iter):
+        """Solve the linear system Mx=b using conjugate gradient."""
         nBatch = x0.shape[0]
         x = torch.zeros(x0.shape).to(x0.device)
         r = x0.clone()
@@ -129,6 +154,25 @@ class ConjugateGradient(torch.autograd.Function):
 
     @staticmethod
     def forward(ctx, z, lambdaa, y, smaps, mask, tol, max_iter, fft_type):
+        """
+        Forward pass of the conjugate gradient solver.
+
+        Parameters
+        ----------
+        ctx: Context object.
+        z: Input image.
+        lambdaa: Regularization parameter.
+        y: Subsampled k-space data.
+        smaps: Coil sensitivity maps.
+        mask: Sampling mask.
+        tol: Tolerance for the stopping criterion.
+        max_iter: Maximum number of iterations.
+        fft_type: FFT type.
+
+        Returns
+        -------
+        z: Output image.
+        """
         ctx.tol = tol
         ctx.max_iter = max_iter
         ctx.fft_type = fft_type
@@ -150,6 +194,18 @@ class ConjugateGradient(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_x):
+        """
+        Backward pass of the conjugate gradient solver.
+
+        Parameters
+        ----------
+        ctx: Context object.
+        grad_x: Gradient of the output image.
+
+        Returns
+        -------
+        grad_z: Gradient of the input image.
+        """
         ATy, rhs, smaps, mask, lambdaa = ctx.saved_tensors
 
         def A(x):
@@ -181,11 +237,12 @@ class DataVSLayer(torch.nn.Module):
 
     def __init__(self, alpha_init, beta_init, learnable=True, fft_type="orthogonal"):
         """
-        Args:
-            alpha_init (float): Init value of data consistency block (DCB)
-            beta_init (float): Init value of weighted averaging block (WAB)
-            learnable (bool): If True, the parameters of the model are learnable
-            fft_type (str): Type of FFT to use. Can be "orthogonal".
+        Parameters
+        ----------
+        alpha_init: Init value of data consistency block (DCB)
+        beta_init: Init value of weighted averaging block (WAB)
+        learnable: If True, the parameters of the model are learnable
+        fft_type: Type of FFT to use. Can be "orthogonal".
         """
         super(DataVSLayer, self).__init__()
         self.alpha = torch.nn.Parameter(torch.Tensor(1))
@@ -200,6 +257,20 @@ class DataVSLayer(torch.nn.Module):
         self.fft_type = fft_type
 
     def forward(self, x, y, smaps, mask):
+        """
+        Forward pass of the data-consistency block.
+
+        Parameters
+        ----------
+        x: Input image.
+        y: Subsampled k-space data.
+        smaps: Coil sensitivity maps.
+        mask: Sampling mask.
+
+        Returns
+        -------
+        Output image.
+        """
         A_x = torch.sum(
             fft2c(complex_mul(x.unsqueeze(-5).expand_as(smaps), smaps), fft_type=self.fft_type), -4, keepdim=True
         )
@@ -208,6 +279,13 @@ class DataVSLayer(torch.nn.Module):
         return self.beta * x + (1 - self.beta) * x_dc
 
     def set_learnable(self, flag):
+        """
+        Set the learnable flag of the parameters.
+
+        Parameters
+        ----------
+        flag: If True, the parameters of the model are learnable.
+        """
         self.learnable = flag
         self.alpha.requires_grad = self.learnable
         self.beta.requires_grad = self.learnable
@@ -220,10 +298,11 @@ class DCLayer(torch.nn.Module):
 
     def __init__(self, lambda_init=0.0, learnable=True, fft_type="orthogonal"):
         """
-        Args:
-            lambda_init (float): Init value of data consistency block (DCB)
-            learnable (bool): If True, the parameters of the model are learnable
-            fft_type (str): Type of FFT to use. Can be "orthogonal".
+        Parameters
+        ----------
+        lambda_init: Init value of data consistency block (DCB)
+        learnable: If True, the parameters of the model are learnable
+        fft_type: Type of FFT to use. Can be "orthogonal".
         """
         super(DCLayer, self).__init__()
         self.lambda_ = torch.nn.Parameter(torch.Tensor(1))
@@ -235,10 +314,30 @@ class DCLayer(torch.nn.Module):
         self.fft_type = fft_type
 
     def forward(self, x, y, mask):
+        """
+        Forward pass of the data-consistency block.
+
+        Parameters
+        ----------
+        x: Input image.
+        y: Subsampled k-space data.
+        mask: Sampling mask.
+
+        Returns
+        -------
+        Output image.
+        """
         A_x = fft2c(x, fft_type=self.fft_type)
         k_dc = (1 - mask) * A_x + mask * (self.lambda_ * A_x + (1 - self.lambda_) * y)
         return ifft2c(k_dc, fft_type=self.fft_type)
 
     def set_learnable(self, flag):
+        """
+        Set the learnable flag of the parameters.
+
+        Parameters
+        ----------
+        flag: If True, the parameters of the model are learnable.
+        """
         self.learnable = flag
         self.lambda_.requires_grad = self.learnable

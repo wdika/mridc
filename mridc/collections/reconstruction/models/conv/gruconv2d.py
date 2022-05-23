@@ -16,10 +16,7 @@ class GRUConv2d(nn.Module):
 
     References
     ----------
-
-    .. [1] C. Qin, J. Schlemper, J. Caballero, A. N. Price, J. V. Hajnal and D. Rueckert,
-    "Convolutional Recurrent Neural Networks for Dynamic MR Image Reconstruction," in IEEE Transactions on Medical
-    Imaging, vol. 38, no. 1, pp. 280-290, Jan. 2019, doi: 10.1109/TMI.2018.2863670.
+    .. [1] C. Qin, J. Schlemper, J. Caballero, A. N. Price, J. V. Hajnal and D. Rueckert, "Convolutional Recurrent Neural Networks for Dynamic MR Image Reconstruction," in IEEE Transactions on Medical Imaging, vol. 38, no. 1, pp. 280-290, Jan. 2019, doi: 10.1109/TMI.2018.2863670.
     """
 
     def __init__(
@@ -31,21 +28,23 @@ class GRUConv2d(nn.Module):
         activation="ReLU",
         batchnorm=False,
     ):
-        """Inits Conv2d.
+        """
+        Inits Conv2d.
+
         Parameters
         ----------
-        in_channels: int
-            Number of input channels.
-        out_channels: int
-            Number of output channels.
-        hidden_channels: int
-            Number of hidden channels.
-        n_convs: int
-            Number of convolutional layers.
-        activation: nn.Module
-            Activation function.
-        batchnorm: bool
-            If True a batch normalization layer is applied after every convolution.
+        in_channels: Number of input channels.
+            int
+        out_channels: Number of output channels.
+            int
+        hidden_channels: Number of hidden channels.
+            int
+        n_convs: Number of convolutional layers.
+            int
+        activation: Activation function.
+            torch.nn.Module
+        batchnorm: If True a batch normalization layer is applied after every convolution.
+            bool
         """
         super().__init__()
 
@@ -94,16 +93,14 @@ class GRUConv2d(nn.Module):
 
         Parameters
         ----------
-        x: torch.Tensor
-            Input tensor.
-        previous_xs: torch.Tensor
-            List of previous input tensors.
-        hx: torch.Tensor
-            Initial hidden state.
+        x: Input tensor.
+            torch.Tensor
+        hx: Initial hidden state.
+            torch.Tensor
+
         Returns
         -------
-        out: torch.Tensor
-            Convoluted output.
+        Convoluted output.
         """
         if hx is None:
             hx = x.new_zeros((x.size(0), self.hidden_channels, *x.size()[2:]))

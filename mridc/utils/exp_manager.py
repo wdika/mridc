@@ -177,61 +177,66 @@ def exp_manager(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None)
     """
     exp_manager is a helper function used to manage folders for experiments. It follows the pytorch lightning paradigm
     of exp_dir/model_or_experiment_name/version. If the lightning trainer has a logger, exp_manager will get exp_dir,
-    name, and version from the logger. Otherwise it will use the exp_dir and name arguments to create the logging
+    name, and version from the logger. Otherwise, it will use the exp_dir and name arguments to create the logging
     directory. exp_manager also allows for explicit folder creation via explicit_log_dir.
-    The version can be a datetime string or an integer. Datetime version can be disabled if use_datetime_version is set
-     to False. It optionally creates TensorBoardLogger, WandBLogger, ModelCheckpoint objects from pytorch lightning.
+
+    The version can be a datetime string or an integer. Datetime version can be disabled if you use_datetime_version is
+    set to False. It optionally creates TensorBoardLogger, WandBLogger, ModelCheckpoint objects from pytorch lightning.
     It copies sys.argv, and git information if available to the logging directory. It creates a log file for each
     process to log their output into.
+
     exp_manager additionally has a resume feature (resume_if_exists) which can be used to continuing training from
     the constructed log_dir. When you need to continue the training repeatedly (like on a cluster which you need
-    multiple consecutive jobs), you need to avoid creating the version folders. Therefore from v1.0.0, when
+    multiple consecutive jobs), you need to avoid creating the version folders. Therefore, from v1.0.0, when
     resume_if_exists is set to True, creating the version folders is ignored.
-    Args:
-        trainer (Trainer): The lightning trainer.
-        cfg (DictConfig, dict): Can have the following keys:
-            - explicit_log_dir (str, Path): Can be used to override exp_dir/name/version folder creation. Defaults to
-                None, which will use exp_dir, name, and version to construct the logging directory.
-            - exp_dir (str, Path): The base directory to create the logging directory. Defaults to None, which logs to
-                ./mridc_experiments.
-            - name (str): The name of the experiment. Defaults to None which turns into "default" via name = name or
-                "default".
-            - version (str): The version of the experiment. Defaults to None which uses either a datetime string or
-                lightning's TensorboardLogger system of using version_{int}.
-            - use_datetime_version (bool): Whether to use a datetime string for version. Defaults to True.
-            - resume_if_exists (bool): Whether this experiment is resuming from a previous run. If True, it sets
-                trainer._checkpoint_connector.resume_from_checkpoint_fit_path so that the trainer should auto-resume.
-                exp_manager will move files under log_dir to log_dir/run_{int}. Defaults to False. From v1.0.0, when
-                resume_if_exists is True, we would not create version folders to make it easier to find the log folder
-                 for next runs.
-            - resume_past_end (bool): exp_manager errors out if resume_if_exists is True and a checkpoint matching
-                *end.ckpt indicating a previous training run fully completed. This behaviour can be disabled, in which
-                case the *end.ckpt will be loaded by setting resume_past_end to True. Defaults to False.
-            - resume_ignore_no_checkpoint (bool): exp_manager errors out if resume_if_exists is True and no checkpoint
-                could be found. This behaviour can be disabled, in which case exp_manager will print a message and
-                continue without restoring, by setting resume_ignore_no_checkpoint to True. Defaults to False.
-            - create_tensorboard_logger (bool): Whether to create a tensorboard logger and attach it to the pytorch
-                lightning trainer. Defaults to True.
-            - summary_writer_kwargs (dict): A dictionary of kwargs that can be passed to lightning's TensorboardLogger
-                class. Note that log_dir is passed by exp_manager and cannot exist in this dict. Defaults to None.
-            - create_wandb_logger (bool): Whether to create a Weights and Biases logger and attach it to the pytorch
-                lightning trainer. Defaults to False.
-            - wandb_logger_kwargs (dict): A dictionary of kwargs that can be passed to lightning's WandBLogger
-                class. Note that name and project are required parameters if create_wandb_logger is True.
-                Defaults to None.
-            - create_checkpoint_callback (bool): Whether to create a ModelCheckpoint callback and attach it to the
-                pytorch lightning trainer. The ModelCheckpoint saves the top 3 models with the best "val_loss", the
-                most recent checkpoint under *last.ckpt, and the final checkpoint after training completes under
-                *end.ckpt. Defaults to True.
-            - files_to_copy (list): A list of files to copy to the experiment logging directory. Defaults to None which
-                copies no files.
-            - log_local_rank_0_only (bool): Whether to only create log files for local rank 0. Defaults to False.
-                Set this to True if you are using DDP with many GPUs and do not want many log files in your exp dir.
-            - log_global_rank_0_only (bool): Whether to only create log files for global rank 0. Defaults to False.
-                Set this to True if you are using DDP with many GPUs and do not want many log files in your exp dir.
-    returns:
-        log_dir (Path): The final logging directory where logging files are saved. Usually the concatenation of
-            exp_dir, name, and version.
+
+    Parameters
+    ----------
+    trainer: The lightning trainer.
+    cfg: Can have the following keys:
+        - explicit_log_dir (str, Path): Can be used to override exp_dir/name/version folder creation. Defaults to
+            None, which will use exp_dir, name, and version to construct the logging directory.
+        - exp_dir (str, Path): The base directory to create the logging directory. Defaults to None, which logs to
+            ./mridc_experiments.
+        - name (str): The name of the experiment. Defaults to None which turns into "default" via name = name or
+            "default".
+        - version (str): The version of the experiment. Defaults to None which uses either a datetime string or
+            lightning's TensorboardLogger system of using version_{int}.
+        - use_datetime_version (bool): Whether to use a datetime string for version. Defaults to True.
+        - resume_if_exists (bool): Whether this experiment is resuming from a previous run. If True, it sets
+            trainer._checkpoint_connector.resume_from_checkpoint_fit_path so that the trainer should auto-resume.
+            exp_manager will move files under log_dir to log_dir/run_{int}. Defaults to False. From v1.0.0, when
+            resume_if_exists is True, we would not create version folders to make it easier to find the log folder
+             for next runs.
+        - resume_past_end (bool): exp_manager errors out if resume_if_exists is True and a checkpoint matching
+            *end.ckpt indicating a previous training run fully completed. This behaviour can be disabled, in which
+            case the *end.ckpt will be loaded by setting resume_past_end to True. Defaults to False.
+        - resume_ignore_no_checkpoint (bool): exp_manager errors out if resume_if_exists is True and no checkpoint
+            could be found. This behaviour can be disabled, in which case exp_manager will print a message and
+            continue without restoring, by setting resume_ignore_no_checkpoint to True. Defaults to False.
+        - create_tensorboard_logger (bool): Whether to create a tensorboard logger and attach it to the pytorch
+            lightning trainer. Defaults to True.
+        - summary_writer_kwargs (dict): A dictionary of kwargs that can be passed to lightning's TensorboardLogger
+            class. Note that log_dir is passed by exp_manager and cannot exist in this dict. Defaults to None.
+        - create_wandb_logger (bool): Whether to create a Weights and Biases logger and attach it to the pytorch
+            lightning trainer. Defaults to False.
+        - wandb_logger_kwargs (dict): A dictionary of kwargs that can be passed to lightning's WandBLogger
+            class. Note that name and project are required parameters if create_wandb_logger is True.
+            Defaults to None.
+        - create_checkpoint_callback (bool): Whether to create a ModelCheckpoint callback and attach it to the
+            pytorch lightning trainer. The ModelCheckpoint saves the top 3 models with the best "val_loss", the
+            most recent checkpoint under *last.ckpt, and the final checkpoint after training completes under
+            *end.ckpt. Defaults to True.
+        - files_to_copy (list): A list of files to copy to the experiment logging directory. Defaults to None which
+            copies no files.
+        - log_local_rank_0_only (bool): Whether to only create log files for local rank 0. Defaults to False.
+            Set this to True if you are using DDP with many GPUs and do not want many log files in your exp dir.
+        - log_global_rank_0_only (bool): Whether to only create log files for global rank 0. Defaults to False.
+            Set this to True if you are using DDP with many GPUs and do not want many log files in your exp dir.
+    Returns
+    -------
+    log_dir: The final logging directory where logging files are saved. Usually the concatenation of exp_dir, name, and
+    version.
     """
     # Add rank information to logger
     # Note: trainer.global_rank and trainer.is_global_zero are not set until trainer.fit, so have to hack around it
@@ -302,18 +307,14 @@ def exp_manager(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None)
     # This is set if the env var MRIDC_TESTING is set to True.
     mridc_testing = get_envbool(MRIDC_ENV_VARNAME_TESTING, False)
 
+    log_file = log_dir / f"mridc_log_globalrank-{global_rank}_localrank-{local_rank}.txt"
     # Handle logging to file
     # Logs local rank 0 only
     if local_rank == 0 and cfg.log_local_rank_0_only and not mridc_testing:
-        log_file = log_dir / f"mridc_log_globalrank-{global_rank}_localrank-{local_rank}.txt"
         logging.add_file_handler(log_file)
-    # Logs only on global rank 0
     elif global_rank == 0 and cfg.log_global_rank_0_only and mridc_testing:
-        log_file = log_dir / f"mridc_log_globalrank-{global_rank}_localrank-{local_rank}.txt"
         logging.add_file_handler(log_file)
-    # Logs on all ranks.
     else:
-        log_file = log_dir / f"mridc_log_globalrank-{global_rank}_localrank-{local_rank}.txt"
         logging.add_file_handler(log_file)
 
     # For some reason, LearningRateLogger requires trainer to have a logger. Safer to create logger on all ranks
@@ -405,16 +406,21 @@ def check_resume(
     resume_past_end: bool = False,
     resume_ignore_no_checkpoint: bool = False,
 ):
-    """Checks that resume=True was used correctly with the arguments pass to exp_manager. Sets
+    """
+    Checks that resume=True was used correctly with the arguments pass to exp_manager. Sets
     trainer._checkpoint_connector.resume_from_checkpoint_fit_path as necessary.
-    Returns:
-        log_dir (Path): the log_dir
-        exp_dir (str): the base exp_dir without name nor version
-        name (str): The name of the experiment
-        version (str): The version of the experiment
-    Raises:
-        NotFoundError: If resume is True, resume_ignore_no_checkpoint is False, and checkpoints could not be found.
-        ValueError: If resume is True, and there were more than 1 checkpoint could found.
+
+    Parameters
+    ----------
+    trainer: The trainer that is being used.
+    log_dir: The directory where the logs are being saved.
+    resume_past_end: Whether to resume from the end of the experiment.
+    resume_ignore_no_checkpoint: Whether to ignore if there is no checkpoint to resume from.
+
+    Returns
+    -------
+    NotFoundError: If resume is True, resume_ignore_no_checkpoint is False, and checkpoints could not be found.
+    ValueError: If resume is True, and there were more than 1 checkpoint could found.
     """
     if not log_dir:
         raise ValueError(f"Resuming requires the log_dir {log_dir} to be passed to exp_manager")
@@ -470,14 +476,24 @@ def check_resume(
 def check_explicit_log_dir(
     trainer: Trainer, explicit_log_dir: List[Union[Path, str]], exp_dir: str, name: str, version: str
 ) -> Tuple[Path, str, str, str]:
-    """Checks that the passed arguments are compatible with explicit_log_dir.
-    Returns:
-        log_dir (Path): the log_dir
-        exp_dir (str): the base exp_dir without name nor version
-        name (str): The name of the experiment
-        version (str): The version of the experiment
-    Raise:
-        LoggerMisconfigurationError
+    """
+    Checks that the passed arguments are compatible with explicit_log_dir.
+
+    Parameters
+    ----------
+    trainer: The trainer to check.
+    explicit_log_dir: The explicit log dir to check.
+    exp_dir: The experiment directory to check.
+    name: The experiment name to check.
+    version: The experiment version to check.
+
+    Returns
+    -------
+    The log_dir, exp_dir, name, and version that should be used.
+
+    Raises
+    ------
+    LoggerMisconfigurationError
     """
     if trainer.logger is not None:
         raise LoggerMisconfigurationError(
@@ -507,19 +523,22 @@ def get_log_dir(
 ) -> Tuple[Path, str, str, str]:
     """
     Obtains the log_dir used for exp_manager.
-    Returns:
-        log_dir (Path): the log_dir
-        exp_dir (str): the base exp_dir without name nor version
-        name (str): The name of the experiment
-        version (str): The version of the experiment
-        explicit_log_dir (str): The explicit path to the log folder. Defaults to False.
-        use_datetime_version (bool): Uses date and time as the version of the log folder. Defaults to True.
-        resume_if_exists (bool): if resume_if_exists of the exp_manager's config is enabled or not. When enabled, the
-            version folders would not get created.
-    Raise:
-        LoggerMisconfigurationError: If trainer is incompatible with arguments
-        NotFoundError: If resume is True, resume_ignore_no_checkpoint is False, and checkpoints could not be found.
-        ValueError: If resume is True, and there were more than 1 checkpoint could found.
+
+    Parameters
+    ----------
+    trainer: The trainer to check.
+    exp_dir: The experiment directory to check.
+    name: The experiment name to check.
+    version: The experiment version to check.
+    explicit_log_dir: The explicit log dir to check.
+    use_datetime_version: Whether to use datetime versioning.
+    resume_if_exists: Whether to resume if the log_dir already exists.
+
+    Raises
+    -------
+    LoggerMisconfigurationError: If trainer is incompatible with arguments
+    NotFoundError: If resume is True, resume_ignore_no_checkpoint is False, and checkpoints could not be found.
+    ValueError: If resume is True, and there were more than 1 checkpoint could found.
     """
     if explicit_log_dir:  # If explicit log_dir was passed, short circuit
         return check_explicit_log_dir(trainer, [Path(explicit_log_dir)], exp_dir, name, version)  # type: ignore
@@ -573,10 +592,12 @@ def get_log_dir(
 
 def get_git_hash():
     """
-    Helper function that tries to get the commit hash if running inside a git folder
-    returns:
-        Bool: Whether the git subprocess ran without error
-        str: git subprocess output or error message
+    Helper function that tries to get the commit hash if running inside a git folder.
+
+    Returns
+    -------
+    Bool: Whether the git subprocess ran without error.
+    String: git subprocess output or error message
     """
     try:
         return True, subprocess.check_output(["git", "rev-parse", "HEAD"], stderr=subprocess.STDOUT).decode()
@@ -586,10 +607,12 @@ def get_git_hash():
 
 def get_git_diff():
     """
-    Helper function that tries to get the git diff if running inside a git folder
-    returns:
-        Bool: Whether the git subprocess ran without error
-        str: git subprocess output or error message
+    Helper function that tries to get the git diff if running inside a git folder.
+
+    Returns
+    -------
+    Bool: Whether the git subprocess ran without error.
+    String: git subprocess output or error message
     """
     try:
         return subprocess.check_output(["git", "diff"], stderr=subprocess.STDOUT).decode()
@@ -626,8 +649,24 @@ def configure_loggers(
     create_wandb_logger: bool,
     wandb_kwargs: dict,
 ):
-    """Creates TensorboardLogger and/or WandBLogger and attach them to trainer. Raises ValueError if
-    summary_writer_kwargs or wandb_kwargs are miss configured.
+    """
+    Creates TensorboardLogger and/or WandBLogger and attach them to trainer. Raises ValueError if summary_writer_kwargs
+    or wandb_kwargs are miss configured.
+
+    Parameters
+    ----------
+    trainer: The trainer to attach the loggers to.
+    exp_dir: The experiment directory.
+    name: The name of the experiment.
+    version: The version of the experiment.
+    create_tensorboard_logger: Whether to create a TensorboardLogger.
+    summary_writer_kwargs: The kwargs to pass to the TensorboardLogger.
+    create_wandb_logger: Whether to create a Weights & Biases logger.
+    wandb_kwargs: The kwargs to pass to the Weights & Biases logger.
+
+    Returns
+    -------
+    LoggerList: A list of loggers.
     """
     # Potentially create tensorboard logger and/or WandBLogger
     logger_list = []
@@ -676,14 +715,15 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
     ):
         """
 
-        Args:
-            always_save_mridc (): (Default value = False)
-            save_mridc_on_train_end (): (Default value = True)
-            save_best_model (): (Default value = False)
-            postfix (): (Default value = ".mridc")
-            n_resume (): (Default value = False)
-            model_parallel_size (): (Default value = None)
-            **kwargs (): (Default value = {})
+        Parameters
+        ----------
+        always_save_mridc: Whether to save the model even if it is not the best model. Default: False.
+        save_mridc_on_train_end: Whether to save the model at the end of training. Default: True.
+        save_best_model: Whether to save the model if it is the best model. Default: False.
+        postfix: The postfix to add to the model name. Default: ".mridc".
+        n_resume: Whether to resume training from a checkpoint. Default: False.
+        model_parallel_size: The size of the model parallel group. Default: None.
+        kwargs: The kwargs to pass to ModelCheckpoint.
         """
         # Parse and store "extended" parameters: save_best model and postfix.
         self.always_save_mridc = always_save_mridc
@@ -723,7 +763,7 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
             if "mp_rank" in str(checkpoint) or "tp_rank" in str(checkpoint):
                 checkpoint = mridc.utils.model_utils.uninject_model_parallel_rank(checkpoint)
             checkpoint = str(checkpoint)
-            if checkpoint[-10:] == "-last.ckpt":
+            if checkpoint.endswith("-last.ckpt"):
                 continue
             index = checkpoint.find(self.monitor) + len(self.monitor) + 1  # Find monitor in str + 1 for '='
             if index != -1:
@@ -758,13 +798,11 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
         """
         Override the default on_save_checkpoint to save the best model if needed.
 
-        Args:
-            trainer (): The trainer object.
-            pl_module (): The LightningModule object.
-            checkpoint (): The checkpoint object.
-
-        Returns:
-            None
+        Parameters
+        ----------
+        trainer: The trainer object.
+        pl_module: The PyTorch-Lightning module.
+        checkpoint: The checkpoint object.
         """
         output = super().on_save_checkpoint(trainer, pl_module, checkpoint)
         if not self.always_save_mridc:
@@ -805,12 +843,10 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
         """
         This is called at the end of training.
 
-        Args:
-            trainer (): the trainer object
-            pl_module (): the pl_module object
-
-        Returns:
-            None
+        Parameters
+        ----------
+        trainer: The trainer object.
+        pl_module: The PyTorch-Lightning module.
         """
         if trainer.fast_dev_run:
             return None
@@ -837,11 +873,9 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
         """
         Delete a model without a trainer.
 
-        Args:
-            filepath (): path to the model to delete
-
-        Returns:
-            None
+        Parameters
+        ----------
+        filepath: The path to the model to delete.
         """
         app_state = AppState()
         if app_state.model_parallel_size is not None and app_state.model_parallel_size > 1:
@@ -929,11 +963,13 @@ def check_slurm(trainer):
     Checks if the trainer is running on a slurm cluster. If so, it will check if the trainer is running on the master
     node. If it is not, it will exit.
 
-    Args:
-        trainer (): The trainer to check.
+    Parameters
+    ----------
+    trainer: The trainer to check.
 
-    Returns:
-        bool: True if the trainer is running on the master node, False otherwise.
+    Returns
+    -------
+    True if the trainer is running on the master node, False otherwise.
     """
     try:
         return trainer.accelerator_connector.is_slurm_managing_tasks

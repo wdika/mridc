@@ -243,8 +243,9 @@ class Logger(metaclass=Singleton):
                 self._handlers["stream_stderr"].release()
 
             yield stream
-        except (KeyError, ValueError):
-            raise RuntimeError("Impossible to patch logging handlers if handler does not exist")
+        except (KeyError, ValueError) as e:
+            raise RuntimeError("Impossible to patch logging handlers if handler does not exist") from e
+
         finally:
             # Port backwards set_stream() from python 3.7
             self._handlers["stream_stderr"].acquire()
@@ -273,8 +274,9 @@ class Logger(metaclass=Singleton):
                 self._handlers["stream_stdout"].release()
 
             yield stream
-        except (KeyError, ValueError):
-            raise RuntimeError("Impossible to patch logging handlers if handler does not exist")
+        except (KeyError, ValueError) as e:
+            raise RuntimeError("Impossible to patch logging handlers if handler does not exist") from e
+
         finally:
             # Port backwards set_stream() from python 3.7
             self._handlers["stream_stdout"].acquire()
@@ -286,7 +288,7 @@ class Logger(metaclass=Singleton):
 
     @contextmanager
     def temp_verbosity(self, verbosity_level):
-        """Sets the a temporary threshold for what messages will be logged."""
+        """Sets a temporary threshold for what messages will be logged."""
         if self._logger is not None:
 
             old_verbosity = self.get_verbosity()
@@ -308,8 +310,7 @@ class Logger(metaclass=Singleton):
     def captureWarnings(self, capture):
         """
         If capture is true, redirect all warnings to the logging package.
-        If capture is False, ensure that warnings are not redirected to logging
-        but to their original destinations.
+        If capture is False, ensure that warnings are not redirected to logging but to their original destinations.
         """
         if self._logger is not None:
 
@@ -326,8 +327,7 @@ class Logger(metaclass=Singleton):
     def _showwarning(self, message, category, filename, lineno, file=None, line=None):
         """
         Implementation of show warnings which redirects to logging.
-        It will call warnings.formatwarning and will log the resulting string
-        with level logging.WARNING.
+        It will call warnings.formatwarning and will log the resulting string with level logging.WARNING.
         """
         s = warnings.formatwarning(message, category, filename, lineno, line)
         self.warning("%s", s)
@@ -336,12 +336,14 @@ class Logger(metaclass=Singleton):
         """
         Returns True if the given message has been logged at least once in the given mode.
 
-        Args:
-            msg (): The message to check.
-            mode (): The mode to check.
+        Parameters
+        ----------
+        msg: The message to check.
+        mode: The mode to check.
 
-        Returns:
-            True if the message has been logged at least once in the given mode.
+        Returns
+        -------
+        True if the message has been logged at least once in the given mode.
         """
         if mode == LogMode.ONCE:
             PREFIX_LEN = 12
@@ -353,9 +355,8 @@ class Logger(metaclass=Singleton):
     def debug(self, msg, *args, mode=LogMode.EACH, **kwargs):
         """
         Log 'msg % args' with severity 'DEBUG'.
-        To pass exception information, use the keyword argument exc_info with
-        a true value, e.g.
-        logger.debug("Houston, we have a %s", "thorny problem", exc_info=1)
+        To pass exception information, use the keyword argument exc_info with a true value, e.g.
+        logger.debug("Houston, we have %s", "thorny problem", exc_info=1)
         """
         if self._logger is not None and self._logger.isEnabledFor(Logger.DEBUG) and not self._logged_once(msg, mode):
             self._logger._log(Logger.DEBUG, msg, args, **kwargs)
@@ -363,9 +364,8 @@ class Logger(metaclass=Singleton):
     def info(self, msg, *args, mode=LogMode.EACH, **kwargs):
         """
         Log 'msg % args' with severity 'INFO'.
-        To pass exception information, use the keyword argument exc_info with
-        a true value, e.g.
-        logger.info("Houston, we have a %s", "interesting problem", exc_info=1)
+        To pass exception information, use the keyword argument exc_info with a true value, e.g.
+        logger.info("Houston, we have %s", "interesting problem", exc_info=1)
         """
         if self._logger is not None and self._logger.isEnabledFor(Logger.INFO) and not self._logged_once(msg, mode):
             self._logger._log(Logger.INFO, msg, args, **kwargs)
@@ -373,9 +373,8 @@ class Logger(metaclass=Singleton):
     def warning(self, msg, *args, mode=LogMode.EACH, **kwargs):
         """
         Log 'msg % args' with severity 'WARNING'.
-        To pass exception information, use the keyword argument exc_info with
-        a true value, e.g.
-        logger.warning("Houston, we have a %s", "bit of a problem", exc_info=1)
+        To pass exception information, use the keyword argument exc_info with a true value, e.g.
+        logger.warning("Houston, we have %s", "bit of a problem", exc_info=1)
         """
         if self._logger is not None and self._logger.isEnabledFor(Logger.WARNING) and not self._logged_once(msg, mode):
             self._logger._log(Logger.WARNING, msg, args, **kwargs)
@@ -383,9 +382,8 @@ class Logger(metaclass=Singleton):
     def error(self, msg, *args, mode=LogMode.EACH, **kwargs):
         """
         Log 'msg % args' with severity 'ERROR'.
-        To pass exception information, use the keyword argument exc_info with
-        a true value, e.g.
-        logger.error("Houston, we have a %s", "major problem", exc_info=1)
+        To pass exception information, use the keyword argument exc_info with a true value, e.g.
+        logger.error("Houston, we have %s", "major problem", exc_info=1)
         """
         if self._logger is not None and self._logger.isEnabledFor(Logger.ERROR) and not self._logged_once(msg, mode):
             self._logger._log(Logger.ERROR, msg, args, **kwargs)
@@ -394,12 +392,14 @@ class Logger(metaclass=Singleton):
         """
         Log 'msg % args' with severity 'CRITICAL'.
         To pass exception information, use the keyword argument exc_info with a true value, e.g.
-        logger.critical("Houston, we have a %s", "major disaster", exc_info=1)
-        Args:
-            msg: the message to log
-            *args: the arguments to the message
-            mode: the mode to log the message in
-            **kwargs: the keyword arguments to the message
+        logger.critical("Houston, we have %s", "major disaster", exc_info=1)
+
+        Parameters
+        ----------
+        msg: the message to log
+        *args: the arguments to the message
+        mode: the mode to log the message in
+        **kwargs: the keyword arguments to the message
         """
         if (
             self._logger is not None

@@ -20,21 +20,25 @@ def _check_valid_opt_params(lr, eps, betas):
 
 
 class Novograd(Optimizer):
-    """Implements Novograd algorithm.
-    It has been proposed  in "Stochastic Gradient Methods with Layer-wise
-    Adaptive Moments for Training of Deep Networks"
-    (https://arxiv.org/abs/1905.11286)
-    Arguments:
-        params (iterable): iterable of parameters to optimize or dicts defining
-            parameter groups
-        lr (float, optional): learning rate (default: 1e-3)
-        betas (Tuple[float, float], optional): coefficients used for computing
-            running averages of gradient and its square (default: (0.9, 0.999))
-        eps (float, optional): term added to the denominator to improve
-            numerical stability (default: 1e-8)
-        weight_decay (float, optional): weight decay (L2 penalty) (default: 0)
-        amsgrad (boolean, optional): whether to use the AMSGrad variant of this
-            algorithm from the paper "On the Convergence of Adam and Beyond"
+    """
+    Implements Novograd algorithm.
+    It has been proposed  in "Stochastic Gradient Methods with Layer-wise Adaptive Moments for Training of Deep
+    Networks" (https://arxiv.org/abs/1905.11286).
+
+    Parameters
+    ----------
+    params: Iterable of parameters to optimize or dicts defining parameter groups.
+        iterable
+    lr: Learning rate.
+        float, (default: 1e-3)
+    betas: Coefficients used for computing running averages of gradient and its square.
+        (Tuple[float, float], optional) (default: (0.9, 0.999))
+    eps: Term added to the denominator to improve numerical stability.
+        (float, optional), (default: 1e-8)
+    weight_decay (float, optional): weight decay (L2 penalty) (default: 0)
+    amsgrad: whether to use the AMSGrad variant of this algorithm from the paper "On the Convergence of Adam and
+    Beyond".
+        (boolean, optional), (default: False)
     """
 
     def __init__(
@@ -65,10 +69,16 @@ class Novograd(Optimizer):
             group.setdefault("amsgrad", False)
 
     def step(self, closure=None):
-        """Performs a single optimization step.
-        Arguments:
-            closure (callable, optional): A closure that reevaluates the model
-                and returns the loss.
+        """
+        Performs a single optimization step.
+
+        Parameters
+        ----------
+        closure: A closure that reevaluates the model and returns the loss.
+
+        Returns
+        -------
+        loss: Loss (if provided)
         """
         loss = closure() if closure is not None else None
         for group in self.param_groups:

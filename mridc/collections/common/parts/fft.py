@@ -20,15 +20,17 @@ def fft2c(
     """
     Apply centered 2 dimensional Fast Fourier Transform.
 
-    Args:
-        data: Complex valued input data containing at least 3 dimensions:
-            dimensions -2 & -1 are spatial dimensions. All other dimensions are assumed to be batch dimensions.
-        fft_type: Specify fft type. This is important if an orthogonal transformation is needed or not.
-        fft_normalization: "ortho" is the default normalization used by PyTorch. Can be changed to "ortho" or None.
-        fft_dim: dimensions to apply the FFT
+    Parameters
+    ----------
+    data: Complex valued input data containing at least 3 dimensions: dimensions -2 & -1 are spatial dimensions. All
+    other dimensions are assumed to be batch dimensions.
+    fft_type: Specify fft type. This is important if an orthogonal transformation is needed or not.
+    fft_normalization: "ortho" is the default normalization used by PyTorch. Can be changed to "ortho" or None.
+    fft_dim: dimensions to apply the FFT
 
-    Returns:
-        The FFT of the input.
+    Returns
+    -------
+    The FFT of the input.
     """
     if fft_dim is None:
         fft_dim = [-2, -1]
@@ -53,15 +55,17 @@ def ifft2c(
     """
     Apply centered 2 dimensional Inverse Fast Fourier Transform.
 
-    Args:
-        data: Complex valued input data containing at least 3 dimensions:
-            dimensions -2 & -1 are spatial dimensions. All other dimensions are assumed to be batch dimensions.
-        fft_type: Specify fft type. This is important if an orthogonal transformation is needed or not.
-        fft_normalization: "ortho" is the default normalization used by PyTorch. Can be changed to "ortho" or None.
-        fft_dim: dimensions to apply the FFT
+    Parameters
+    ----------
+    data: Complex valued input data containing at least 3 dimensions: dimensions -2 & -1 are spatial dimensions. All
+    other dimensions are assumed to be batch dimensions.
+    fft_type: Specify fft type. This is important if an orthogonal transformation is needed or not.
+    fft_normalization: "ortho" is the default normalization used by PyTorch. Can be changed to "ortho" or None.
+    fft_dim: dimensions to apply the FFT
 
-    Returns:
-        The IFFT of the input.
+    Returns
+    -------
+    The IFFT of the input.
     """
     if fft_dim is None:
         fft_dim = [-2, -1]
@@ -81,13 +85,15 @@ def roll_one_dim(x: torch.Tensor, shift: int, dim: int) -> torch.Tensor:
     """
     Similar to roll but for only one dim.
 
-    Args:
-        x: A PyTorch tensor.
-        shift: Amount to roll.
-        dim: Which dimension to roll.
+    Parameters
+    ----------
+    x: A PyTorch tensor.
+    shift: Amount to roll.
+    dim: Which dimension to roll.
 
-    Returns:
-        Rolled version of x.
+    Returns
+    -------
+    Rolled version of x.
     """
     shift %= x.size(dim)
     if shift == 0:
@@ -103,13 +109,15 @@ def roll(x: torch.Tensor, shift: List[int], dim: List[int]) -> torch.Tensor:
     """
     Similar to np.roll but applies to PyTorch Tensors.
 
-    Args:
-        x: A PyTorch tensor.
-        shift: Amount to roll.
-        dim: Which dimension to roll.
+    Parameters
+    ----------
+    x: A PyTorch tensor.
+    shift: Amount to roll.
+    dim: Which dimension to roll.
 
-    Returns:
-        Rolled version of x.
+    Returns
+    -------
+    Rolled version of x.
     """
     if len(shift) != len(dim):
         raise ValueError("len(shift) must match len(dim)")
@@ -124,12 +132,14 @@ def fftshift(x: torch.Tensor, dim: Optional[List[int]] = None) -> torch.Tensor:
     """
     Similar to np.fft.fftshift but applies to PyTorch Tensors
 
-    Args:
-        x: A PyTorch tensor.
-        dim: Which dimension to fftshift.
+    Parameters
+    ----------
+    x: A PyTorch tensor.
+    dim: Which dimension to fftshift.
 
-    Returns:
-        fftshifted version of x.
+    Returns
+    -------
+    fftshifted version of x.
     """
     if dim is None:
         # this weird code is necessary for torch.jit.script typing
@@ -137,7 +147,7 @@ def fftshift(x: torch.Tensor, dim: Optional[List[int]] = None) -> torch.Tensor:
         for i in range(1, x.dim()):
             dim[i] = i
 
-    # also necessary for torch.jit.script
+    # Also necessary for torch.jit.script
     shift = [0] * len(dim)
     for i, dim_num in enumerate(dim):
         shift[i] = np.floor_divide(x.shape[dim_num], 2)
@@ -149,12 +159,14 @@ def ifftshift(x: torch.Tensor, dim: Optional[List[int]] = None) -> torch.Tensor:
     """
     Similar to np.fft.ifftshift but applies to PyTorch Tensors
 
-    Args:
-        x: A PyTorch tensor.
-        dim: Which dimension to ifftshift.
+    Parameters
+    ----------
+    x: A PyTorch tensor.
+    dim: Which dimension to ifftshift.
 
-    Returns:
-        ifftshifted version of x.
+    Returns
+    -------
+    ifftshifted version of x.
     """
     if dim is None:
         # this weird code is necessary for torch.jit.script typing
@@ -162,7 +174,7 @@ def ifftshift(x: torch.Tensor, dim: Optional[List[int]] = None) -> torch.Tensor:
         for i in range(1, x.dim()):
             dim[i] = i
 
-    # also necessary for torch.jit.script
+    # Also necessary for torch.jit.script
     shift = [0] * len(dim)
     for i, dim_num in enumerate(dim):
         shift[i] = np.floor_divide(x.shape[dim_num] + 1, 2)

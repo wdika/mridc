@@ -28,17 +28,17 @@ class NormUnet(torch.nn.Module):
         norm_groups: int = 2,
     ):
         """
-        Initialize the model.
 
-        Args:
-            chans : Number of output channels of the first convolution layer.
-            num_pools : Number of down-sampling and up-sampling layers.
-            in_chans : Number of channels in the input to the U-Net model.
-            out_chans : Number of channels in the output to the U-Net model.
-            drop_prob : Dropout probability.
-            padding_size: Size of the padding.
-            normalize: Whether to normalize the input.
-            norm_groups: Number of groups to use for group normalization.
+        Parameters
+        ----------
+        chans : Number of output channels of the first convolution layer.
+        num_pools : Number of down-sampling and up-sampling layers.
+        in_chans : Number of channels in the input to the U-Net model.
+        out_chans : Number of channels in the output to the U-Net model.
+        drop_prob : Dropout probability.
+        padding_size: Size of the padding.
+        normalize: Whether to normalize the input.
+        norm_groups: Number of groups to use for group normalization.
         """
         super().__init__()
 
@@ -53,15 +53,7 @@ class NormUnet(torch.nn.Module):
 
     @staticmethod
     def complex_to_chan_dim(x: torch.Tensor) -> torch.Tensor:
-        """
-        Convert the last dimension of the input to complex.
-
-        Args:
-            x: Input tensor.
-
-        Returns:
-            Input tensor with the last dimension converted to complex.
-        """
+        """Convert the last dimension of the input to complex."""
         b, c, h, w, two = x.shape
         if two != 2:
             raise AssertionError
@@ -69,15 +61,7 @@ class NormUnet(torch.nn.Module):
 
     @staticmethod
     def chan_complex_to_last_dim(x: torch.Tensor) -> torch.Tensor:
-        """
-        Convert the last dimension of the input to complex.
-
-        Args:
-            x: Input tensor.
-
-        Returns:
-            Input tensor with the last dimension converted to complex.
-        """
+        """Convert the last dimension of the input to complex."""
         b, c2, h, w = x.shape
         if c2 % 2 != 0:
             raise AssertionError
@@ -85,15 +69,7 @@ class NormUnet(torch.nn.Module):
         return x.view(b, 2, c, h, w).permute(0, 2, 3, 4, 1).contiguous()
 
     def norm(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        """
-        Normalize the input.
-
-        Args:
-            x: Input tensor.
-
-        Returns:
-            Tuple of mean, standard deviation, and normalized input.
-        """
+        """Normalize the input."""
         # group norm
         b, c, h, w = x.shape
 
@@ -109,31 +85,13 @@ class NormUnet(torch.nn.Module):
         return x, mean, std
 
     def unnorm(self, x: torch.Tensor, mean: torch.Tensor, std: torch.Tensor) -> torch.Tensor:
-        """
-        Unnormalize the input.
-
-        Args:
-            x: Input tensor.
-            mean: Mean of the input.
-            std: Standard deviation of the input.
-
-        Returns:
-            Unnormalized input.
-        """
+        """Unnormalize the input."""
         b, c, h, w = x.shape
         input_data = x.reshape(b, self.norm_groups, -1)
         return (input_data * std + mean).reshape(b, c, h, w)
 
     def pad(self, x: torch.Tensor) -> Tuple[torch.Tensor, Tuple[List[int], List[int], int, int]]:
-        """
-        Pad the input with zeros to make it square.
-
-        Args:
-            x: Input tensor.
-
-        Returns:
-            Padded input tensor and the padding.
-        """
+        """Pad the input with zeros to make it square."""
         _, _, h, w = x.shape
         w_mult = ((w - 1) | self.padding_size) + 1
         h_mult = ((h - 1) | self.padding_size) + 1
@@ -149,31 +107,11 @@ class NormUnet(torch.nn.Module):
 
     @staticmethod
     def unpad(x: torch.Tensor, h_pad: List[int], w_pad: List[int], h_mult: int, w_mult: int) -> torch.Tensor:
-        """
-        Unpad the input.
-
-        Args:
-            x: Input tensor.
-            h_pad: Horizontal padding.
-            w_pad: Vertical padding.
-            h_mult: Horizontal multiplier.
-            w_mult: Vertical multiplier.
-
-        Returns:
-            Unpadded input tensor.
-        """
+        """Unpad the input."""
         return x[..., h_pad[0] : h_mult - h_pad[1], w_pad[0] : w_mult - w_pad[1]]
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Forward pass of the network.
-
-        Args:
-            x: Input tensor.
-
-        Returns:
-            Normalized UNet output tensor.
-        """
+        """Forward pass of the network."""
         iscomplex = False
         if x.shape[-1] == 2:
             x = self.complex_to_chan_dim(x)
@@ -200,24 +138,24 @@ class NormUnet(torch.nn.Module):
 
 class Unet(torch.nn.Module):
     """
-    PyTorch implementation of a U-Net model.
+    PyTorch implementation of a U-Net model, as presented in [1].
 
-    O. Ronneberger, P. Fischer, and Thomas Brox. U-net: Convolutional networks
-    for biomedical image segmentation. In International Conference on Medical
-    image computing and computer-assisted intervention, pages 234–241.
-    Springer, 2015.
+    References
+    ----------
+    .. [1] O. Ronneberger, P. Fischer, and Thomas Brox. U-net: Convolutional networks for biomedical image segmentation. In International Conference on Medical image computing and computer-assisted intervention, pages 234–241. Springer, 2015.
     """
 
     def __init__(
         self, in_chans: int, out_chans: int, chans: int = 32, num_pool_layers: int = 4, drop_prob: float = 0.0
     ):
         """
-        Args:
-            in_chans: Number of channels in the input to the U-Net model.
-            out_chans: Number of channels in the output to the U-Net model.
-            chans: Number of output channels of the first convolution layer.
-            num_pool_layers: Number of down-sampling and up-sampling layers.
-            drop_prob: Dropout probability.
+        Parameters
+        ----------
+        in_chans: Number of channels in the input to the U-Net model.
+        out_chans: Number of channels in the output to the U-Net model.
+        chans: Number of output channels of the first convolution layer.
+        num_pool_layers: Number of down-sampling and up-sampling layers.
+        drop_prob: Dropout probability.
         """
         super().__init__()
 
@@ -250,11 +188,13 @@ class Unet(torch.nn.Module):
 
     def forward(self, image: torch.Tensor) -> torch.Tensor:
         """
-        Args:
-            image: Input 4D tensor of shape `(N, in_chans, H, W)`.
+        Parameters
+        ----------
+        image: Input 4D tensor of shape `(N, in_chans, H, W)`.
 
-        Returns:
-            Output tensor of shape `(N, out_chans, H, W)`.
+        Returns
+        -------
+        Output tensor of shape `(N, out_chans, H, W)`.
         """
         stack = []
         output = image
@@ -289,16 +229,17 @@ class Unet(torch.nn.Module):
 
 class ConvBlock(torch.nn.Module):
     """
-    A Convolutional Block that consists of two convolution layers each followed by
-    instance normalization, LeakyReLU activation and dropout.
+    A Convolutional Block that consists of two convolution layers each followed by instance normalization, LeakyReLU
+    activation and dropout.
     """
 
     def __init__(self, in_chans: int, out_chans: int, drop_prob: float):
         """
-        Args:
-            in_chans: Number of channels in the input.
-            out_chans: Number of channels in the output.
-            drop_prob: Dropout probability.
+        Parameters
+        ----------
+        in_chans: Number of channels in the input.
+        out_chans: Number of channels in the output.
+        drop_prob: Dropout probability.
         """
         super().__init__()
 
@@ -319,26 +260,29 @@ class ConvBlock(torch.nn.Module):
 
     def forward(self, image: torch.Tensor) -> torch.Tensor:
         """
-        Args:
-            image: Input 4D tensor of shape `(N, in_chans, H, W)`.
+        Parameters
+        ----------
+        image: Input 4D tensor of shape `(N, in_chans, H, W)`.
 
-        Returns:
-            Output tensor of shape `(N, out_chans, H, W)`.
+        Returns
+        -------
+        Output tensor of shape `(N, out_chans, H, W)`.
         """
         return self.layers(image)
 
 
 class TransposeConvBlock(torch.nn.Module):
     """
-    A Transpose Convolutional Block that consists of one convolution transpose
-    layers followed by instance normalization and LeakyReLU activation.
+    A Transpose Convolutional Block that consists of one convolution transpose layers followed by instance
+    normalization and LeakyReLU activation.
     """
 
     def __init__(self, in_chans: int, out_chans: int):
         """
-        Args:
-            in_chans: Number of channels in the input.
-            out_chans: Number of channels in the output.
+        Parameters
+        ----------
+        in_chans: Number of channels in the input.
+        out_chans: Number of channels in the output.
         """
         super().__init__()
 
@@ -353,10 +297,12 @@ class TransposeConvBlock(torch.nn.Module):
 
     def forward(self, image: torch.Tensor) -> torch.Tensor:
         """
-        Args:
-            image: Input 4D tensor of shape `(N, in_chans, H, W)`.
+        Parameters
+        ----------
+        image: Input 4D tensor of shape `(N, in_chans, H, W)`.
 
-        Returns:
-            Output tensor of shape `(N, out_chans, H*2, W*2)`.
+        Returns
+        -------
+        Output tensor of shape `(N, out_chans, H*2, W*2)`.
         """
         return self.layers(image)

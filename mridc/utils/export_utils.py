@@ -106,6 +106,23 @@ def verify_runtime(
     output_example,
     check_tolerance=0.01,
 ):
+    """
+    Verify runtime output with onnxrt.
+
+    Parameters
+    ----------
+    output: The output of the module.
+    input_list: The input list of the module.
+    input_dict: The input dict of the module.
+    input_names: The input names of the module.
+    output_names: The output names of the module.
+    output_example: The output example of the module.
+    check_tolerance: The tolerance for the check.
+
+    Returns
+    -------
+    The runtime output.
+    """
     # Verify the model can be read, and is valid
     onnx_model = onnx.load(output)
     input_names = [node.name for node in onnx_model.graph.input]
@@ -133,7 +150,7 @@ def verify_runtime(
                 all_good = False
                 logging.info(f"onnxruntime results mismatch! PyTorch(expected):\n{expected}\nONNXruntime:\n{tout}")
     status = "SUCCESS" if all_good else "FAIL"
-    logging.info(f"ONNX generated at {output} verified with onnxruntime : " + status)
+    logging.info(f"ONNX generated at {output} verified with onnxruntime : {status}")
     return all_good
 
 
@@ -142,11 +159,14 @@ def simple_replace(BaseT: Type[nn.Module], DestT: Type[nn.Module]) -> Callable[[
     Generic function generator to replace BaseT module with DestT. BaseT and DestT should have same attributes.
     No weights are copied.
 
-    Args:
-        BaseT : module type to replace
-        DestT : destination module type
-    Returns:
-        swap function to replace BaseT module with DestT
+    Parameters
+    ----------
+    BaseT: The base type of the module.
+    DestT: The destination type of the module.
+
+    Returns
+    -------
+    A function to replace BaseT with DestT.
     """
 
     def expansion_fn(mod: nn.Module) -> Optional[nn.Module]:
@@ -164,11 +184,14 @@ def wrap_module(BaseT: Type[nn.Module], DestT: Type[nn.Module]) -> Callable[[nn.
     Generic function generator to replace BaseT module with DestT. BaseT and DestT should have same attributes.
     No weights are copied.
 
-    Args:
-        BaseT : module type to replace
-        DestT : destination module type
-    Returns:
-        swap function to replace BaseT module with DestT
+    Parameters
+    ----------
+    BaseT: The base type of the module.
+    DestT: The destination type of the module.
+
+    Returns
+    -------
+    A function to replace BaseT with DestT.
     """
 
     def expansion_fn(mod: nn.Module) -> Optional[nn.Module]:
@@ -200,11 +223,15 @@ def replace_modules(
     """
     Top-level function to replace modules in model, specified by class name with a desired replacement.
     NOTE: This occurs in place, if you want to preserve model then make sure to copy it first.
-    Args:
-        model : top level module
-        expansions : replacement dictionary: module class name -> replacement function generator
-    Returns:
-        model, possibly modified in-place
+
+    Parameters
+    ----------
+    model: Top-level model to replace modules in.
+    expansions: A dictionary of module class names to functions to replace them with.
+
+    Returns
+    -------
+    The model with replaced modules.
     """
     mapping: Dict[str, nn.Module] = {}
     for name, m in model.named_modules():
@@ -228,10 +255,13 @@ def replace_for_export(model: nn.Module) -> nn.Module:
     """
     Top-level function to replace default set of modules in model
     NOTE: This occurs in place, if you want to preserve model then make sure to copy it first.
-    Args:
-        model : top level module
-        replace_1D_2D : include 1D -> 2D replacements
-    Returns:
-        model, possibly modified in-place
+
+    Parameters
+    ----------
+    model: Top-level model to replace modules in.
+
+    Returns
+    -------
+    The model with replaced modules.
     """
     replace_modules(model, default_replacements)

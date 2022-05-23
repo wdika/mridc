@@ -13,30 +13,41 @@ __all__ = ["Adafactor"]
 
 
 class Adafactor(Optimizer):
-    """Implements Adafactor algorithm.
+    """
+    Implements Adafactor algorithm.
+
     This implementation is based on: `Adafactor: Adaptive Learning Rates with Sublinear Memory Cost`
     (see https://arxiv.org/abs/1804.04235)
     Note that this optimizer internally adjusts the learning rate depending on the *scale_parameter*, *relative_step*
     and *warmup_init* options. To use a manual (external) learning rate schedule you should set `scale_parameter=False`
     and `relative_step=False`.
-    Args:
-        params (iterable): iterable of parameters to optimize or dicts defining parameter groups
-        lr (float, optional): external learning rate (default: None)
-        eps (tuple[float, float]): regularization constants for square gradient
-            and parameter scale respectively (default: (1e-30, 1e-3))
-        clip_threshold (float): threshold of root mean square of
-            final gradient update (default: 1.0)
-        decay_rate (float): coefficient used to compute running averages of square
-            gradient (default: -0.8)
-        beta1 (float): coefficient used for computing running averages of gradient
-            (default: None)
-        weight_decay (float, optional): weight decay (L2 penalty) (default: 0)
-        scale_parameter (bool): if True, learning rate is scaled by root mean square of
-            parameter (default: True)
-        relative_step (bool): if True, time-dependent learning rate is computed
-            instead of external learning rate (default: True)
-        warmup_init (bool): time-dependent learning rate computation depends on
-            whether warm-up initialization is being used (default: False)
+
+    Parameters
+    ----------
+    params: Iterable of parameters to optimize or dicts defining parameter groups.
+        iterable
+    lr: External learning rate.
+        float (optional), (default: None)
+    eps: Regularization constants for square gradient and parameter scale respectively.
+        tuple (float, float), (default: (1e-30, 1e-3))
+    clip_threshold: Threshold of root-mean-square of final gradient update.
+        float, (default: 1.0)
+    decay_rate: Coefficient used to compute running averages of square gradient.
+        float, (default: -0.8)
+    beta1: Coefficient used for computing running averages of gradient
+        float, (default: None)
+    weight_decay: Weight decay (L2 penalty).
+        float (optional), (default: 0)
+    scale_parameter: If True, learning rate is scaled by root-mean-square of parameter.
+        bool (default: True)
+    relative_step: If True, time-dependent learning rate is computed instead of external learning rate.
+        bool (default: True)
+    warmup_init: Time-dependent learning rate computation depends on whether warm-up initialization is being used.
+        bool (default: False)
+
+    Returns
+    -------
+    Adafactor Optimizer
     """
 
     def __init__(
@@ -95,10 +106,13 @@ class Adafactor(Optimizer):
         return param_scale * rel_step_sz
 
     def step(self, closure=None):
-        """Performs a single optimization step.
+        """
+        Performs a single optimization step.
 
-        Args:
-            closure (callable, optional): A closure that reevaluates the model and returns the loss.
+        Parameters
+        ----------
+        closure: A closure that reevaluates the model and returns the loss.
+            callable (optional)
         """
         loss = closure() if closure is not None else None
         for group in self.param_groups:
@@ -191,7 +205,7 @@ class Adafactor(Optimizer):
 
     @staticmethod
     def _rms(tensor):
-        """Compute the root mean square of a tensor."""
+        """Compute the root-mean-square of a tensor."""
         return tensor.norm(2) / (tensor.numel() ** 0.5)
 
     @staticmethod

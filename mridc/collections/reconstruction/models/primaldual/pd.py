@@ -17,9 +17,8 @@ class DualNet(nn.Module):
 
         Parameters
         ----------
-        num_dual: int
-            Number of dual for LPD algorithm.
-        kwargs: dict
+        num_dual: Number of dual for LPD algorithm.
+        kwargs: Keyword arguments.
         """
         super().__init__()
 
@@ -47,15 +46,12 @@ class DualNet(nn.Module):
 
         Parameters
         ----------
-        model: nn.Module
-            Model to compute.
-        data: torch.Tensor
-            Multi-coil input.
+        model: Model to compute.
+        data: Multi-coil input.
 
         Returns
         -------
-        output: torch.Tensor
-            Multi-coil output.
+        Multi-coil output.
         """
         output = []
         for idx in range(data.size(1)):
@@ -79,8 +75,7 @@ class PrimalNet(nn.Module):
 
         Parameters
         ----------
-        num_primal: int
-            Number of primal for LPD algorithm.
+        num_primal: Number of primal for LPD algorithm.
         """
         super().__init__()
 
@@ -101,6 +96,17 @@ class PrimalNet(nn.Module):
             self.primal_block = kwargs.get("primal_architecture")
 
     def forward(self, f, backward_h):
-        """Forward pass."""
+        """
+        Forward pass of primal network.
+
+        Parameters
+        ----------
+        f: Forward function.
+        backward_h: Backward function.
+
+        Returns
+        -------
+        Primal function.
+        """
         inp = torch.cat([f, backward_h], dim=-1).permute(0, 3, 1, 2)
         return self.primal_block(inp).permute(0, 2, 3, 1)

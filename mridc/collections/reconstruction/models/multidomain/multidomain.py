@@ -97,12 +97,9 @@ class MultiDomainConvBlock(nn.Module):
         """
         Parameters
         ----------
-        in_channels: int
-            Number of input channels.
-        out_channels: int
-            Number of output channels.
-        dropout_probability: float
-            Dropout probability.
+        in_channels: Number of input channels.
+        out_channels: Number of output channels.
+        dropout_probability: Dropout probability.
         """
         super().__init__()
 
@@ -122,14 +119,7 @@ class MultiDomainConvBlock(nn.Module):
         )
 
     def forward(self, _input: torch.Tensor):
-        """
-        Parameters
-        ----------
-        _input: torch.Tensor
-        Returns
-        -------
-        torch.Tensor
-        """
+        """Forward method for the MultiDomainConvBlock class."""
         return self.layers(_input)
 
     def __repr__(self):
@@ -149,10 +139,8 @@ class TransposeMultiDomainConvBlock(nn.Module):
         """
         Parameters
         ----------
-        in_channels: int
-            Number of input channels.
-        out_channels: int
-            Number of output channels.
+        in_channels: Number of input channels.
+        out_channels: Number of output channels.
         """
         super().__init__()
         self.in_channels = in_channels
@@ -164,14 +152,7 @@ class TransposeMultiDomainConvBlock(nn.Module):
         )
 
     def forward(self, input_data: torch.Tensor):
-        """
-        Parameters
-        ----------
-        input_data: torch.Tensor
-        Returns
-        -------
-        torch.Tensor
-        """
+        """Forward method for the TransposeMultiDomainConvBlock class."""
         return self.layers(input_data)
 
     def __repr__(self):
@@ -179,7 +160,7 @@ class TransposeMultiDomainConvBlock(nn.Module):
 
 
 class StandardizationLayer(nn.Module):
-    r"""
+    """
     Multi-channel data standardization method. Inspired by AIRS model submission to the Fast MRI 2020 challenge.
     Given individual coil images :math:`\{x_i\}_{i=1}^{N_c}` and sensitivity coil maps :math:`\{S_i\}_{i=1}^{N_c}`
 
@@ -231,18 +212,12 @@ class MultiDomainUnet2d(nn.Module):
         """
         Parameters
         ----------
-        in_channels: int
-            Number of input channels to the u-net.
-        out_channels: int
-            Number of output channels to the u-net.
-        num_filters: int
-            Number of output channels of the first convolutional layer.
-        num_pool_layers: int
-            Number of down-sampling and up-sampling layers (depth).
-        dropout_probability: float
-            Dropout probability.
-        fft_type: str
-            FFT type.
+        in_channels: Number of input channels to the u-net.
+        out_channels: Number of output channels to the u-net.
+        num_filters: Number of output channels of the first convolutional layer.
+        num_pool_layers: Number of down-sampling and up-sampling layers (depth).
+        dropout_probability: Dropout probability.
+        fft_type: FFT type.
         """
         super().__init__()
 
@@ -278,14 +253,7 @@ class MultiDomainUnet2d(nn.Module):
         ]
 
     def forward(self, input_data: torch.Tensor):
-        """
-        Parameters
-        ----------
-        input_data: torch.Tensor
-        Returns
-        -------
-        torch.Tensor
-        """
+        """Forward pass of the u-net."""
         stack = []
         output = input_data
 
