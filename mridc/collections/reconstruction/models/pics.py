@@ -4,7 +4,7 @@ __author__ = "Dimitrios Karkalousos"
 from abc import ABC
 from typing import Any, Dict, Tuple, Union
 
-import bart
+# import bart
 import numpy as np
 import torch
 from omegaconf import DictConfig, OmegaConf
@@ -79,11 +79,11 @@ class PICS(BaseMRIReconstructionModel, ABC):
              Final estimation of PICS.
         """
         sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
-
-        if "cuda" in str(self._device):
-            pred = bart.bart(1, f"pics -d0 -g -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
-        else:
-            pred = bart.bart(1, f"pics -d0 -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
+        pred = torch.zeros_like(sensitivity_maps)
+        # if "cuda" in str(self._device):
+        #     pred = bart.bart(1, f"pics -d0 -g -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
+        # else:
+        #     pred = bart.bart(1, f"pics -d0 -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
         _, pred = center_crop_to_smallest(target, pred)
         return pred
 
