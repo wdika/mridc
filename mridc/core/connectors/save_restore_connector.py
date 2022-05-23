@@ -36,9 +36,11 @@ class SaveRestoreConnector:
             model_config.yaml - model configuration in .yaml format. You can deserialize this into cfg argument for
             model's constructor
             model_wights.chpt - model checkpoint
-        Args:
-            model: ModelPT object to be saved.
-            save_path: Path to .mridc file where model instance should be saved
+
+        Parameters
+        ----------
+        model: ModelPT object to be saved.
+        save_path: Path to .mridc file where model instance should be saved
         """
         if is_global_rank_zero():
             with tempfile.TemporaryDirectory() as tmpdir:
@@ -66,24 +68,30 @@ class SaveRestoreConnector:
     ):
         """
         Restores model instance (weights and configuration) into .mridc file
-        Args:
-            calling_cls: Class of the model to be restored.
-            restore_path: path to .mridc file from which model should be instantiated
-            override_config_path: path to a yaml config that will override the internal
-                config file or an OmegaConf / DictConfig object representing the model config.
-            map_location: Optional torch.device() to map the instantiated model to a device.
-                By default (None), it will select a GPU if available, falling back to CPU otherwise.
-            strict: Passed to load_state_dict. By default True
-            return_config: If set to true, will return just the underlying config of the restored
-                model as an OmegaConf DictConfig object without instantiating the model.
-            trainer: Optional trainer object to be used for model parallelism.
-        Example:
+
+        Parameters
+        ----------
+        calling_cls: Class of the model to be restored.
+        restore_path: path to .mridc file from which model should be instantiated
+        override_config_path: path to a yaml config that will override the internal config file or an
+        OmegaConf/DictConfig object representing the model config.
+        map_location: Optional torch.device() to map the instantiated model to a device. By default (None), it will
+        select a GPU if available, falling back to CPU otherwise.
+        strict: Passed to load_state_dict. By default, True.
+        return_config: If set to true, will return just the underlying config of the restored model as an OmegaConf
+        DictConfig object without instantiating the model.
+        trainer: Optional trainer object to be used for model parallelism.
+
+        Example
+        -------
             ```
             model = mridc.collections.asr.models.EncDecCTCModel.restore_from('asr.mridc')
             assert isinstance(model, mridc.collections.asr.models.EncDecCTCModel)
             ```
-        Returns:
-            An instance of type cls or its underlying config (if return_config is set).
+
+        Returns
+        -------
+        An instance of type cls or its underlying config (if return_config is set).
         """
         # Get path where the command is executed - the artifacts will be "retrieved" there
         # (original .mridc behavior)
@@ -161,21 +169,23 @@ class SaveRestoreConnector:
     ):
         """
         Restores model instance (weights and configuration) into .mridc file
-        Args:
-            calling_cls: The class of the model to be restored.
-            restore_path: path to .mridc file from which model should be instantiated
-            override_config_path: path to a yaml config that will override the internal
-                config file or an OmegaConf / DictConfig object representing the model config.
-            map_location: Optional torch.device() to map the instantiated model to a device.
-                By default (None), it will select a GPU if available, falling back to CPU otherwise.
-            strict: Passed to load_state_dict. By default True
-            return_config: If set to true, will return just the underlying config of the restored
-                model as an OmegaConf DictConfig object without instantiating the model.
-            trainer: Optional trainer object to be used for restoring the model.
-        Returns:
-            An instance of type cls or its underlying config (if return_config is set).
 
+        Parameters
         ----------
+        calling_cls: The class of the model to be restored.
+        restore_path: path to .mridc file from which model should be instantiated
+        override_config_path: path to a yaml config that will override the internal config file or an
+        OmegaConf/DictConfig object representing the model config.
+        map_location: Optional torch.device() to map the instantiated model to a device. By default (None), it will
+        select a GPU if available, falling back to CPU otherwise.
+        strict: Passed to load_state_dict. By default, True.
+        return_config: If set to true, will return just the underlying config of the restored model as an
+        OmegaConf/DictConfig object without instantiating the model.
+        trainer: Optional trainer object to be used for restoring the model.
+
+        Returns
+        -------
+        An instance of type cls or its underlying config (if return_config is set).
         """
         # Get path where the command is executed - the artifacts will be "retrieved" there (original .mridc behavior)
         loaded_params = self.load_config_and_state_dict(
@@ -199,32 +209,38 @@ class SaveRestoreConnector:
     def extract_state_dict_from(self, restore_path: str, save_dir: str, split_by_module: bool = False):
         """
         Extract the state dict(s) from a provided .mridc tarfile and save it to a directory.
-        Args:
-            restore_path: path to .mridc file from which state dict(s) should be extracted
-            save_dir: directory in which the saved state dict(s) should be stored
-            split_by_module: bool flag, which determines whether the output checkpoint should
-                be for the entire Model, or the individual module's that comprise the Model
-        Example:
-            To convert the .mridc tarfile into a single Model level PyTorch checkpoint
-            ::
-            state_dict = mridc.collections.asr.models.EncDecCTCModel.extract_state_dict_from('asr.mridc',
-            './asr_ckpts')
-            To restore a model from a Model level checkpoint
-            ::
-            model = mridc.collections.asr.models.EncDecCTCModel(cfg)  # or any other method of restoration
-            model.load_state_dict(torch.load("./asr_ckpts/model_weights.ckpt"))
-            To convert the .mridc tarfile into multiple Module level PyTorch checkpoints
-            ::
-            state_dict = mridc.collections.asr.models.EncDecCTCModel.extract_state_dict_from('asr.mridc',
-            './asr_ckpts', split_by_module=True). To restore a module from a Module level checkpoint
-            ::
-            model = mridc.collections.asr.models.EncDecCTCModel(cfg)  # or any other method of restoration
-            # load the individual components
-            model.preprocessor.load_state_dict(torch.load("./asr_ckpts/preprocessor.ckpt"))
-            model.encoder.load_state_dict(torch.load("./asr_ckpts/encoder.ckpt"))
-            model.decoder.load_state_dict(torch.load("./asr_ckpts/decoder.ckpt"))
-        Returns:
-            The state dict that was loaded from the original .mridc checkpoint
+
+        Parameters
+        ----------
+        restore_path: path to .mridc file from which state dict(s) should be extracted
+        save_dir: directory in which the saved state dict(s) should be stored
+        split_by_module: bool flag, which determines whether the output checkpoint should be for the entire Model, or
+        the individual module's that comprise the Model.
+
+        Example
+        -------
+        To convert the .mridc tarfile into a single Model level PyTorch checkpoint
+        ::
+        state_dict = mridc.collections.asr.models.EncDecCTCModel.extract_state_dict_from('asr.mridc',
+        './asr_ckpts')
+        To restore a model from a Model level checkpoint
+        ::
+        model = mridc.collections.asr.models.EncDecCTCModel(cfg)  # or any other method of restoration
+        model.load_state_dict(torch.load("./asr_ckpts/model_weights.ckpt"))
+        To convert the .mridc tarfile into multiple Module level PyTorch checkpoints
+        ::
+        state_dict = mridc.collections.asr.models.EncDecCTCModel.extract_state_dict_from('asr.mridc',
+        './asr_ckpts', split_by_module=True). To restore a module from a Module level checkpoint
+        ::
+        model = mridc.collections.asr.models.EncDecCTCModel(cfg)  # or any other method of restoration
+        # load the individual components
+        model.preprocessor.load_state_dict(torch.load("./asr_ckpts/preprocessor.ckpt"))
+        model.encoder.load_state_dict(torch.load("./asr_ckpts/encoder.ckpt"))
+        model.decoder.load_state_dict(torch.load("./asr_ckpts/decoder.ckpt"))
+
+        Returns
+        -------
+        The state dict that was loaded from the original .mridc checkpoint.
         """
         cwd = os.getcwd()
 
@@ -264,31 +280,36 @@ class SaveRestoreConnector:
         """
         Register model artifacts with this function. These artifacts (files) will be included inside .mridc file
         when model.save_to("mymodel.mridc") is called.
+
         How it works:
-        1. It always returns existing absolute path which can be used during Model constructor call
-            EXCEPTION: src is None or "" in which case nothing will be done and src will be returned
-        2. It will add (config_path, model_utils.ArtifactItem()) pair to self.artifacts
-        If "src" is local existing path, then it will be returned in absolute path form.
-        elif "src" starts with "mridc_file:unique_artifact_name":
-            .mridc will be untarred to a temporary folder location and an actual existing path will be returned
-        else an error will be raised.
+        1. It always returns existing absolute path which can be used during Model constructor call. EXCEPTION: src is
+        None or "" in which case nothing will be done and src will be returned
+        2. It will add (config_path, model_utils.ArtifactItem()) pair to self.artifacts. If "src" is local existing
+        path, then it will be returned in absolute path form. elif "src" starts with "mridc_file:unique_artifact_name":
+        .mridc will be untarred to a temporary folder location and an actual existing path will be returned else an
+        error will be raised.
+
         WARNING: use .register_artifact calls in your models' constructors.
         The returned path is not guaranteed to exist after you have exited your model's constructor.
-        Args:
-            model: ModelPT object to register artifact for.
-            config_path (str): Artifact key. Usually corresponds to the model config.
-            src (str): Path to artifact.
-            verify_src_exists (bool): If set to False, then the artifact is optional and register_artifact will return
-                None even if src is not found. Defaults to True.
-        Returns:
-            str: If src is not None or empty it always returns absolute path which is guaranteed to exists during model
-                instance life
+
+        Parameters
+        ----------
+        model: ModelPT object to register artifact for.
+        config_path: Artifact key. Usually corresponds to the model config.
+        src: Path to artifact.
+        verify_src_exists: If set to False, then the artifact is optional and register_artifact will return None
+         even if src is not found. Defaults to True.
+
+        Returns
+        --------
+        If src is not None or empty it always returns absolute path which is guaranteed to exist during model instance
+         life.
         """
         app_state = AppState()
 
         artifact_item = mridc.utils.model_utils.ArtifactItem()  # type: ignore
 
-        # This is for backward compatibility, if the src objects exists simply inside of the tarfile
+        # This is for backward compatibility, if the src objects exists simply inside the tarfile
         # without its key having been overridden, this pathway will be used.
         src_obj_name = os.path.basename(src)
         if app_state.mridc_file_folder is not None:
@@ -330,15 +351,13 @@ class SaveRestoreConnector:
 
     def _handle_artifacts(self, model, mridc_file_folder):
         """
-        This method is called by ModelPT.save_to() and ModelPT.load_from()
-        It will handle all artifacts and save them to the mridc file.
+        This method is called by ModelPT.save_to() and ModelPT.load_from(). It will handle all artifacts and save them
+        to the mridc file.
 
-        Args:
-            model (): ModelPT object to register artifact for.
-            mridc_file_folder (): Path to the mridc file.
-
-        Returns:
-            None
+        Parameters
+        ----------
+        model: ModelPT object to register artifact for.
+        mridc_file_folder: Path to the mridc file.
         """
         tarfile_artifacts = []
         app_state = AppState()
@@ -414,8 +433,9 @@ class SaveRestoreConnector:
 
     @staticmethod
     def _inject_model_parallel_rank_for_ckpt(dirname, basename):
-        """This method is called by ModelPT.save_to() and ModelPT.load_from() to inject the parallel rank of the
-        process into the checkpoint file name.
+        """
+        This method is called by ModelPT.save_to() and ModelPT.load_from() to inject the parallel rank of the process
+        into the checkpoint file name.
         """
         model_weights = os.path.join(dirname, basename)
         model_weights = mridc.utils.model_utils.inject_model_parallel_rank(model_weights)

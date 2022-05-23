@@ -18,15 +18,13 @@ from mridc.collections.reconstruction.models.recurrentvarnet.conv2gru import Con
 
 class RecurrentInit(nn.Module):
     """
-    Recurrent State Initializer (RSI) module of Recurrent Variational Network as presented in [1]_.
+    Recurrent State Initializer (RSI) module of Recurrent Variational Network as presented in [1].
     The RSI module learns to initialize the recurrent hidden state :math:`h_0`, input of the first
     RecurrentVarNetBlock of the RecurrentVarNet.
 
     References
     ----------
-    .. [1] Yiasemis, George, et al. “Recurrent Variational Network: A Deep Learning Inverse Problem Solver Applied to .
-    the Task of Accelerated MRI Reconstruction.” ArXiv:2111.09639 [Physics], Nov. 2021. arXiv.org, h
-    ttp://arxiv.org/abs/2111.09639.
+    .. [1] Yiasemis, George, et al. “Recurrent Variational Network: A Deep Learning Inverse Problem Solver Applied to the Task of Accelerated MRI Reconstruction.” ArXiv:2111.09639 [Physics], Nov. 2021. arXiv.org, http://arxiv.org/abs/2111.09639.
     """
 
     def __init__(
@@ -43,18 +41,19 @@ class RecurrentInit(nn.Module):
 
         Parameters
         ----------
-        in_channels: int
-            Input channels.
-        out_channels: int
-            Number of hidden channels of the recurrent unit of RecurrentVarNet Block.
-        channels: tuple
-            Channels :math:`n_d` in the convolutional layers of initializer.
-        dilations: tuple
-            Dilations :math:`p` of the convolutional layers of the initializer.
-        depth: int
-            RecurrentVarNet Block number of layers :math:`n_l`.
-        multiscale_depth: 1
-            Number of feature layers to aggregate for the output, if 1, multi-scale context aggregation is disabled.
+        in_channels: Input channels.
+            int
+        out_channels: Number of hidden channels of the recurrent unit of RecurrentVarNet Block.
+            int
+        channels: Channels :math:`n_d` in the convolutional layers of initializer.
+            Tuple[int, ...]
+        dilations: Dilations :math:`p` of the convolutional layers of the initializer.
+            Tuple[int, ...]
+        depth: RecurrentVarNet Block number of layers :math:`n_l`.
+            int
+        multiscale_depth: Number of feature layers to aggregate for the output, if 1, multi-scale context aggregation
+        is disabled.
+            int
         """
         super().__init__()
 
@@ -76,15 +75,16 @@ class RecurrentInit(nn.Module):
             self.out_blocks.append(nn.Sequential(*block))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Computes initialization for recurrent unit given input `x`.
+        """
+        Computes initialization for recurrent unit given input `x`.
+
         Parameters
         ----------
-        x: torch.Tensor
-            Initialization for RecurrentInit.
+        x: Initialization for RecurrentInit.
+
         Returns
         -------
-        out: torch.Tensor
-            Initial recurrent hidden state from input `x`.
+        Initial recurrent hidden state from input `x`.
         """
         features = []
         for block in self.conv_blocks:
@@ -101,14 +101,12 @@ class RecurrentInit(nn.Module):
 
 
 class RecurrentVarNetBlock(nn.Module):
-    r"""
-    Recurrent Variational Network Block :math:`\mathcal{H}_{\theta_{t}}` as presented in [1]_.
+    """
+    Recurrent Variational Network Block :math:`\mathcal{H}_{\theta_{t}}` as presented in [1].
 
     References
     ----------
-    .. [1] Yiasemis, George, et al. “Recurrent Variational Network: A Deep Learning Inverse Problem Solver Applied to
-    the Task of Accelerated MRI Reconstruction.” ArXiv:2111.09639 [Physics], Nov. 2021. arXiv.org,
-    http://arxiv.org/abs/2111.09639.
+    .. [1] Yiasemis, George, et al. “Recurrent Variational Network: A Deep Learning Inverse Problem Solver Applied to the Task of Accelerated MRI Reconstruction.” ArXiv:2111.09639 [Physics], Nov. 2021. arXiv.org, http://arxiv.org/abs/2111.09639.
     """
 
     def __init__(
@@ -123,14 +121,14 @@ class RecurrentVarNetBlock(nn.Module):
 
         Parameters
         ----------
-        in_channels: int,
-            Input channel number. Default is 2 for complex data.
-        hidden_channels: int,
-            Hidden channels. Default: 64.
-        num_layers: int,
-            Number of layers of :math:`n_l` recurrent unit. Default: 4.
-        fft_type: str,
-            FFT type. Default: "orthogonal".
+        in_channels: Input channel number.
+            int, Default is 2 for complex data.
+        hidden_channels: Hidden channels.
+            int, Default: 64.
+        num_layers: Number of layers of :math:`n_l` recurrent unit.
+            int, Default: 4.
+        fft_type: FFT type.
+            str, Default: "orthogonal".
         """
         super().__init__()
         self.fft_type = fft_type
@@ -158,27 +156,27 @@ class RecurrentVarNetBlock(nn.Module):
 
         Parameters
         ----------
-        current_kspace: torch.Tensor
-            Current k-space prediction of shape (N, coil, height, width, complex=2).
-        masked_kspace: torch.Tensor
-            Masked k-space of shape (N, coil, height, width, complex=2).
-        sampling_mask: torch.Tensor
-            Sampling mask of shape (N, 1, height, width, 1).
-        sensitivity_map: torch.Tensor
-            Coil sensitivities of shape (N, coil, height, width, complex=2).
-        hidden_state: torch.Tensor or None
-            ConvGRU hidden state of shape (N, hidden_channels, height, width, num_layers) if not None. Optional.
-        coil_dim: int,
-            Coil dimension. Default: 1.
-        complex_dim: int,
-            Complex dimension. Default: -1.
+        current_kspace: Current k-space prediction.
+            torch.Tensor, shape [batch_size, n_coil, height, width, 2]
+        masked_kspace: Subsampled k-space.
+            torch.Tensor, shape [batch_size, n_coil, height, width, 2]
+        sampling_mask: Sampling mask.
+            torch.Tensor, shape [batch_size, 1, height, width, 1]
+        sensitivity_map: Coil sensitivities.
+            torch.Tensor, shape [batch_size, n_coil, height, width, 2]
+        hidden_state: ConvGRU hidden state.
+            None or torch.Tensor, shape [batch_size, n_l, height, width, hidden_channels]
+        coil_dim: Coil dimension.
+            int, Default: 1.
+        complex_dim: Complex dimension.
+            int, Default: -1.
 
         Returns
         -------
-        new_kspace: torch.Tensor
-            New k-space prediction of shape (N, coil, height, width, complex=2).
-        hidden_state: torch.Tensor
-            Next hidden state of shape (N, hidden_channels, height, width, num_layers).
+        new_kspace: New k-space prediction.
+            torch.Tensor, shape [batch_size, n_coil, height, width, 2]
+        hidden_state: Next hidden state.
+            list of torch.Tensor, shape [batch_size, hidden_channels, height, width, num_layers]
         """
         kspace_error = torch.where(
             sampling_mask == 0,

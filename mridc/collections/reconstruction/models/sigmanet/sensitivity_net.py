@@ -8,6 +8,7 @@ import torch
 
 
 def matrix_invert(xx, xy, yx, yy):
+    """Invert a 2x2 matrix."""
     det = xx * yy - xy * yx
     return yy.div(det), -xy.div(det), -yx.div(det), xx.div(det)
 
@@ -84,9 +85,11 @@ class ComplexInstanceNorm(torch.nn.Module):
         self.cov_yx_half = v1y * v2y * (s1 - s2)
 
     def forward(self, input):
+        """Operates on images x of size [nBatch, nSmaps, nFE, nPE, 2]"""
         return self.normalize(input)
 
     def set_normalization(self, input):
+        """Set the normalization parameters for a given input."""
         mean = torch.tensor([torch.mean(input).item()]).to(input)
         self.complex_pseudocovariance(input - mean)
         self.mean = mean.unsqueeze(1).unsqueeze(1).unsqueeze(1)
@@ -96,6 +99,7 @@ class ComplexInstanceNorm(torch.nn.Module):
         self.cov_yy_half = self.cov_yy_half.view(-1, 1, 1, 1)
 
     def normalize(self, x):
+        """Normalize the input x."""
         x_m = x - self.mean
         re, im = torch.unbind(x_m, dim=-1)
 
@@ -109,6 +113,7 @@ class ComplexInstanceNorm(torch.nn.Module):
         return img
 
     def unnormalize(self, x):
+        """Unnormalize the input x."""
         re, im = torch.unbind(x, dim=-1)
         x_unnorm_re = self.cov_xx_half * re + self.cov_xy_half * im
         x_unnorm_im = self.cov_yx_half * re + self.cov_yy_half * im
@@ -116,6 +121,8 @@ class ComplexInstanceNorm(torch.nn.Module):
 
 
 class ComplexNormWrapper(torch.nn.Module):
+    """Wrapper for complex normalization."""
+
     def __init__(self, model):
         super().__init__()
         self.model = model
@@ -153,6 +160,17 @@ class SensitivityNetwork(torch.nn.Module):
         save_space=False,
         reset_cache=False,
     ):
+        """
+
+        Parameters
+        ----------
+        num_iter: Number of iterations.
+        model: Model to be used for the forward and adjoint.
+        datalayer: Data layer to be used for the forward and adjoint.
+        shared_params: If True, the parameters of the model are shared between the forward and adjoint.
+        save_space: If True, the adjoint is computed in the forward pass.
+        reset_cache: If True, the adjoint is computed in the forward pass.
+        """
         super().__init__()
 
         self.shared_params = shared_params
@@ -173,6 +191,19 @@ class SensitivityNetwork(torch.nn.Module):
         self.reset_cache = reset_cache
 
     def forward(self, x, y, smaps, mask):
+        """
+
+        Parameters
+        ----------
+        x: Input data.
+        y: Subsampled k-space data.
+        smaps: Coil sensitivity maps.
+        mask: Sampling mask.
+
+        Returns
+        -------
+        Output data.
+        """
         x_all = [x]
         x_half_all = []
         if self.shared_params:
@@ -189,6 +220,19 @@ class SensitivityNetwork(torch.nn.Module):
         return x_all[-1]
 
     def forward_save_space(self, x, y, smaps, mask):
+        """
+
+        Parameters
+        ----------
+        x: Input data.
+        y: Subsampled k-space data.
+        smaps: Coil sensitivity maps.
+        mask: Sampling mask.
+
+        Returns
+        -------
+        Output data.
+        """
         if self.shared_params:
             num_iter = self.num_iter_total
         else:
@@ -237,11 +281,13 @@ class SensitivityNetwork(torch.nn.Module):
             trg_param.data.copy_(src_param.data)
 
     def stage_training_init(self):
+        """set stage training flag to True"""
         self.freeze_all()
         self.unfreeze(0)
         print(self.is_trainable)
 
     def stage_training_transition_i(self, copy=False):
+        """set stage training flag to True"""
         if self.shared_params:
             return
 

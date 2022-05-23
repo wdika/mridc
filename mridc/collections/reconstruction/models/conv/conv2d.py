@@ -14,21 +14,23 @@ class Conv2d(nn.Module):
     """
 
     def __init__(self, in_channels, out_channels, hidden_channels, n_convs=3, activation=nn.PReLU(), batchnorm=False):
-        """Inits Conv2d.
+        """
+        Inits Conv2d.
+
         Parameters
         ----------
-        in_channels: int
-            Number of input channels.
-        out_channels: int
-            Number of output channels.
-        hidden_channels: int
-            Number of hidden channels.
-        n_convs: int
-            Number of convolutional layers.
-        activation: nn.Module
-            Activation function.
-        batchnorm: bool
-            If True a batch normalization layer is applied after every convolution.
+        in_channels: Number of input channels.
+            int
+        out_channels: Number of output channels.
+            int
+        hidden_channels: Number of hidden channels.
+            int
+        n_convs: Number of convolutional layers.
+            int
+        activation: Activation function.
+            torch.nn.Module
+        batchnorm: If True a batch normalization layer is applied after every convolution.
+            bool
         """
         super().__init__()
 
@@ -54,12 +56,11 @@ class Conv2d(nn.Module):
 
         Parameters
         ----------
-        x: torch.Tensor
-            Input tensor.
+        x: Input tensor.
+
         Returns
         -------
-        out: torch.Tensor
-            Convoluted output.
+        Convoluted output.
         """
         if x.dim() == 5:
             x = x.squeeze(1)

@@ -25,13 +25,15 @@ def hydra_runner(
     Decorator used for passing the Config paths to main function.
     Optionally registers a schema used for validation/providing default values.
 
-    Args:
-        config_path: Path to the config file.
-        config_name: Name of the config file.
-        schema: Schema used for validation/providing default values.
+    Parameters
+    ----------
+    config_path: Path to the config file.
+    config_name: Name of the config file.
+    schema: Schema used for validation/providing default values.
 
-    Returns:
-        A decorator that passes the config paths to the main function.
+    Returns
+    -------
+    A decorator that passes the config paths to the main function.
     """
 
     def decorator(task_function: TaskFunction) -> Callable[[], None]:

@@ -51,7 +51,24 @@ class PICS(BaseMRIReconstructionModel, ABC):
 
     @staticmethod
     def process_inputs(y, mask):
-        """Process the inputs to the network."""
+        """
+        Process the inputs to the method.
+
+        Parameters
+        ----------
+        y: Subsampled k-space data.
+            list of torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+        mask: Sampling mask.
+            list of torch.Tensor, shape [1, 1, n_x, n_y, 1]
+
+        Returns
+        -------
+        y: Subsampled k-space data.
+            randomly selected y
+        mask: Sampling mask.
+            randomly selected mask
+        r: Random index.
+        """
         if isinstance(y, list):
             r = np.random.randint(len(y))
             y = y[r]
@@ -70,13 +87,24 @@ class PICS(BaseMRIReconstructionModel, ABC):
     ) -> Union[list, Any]:
         """
         Forward pass of PICS.
-        Args:
-            y: torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2], masked kspace data
-            sensitivity_maps: torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2], coil sensitivity maps
-            mask: torch.Tensor, shape [1, 1, n_x, n_y, 1], sampling mask
-            target: torch.Tensor, shape [batch_size, n_x, n_y, 2], target data
-        Returns:
-             Final estimation of PICS.
+
+        Parameters
+        ----------
+        y: Subsampled k-space data.
+            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+        sensitivity_maps: Coil sensitivity maps.
+            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+        mask: Sampling mask.
+            torch.Tensor, shape [1, 1, n_x, n_y, 1]
+        init_pred: Initial prediction.
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        target: Target data to compute the loss.
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+
+        Returns
+        -------
+        pred: torch.Tensor, shape [batch_size, n_x, n_y, 2]
+            Predicted data.
         """
         sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         pred = torch.zeros_like(sensitivity_maps)
@@ -88,7 +116,25 @@ class PICS(BaseMRIReconstructionModel, ABC):
         return pred
 
     def test_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Tuple[str, int, torch.Tensor]:
-        """Test step for PICS."""
+        """
+        Test step.
+
+        Parameters
+        ----------
+        batch: Batch of data.
+            Dict of torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+        batch_idx: Batch index.
+            int
+
+        Returns
+        -------
+        name: Name of the volume.
+            str
+        slice_num: Slice number.
+            int
+        pred: Predicted data.
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        """
         y, sensitivity_maps, mask, _, target, fname, slice_num, _ = batch
         y, mask, _ = self.process_inputs(y, mask)
 

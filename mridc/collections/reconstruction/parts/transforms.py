@@ -36,18 +36,19 @@ class MRIDataTransforms:
         """
         Initialize the data transform.
 
-        Args:
-            mask_func: The function that masks the kspace.
-            shift_mask: Whether to shift the mask.
-            mask_center_scale: The scale of the center of the mask.
-            half_scan_percentage: The percentage of the scan to be used.
-            crop_size: The size of the crop.
-            kspace_crop: Whether to crop the kspace.
-            crop_before_masking: Whether to crop before masking.
-            kspace_zero_filling_size: The size of padding in kspace -> zero filling.
-            normalize_inputs: Whether to normalize the inputs.
-            fft_type: The type of the FFT.
-            use_seed: Whether to use the seed.
+        Parameters
+        ----------
+        mask_func: The function that masks the kspace.
+        shift_mask: Whether to shift the mask.
+        mask_center_scale: The scale of the center of the mask.
+        half_scan_percentage: The percentage of the scan to be used.
+        crop_size: The size of the crop.
+        kspace_crop: Whether to crop the kspace.
+        crop_before_masking: Whether to crop before masking.
+        kspace_zero_filling_size: The size of padding in kspace -> zero filling.
+        normalize_inputs: Whether to normalize the inputs.
+        fft_type: The type of the FFT.
+        use_seed: Whether to use the seed.
         """
         self.mask_func = mask_func
         self.shift_mask = shift_mask
@@ -84,18 +85,20 @@ class MRIDataTransforms:
         """
         Apply the data transform.
 
-        Args:
-            kspace: The kspace.
-            sensitivity_map: The sensitivity map.
-            mask: The mask.
-            eta: The initial estimation.
-            target: The target.
-            attrs: The attributes.
-            fname: The file name.
-            slice_idx: The slice number.
+        Parameters
+        ----------
+        kspace: The kspace.
+        sensitivity_map: The sensitivity map.
+        mask: The mask.
+        eta: The initial estimation.
+        target: The target.
+        attrs: The attributes.
+        fname: The file name.
+        slice_idx: The slice number.
 
-        Returns:
-            The transformed data.
+        Returns
+        -------
+        The transformed data.
         """
         kspace = to_tensor(kspace)
 

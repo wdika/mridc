@@ -31,22 +31,22 @@ class CrossDomainNetwork(nn.Module):
 
         Parameters
         ----------
-        image_model_list: nn.Module
-            Image domain model list.
-        kspace_model_list: Optional[nn.Module]
-            K-space domain model list. If set to None, a correction step is applied. Default: None.
-        domain_sequence: str
-            Domain sequence containing only "K" (k-space domain) and/or "I" (image domain). Default: "KIKI".
-        image_buffer_size: int
-            Image buffer size. Default: 1.
-        kspace_buffer_size: int
-            K-space buffer size. Default: 1.
-        normalize_image: bool
-            If True, input is normalized. Default: False.
-        fft_type: str
-            Type of FFT.
-        kwargs: dict
-            Keyword Arguments.
+        image_model_list: Image domain model list.
+            torch.nn.Module
+        kspace_model_list: K-space domain model list. If set to None, a correction step is applied.
+            torch.nn.Module, Default: None.
+        domain_sequence: Domain sequence containing only "K" (k-space domain) and/or "I" (image domain).
+            str, Default: "KIKI".
+        image_buffer_size: Image buffer size.
+            int, Default: 1.
+        kspace_buffer_size: K-space buffer size.
+            int, Default: 1.
+        normalize_image: If True, input is normalized.
+            bool, Default: False.
+        fft_type: Type of FFT.
+            str, Default: "orthogonal".
+        kwargs:Keyword Arguments.
+            dict
         """
         super().__init__()
 
@@ -140,16 +140,17 @@ class CrossDomainNetwork(nn.Module):
 
         Parameters
         ----------
-        masked_kspace: torch.Tensor
-            Masked k-space of shape (N, coil, height, width, complex=2).
-        sensitivity_map: torch.Tensor
-            Sensitivity map of shape (N, coil, height, width, complex=2).
-        sampling_mask: torch.Tensor
-            Sampling mask of shape (N, 1, height, width, 1).
+        masked_kspace: Subsampled k-space data.
+            torch.tenor, shape [batch_size, n_coil, height, width, 2]
+        sensitivity_map: Sensitivity map.
+            torch.tenor, shape [batch_size, n_coil, height, width, 2]
+        sampling_mask: Sampling mask.
+            torch.tenor, shape [batch_size, 1, height, width, 1]
+
         Returns
         -------
-        out_image: torch.Tensor
-            Output image of shape (N, height, width, complex=2).
+        Output image.
+            torch.tenor, shape [batch_size, height, width, 2]
         """
         input_image = self._backward_operator(masked_kspace, sampling_mask, sensitivity_map)
 

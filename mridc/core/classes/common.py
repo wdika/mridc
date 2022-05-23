@@ -137,13 +137,13 @@ class Typing(ABC):
             - Check if keyword value is a container type (list or tuple). If yes,
                 then perform the elementwise test of neural type above on each element
                 of the nested structure, recursively.
-        Args:
-            input_types: Either the `input_types` defined at class level, or the local function
-                overridden type definition.
-            ignore_collections: For backward compatibility, container support can be disabled explicitly
-                using this flag. When set to True, all nesting is ignored and nest-depth checks are skipped.
-            kwargs: Dictionary of argument_name:argument_value pairs passed to the wrapped
-                function upon call.
+
+        Parameters
+        ----------
+        input_types: Either the `input_types` defined at class level, or the local function overridden type definition.
+        ignore_collections: For backward compatibility, container support can be disabled explicitly using this flag.
+        When set to True, all nesting is ignored and nest-depth checks are skipped.
+        kwargs: Dictionary of argument_name:argument_value pairs passed to the wrapped function upon call.
         """
         # TODO: Properly implement this
         if input_types is None:
@@ -211,19 +211,21 @@ class Typing(ABC):
     def _attach_and_validate_output_types(self, out_objects, ignore_collections=False, output_types=None):
         """
         This function does a few things.
-        1) It ensures that len(out_object) == len(self.output_types).
-        2) If the output is a tensor (or list/tuple of list/tuple ... of tensors), it
-            attaches a neural_type to it. For objects without the neural_type attribute,
-            such as python objects (dictionaries and lists, primitive data types, structs),
-            no neural_type is attached.
-            Note: tensor.neural_type is only checked during _validate_input_types which is
-            called prior to forward().
-        Args:
-            output_types: Either the `output_types` defined at class level, or the local function
-                overridden type definition.
-            ignore_collections: For backward compatibility, container support can be disabled explicitly
-                using this flag. When set to True, all nesting is ignored and nest-depth checks are skipped.
-            out_objects: The outputs of the wrapped function.
+            1) It ensures that len(out_object) == len(self.output_types).
+            2) If the output is a tensor (or list/tuple of list/tuple ... of tensors), it
+                attaches a neural_type to it. For objects without the neural_type attribute,
+                such as python objects (dictionaries and lists, primitive data types, structs),
+                no neural_type is attached.
+                Note: tensor.neural_type is only checked during _validate_input_types which is
+                called prior to forward().
+
+        Parameters
+        ----------
+        output_types: Either the `output_types` defined at class level, or the local function overridden type
+        definition.
+        ignore_collections: For backward compatibility, container support can be disabled explicitly using this flag.
+        When set to True, all nesting is ignored and nest-depth checks are skipped.
+        out_objects: The outputs of the wrapped function.
         """
         # TODO: Properly implement this
         if output_types is None:
@@ -413,9 +415,7 @@ class Serialization(ABC):
                     # use subclass instead
                     if issubclass(cls, imported_cls):
                         imported_cls = cls
-                        accepts_trainer = Serialization._inspect_signature_for_trainer(imported_cls)
-
-                        if accepts_trainer:
+                        if accepts_trainer := Serialization._inspect_signature_for_trainer(imported_cls):
                             if trainer is None:
                                 # Create a dummy PL trainer object
                                 cfg_trainer = TrainerConfig(
@@ -427,16 +427,14 @@ class Serialization(ABC):
                             instance = imported_cls(cfg=config)  # type: ignore
 
                 except Exception as e:
-                    # record previous error
                     tb = traceback.format_exc()
                     prev_error = f"Model instantiation failed.\nTarget class: {target_cls}\nError: {e}\n{tb}"
-                    logging.debug(prev_error + "\n falling back to 'cls'.")
 
+                    logging.debug(prev_error + "\n falling back to 'cls'.")
             # target class resolution was unsuccessful, fall back to current `cls`
             if instance is None:
                 try:
-                    accepts_trainer = Serialization._inspect_signature_for_trainer(cls)
-                    if accepts_trainer:
+                    if accepts_trainer := Serialization._inspect_signature_for_trainer(cls):
                         instance = cls(cfg=config)  # type: ignore
                 except Exception as e:
                     # report saved errors, if any, and raise the current error
@@ -499,11 +497,15 @@ class FileIO(ABC):
     @classmethod
     def from_config_file(cls, path2yaml_file: str):
         """
-        Instantiates an instance of mridc Model from YAML config file.
-        Weights will be initialized randomly.
-        Args:
-            path2yaml_file: path to yaml file with model configuration
-        Returns:
+        Instantiates an instance of mridc Model from YAML config file. Weights will be initialized randomly.
+
+        Parameters
+        ----------
+        path2yaml_file: path to yaml file with model configuration
+
+        Returns
+        -------
+        Model instance.
         """
         if issubclass(cls, Serialization):
             conf = OmegaConf.load(path2yaml_file)
@@ -513,9 +515,10 @@ class FileIO(ABC):
     def to_config_file(self, path2yaml_file: str):
         """
         Saves current instance's configuration to YAML config file. Weights will not be saved.
-        Args:
-            path2yaml_file: path2yaml_file: path to yaml file where model model configuration will be saved
-        Returns:
+
+        Parameters
+        ----------
+        path2yaml_file: path2yaml_file: path to yaml file where model configuration will be saved.
         """
         if hasattr(self, "_cfg"):
             self._cfg = mridc.utils.model_utils.maybe_update_config_version(self._cfg)  # type: ignore
@@ -569,19 +572,22 @@ class Model(Typing, Serialization, FileIO, ABC):  # type: ignore
         """
         Should list all pre-trained models available.
         Note: There is no check that requires model names and aliases to be unique. In the case of a collision,
-        whatever model (or alias) is listed first in the this returned list will be instantiated.
-        Returns:
-            A list of PretrainedModelInfo entries
+        whatever model (or alias) is listed first in the returned list will be instantiated.
+
+        Returns
+        -------
+        A list of PretrainedModelInfo entries.
         """
         raise NotImplementedError()
 
     @classmethod
     def get_available_model_names(cls) -> List[str]:
         """
-        Returns the list of model names available.
-        to get the complete model description use list_available_models()
-        Returns:
-            A list of model names
+        Returns the list of model names available. To get the complete model description use list_available_models().
+
+        Returns
+        -------
+        A list of model names.
         """
         return (
             [model.pretrained_model_name for model in cls.list_available_models()]  # type: ignore
@@ -602,23 +608,25 @@ class Model(Typing, Serialization, FileIO, ABC):  # type: ignore
         save_restore_connector: SaveRestoreConnector = None,
     ):
         """
-        Instantiates an instance of mridc
-        Use restore_from() to instantiate from a local .mridc file.
-        Args:
-            model_name: string key which will be used to find the module.
-            refresh_cache: If set to True, then when fetching from cloud, this will re-fetch the file
-                from cloud even if it is already found in a cache locally.
-            override_config_path: path to a yaml config that will override the internal
-                config file
-            map_location: Optional torch.device() to map the instantiated model to a device.
-                By default (None), it will select a GPU if available, falling back to CPU otherwise.
-            strict: Passed to torch.load_state_dict. By default true.
-            return_config: If set to true, will return just the underlying config of the restored
-                model as an OmegaConf DictConfig object without instantiating the model.
-            trainer: Optional Trainer object to use for restoring the model.
-            save_restore_connector: Optional SaveRestoreConnector object to use for restoring the model.
-        Returns:
-            A model instance of a particular model class or its underlying config (if return_config is set).
+        Instantiates an instance of mridc. Use restore_from() to instantiate from a local .mridc file.
+
+        Parameters
+        ----------
+        model_name: String key which will be used to find the module.
+        refresh_cache: If set to True, then when fetching from cloud, this will re-fetch the file from cloud even if it
+         is already found in a cache locally.
+        override_config_path: Path to a yaml config that will override the internal config file.
+        map_location: Optional torch.device() to map the instantiated model to a device. By default (None), it will
+        select a GPU if available, falling back to CPU otherwise.
+        strict: Passed to torch.load_state_dict. By default, True.
+        return_config: If set to true, will return just the underlying config of the restored model as an
+        OmegaConf/DictConfig object without instantiating the model.
+        trainer: Optional Trainer objects to use for restoring the model.
+        save_restore_connector: Optional SaveRestoreConnector object to use for restoring the model.
+
+        Returns
+        -------
+        A model instance of a particular model class or its underlying config (if return_config is set).
         """
         if save_restore_connector is None:
             save_restore_connector = SaveRestoreConnector()
@@ -678,8 +686,8 @@ class typecheck:
     class TypeState(Enum):
         """
         Placeholder to denote the default value of type information provided.
-        If the constructor of this decorator is used to override the class level type definition,
-        this enum value indicate that types will be overridden.
+        If the constructor of this decorator is used to override the class level type definition, this enum value
+        indicate that types will be overridden.
         """
 
         UNINITIALIZED = 0
@@ -691,10 +699,11 @@ class typecheck:
         ignore_collections: bool = False,
     ):
         """
-        A decorator which performs input-output neural type checks, and attaches
-        neural types to the output of the function that it wraps.
-        Requires that the class inherit from `mridc.core.Typing` in order to perform
-        type checking, and will raise an error if that is not the case.
+        A decorator which performs input-output neural type checks, and attaches neural types to the output of the
+        function that it wraps.
+        Requires that the class inherit from `mridc.core.Typing` in order to perform type checking, and will raise an
+        error if that is not the case.
+
         # Usage (Class level type support)
         @typecheck()
         def fn(self, arg1, arg2, ...):
@@ -703,12 +712,13 @@ class typecheck:
         @typecheck(input_types=..., output_types=...)
         def fn(self, arg1, arg2, ...):
             ...
+
         Points to be noted:
-        1) The brackets () in `@typecheck()` are necessary.
-            You will encounter a TypeError: __init__() takes 1 positional argument but X
-            were given without those brackets.
-        2) The function can take any number of positional arguments during definition.
-            When you call this function, all arguments must be passed using kwargs only.
+            1) The brackets () in `@typecheck()` are necessary.
+                You will encounter a TypeError: __init__() takes 1 positional argument but X
+                were given without those brackets.
+            2) The function can take any number of positional arguments during definition.
+                When you call this function, all arguments must be passed using kwargs only.
         """
         self.input_types = input_types
         self.output_types = output_types

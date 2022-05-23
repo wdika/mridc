@@ -21,13 +21,15 @@ def et_query(root: str, qlist: Sequence[str], namespace: str = "https://www.ismr
     """
     Query an XML element for a list of attributes.
 
-    Args:
-        root: The root element of the XML tree.
-        qlist: A list of strings, each of which is an attribute name.
-        namespace: The namespace of the XML tree.
+    Parameters
+    ----------
+    root: The root element of the XML tree.
+    qlist: A list of strings, each of which is an attribute name.
+    namespace: The namespace of the XML tree.
 
-    Returns:
-        A string containing the value of the last attribute in the list.
+    Returns
+    -------
+    A string containing the value of the last attribute in the list.
     """
     s = "."
     prefix = "ismrmrd_namespace"
@@ -60,23 +62,24 @@ class FastMRICombinedSliceDataset(torch.utils.data.Dataset):
         num_cols: Optional[Tuple[int]] = None,
     ):
         """
-        Args:
-            roots: Paths to the datasets.
-            challenges: "singlecoil" or "multicoil" depending on which challenge to use.
-            sense_roots: Load pre-computed (stored) sensitivity maps.
-            transforms: Optional; A sequence of callable objects that preprocesses the raw data into appropriate form.
-                The transform function should take 'kspace', 'target', 'attributes', 'filename', and 'slice' as inputs.
-                'target' may be null for test data.
-            sample_rates: Optional; A sequence of floats between 0 and 1. This controls what fraction of the slices
-                should be loaded. When creating subsampled datasets either set sample_rates (sample by slices) or
-                volume_sample_rates (sample by volumes) but not both.
-            volume_sample_rates: Optional; A sequence of floats between 0 and 1. This controls what fraction of the
-                volumes should be loaded. When creating subsampled datasets either set sample_rates (sample by slices)
-                or volume_sample_rates (sample by volumes) but not both.
-            use_dataset_cache: Whether to cache dataset metadata. This is very useful for large datasets like the brain
-                data.
-            dataset_cache_file: Optional; A file in which to cache dataset information for faster load times.
-            num_cols: Optional; If provided, only slices with the desired number of columns will be considered.
+        Parameters
+        ----------
+        roots: Paths to the datasets.
+        challenges: "singlecoil" or "multicoil" depending on which challenge to use.
+        sense_roots: Load pre-computed (stored) sensitivity maps.
+        transforms: Optional; A sequence of callable objects that preprocesses the raw data into appropriate form.
+            The transform function should take 'kspace', 'target', 'attributes', 'filename', and 'slice' as inputs.
+            'target' may be null for test data.
+        sample_rates: Optional; A sequence of floats between 0 and 1. This controls what fraction of the slices
+            should be loaded. When creating subsampled datasets either set sample_rates (sample by slices) or
+            volume_sample_rates (sample by volumes) but not both.
+        volume_sample_rates: Optional; A sequence of floats between 0 and 1. This controls what fraction of the
+            volumes should be loaded. When creating subsampled datasets either set sample_rates (sample by slices)
+            or volume_sample_rates (sample by volumes) but not both.
+        use_dataset_cache: Whether to cache dataset metadata. This is very useful for large datasets like the brain
+            data.
+        dataset_cache_file: Optional; A file in which to cache dataset information for faster load times.
+        num_cols: Optional; If provided, only slices with the desired number of columns will be considered.
         """
         if sample_rates is not None and volume_sample_rates is not None:
             raise ValueError(
@@ -137,27 +140,25 @@ class FastMRISliceDataset(Dataset):
         mask_root: Union[str, Path, os.PathLike] = None,
     ):
         """
-        Args:
-            root: Path to the dataset.
-            challenge: "singlecoil" or "multicoil" depending on which challenge to use.
-            transform: Optional; A sequence of callable objects that preprocesses the raw data into appropriate form.
-                The transform function should take 'kspace', 'target', 'attributes', 'filename', and 'slice' as inputs.
-                'target' may be null for test data.
-            sense_root: Path to the coil sensitivities maps dataset.
-            use_dataset_cache: Whether to cache dataset metadata. This is very useful for large datasets like the brain
-                data.
-            sample_rate: Optional; A sequence of floats between 0 and 1. This controls what fraction of the slices
-                should be loaded. When creating subsampled datasets either set sample_rates (sample by slices) or
-                volume_sample_rates (sample by volumes) but not both.
-            volume_sample_rate: Optional; A sequence of floats between 0 and 1. This controls what fraction of the
-                 volumes should be loaded. When creating subsampled datasets either set sample_rates (sample by slices)
-                  or volume_sample_rates (sample by volumes) but not both.
-            dataset_cache_file: Optional; A file in which to cache dataset information for faster load times.
-            num_cols: Optional; If provided, only slices with the desired number of columns will be considered.
-            mask_root: Path to stored masks.
-
-        Returns:
-            object:
+        Parameters
+        ----------
+        root: Path to the dataset.
+        challenge: "singlecoil" or "multicoil" depending on which challenge to use.
+        transform: Optional; A sequence of callable objects that preprocesses the raw data into appropriate form.
+            The transform function should take 'kspace', 'target', 'attributes', 'filename', and 'slice' as inputs.
+            'target' may be null for test data.
+        sense_root: Path to the coil sensitivities maps dataset.
+        use_dataset_cache: Whether to cache dataset metadata. This is very useful for large datasets like the brain
+            data.
+        sample_rate: Optional; A sequence of floats between 0 and 1. This controls what fraction of the slices
+            should be loaded. When creating subsampled datasets either set sample_rates (sample by slices) or
+            volume_sample_rates (sample by volumes) but not both.
+        volume_sample_rate: Optional; A sequence of floats between 0 and 1. This controls what fraction of the
+             volumes should be loaded. When creating subsampled datasets either set sample_rates (sample by slices)
+              or volume_sample_rates (sample by volumes) but not both.
+        dataset_cache_file: Optional; A file in which to cache dataset information for faster load times.
+        num_cols: Optional; If provided, only slices with the desired number of columns will be considered.
+        mask_root: Path to stored masks.
         """
         if challenge not in ("singlecoil", "multicoil"):
             raise ValueError('challenge should be either "singlecoil" or "multicoil"')
@@ -226,11 +227,13 @@ class FastMRISliceDataset(Dataset):
         """
         Retrieve metadata from a given file.
 
-        Args:
-            fname: Path to file.
+        Parameters
+        ----------
+        fname: Path to file.
 
-        Returns:
-            A dictionary containing the metadata.
+        Returns
+        -------
+        A dictionary containing the metadata.
         """
         with h5py.File(fname, "r") as hf:
             if "ismrmrd_header" in hf:
@@ -313,7 +316,7 @@ class FastMRISliceDataset(Dataset):
             target = hf[self.recons_key][dataslice].astype(np.float32) if self.recons_key in hf else None
 
             attrs = dict(hf.attrs)
-            attrs.update(metadata)
+            attrs |= metadata
 
         if sensitivity_map.shape != kspace.shape:
             sensitivity_map = np.transpose(sensitivity_map, (2, 0, 1))

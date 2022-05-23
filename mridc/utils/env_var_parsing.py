@@ -42,32 +42,32 @@ class RequiredSettingMissingError(Exception):
 
 def _get_env(key, default=None, coerce=lambda x: x, required=False):
     """
-    Return env var coerced into a type other than string.
-    This function extends the standard os.getenv function to enable
-    the coercion of values into data types other than string (all env
-    vars are strings by default).
-    Args:
-        key: string, the name of the env var to look up
-    Kwargs:
-        default: the default value to return if the env var does not exist. NB the
-            default value is **not** coerced, and is assumed to be of the correct type.
-        coerce: a function that is used to coerce the value returned into
-            another type
-        required: bool, if True, then a RequiredSettingMissingError error is raised
-            if the env var does not exist.
-    Returns the env var, passed through the coerce function
+    Return env var coerced into a type other than string. This function extends the standard os.getenv function to
+    enable the coercion of values into data types other than string (all env vars are strings by default).
+
+    Parameters
+    ----------
+    key: The name of the env var to retrieve.
+    default: The default value to return if the env var is not set. NB the default value is **not** coerced, and is
+    assumed to be of the correct type.
+    coerce: A function that takes a string and returns a value of the desired type.
+    required: If True, raises a RequiredSettingMissingError if the env var is not set.
+
+    Returns
+    -------
+    The value of the env var coerced into the desired type.
     """
     try:
         value = os.environ[key]
-    except KeyError:
+    except KeyError as e:
         if required is True:
-            raise RequiredSettingMissingError(key)
+            raise RequiredSettingMissingError(key) from e
         return default
 
     try:
         return coerce(value)
-    except Exception:
-        raise CoercionError(key, value, coerce)
+    except Exception as exc:
+        raise CoercionError(key, value, coerce) from exc
 
 
 # standard type coercion functions

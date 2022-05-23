@@ -32,18 +32,20 @@ def apply_mask(
     """
     Subsample given k-space by multiplying with a mask.
 
-    Args:
-        data: The input k-space data. This should have at least 3 dimensions, where dimensions -3 and -2 are the
-            spatial dimensions, and the final dimension has size 2 (for complex values).
-        mask_func: A function that takes a shape (tuple of ints) and a random number seed and returns a mask.
-        seed: Seed for the random number generator.
-        padding: Padding value to apply for mask.
-        shift: Toggle to shift mask when subsampling. Applicable on 2D data.
-        half_scan_percentage: Percentage of kspace to be dropped.
-        center_scale: Scale of the center of the mask. Applicable on Gaussian masks.
+    Parameters
+    ----------
+    data: The input k-space data. This should have at least 3 dimensions, where dimensions -3 and -2 are the
+        spatial dimensions, and the final dimension has size 2 (for complex values).
+    mask_func: A function that takes a shape (tuple of ints) and a random number seed and returns a mask.
+    seed: Seed for the random number generator.
+    padding: Padding value to apply for mask.
+    shift: Toggle to shift mask when subsampling. Applicable on 2D data.
+    half_scan_percentage: Percentage of kspace to be dropped.
+    center_scale: Scale of the center of the mask. Applicable on Gaussian masks.
 
-    Returns:
-        Tuple of subsampled k-space, mask, and mask indices.
+    Returns
+    -------
+    Tuple of subsampled k-space, mask, and mask indices.
     """
     shape = np.array(data.shape)
     shape[:-3] = 1
@@ -67,14 +69,16 @@ def mask_center(
     """
     Apply a center crop to the input real image or batch of real images.
 
-    Args:
-        x: The input real image or batch of real images.
-        mask_from: Part of center to start filling.
-        mask_to: Part of center to end filling.
-        mask_type: Type of mask to apply. Can be either "1D" or "2D".
+    Parameters
+    ----------
+    x: The input real image or batch of real images.
+    mask_from: Part of center to start filling.
+    mask_to: Part of center to end filling.
+    mask_type: Type of mask to apply. Can be either "1D" or "2D".
 
-    Returns:
-         A mask with the center filled.
+    Returns
+    -------
+     A mask with the center filled.
     """
     mask = torch.zeros_like(x)
 
@@ -96,18 +100,18 @@ def batched_mask_center(
     x: torch.Tensor, mask_from: torch.Tensor, mask_to: torch.Tensor, mask_type: str = "2D"
 ) -> torch.Tensor:
     """
-    Initializes a mask with the center filled in.
+    Initializes a mask with the center filled in. Can operate with different masks for each batch element.
 
-    Can operate with different masks for each batch element.
-
-    Args:
+    Parameters
+    ----------
         x: The input real image or batch of real images.
         mask_from: Part of center to start filling.
         mask_to: Part of center to end filling.
         mask_type: Type of mask to apply. Can be either "1D" or "2D".
 
-    Returns:
-         A mask with the center filled.
+    Returns
+    -------
+     A mask with the center filled.
     """
     if mask_from.shape != mask_to.shape:
         raise ValueError("mask_from and mask_to must match shapes.")
@@ -130,13 +134,15 @@ def center_crop(data: torch.Tensor, shape: Tuple[int, int]) -> torch.Tensor:
     """
     Apply a center crop to the input real image or batch of real images.
 
-    Args:
-        data: The input tensor to be center cropped. It should have at least 2 dimensions and the cropping is applied
-            along the last two dimensions.
-        shape: The output shape. The shape should be smaller than the corresponding dimensions of data.
+    Parameters
+    ----------
+    data: The input tensor to be center cropped. It should have at least 2 dimensions and the cropping is applied
+        along the last two dimensions.
+    shape: The output shape. The shape should be smaller than the corresponding dimensions of data.
 
-    Returns:
-        The center cropped image.
+    Returns
+    -------
+    The center cropped image.
     """
     if not (0 < shape[0] <= data.shape[-2] and 0 < shape[1] <= data.shape[-1]):
         raise ValueError("Invalid shapes.")
@@ -153,13 +159,15 @@ def complex_center_crop(data: torch.Tensor, shape: Tuple[int, int]) -> torch.Ten
     """
     Apply a center crop to the input image or batch of complex images.
 
-    Args:
-        data: The complex input tensor to be center cropped. It should have at least 3 dimensions and the cropping is
-            applied along dimensions -3 and -2 and the last dimensions should have a size of 2.
-        shape: The output shape. The shape should be smaller than the corresponding dimensions of data.
+    Parameters
+    ----------
+    data: The complex input tensor to be center cropped. It should have at least 3 dimensions and the cropping is
+        applied along dimensions -3 and -2 and the last dimensions should have a size of 2.
+    shape: The output shape. The shape should be smaller than the corresponding dimensions of data.
 
-    Returns:
-        The center cropped image
+    Returns
+    -------
+    The center cropped image.
     """
     if not (0 < shape[0] <= data.shape[-3] and 0 < shape[1] <= data.shape[-2]):
         raise ValueError("Invalid shapes.")
@@ -181,12 +189,14 @@ def center_crop_to_smallest(
     The minimum is taken over dim=-1 and dim=-2. If x is smaller than y at dim=-1 and y is smaller than x at dim=-2,
         then the returned dimension will be a mixture of the two.
 
-    Args:
-        x: The first image.
-        y: The second image.
+    Parameters
+    ----------
+    x: The first image.
+    y: The second image.
 
-    Returns:
-        tuple of tensors x and y, each cropped to the minimum size.
+    Returns
+    -------
+    Tuple of tensors x and y, each cropped to the minimum size.
     """
     smallest_width = min(x.shape[-1], y.shape[-1])
     smallest_height = min(x.shape[-2], y.shape[-2])

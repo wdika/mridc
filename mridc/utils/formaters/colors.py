@@ -10,13 +10,17 @@ BEL = "\007"
 
 def code_to_chars(code):
     """
-    Convert ANSI color code to a string of characters.
+    Convert ANSI color code to string of characters.
 
-    Args:
-        code (): ANSI color code.
+    Parameters
+    ----------
+    code: ANSI color code.
+        int
 
-    Returns:
-        str: String of characters.
+    Returns
+    -------
+    String of characters.
+        str
     """
     return CSI + str(code) + "m"
 
@@ -25,11 +29,15 @@ def set_title(title):
     """
     Set terminal title.
 
-    Args:
-        title (): Title.
+    Parameters
+    ----------
+    title: Title.
+        str
 
-    Returns:
-        str: String of characters.
+    Returns
+    -------
+    String of characters.
+        str
     """
     return f"{OSC}2;{title}{BEL}"
 
@@ -38,11 +46,15 @@ def clear_screen(mode=2):
     """
     Clear terminal screen.
 
-    Args:
-        mode (): Mode.
+    Parameters
+    ----------
+    mode: Mode.
+        int
 
-    Returns:
-        str: String of characters.
+    Returns
+    -------
+    String of characters.
+        str
     """
     return CSI + str(mode) + "J"
 
@@ -51,11 +63,15 @@ def clear_line(mode=2):
     """
     Clear terminal line.
 
-    Args:
-        mode (): Mode.
+    Parameters
+    ----------
+    mode: Mode.
+        int
 
-    Returns:
-        str: String of characters.
+    Returns
+    -------
+    String of characters.
+        str
     """
     return CSI + str(mode) + "K"
 
@@ -81,11 +97,15 @@ class AnsiCursor:
         """
         Move the cursor up n lines.
 
-        Args:
-            n (): Number of lines.
+        Parameters
+        ----------
+        n: Number of lines.
+            int
 
-        Returns:
-            str: String of characters.
+        Returns
+        -------
+        String of characters.
+            str
         """
         return CSI + str(n) + "A"
 
@@ -94,51 +114,68 @@ class AnsiCursor:
         """
         Move the cursor down n lines.
 
-        Args:
-            n (): Number of lines.
+        Parameters
+        ----------
+        n: Number of lines.
+            int
 
-        Returns:
-            str: String of characters.
+        Returns
+        -------
+        String of characters.
+            str
         """
         return CSI + str(n) + "B"
 
     @staticmethod
     def FORWARD(n=1):
         """
-        Move the cursor forward n characters.
+        Move the cursor forward n lines.
 
-        Args:
-            n (): Number of characters.
+        Parameters
+        ----------
+        n: Number of lines.
+            int
 
-        Returns:
-            str: String of characters.
+        Returns
+        -------
+        String of characters.
+            str
         """
         return CSI + str(n) + "C"
 
     @staticmethod
     def BACK(n=1):
         """
-        Move the cursor back n characters.
+        Move the cursor back n lines.
 
-        Args:
-            n (): Number of characters.
+        Parameters
+        ----------
+        n: Number of lines.
+            int
 
-        Returns:
-            str: String of characters.
+        Returns
+        -------
+        String of characters.
+            str
         """
         return CSI + str(n) + "D"
 
     @staticmethod
     def POS(x=1, y=1):
         """
-        Position the cursor.
+        Move the cursor to the specified position.
 
-        Args:
-            x (): X position.
-            y (): Y position.
+        Parameters
+        ----------
+        x: X position.
+            int
+        y: Y position.
+            int
 
-        Returns:
-            str: String of characters.
+        Returns
+        -------
+        String of characters.
+            str
         """
         return CSI + str(y) + ";" + str(x) + "H"
 

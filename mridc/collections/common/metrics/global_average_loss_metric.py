@@ -18,19 +18,17 @@ class GlobalAverageLossMetric(Metric):
     If ``take_avg_loss`` is ``True``, the :meth:`update` method ``loss`` argument has to be a mean loss. If
     ``take_avg_loss`` is ``False`` then the :meth:`update` method ``loss`` argument has to be a sum of losses.
     See :doc:`PyTorch Lightning Metrics<pytorch-lightning:metrics>` for the metric usage instruction.
-    Args:
-        compute_on_step:
-            The method :meth:`forward` only calls ``update()`` and returns ``None`` if this is set to ``False``.
-            default: ``True``
-        dist_sync_on_step:
-            Synchronize metric state across processes at each method :meth:`forward` call before returning the
-            value at the step
-        process_group:
-            Specify the process group on which synchronization is called. default: ``None`` (which selects the entire
-            world)
-        take_avg_loss:
-            If ``True`` values of :meth:`update` method ``loss`` argument has to be a mean loss. If ``False``
-            values of :meth:`update` method ``loss`` argument has to be a sum of losses. default: ``True``
+
+    Parameters
+    ----------
+    compute_on_step: The method :meth:`forward` only calls ``update()`` and returns ``None`` if this is set to
+    ``False``. Default: ``True``
+    dist_sync_on_step: Synchronize metric state across processes at each method :meth:`forward` call before returning
+    the value at the step
+    process_group: Specify the process group on which synchronization is called. default: ``None`` (which selects the
+    entire world)
+    take_avg_loss: If ``True`` values of :meth:`update` method ``loss`` argument has to be a mean loss. If ``False``
+    values of :meth:`update` method ``loss`` argument has to be a sum of losses. default: ``True``
     """
 
     def __init__(self, compute_on_step=True, dist_sync_on_step=False, process_group=None, take_avg_loss=True):
@@ -44,11 +42,13 @@ class GlobalAverageLossMetric(Metric):
     def update(self, loss, num_measurements):
         """
         Updates :attr:`loss_sum` and :attr:`num_measurements`.
-        Args:
-            loss: A float zero dimensional ``torch.Tensor`` which is either sum or average of losses for processed
-                examples. See ``take_avg_loss`` parameter of :meth:`__init__`.
-            num_measurements: An integer zero dimensional ``torch.Tensor`` which contains a number of loss
-                measurements. The sum or mean of the results of these measurements are in the ``loss`` parameter.
+
+        Parameters
+        ----------
+        loss: A float zero dimensional ``torch.Tensor`` which is either sum or average of losses for processed
+        examples. See ``take_avg_loss`` parameter of :meth:`__init__`.
+        num_measurements: An integer zero dimensional ``torch.Tensor`` which contains a number of loss measurements.
+        The sum or mean of the results of these measurements are in the ``loss`` parameter.
         """
         if self.take_avg_loss:
             self.loss_sum += loss.detach() * num_measurements

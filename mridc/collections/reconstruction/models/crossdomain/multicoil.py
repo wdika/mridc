@@ -9,22 +9,24 @@ import torch.nn as nn
 
 
 class MultiCoil(nn.Module):
-    """This makes the forward pass of multi-coil data of shape (N, N_coils, H, W, C) to a model.
+    """
+    This makes the forward pass of multi-coil data of shape (N, N_coils, H, W, C) to a model.
     If coil_to_batch is set to True, coil dimension is moved to the batch dimension. Otherwise, it passes to the model
     each coil-data individually.
     """
 
     def __init__(self, model: nn.Module, coil_dim: int = 1, coil_to_batch: bool = False):
         """Inits MultiCoil.
+
         Parameters
         ----------
-        model: nn.Module
-            Any nn.Module that takes as input with 4D data (N, H, W, C). Typically a convolutional-like model.
-        coil_dim: int
-            Coil dimension. Default: 1.
-        coil_to_batch: bool
-            If True batch and coil dimensions are merged when forwarded by the model and unmerged when outputted.
-            Otherwise, input is forwarded to the model per coil.
+        model: Any nn.Module that takes as input with 4D data (N, H, W, C). Typically, a convolutional-like model.
+            torch.nn.Module
+        coil_dim: Coil dimension.
+            int, Default: 1.
+        coil_to_batch: If True batch and coil dimensions are merged when forwarded by the model and unmerged when
+        outputted. Otherwise, input is forwarded to the model per coil.
+            bool, Default: False.
         """
         super().__init__()
 
@@ -51,12 +53,13 @@ class MultiCoil(nn.Module):
 
         Parameters
         ----------
-        x: torch.Tensor
-            Multi-coil input of shape (N, coil, height, width, in_channels).
+        x: Multi-coil input.
+            torch.Tensor, shape (N, N_coils, H, W, C)
+
         Returns
         -------
-        out: torch.Tensor
-            Multi-coil output of shape (N, coil, height, width, out_channels).
+        Multi-coil output.
+            torch.Tensor, shape (N, N_coils, H, W, C)
         """
         if self.coil_to_batch:
             x = x.clone()

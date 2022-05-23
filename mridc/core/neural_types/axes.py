@@ -75,11 +75,16 @@ class AxisKind(AxisKindAbstract):
 
 class AxisType:
     """This class represents axis semantics and (optionally) it's dimensionality
-    Args:
-        kind (AxisKindAbstract): what kind of axis it is? For example Batch, Height, etc.
-        size (int, optional): specify if the axis should have a fixed size. By default it is set to None and you
-        typically do not want to set it for Batch and Time
-        is_list (bool, default=False): whether this is a list or a tensor axis
+
+    Parameters
+    ----------
+    kind: what kind of axis it is? For example Batch, Height, etc.
+        AxisKindAbstract
+    size: specify if the axis should have a fixed size. By default, it is set to None and you typically do not want to
+    set it for Batch and Time.
+        (int, optional)
+    is_list: whether this is a list or a tensor axis.
+        (bool, default=False)
     """
 
     def __init__(self, kind: AxisKindAbstract, size: Optional[int] = None, is_list=False):

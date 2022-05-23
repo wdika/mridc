@@ -27,13 +27,16 @@ class SSIMLoss(nn.Module):
 
     def forward(self, X: torch.Tensor, Y: torch.Tensor, data_range: torch.Tensor):
         """
-        Args:
-            X: First input tensor.
-            Y: Second input tensor.
-            data_range: Data range.
 
-        Returns:
-            SSIM loss.
+        Parameters
+        ----------
+        X: First input tensor.
+        Y: Second input tensor.
+        data_range: Data range of the input tensors.
+
+        Returns
+        -------
+        SSIM loss.
         """
         if not isinstance(self.w, torch.Tensor):
             raise AssertionError

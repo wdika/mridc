@@ -10,8 +10,8 @@ from mridc.collections.common.parts.utils import complex_conj, complex_mul
 
 
 class DataConsistencyLayer(torch.nn.Module):
-    """Data consistency layer for the CRNN.
-
+    """
+    Data consistency layer for the CRNN.
     This layer is used to ensure that the output of the CRNN is the same as the input.
     """
 
@@ -32,10 +32,7 @@ class RecurrentConvolutionalNetBlock(torch.nn.Module):
 
     References
     ----------
-
-    .. [1] C. Qin, J. Schlemper, J. Caballero, A. N. Price, J. V. Hajnal and D. Rueckert,
-    "Convolutional Recurrent Neural Networks for Dynamic MR Image Reconstruction," in IEEE Transactions on Medical
-    Imaging, vol. 38, no. 1, pp. 280-290, Jan. 2019, doi: 10.1109/TMI.2018.2863670.
+    .. [1] C. Qin, J. Schlemper, J. Caballero, A. N. Price, J. V. Hajnal and D. Rueckert, "Convolutional Recurrent Neural Networks for Dynamic MR Image Reconstruction," in IEEE Transactions on Medical Imaging, vol. 38, no. 1, pp. 280-290, Jan. 2019, doi: 10.1109/TMI.2018.2863670.
     """
 
     def __init__(
@@ -44,11 +41,12 @@ class RecurrentConvolutionalNetBlock(torch.nn.Module):
         """
         Initialize the model block.
 
-        Args:
-            model: Model to apply soft data consistency.
-            num_iterations: Number of iterations.
-            fft_type: Type of FFT to use.
-            no_dc: Whether to remove the DC component.
+        Parameters
+        ----------
+        model: Model to apply soft data consistency.
+        num_iterations: Number of iterations.
+        fft_type: Type of FFT to use.
+        no_dc: Whether to remove the DC component.
         """
         super().__init__()
 
@@ -63,12 +61,14 @@ class RecurrentConvolutionalNetBlock(torch.nn.Module):
         """
         Expand the sensitivity maps to the same size as the input.
 
-        Args:
-            x: Input data.
-            sens_maps: Sensitivity maps.
+        Parameters
+        ----------
+        x: Input data.
+        sens_maps: Sensitivity maps.
 
-        Returns:
-            SENSE reconstruction expanded to the same size as the input.
+        Returns
+        -------
+        SENSE reconstruction expanded to the same size as the input.
         """
         return fft2c(complex_mul(x, sens_maps), fft_type=self.fft_type)
 
@@ -76,12 +76,14 @@ class RecurrentConvolutionalNetBlock(torch.nn.Module):
         """
         Reduce the sensitivity maps to the same size as the input.
 
-        Args:
-            x: Input data.
-            sens_maps: Sensitivity maps.
+        Parameters
+        ----------
+        x: Input data.
+        sens_maps: Sensitivity maps.
 
-        Returns:
-            SENSE reconstruction reduced to the same size as the input.
+        Returns
+        -------
+        SENSE reconstruction reduced to the same size as the input.
         """
         x = ifft2c(x, fft_type=self.fft_type)
         return complex_mul(x, complex_conj(sens_maps)).sum(1)
@@ -95,14 +97,15 @@ class RecurrentConvolutionalNetBlock(torch.nn.Module):
         """
         Forward pass of the model.
 
-        Args:
-            ref_kspace: Reference k-space data.
-            sens_maps: Sensitivity maps.
-            mask: Mask to apply to the data.
+        Parameters
+        ----------
+        ref_kspace: Reference k-space data.
+        sens_maps: Sensitivity maps.
+        mask: Mask to apply to the data.
 
         Returns
         -------
-            Reconstructed image.
+        Reconstructed image.
         """
         zero = torch.zeros(1, 1, 1, 1, 1).to(ref_kspace)
         pred = ref_kspace.clone()

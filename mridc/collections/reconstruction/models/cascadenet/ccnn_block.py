@@ -17,12 +17,16 @@ class CascadeNetBlock(torch.nn.Module):
 
     def __init__(self, model: torch.nn.Module, fft_type: str = "orthogonal", no_dc: bool = False):
         """
-        Initialize the model block.
+        Initializes the model block.
 
-        Args:
-            model: Model to apply soft data consistency.
-            fft_type: Type of FFT to use.
-            no_dc: Whether to remove the DC component.
+        Parameters
+        ----------
+        model: Model to apply soft data consistency.
+            torch.nn.Module
+        fft_type: Type of FFT to use.
+            str
+        no_dc: Flag to disable the soft data consistency.
+            bool
         """
         super().__init__()
 
@@ -35,12 +39,17 @@ class CascadeNetBlock(torch.nn.Module):
         """
         Expand the sensitivity maps to the same size as the input.
 
-        Args:
-            x: Input data.
-            sens_maps: Sensitivity maps.
+        Parameters
+        ----------
+        x: Input data.
+            torch.Tensor, shape [batch_size, n_coils, height, width, 2]
+        sens_maps: Sensitivity maps.
+            torch.Tensor, shape [batch_size, n_coils, height, width, 2]
 
-        Returns:
-            SENSE reconstruction expanded to the same size as the input.
+        Returns
+        -------
+        SENSE reconstruction expanded to the same size as the input.
+            torch.Tensor, shape [batch_size, n_coils, height, width, 2]
         """
         return fft2c(complex_mul(x, sens_maps), fft_type=self.fft_type)
 
@@ -48,12 +57,17 @@ class CascadeNetBlock(torch.nn.Module):
         """
         Reduce the sensitivity maps to the same size as the input.
 
-        Args:
-            x: Input data.
-            sens_maps: Sensitivity maps.
+        Parameters
+        ----------
+        x: Input data.
+            torch.Tensor, shape [batch_size, n_coils, height, width, 2]
+        sens_maps: Sensitivity maps.
+            torch.Tensor, shape [batch_size, n_coils, height, width, 2]
 
-        Returns:
-            SENSE reconstruction reduced to the same size as the input.
+        Returns
+        -------
+        SENSE reconstruction.
+            torch.Tensor, shape [batch_size, height, width, 2]
         """
         x = ifft2c(x, fft_type=self.fft_type)
         return complex_mul(x, complex_conj(sens_maps)).sum(dim=1, keepdim=True)
@@ -66,17 +80,23 @@ class CascadeNetBlock(torch.nn.Module):
         mask: torch.Tensor,
     ) -> torch.Tensor:
         """
-        Forward pass of the model.
+        Forward pass of the model block.
 
-        Args:
-            pred: Predicted k-space data.
-            ref_kspace: Reference k-space data.
-            sens_maps: Sensitivity maps.
-            mask: Mask to apply to the data.
+        Parameters
+        ----------
+        pred: Predicted k-space data.
+            torch.Tensor, shape [batch_size, n_coils, height, width, 2]
+        ref_kspace: Reference k-space data.
+            torch.Tensor, shape [batch_size, n_coils, height, width, 2]
+        sens_maps: Sensitivity maps.
+            torch.Tensor, shape [batch_size, n_coils, height, width, 2]
+        mask: Mask to apply to the data.
+            torch.Tensor, shape [batch_size, 1, height, width, 1]
 
         Returns
         -------
-            Reconstructed image.
+        Reconstructed image.
+            torch.Tensor, shape [batch_size, height, width, 2]
         """
         zero = torch.zeros(1, 1, 1, 1, 1).to(pred)
         soft_dc = torch.where(mask.bool(), pred - ref_kspace, zero) * self.dc_weight

@@ -146,9 +146,9 @@ class MRISignal(ElementType):
     """
     Element type to represent encoded representation returned by the mri model
 
-    Args:
-        freq (int): sampling frequency of a signal. Note that two signals will only be the same if their
-        freq is the same.
+    Parameters
+    ----------
+    freq: sampling frequency of a signal. Note that two signals will only be the same if their freq is the same.
     """
 
     def __init__(self, freq: int = None):
@@ -212,7 +212,7 @@ class StringType(ElementType):
 
 
 class StringLabel(StringType):
-    """Type representing an label being a string with class name (e.g. the "hamster" class in CIFAR100)."""
+    """Type representing a label being a string with class name (e.g. the "hamster" class in CIFAR100)."""
 
 
 class BoolType(ElementType):

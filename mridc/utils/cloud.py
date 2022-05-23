@@ -14,18 +14,24 @@ from mridc.utils import logging
 
 def maybe_download_from_cloud(url, filename, subfolder=None, cache_dir=None, refresh_cache=False) -> str:
     """
-    Helper function to download pre-trained weights from the cloud
-    Args:
-        url: (str) URL of storage
-        filename: (str) what to download. The request will be issued to url/filename
-        subfolder: (str) subfolder within cache_dir. The file will be stored in cache_dir/subfolder. Subfolder can
-            be empty
-        cache_dir: (str) a cache directory where to download. If not present, this function will attempt to create it.
-            If None (default), then it will be $HOME/.cache/torch/mridc
-        refresh_cache: (bool) if True and cached file is present, it will delete it and re-fetch
-    Returns:
-        If successful - absolute local path to the downloaded file
-        else - empty string
+    Download a file from a URL if it does not exist in the cache.
+
+    Parameters
+    ----------
+    url: URL to download the file from.
+        str
+    filename: What to download. The request will be issued to url/filename
+        str
+    subfolder: Subfolder within cache_dir. The file will be stored in cache_dir/subfolder. Subfolder can be empty.
+        str
+    cache_dir: A cache directory where to download. If not present, this function will attempt to create it.
+        str, If None (default), then it will be $HOME/.cache/torch/mridc
+    refresh_cache: If True and cached file is present, it will delete it and re-fetch
+        bool
+
+    Returns
+    -------
+    If successful - absolute local path to the downloaded file else empty string.
     """
     if cache_dir is None:
         cache_location = Path.joinpath(Path.home(), ".cache/torch/mridc")

@@ -42,15 +42,17 @@ def parse_optimizer_args(
     Parses a list of strings, of the format "key=value" or "key2=val1,val2,..."
     into a dictionary of type {key=value, key2=[val1, val2], ...}
     This dictionary is then used to instantiate the chosen Optimizer.
-    Args:
-        optimizer_name: string name of the optimizer, used for auto resolution of params
-        optimizer_kwargs: Either a list of strings in a specified format,
-            or a dictionary. If a dictionary is provided, it is assumed the dictionary
-            is the final parsed value, and simply returned.
-            If a list of strings is provided, each item in the list is parsed into a
-            new dictionary.
-    Returns:
-        A dictionary
+
+    Parameters
+    ----------
+    optimizer_name: string name of the optimizer, used for auto resolution of params.
+    optimizer_kwargs: Either a list of strings in a specified format, or a dictionary. If a dictionary is provided, it
+    is assumed the dictionary is the final parsed value, and simply returned. If a list of strings is provided, each
+    item in the list is parsed into a new dictionary.
+
+    Returns
+    -------
+    A dictionary of the parsed arguments.
     """
     kwargs: Dict[Any, Any] = {}
 
@@ -112,12 +114,14 @@ def parse_optimizer_args(
 
 def register_optimizer(name: str, optimizer: Optimizer, optimizer_params: OptimizerParams):
     """
-    Checks if the optimizer name exists in the registry, and if it doesnt, adds it.
+    Checks if the optimizer name exists in the registry, and if it doesn't, adds it.
     This allows custom optimizers to be added and called by name during instantiation.
-    Args:
-        name: Name of the optimizer. Will be used as key to retrieve the optimizer.
-        optimizer: Optimizer class
-        optimizer_params: The parameters as a dataclass of the optimizer
+
+    Parameters
+    ----------
+    name: Name of the optimizer. Will be used as key to retrieve the optimizer.
+    optimizer: Optimizer class.
+    optimizer_params: The parameters as a dataclass of the optimizer.
     """
     if name in AVAILABLE_OPTIMIZERS:
         raise ValueError(f"Cannot override pre-existing optimizers. Conflicting optimizer name = {name}")
@@ -131,11 +135,15 @@ def register_optimizer(name: str, optimizer: Optimizer, optimizer_params: Optimi
 def get_optimizer(name: str, **kwargs: Optional[Dict[str, Any]]) -> partial:
     """
     Convenience method to obtain an Optimizer class and partially instantiate it with optimizer kwargs.
-    Args:
-        name: Name of the Optimizer in the registry.
-        kwargs: Optional kwargs of the optimizer used during instantiation.
-    Returns:
-        a partially instantiated Optimizer
+
+    Parameters
+    ----------
+    name: Name of the Optimizer in the registry.
+    kwargs: Optional kwargs of the optimizer used during instantiation.
+
+    Returns
+    -------
+    A partially instantiated Optimizer.
     """
     if name not in AVAILABLE_OPTIMIZERS:
         raise ValueError(

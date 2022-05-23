@@ -85,13 +85,13 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
     This optimizer wrapper holds main parameters and gradients in fp32 to support
     stable convergence.
 
-    Arguments:
-        optimizer: base optimizer such as Adam or SGD.
-        fp32_grad_accum: to enable the use of fp32 in gradient accumulation and allreduce.
-        contiguous_grad_bucket: to enable allocating the master gradients in the
-            contiguous memory space to reduce memory fragmentation.
-        async_grad_allreduce: enable asynchronous gradient allreduce that is executed
-            along with the training step back prop.
+    Parameters
+    ----------
+    optimizer: base optimizer such as Adam or SGD.
+    fp32_grad_accum: to enable the use of fp32 in gradient accumulation and allreduce.
+    contiguous_grad_bucket: to enable allocating the master gradients in the contiguous memory space to reduce memory
+    fragmentation.
+    async_grad_allreduce: enable asynchronous gradient allreduce that is executed along with the training step back prop.
     """
 
     def __init__(
@@ -368,18 +368,18 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
         return params
 
     def _get_state(self):
-        """Promote state so it can be retrieved or set via "optimizer_instance.state."""
+        """Promote state, so it can be retrieved or set via "optimizer_instance.state."""
         return self.optimizer.state
 
     def _set_state(self, value):
-        """Promote state so it can be retrieved or set via "optimizer_instance.state."""
+        """Promote state, so it can be retrieved or set via "optimizer_instance.state."""
         self.optimizer.state = value
 
     state = property(_get_state, _set_state)
 
     def _get_param_groups(self):
         """
-        Promote param_groups so it can be retrieved or set via "optimizer_instance.param_groups.
+        Promote param_groups, so it can be retrieved or set via "optimizer_instance.param_groups.
         (for example, to adjust the learning rate)
         """
         return self.optimizer.param_groups

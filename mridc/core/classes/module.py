@@ -25,12 +25,14 @@ class NeuralModule(Module, Typing, Serialization, FileIO, ABC):
         """
         Override this method if random inputs won't work
 
-        Args:
-            max_batch: Maximum batch size to generate
-            max_dim: Maximum dimension to generate
+        Parameters
+        ----------
+        max_batch: Maximum batch size to generate
+        max_dim: Maximum dimension to generate
 
-        Returns:
-            A tuple sample of valid input data.
+        Returns
+        -------
+        A tuple sample of valid input data.
         """
         return None
 

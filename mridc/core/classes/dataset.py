@@ -29,15 +29,18 @@ class Dataset(data.Dataset, Typing, Serialization, ABC):
         """
         This is the method that user pass as functor to DataLoader.
         The method optionally performs neural type checking and add types to the outputs.
+
         Please note, subclasses of Dataset should not implement `input_types`.
         # Usage:
         dataloader = torch.utils.data.DataLoader(
-                ....,
-                collate_fn=dataset.collate_fn,
-                ....
+            ....,
+            collate_fn=dataset.collate_fn,
+            ....
         )
-        Returns:
-            Collated batch, with or without types.
+
+        Returns
+        -------
+        Collated batch, with or without types.
         """
         if self.input_types is not None:
             raise TypeError("Datasets should not implement `input_types` as they are not checked")
@@ -73,8 +76,9 @@ class IterableDataset(data.IterableDataset, Typing, Serialization, ABC):
                 ....
         )
 
-        Returns:
-            Collated batch, with or without types.
+        Returns
+        -------
+        Collated batch, with or without types.
         """
         if self.input_types is not None:
             raise TypeError("Datasets should not implement `input_types` as they are not checked")

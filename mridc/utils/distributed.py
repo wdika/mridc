@@ -11,7 +11,21 @@ from mridc.utils import logging
 
 
 def initialize_distributed(args, backend="nccl"):
-    """Initialize torch.distributed."""
+    """
+    Initialize distributed training.
+
+    Parameters
+    ----------
+    args: The arguments object.
+    backend: The backend to use.
+        default: "nccl"
+
+    Returns
+    -------
+    local_rank: The local rank of the process.
+    rank: The rank of the process.
+    world_size: The number of processes.
+    """
     # Get local rank in case it is provided.
     local_rank = args.local_rank
 

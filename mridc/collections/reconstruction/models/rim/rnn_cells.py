@@ -40,12 +40,7 @@ class ConvGRUCellBase(nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self):
-        """
-        Initialize parameters following the way proposed in the paper.
-
-        Returns:
-            None
-        """
+        """Initialize parameters following the way proposed in the paper."""
         self.ih.weight.data = self.orthotogonalize_weights(self.ih.weight.data)
         self.hh.weight.data = self.orthotogonalize_weights(self.hh.weight.data)
 
@@ -54,29 +49,12 @@ class ConvGRUCellBase(nn.Module):
 
     @staticmethod
     def orthotogonalize_weights(weights, chunks=1):
-        """
-        Orthogonalize the weights of a convolutional layer.
-
-        Args:
-            weights: The weights of the convolutional layer.
-            chunks: The number of chunks to split the weights into.
-
-        Returns:
-            The orthogonalized weights.
-        """
+        """Orthogonalize the weights of a convolutional layer."""
         return torch.cat([nn.init.orthogonal_(w) for w in weights.chunk(chunks, 0)], 0)
 
     @staticmethod
     def determine_conv_class(n_dim):
-        """
-        Determine the convolutional class to use.
-
-        Args:
-            n_dim: The number of dimensions of the convolutional layer.
-
-        Returns:
-            The convolutional class to use.
-        """
+        """Determine the convolutional class to use."""
         if n_dim == 1:
             return nn.Conv1d
         if n_dim == 2:
@@ -86,12 +64,7 @@ class ConvGRUCellBase(nn.Module):
         raise NotImplementedError("No convolution of this dimensionality implemented")
 
     def extra_repr(self):
-        """
-        Extra information to be printed when printing the model.
-
-        Returns:
-            The extra information.
-        """
+        """Extra information to be printed when printing the model."""
         s = "{input_size}, {hidden_size}"
         if "bias" in self.__dict__ and self.bias is not True:
             s += ", bias={bias}"
@@ -100,30 +73,12 @@ class ConvGRUCellBase(nn.Module):
         return s.format(**self.__dict__)
 
     def check_forward_input(self, _input):
-        """
-        Check forward input.
-
-        Args:
-            _input: The input to check.
-
-        Returns:
-            None
-        """
+        """Check forward input."""
         if _input.size(1) != self.input_size:
             raise RuntimeError(f"input has inconsistent input_size: got {_input.size(1)}, expected {self.input_size}")
 
     def check_forward_hidden(self, _input, hx, hidden_label=""):
-        """
-        Check forward hidden.
-
-        Args:
-            _input: The input to check.
-            hx: The hidden to check.
-            hidden_label: The label of the hidden.
-
-        Returns:
-            None
-        """
+        """Check forward hidden."""
         if _input.size(0) != hx.size(0):
             raise RuntimeError(
                 f"Input batch size {_input.size(0)} doesn't match hidden{hidden_label} batch size {hx.size(0)}"
@@ -142,27 +97,19 @@ class ConvGRUCell(ConvGRUCellBase):
         """
         Initialize the ConvGRUCell.
 
-        Args:
-            input_size: The number of channels in the input.
-            hidden_size: The number of channels in the hidden state.
-            conv_dim: The number of dimensions of the convolutional layer.
-            kernel_size: The size of the convolutional kernel.
-            dilation: The dilation of the convolutional kernel.
-            bias: Whether or not to add a bias.
+        Parameters
+        ----------
+        input_size: The number of channels in the input.
+        hidden_size: The number of channels in the hidden state.
+        conv_dim: The number of dimensions of the convolutional layer.
+        kernel_size: The size of the convolutional kernel.
+        dilation: The dilation of the convolutional kernel.
+        bias: Whether to add a bias.
         """
         super(ConvGRUCell, self).__init__(input_size, hidden_size, conv_dim, kernel_size, dilation, bias)
 
     def forward(self, _input, hx):
-        """
-        Forward the ConvGRUCell.
-
-        Args:
-            _input: The input to the ConvGRUCell.
-            hx: The hidden state of the ConvGRUCell.
-
-        Returns:
-            The new hidden state of the ConvGRUCell.
-        """
+        """Forward pass of the ConvGRUCell."""
         ih = self.ih(_input).chunk(3, 1)
         hh = self.hh(hx).chunk(3, 1)
 
@@ -185,13 +132,14 @@ class ConvMGUCellBase(nn.Module):
         """
         Initialize the ConvMGUCellBase.
 
-        Args:
-            input_size: The number of channels in the input.
-            hidden_size: The number of channels in the hidden state.
-            conv_dim: The number of dimensions of the convolutional layer.
-            kernel_size: The size of the convolutional kernel.
-            dilation: The dilation of the convolutional kernel.
-            bias: Whether or not to add a bias.
+        Parameters
+        ----------
+        input_size: The number of channels in the input.
+        hidden_size: The number of channels in the hidden state.
+        conv_dim: The number of dimensions of the convolutional layer.
+        kernel_size: The size of the convolutional kernel.
+        dilation: The dilation of the convolutional kernel.
+        bias: Whether to add a bias.
         """
         super(ConvMGUCellBase, self).__init__()
 
@@ -221,12 +169,7 @@ class ConvMGUCellBase(nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self):
-        """
-        Reset the parameters.
-
-        Returns:
-            None
-        """
+        """Reset the parameters."""
         self.ih.weight.data = self.orthotogonalize_weights(self.ih.weight.data)
         self.hh.weight.data = self.orthotogonalize_weights(self.hh.weight.data)
 
@@ -238,29 +181,12 @@ class ConvMGUCellBase(nn.Module):
 
     @staticmethod
     def orthotogonalize_weights(weights, chunks=1):
-        """
-        Orthogonalize the weights.
-
-        Args:
-            weights: The weights to orthogonalize.
-            chunks: The number of chunks to orthogonalize.
-
-        Returns:
-            The orthogonalized weights.
-        """
+        """Orthogonalize the weights."""
         return torch.cat([nn.init.orthogonal_(w) for w in weights.chunk(chunks, 0)], 0)
 
     @staticmethod
     def determine_conv_class(n_dim):
-        """
-        Determine the convolutional class.
-
-        Args:
-            n_dim: The number of dimensions.
-
-        Returns:
-            The convolutional class.
-        """
+        """Determine the convolutional class."""
         if n_dim == 1:
             return nn.Conv1d
         if n_dim == 2:
@@ -270,12 +196,7 @@ class ConvMGUCellBase(nn.Module):
         raise ValueError(f"Convolution of: {n_dim} dims is not implemented")
 
     def extra_repr(self):
-        """
-        Extra information about the ConvMGUCellBase.
-
-        Returns:
-            The extra information.
-        """
+        """Extra information about the ConvMGUCellBase."""
         s = "{input_size}, {hidden_size}"
         if "bias" in self.__dict__ and self.bias is not True:
             s += ", bias={bias}"
@@ -284,30 +205,12 @@ class ConvMGUCellBase(nn.Module):
         return s.format(**self.__dict__)
 
     def check_forward_input(self, _input):
-        """
-        Check the forward input.
-
-        Args:
-            _input: The input to check.
-
-        Returns:
-            None
-        """
+        """Check the forward input."""
         if _input.size(1) != self.input_size:
             raise RuntimeError(f"input has inconsistent input_size: got {_input.size(1)}, expected {self.input_size}")
 
     def check_forward_hidden(self, _input, hx, hidden_label=""):
-        """
-        Check the forward hidden.
-
-        Args:
-            _input: The input to check.
-            hx: The hidden to check.
-            hidden_label: The hidden label.
-
-        Returns:
-            None
-        """
+        """Check the forward hidden."""
         if _input.size(0) != hx.size(0):
             raise RuntimeError(
                 f"Input batch size {_input.size(0)} doesn't match hidden{hidden_label} batch size {hx.size(0)}"
@@ -326,27 +229,19 @@ class ConvMGUCell(ConvMGUCellBase):
         """
         Initialize the ConvMGUCell.
 
-        Args:
-            input_size: The input size.
-            hidden_size: The hidden size.
-            conv_dim: The convolutional dimension.
-            kernel_size: The kernel size.
-            dilation: The dilation.
-            bias: Whether to use a bias.
+        Parameters
+        ----------
+        input_size: The input size.
+        hidden_size: The hidden size.
+        conv_dim: The convolutional dimension.
+        kernel_size: The kernel size.
+        dilation: The dilation.
+        bias: Whether to use a bias.
         """
         super(ConvMGUCell, self).__init__(input_size, hidden_size, conv_dim, kernel_size, dilation, bias)
 
     def forward(self, _input, hx):
-        """
-        Forward the ConvMGUCell.
-
-        Args:
-            _input: The input.
-            hx: The hidden.
-
-        Returns:
-            The output.
-        """
+        """Forward the ConvMGUCell."""
         ih = self.ih(_input).chunk(2, dim=1)
         hh = self.hh(hx).chunk(2, dim=1)
 
@@ -358,28 +253,25 @@ class ConvMGUCell(ConvMGUCellBase):
 
 class IndRNNCellBase(nn.Module):
     """
-    Base class for Independently RNN cells as presented in [1]_.
+    Base class for Independently RNN cells as presented in [1].
 
     References
     ----------
-
-    .. [1] Li, S. et al. (2018) ‘Independently Recurrent Neural Network (IndRNN): Building A Longer and Deeper RNN’,
-    Proceedings of the IEEE Computer Society Conference on Computer Vision and Pattern Recognition, (1),
-    pp. 5457–5466. doi: 10.1109/CVPR.2018.00572.
-
+    .. [1] Li, S. et al. (2018) ‘Independently Recurrent Neural Network (IndRNN): Building A Longer and Deeper RNN’, Proceedings of the IEEE Computer Society Conference on Computer Vision and Pattern Recognition, (1), pp. 5457–5466. doi: 10.1109/CVPR.2018.00572.
     """
 
     def __init__(self, input_size, hidden_size, conv_dim, kernel_size, dilation, bias):
         """
         Initialize the IndRNNCellBase.
 
-        Args:
-            input_size: The input size.
-            hidden_size: The hidden size.
-            conv_dim: The convolutional dimension.
-            kernel_size: The kernel size.
-            dilation: The dilation.
-            bias: Whether to use a bias.
+        Parameters
+        ----------
+        input_size: The input size.
+        hidden_size: The hidden size.
+        conv_dim: The convolutional dimension.
+        kernel_size: The kernel size.
+        dilation: The dilation.
+        bias: Whether to use a bias.
         """
         super(IndRNNCellBase, self).__init__()
 
@@ -405,12 +297,7 @@ class IndRNNCellBase(nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self):
-        """
-        Reset the parameters.
-
-        Returns:
-            None
-        """
+        """Reset the parameters."""
         self.ih.weight.data = self.orthotogonalize_weights(self.ih.weight.data)
 
         nn.init.normal_(self.ih.weight, std=1.0 / (self.hidden_size * (1 + self.kernel_size**2)))
@@ -420,29 +307,12 @@ class IndRNNCellBase(nn.Module):
 
     @staticmethod
     def orthotogonalize_weights(weights, chunks=1):
-        """
-        Orthogonalize weights.
-
-        Args:
-            weights: The weights to orthogonalize.
-            chunks: The chunks.
-
-        Returns:
-            The orthogonalized weights.
-        """
+        """Orthogonalize the weights."""
         return torch.cat([nn.init.orthogonal_(w) for w in weights.chunk(chunks, 0)], 0)
 
     @staticmethod
     def determine_conv_class(n_dim):
-        """
-        Determine the convolutional class.
-
-        Args:
-            n_dim: The number of dimensions.
-
-        Returns:
-            The convolutional class.
-        """
+        """Determine the convolutional class."""
         if n_dim == 1:
             return nn.Conv1d
         if n_dim == 2:
@@ -452,12 +322,7 @@ class IndRNNCellBase(nn.Module):
         raise NotImplementedError("No convolution of this dimensionality implemented")
 
     def extra_repr(self):
-        """
-        Extra information about the module, used for printing.
-
-        Returns:
-            The extra information.
-        """
+        """Extra information about the module, used for printing."""
         s = "{input_size}, {hidden_size}"
         if "bias" in self.__dict__ and self.bias is not True:
             s += ", bias={bias}"
@@ -466,30 +331,12 @@ class IndRNNCellBase(nn.Module):
         return s.format(**self.__dict__)
 
     def check_forward_input(self, _input):
-        """
-        Check forward input.
-
-        Args:
-            _input: The input.
-
-        Returns:
-            The input.
-        """
+        """Check forward input."""
         if _input.size(1) != self.input_size:
             raise RuntimeError(f"input has inconsistent input_size: got {_input.size(1)}, expected {self.input_size}")
 
     def check_forward_hidden(self, _input, hx, hidden_label=""):
-        """
-        Check forward hidden.
-
-        Args:
-            _input: The input.
-            hx: The hidden.
-            hidden_label: The hidden label.
-
-        Returns:
-            The hidden.
-        """
+        """Check forward hidden."""
         if _input.size(0) != hx.size(0):
             raise RuntimeError(
                 f"Input batch size {_input.size(0)} doesn't match hidden{hidden_label} batch size {hx.size(0)}"
@@ -506,23 +353,17 @@ class IndRNNCell(IndRNNCellBase):
 
     def __init__(self, input_size, hidden_size, conv_dim, kernel_size, dilation=1, bias=True):
         """
-        Args:
-            input_size: The number of expected features in the input.
-            hidden_size: The number of features in the hidden state.
-            conv_dim: The dimension of the convolutional layer.
-            kernel_size: The size of the convolving kernel.
-            dilation: The spacing between the kernel points.
-            bias: If ``False``, then the layer does not use bias weights `b_ih` and `b_hh`.
+        Parameters
+        ----------
+        input_size: The number of expected features in the input.
+        hidden_size: The number of features in the hidden state.
+        conv_dim: The dimension of the convolutional layer.
+        kernel_size: The size of the convolved kernel.
+        dilation: The spacing between the kernel points.
+        bias: If ``False``, then the layer does not use bias weights `b_ih` and `b_hh`.
         """
         super(IndRNNCell, self).__init__(input_size, hidden_size, conv_dim, kernel_size, dilation, bias)
 
     def forward(self, _input, hx):
-        """
-        Args:
-            _input: A (batch, input_size) tensor containing input features.
-            hx: A (batch, hidden_size) tensor containing the initial hidden
-
-        Returns:
-            h_next: A (batch, hidden_size) tensor containing the next hidden state
-        """
+        """Forward propagate the RNN cell."""
         return nn.ReLU()(self.ih(_input) + self.hh * hx)

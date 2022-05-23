@@ -25,13 +25,11 @@ __all__ = ["CIRIM"]
 
 class CIRIM(BaseMRIReconstructionModel, ABC):
     """
-    Cascades of Independently Recurrent Inference Machines implementation as presented in [1]_.
+    Implementation of the Cascades of Independently Recurrent Inference Machines, as presented in [1].
 
     References
     ----------
-    .. [1] Karkalousos, D. et al. (2021) ‘Assessment of Data Consistency through Cascades of Independently Recurrent
-    Inference Machines for fast and robust accelerated MRI reconstruction’.
-    Available at: https://arxiv.org/abs/2111.15498v1
+    .. [1] Karkalousos, D. et al. (2021) ‘Assessment of Data Consistency through Cascades of Independently Recurrent Inference Machines for fast and robust accelerated MRI reconstruction’. Available at: https://arxiv.org/abs/2111.15498v1
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
@@ -110,14 +108,23 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
     ) -> Union[Generator, torch.Tensor]:
         """
         Forward pass of the network.
-        Args:
-            y: torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2], masked kspace data
-            sensitivity_maps: torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2], coil sensitivity maps
-            mask: torch.Tensor, shape [1, 1, n_x, n_y, 1], sampling mask
-            init_pred: torch.Tensor, shape [batch_size, n_x, n_y, 2], initial guess for pred
-            target: torch.Tensor, shape [batch_size, n_x, n_y, 2], target data
-        Returns:
-             Final estimation of the network.
+
+        Parameters
+        ----------
+        y: Subsampled k-space data.
+            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+        sensitivity_maps: Coil sensitivity maps.
+            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+        mask: Sampling mask.
+            torch.Tensor, shape [1, 1, n_x, n_y, 1]
+        init_pred: Initial prediction.
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        target: Target data to compute the loss.
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+
+        Returns
+        -------
+        pred: list of torch.Tensor, shape [batch_size, n_x, n_y, 2], or  torch.Tensor, shape [batch_size, n_x, n_y, 2]
              If self.accumulate_loss is True, returns a list of all intermediate estimates.
              If False, returns the final estimate.
         """
@@ -144,7 +151,25 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
         yield cascades_etas
 
     def process_intermediate_pred(self, pred, sensitivity_maps, target, do_coil_combination=False):
-        """Process the intermediate eta to be used in the loss function."""
+        """
+        Process the intermediate prediction.
+
+        Parameters
+        ----------
+        pred: Intermediate prediction.
+            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+        sensitivity_maps: Coil sensitivity maps.
+            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+        target: Target data to crop to size.
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        do_coil_combination: Whether to do coil combination.
+            bool, default False
+
+        Returns
+        -------
+        pred: torch.Tensor, shape [batch_size, n_x, n_y, 2]
+            Processed prediction.
+        """
         # Take the last time step of the eta
         if not self.no_dc or do_coil_combination:
             pred = ifft2c(pred, fft_type=self.fft_type)
@@ -153,8 +178,25 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
         _, pred = center_crop_to_smallest(target, pred)
         return pred
 
-    def process_loss(self, target, eta, _loss_fn):
-        """Calculate the loss."""
+    def process_loss(self, target, pred, _loss_fn):
+        """
+        Process the loss.
+
+        Parameters
+        ----------
+        target: Target data.
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        pred: Final prediction(s).
+            list of torch.Tensor, shape [batch_size, n_x, n_y, 2], or
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        _loss_fn: Loss function.
+            torch.nn.Module, default torch.nn.L1Loss()
+
+        Returns
+        -------
+        loss: torch.FloatTensor, shape [1]
+            If self.accumulate_loss is True, returns an accumulative result of all intermediate losses.
+        """
         target = torch.abs(target / torch.max(torch.abs(target)))
         if "ssim" in str(_loss_fn).lower():
             max_value = np.array(torch.max(torch.abs(target)).item()).astype(np.float32)
@@ -175,12 +217,12 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
 
         if self.accumulate_estimates:
             cascades_loss = []
-            for cascade_eta in eta:
-                time_steps_loss = [loss_fn(target, time_step_eta) for time_step_eta in cascade_eta]
+            for cascade_pred in pred:
+                time_steps_loss = [loss_fn(target, time_step_pred) for time_step_pred in cascade_pred]
                 _loss = [
                     x * torch.logspace(-1, 0, steps=self.time_steps).to(time_steps_loss[0]) for x in time_steps_loss
                 ]
                 cascades_loss.append(sum(sum(_loss) / self.time_steps))
             yield sum(list(cascades_loss)) / len(self.cirim)
         else:
-            return loss_fn(target, eta)
+            return loss_fn(target, pred)

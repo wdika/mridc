@@ -14,15 +14,20 @@ import wrapt
 
 
 def _normalize_docstring(docstring):
-    """Normalizes the docstring.
-    Replaces tabs with spaces, removes leading and trailing blanks lines, and
-    removes any indentation.
-    Copied from PEP-257:
-    https://www.python.org/dev/peps/pep-0257/#handling-docstring-indentation
-    Args:
-        docstring: the docstring to normalize
-    Returns:
-        The normalized docstring
+    """
+    Normalize docstring indentation. Replaces tabs with spaces, removes leading and trailing blanks lines, and removes
+     any indentation.
+
+    Copied from PEP-257: https://www.python.org/dev/peps/pep-0257/#handling-docstring-indentation
+
+    Parameters
+    ----------
+    docstring: The docstring to normalize.
+        str
+
+    Returns
+    -------
+    The normalized docstring.
     """
     if not docstring:
         return ""
@@ -49,13 +54,41 @@ def _normalize_docstring(docstring):
 
 
 def add_port_docs(wrapped=None, instance=None, value=""):
-    """Adds port documentation to the wrapped function."""
+    """
+    Adds port documentation to the wrapped function.
+
+    Parameters
+    ----------
+    wrapped: The function to decorate.
+        function
+    instance: The instance of the function.
+        object
+    value: The value of the port.
+        object
+
+    Returns
+    -------
+    The decorated function.
+    """
     if wrapped is None:
         return functools.partial(add_port_docs, value=value)
 
     @wrapt.decorator
     def wrapper(wrapped, instance=None, args=None, kwargs=None):
-        """Wrapper function."""
+        """
+        Adds port documentation to the wrapped function.
+
+        Parameters
+        ----------
+        wrapped: The function to decorate.
+        instance: The instance of the function.
+        args: The arguments of the function.
+        kwargs: The keyword arguments of the function.
+
+        Returns
+        -------
+        The decorated function.
+        """
         return wrapped(*args, **kwargs)
 
     decorated = wrapper(wrapped)

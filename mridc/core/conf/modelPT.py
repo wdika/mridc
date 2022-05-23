@@ -73,25 +73,27 @@ class ModelConfigBuilder:
     def __init__(self, model_cfg: ModelConfig):
         """
         Base class for any Model Config Builder.
-        A Model Config Builder is a utility class that accepts a ModelConfig dataclass,
-        and via a set of utility methods (that are implemented by the subclassed ModelConfigBuilder),
-        builds a finalized ModelConfig that can be supplied to a MRIDCModel dataclass as
-        the `model` component.
+        A Model Config Builder is a utility class that accepts a ModelConfig dataclass, and via a set of utility
+        methods (that are implemented by the subclassed ModelConfigBuilder), builds a finalized ModelConfig that can be
+         supplied to a MRIDCModel dataclass as the `model` component.
+
         Subclasses *must* implement the private method `_finalize_cfg`.
             Inside this method, they must update `self.model_cfg` with all interdependent config
             options that need to be set (either updated by user explicitly or with their default value).
             The updated model config must then be preserved in `self.model_cfg`.
-        Example:
-            # Create the config builder
-            config_builder = <subclass>ModelConfigBuilder()
-            # Update the components of the config that are modifiable
-            config_builder.set_X(X)
-            config_builder.set_Y(Y)
-            # Create a "finalized" config dataclass that will contain all the updates
-            # that were specified by the builder
-            model_config = config_builder.build()
-            # Use model config as is (or further update values), then create a new Model
-            model = mridc.<domain>.models.<ModelName>Model(cfg=model_config, trainer=Trainer())
+
+        Example
+        -------
+        # Create the config builder
+        config_builder = <subclass>ModelConfigBuilder()
+        # Update the components of the config that are modifiable
+        config_builder.set_X(X)
+        config_builder.set_Y(Y)
+        # Create a "finalized" config dataclass that will contain all the updates
+        # that were specified by the builder
+        model_config = config_builder.build()
+        # Use model config as is (or further update values), then create a new Model
+        model = mridc.<domain>.models.<ModelName>Model(cfg=model_config, trainer=Trainer())
         Supported build methods:
         -   set_train_ds: All model configs can accept a subclass of `DatasetConfig` as their
                 training conf. Subclasses can override this method to enable auto-complete
@@ -117,8 +119,14 @@ class ModelConfigBuilder:
                     def build(self) -> EncDecCTCConfig:
                         return super().build()
         Any additional build methods must be added by subclasses of ModelConfigBuilder.
-        Args:
-            model_cfg:
+
+        Parameters
+        ----------
+        model_cfg: The model config dataclass to be updated.
+
+        Returns
+        -------
+        The updated model config dataclass.
         """
         self.model_cfg = model_cfg
         self.train_ds_cfg = None

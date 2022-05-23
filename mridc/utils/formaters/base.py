@@ -13,10 +13,10 @@ __all__ = ["BaseMRIDCFormatter", "DebugMRIDCFormatter"]
 
 class BaseFormatter(logging.Formatter):
     """
-    Log formatter used in Tornado. Key features of this formatter are:
-    * Color support when logging to a terminal that supports it.
-    * Timestamps on every log line.
-    * Robust against str/bytes encoding problems.
+    Base class for all formatters used in Tornado. Key features of this formatter are:
+        * Color support when logging to a terminal that supports it.
+        * Timestamps on every log line.
+        * Robust against str/bytes encoding problems.
     """
 
     DEFAULT_FORMAT = "%(color)s[%(levelname)1.1s %(asctime)s %(module)s:%(lineno)d]%(end_color)s %(message)s"
@@ -33,12 +33,18 @@ class BaseFormatter(logging.Formatter):
 
     def __init__(self, color=True, fmt=None, datefmt=None, colors=None):
         """
-        Args:
-            color: Enables color support.
-            fmt: Log message format. It will be applied to the attributes dict of log records. The text between
-            ``%(color)s`` and ``%(end_color)s`` will be colored depending on the level if color support is on.
-            datefmt: Datetime format. Used for formatting ``(asctime)`` placeholder in ``prefix_fmt``.
-            colors: color mappings from logging level to terminal color code
+
+        Parameters
+        ----------
+        color: Enable color support.
+            bool, default: True
+        fmt: Log message format. It will be applied to the attributes dict of log records. The text between
+        ``%(color)s`` and ``%(end_color)s`` will be colored depending on the level if color support is on.
+            str, default: None
+        datefmt: Datetime format. Used for formatting ``(asctime)`` placeholder in ``prefix_fmt``.
+            str, default: None
+        colors: Dictionary mapping logging level to terminal color code.
+            dict, default: None
         """
         if fmt is None:
             fmt = self.DEFAULT_FORMAT
@@ -63,11 +69,15 @@ class BaseFormatter(logging.Formatter):
         """
         Formats a record.
 
-        Args:
-            record (): The record to format.
+        Parameters
+        ----------
+        record: Log record to be formatted.
+            LogRecord
 
-        Returns:
-            (str): The formatted record.
+        Returns
+        -------
+        The formatted record as a string.
+            str
         """
         try:
             message = record.getMessage()
