@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.collections.reconstruction.models.sigmanet package &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="mridc.collections.reconstruction.models.unet_base package" href="mridc.collections.reconstruction.models.unet_base.html" />
+    <link rel="prev" title="mridc.collections.reconstruction.models.rim package" href="mridc.collections.reconstruction.models.rim.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">mridc</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="mridc.html">mridc package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="mridc.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="mridc.collections.html">mridc.collections package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mridc.core.html">mridc.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mridc.utils.html">mridc.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.constants">mridc.constants module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.launch">mridc.launch module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.package_info">mridc.package_info module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">mridc</a> &raquo;</li>
+          <li><a href="mridc.html">mridc package</a> &raquo;</li>
+          <li><a href="mridc.collections.html">mridc.collections package</a> &raquo;</li>
+          <li><a href="mridc.collections.reconstruction.html">mridc.collections.reconstruction package</a> &raquo;</li>
+          <li><a href="mridc.collections.reconstruction.models.html">mridc.collections.reconstruction.models package</a> &raquo;</li>
+      <li>mridc.collections.reconstruction.models.sigmanet package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/mridc.collections.reconstruction.models.sigmanet.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <section id="mridc-collections-reconstruction-models-sigmanet-package">
+<h1>mridc.collections.reconstruction.models.sigmanet package<a class="headerlink" href="#mridc-collections-reconstruction-models-sigmanet-package" title="Permalink to this headline"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline"></a></h2>
+</section>
+<section id="module-mridc.collections.reconstruction.models.sigmanet.dc_layers">
+<span id="mridc-collections-reconstruction-models-sigmanet-dc-layers-module"></span><h2>mridc.collections.reconstruction.models.sigmanet.dc_layers module<a class="headerlink" href="#module-mridc.collections.reconstruction.models.sigmanet.dc_layers" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.dc_layers.ConjugateGradient">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.collections.reconstruction.models.sigmanet.dc_layers.</span></span><span class="sig-name descname"><span class="pre">ConjugateGradient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/dc_layers.html#ConjugateGradient"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.dc_layers.ConjugateGradient" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.autograd.function.Function</span></code></p>
+<p>Conjugate Gradient solver for the prox of the data term.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.dc_layers.ConjugateGradient.backward">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">backward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grad_x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/dc_layers.html#ConjugateGradient.backward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.dc_layers.ConjugateGradient.backward" title="Permalink to this definition"></a></dt>
+<dd><p>Backward pass of the conjugate gradient solver.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ctx</strong> (<em>Context object.</em>) – </p></li>
+<li><p><strong>grad_x</strong> (<em>Gradient of the output image.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>grad_z</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Gradient of the input image.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.dc_layers.ConjugateGradient.complexDot">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">complexDot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/dc_layers.html#ConjugateGradient.complexDot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.dc_layers.ConjugateGradient.complexDot" title="Permalink to this definition"></a></dt>
+<dd><p>Complex dot product of two tensors.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.dc_layers.ConjugateGradient.forward">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambdaa</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smaps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_type</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/dc_layers.html#ConjugateGradient.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.dc_layers.ConjugateGradient.forward" title="Permalink to this definition"></a></dt>
+<dd><p>Forward pass of the conjugate gradient solver.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ctx</strong> (<em>Context object.</em>) – </p></li>
+<li><p><strong>z</strong> (<em>Input image.</em>) – </p></li>
+<li><p><strong>lambdaa</strong> (<em>Regularization parameter.</em>) – </p></li>
+<li><p><strong>y</strong> (<em>Subsampled k-space data.</em>) – </p></li>
+<li><p><strong>smaps</strong> (<em>Coil sensitivity maps.</em>) – </p></li>
+<li><p><strong>mask</strong> (<em>Sampling mask.</em>) – </p></li>
+<li><p><strong>tol</strong> (<em>Tolerance for the stopping criterion.</em>) – </p></li>
+<li><p><strong>max_iter</strong> (<em>Maximum number of iterations.</em>) – </p></li>
+<li><p><strong>fft_type</strong> (<em>FFT type.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>z</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Output image.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.dc_layers.ConjugateGradient.solve">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">solve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">M</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/dc_layers.html#ConjugateGradient.solve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.dc_layers.ConjugateGradient.solve" title="Permalink to this definition"></a></dt>
+<dd><p>Solve the linear system Mx=b using conjugate gradient.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.dc_layers.DCLayer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.collections.reconstruction.models.sigmanet.dc_layers.</span></span><span class="sig-name descname"><span class="pre">DCLayer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lambda_init</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learnable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'orthogonal'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/dc_layers.html#DCLayer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.dc_layers.DCLayer" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>Data Consistency layer from DC-CNN, apply for single coil mainly</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.dc_layers.DCLayer.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/dc_layers.html#DCLayer.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.dc_layers.DCLayer.forward" title="Permalink to this definition"></a></dt>
+<dd><p>Forward pass of the data-consistency block.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Input image.</em>) – </p></li>
+<li><p><strong>y</strong> (<em>Subsampled k-space data.</em>) – </p></li>
+<li><p><strong>mask</strong> (<em>Sampling mask.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Output image.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.dc_layers.DCLayer.set_learnable">
+<span class="sig-name descname"><span class="pre">set_learnable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flag</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/dc_layers.html#DCLayer.set_learnable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.dc_layers.DCLayer.set_learnable" title="Permalink to this definition"></a></dt>
+<dd><p>Set the learnable flag of the parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>flag</strong> (<em>If True</em><em>, </em><em>the parameters of the model are learnable.</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.dc_layers.DCLayer.training">
+<span class="sig-name descname"><span class="pre">training</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.dc_layers.DCLayer.training" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.dc_layers.DataGDLayer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.collections.reconstruction.models.sigmanet.dc_layers.</span></span><span class="sig-name descname"><span class="pre">DataGDLayer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lambda_init</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learnable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'orthogonal'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/dc_layers.html#DataGDLayer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataGDLayer" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>DataLayer computing the gradient on the L2 dataterm.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.dc_layers.DataGDLayer.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smaps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/dc_layers.html#DataGDLayer.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataGDLayer.forward" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Input image.</em>) – </p></li>
+<li><p><strong>y</strong> (<em>Subsampled k-space data.</em>) – </p></li>
+<li><p><strong>smaps</strong> (<em>Coil sensitivity maps.</em>) – </p></li>
+<li><p><strong>mask</strong> (<em>Sampling mask.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>data_loss</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Data term loss.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.dc_layers.DataGDLayer.training">
+<span class="sig-name descname"><span class="pre">training</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataGDLayer.training" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.dc_layers.DataIDLayer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.collections.reconstruction.models.sigmanet.dc_layers.</span></span><span class="sig-name descname"><span class="pre">DataIDLayer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/dc_layers.html#DataIDLayer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataIDLayer" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>Placeholder for the data layer.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.dc_layers.DataIDLayer.training">
+<span class="sig-name descname"><span class="pre">training</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataIDLayer.training" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.dc_layers.DataProxCGLayer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.collections.reconstruction.models.sigmanet.dc_layers.</span></span><span class="sig-name descname"><span class="pre">DataProxCGLayer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lambda_init</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learnable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'orthogonal'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/dc_layers.html#DataProxCGLayer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataProxCGLayer" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>Solving the prox wrt. dataterm using Conjugate Gradient as proposed by Aggarwal et al.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.dc_layers.DataProxCGLayer.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smaps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/dc_layers.html#DataProxCGLayer.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataProxCGLayer.forward" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Input image.</em>) – </p></li>
+<li><p><strong>f</strong> (<em>Subsampled k-space data.</em>) – </p></li>
+<li><p><strong>smaps</strong> (<em>Coil sensitivity maps.</em>) – </p></li>
+<li><p><strong>mask</strong> (<em>Sampling mask.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>data_loss</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Data term loss.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.dc_layers.DataProxCGLayer.set_learnable">
+<span class="sig-name descname"><span class="pre">set_learnable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flag</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/dc_layers.html#DataProxCGLayer.set_learnable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataProxCGLayer.set_learnable" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.dc_layers.DataProxCGLayer.training">
+<span class="sig-name descname"><span class="pre">training</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataProxCGLayer.training" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.dc_layers.DataVSLayer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.collections.reconstruction.models.sigmanet.dc_layers.</span></span><span class="sig-name descname"><span class="pre">DataVSLayer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha_init</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_init</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learnable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'orthogonal'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/dc_layers.html#DataVSLayer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataVSLayer" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>DataLayer using variable splitting formulation</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.dc_layers.DataVSLayer.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smaps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/dc_layers.html#DataVSLayer.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataVSLayer.forward" title="Permalink to this definition"></a></dt>
+<dd><p>Forward pass of the data-consistency block.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Input image.</em>) – </p></li>
+<li><p><strong>y</strong> (<em>Subsampled k-space data.</em>) – </p></li>
+<li><p><strong>smaps</strong> (<em>Coil sensitivity maps.</em>) – </p></li>
+<li><p><strong>mask</strong> (<em>Sampling mask.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Output image.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.dc_layers.DataVSLayer.set_learnable">
+<span class="sig-name descname"><span class="pre">set_learnable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flag</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/dc_layers.html#DataVSLayer.set_learnable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataVSLayer.set_learnable" title="Permalink to this definition"></a></dt>
+<dd><p>Set the learnable flag of the parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>flag</strong> (<em>If True</em><em>, </em><em>the parameters of the model are learnable.</em>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.dc_layers.DataVSLayer.training">
+<span class="sig-name descname"><span class="pre">training</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataVSLayer.training" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-mridc.collections.reconstruction.models.sigmanet.sensitivity_net">
+<span id="mridc-collections-reconstruction-models-sigmanet-sensitivity-net-module"></span><h2>mridc.collections.reconstruction.models.sigmanet.sensitivity_net module<a class="headerlink" href="#module-mridc.collections.reconstruction.models.sigmanet.sensitivity_net" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexInstanceNorm">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.collections.reconstruction.models.sigmanet.sensitivity_net.</span></span><span class="sig-name descname"><span class="pre">ComplexInstanceNorm</span></span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/sensitivity_net.html#ComplexInstanceNorm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexInstanceNorm" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>Motivated by ‘Deep Complex Networks’ (<a class="reference external" href="https://arxiv.org/pdf/1705.09792.pdf">https://arxiv.org/pdf/1705.09792.pdf</a>)</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexInstanceNorm.complex_instance_norm">
+<span class="sig-name descname"><span class="pre">complex_instance_norm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/sensitivity_net.html#ComplexInstanceNorm.complex_instance_norm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexInstanceNorm.complex_instance_norm" title="Permalink to this definition"></a></dt>
+<dd><p>Operates on images x of size [nBatch, nSmaps, nFE, nPE, 2]</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexInstanceNorm.complex_pseudocovariance">
+<span class="sig-name descname"><span class="pre">complex_pseudocovariance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/sensitivity_net.html#ComplexInstanceNorm.complex_pseudocovariance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexInstanceNorm.complex_pseudocovariance" title="Permalink to this definition"></a></dt>
+<dd><p>Data variable hast to be already mean-free! Operates on images x of size [nBatch, nSmaps, nFE, nPE, 2]</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexInstanceNorm.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/sensitivity_net.html#ComplexInstanceNorm.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexInstanceNorm.forward" title="Permalink to this definition"></a></dt>
+<dd><p>Operates on images x of size [nBatch, nSmaps, nFE, nPE, 2]</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexInstanceNorm.normalize">
+<span class="sig-name descname"><span class="pre">normalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/sensitivity_net.html#ComplexInstanceNorm.normalize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexInstanceNorm.normalize" title="Permalink to this definition"></a></dt>
+<dd><p>Normalize the input x.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexInstanceNorm.set_normalization">
+<span class="sig-name descname"><span class="pre">set_normalization</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/sensitivity_net.html#ComplexInstanceNorm.set_normalization"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexInstanceNorm.set_normalization" title="Permalink to this definition"></a></dt>
+<dd><p>Set the normalization parameters for a given input.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexInstanceNorm.training">
+<span class="sig-name descname"><span class="pre">training</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexInstanceNorm.training" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexInstanceNorm.unnormalize">
+<span class="sig-name descname"><span class="pre">unnormalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/sensitivity_net.html#ComplexInstanceNorm.unnormalize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexInstanceNorm.unnormalize" title="Permalink to this definition"></a></dt>
+<dd><p>Unnormalize the input x.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexNormWrapper">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.collections.reconstruction.models.sigmanet.sensitivity_net.</span></span><span class="sig-name descname"><span class="pre">ComplexNormWrapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/sensitivity_net.html#ComplexNormWrapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexNormWrapper" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>Wrapper for complex normalization.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexNormWrapper.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/sensitivity_net.html#ComplexNormWrapper.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexNormWrapper.forward" title="Permalink to this definition"></a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexNormWrapper.training">
+<span class="sig-name descname"><span class="pre">training</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexNormWrapper.training" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.collections.reconstruction.models.sigmanet.sensitivity_net.</span></span><span class="sig-name descname"><span class="pre">SensitivityNetwork</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_iter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">datalayer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shared_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_space</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reset_cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/sensitivity_net.html#SensitivityNetwork"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>Sensitivity network with data term based on forward and adjoint containing the sensitivity maps</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.copy_params">
+<span class="sig-name descname"><span class="pre">copy_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src_i</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trg_j</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/sensitivity_net.html#SensitivityNetwork.copy_params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.copy_params" title="Permalink to this definition"></a></dt>
+<dd><p>copy i-th cascade net parameters to j-th cascade net parameters</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smaps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/sensitivity_net.html#SensitivityNetwork.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.forward" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Input data.</em>) – </p></li>
+<li><p><strong>y</strong> (<em>Subsampled k-space data.</em>) – </p></li>
+<li><p><strong>smaps</strong> (<em>Coil sensitivity maps.</em>) – </p></li>
+<li><p><strong>mask</strong> (<em>Sampling mask.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Output data.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.forward_save_space">
+<span class="sig-name descname"><span class="pre">forward_save_space</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smaps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/sensitivity_net.html#SensitivityNetwork.forward_save_space"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.forward_save_space" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>Input data.</em>) – </p></li>
+<li><p><strong>y</strong> (<em>Subsampled k-space data.</em>) – </p></li>
+<li><p><strong>smaps</strong> (<em>Coil sensitivity maps.</em>) – </p></li>
+<li><p><strong>mask</strong> (<em>Sampling mask.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Output data.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.freeze">
+<span class="sig-name descname"><span class="pre">freeze</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/sensitivity_net.html#SensitivityNetwork.freeze"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.freeze" title="Permalink to this definition"></a></dt>
+<dd><p>freeze parameter of cascade i</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.freeze_all">
+<span class="sig-name descname"><span class="pre">freeze_all</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/sensitivity_net.html#SensitivityNetwork.freeze_all"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.freeze_all" title="Permalink to this definition"></a></dt>
+<dd><p>freeze parameter of cascade i</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.stage_training_init">
+<span class="sig-name descname"><span class="pre">stage_training_init</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/sensitivity_net.html#SensitivityNetwork.stage_training_init"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.stage_training_init" title="Permalink to this definition"></a></dt>
+<dd><p>set stage training flag to True</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.stage_training_transition_i">
+<span class="sig-name descname"><span class="pre">stage_training_transition_i</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">copy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/sensitivity_net.html#SensitivityNetwork.stage_training_transition_i"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.stage_training_transition_i" title="Permalink to this definition"></a></dt>
+<dd><p>set stage training flag to True</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.training">
+<span class="sig-name descname"><span class="pre">training</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.training" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.unfreeze">
+<span class="sig-name descname"><span class="pre">unfreeze</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/sensitivity_net.html#SensitivityNetwork.unfreeze"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.unfreeze" title="Permalink to this definition"></a></dt>
+<dd><p>freeze parameter of cascade i</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.unfreeze_all">
+<span class="sig-name descname"><span class="pre">unfreeze_all</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/sensitivity_net.html#SensitivityNetwork.unfreeze_all"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.unfreeze_all" title="Permalink to this definition"></a></dt>
+<dd><p>freeze parameter of cascade i</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.models.sigmanet.sensitivity_net.matrix_invert">
+<span class="sig-prename descclassname"><span class="pre">mridc.collections.reconstruction.models.sigmanet.sensitivity_net.</span></span><span class="sig-name descname"><span class="pre">matrix_invert</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xy</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yy</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/sigmanet/sensitivity_net.html#matrix_invert"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.matrix_invert" title="Permalink to this definition"></a></dt>
+<dd><p>Invert a 2x2 matrix.</p>
+</dd></dl>
+
+</section>
+<section id="module-mridc.collections.reconstruction.models.sigmanet">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-mridc.collections.reconstruction.models.sigmanet" title="Permalink to this headline"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mridc.collections.reconstruction.models.rim.html" class="btn btn-neutral float-left" title="mridc.collections.reconstruction.models.rim package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mridc.collections.reconstruction.models.unet_base.html" class="btn btn-neutral float-right" title="mridc.collections.reconstruction.models.unet_base package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

@@ -22,12 +22,18 @@ __all__ = ["CascadeNet"]
 
 class CascadeNet(BaseMRIReconstructionModel, ABC):
     """
-    Implementation of the Deep Cascade of Convolutional Neural Networks, as presented in [1].
+    Implementation of the Deep Cascade of Convolutional Neural Networks, as presented in Schlemper, J., \
+    Caballero, J., Hajnal, J. V., Price, A., & Rueckert, D.
 
     References
     ----------
 
-    .. [1] Schlemper, J., Caballero, J., Hajnal, J. V., Price, A., & Rueckert, D., A Deep Cascade of Convolutional Neural Networks for MR Image Reconstruction. Information Processing in Medical Imaging (IPMI), 2017. Available at: https://arxiv.org/pdf/1703.00555.pdf
+    ..
+
+        Schlemper, J., Caballero, J., Hajnal, J. V., Price, A., & Rueckert, D., A Deep Cascade of Convolutional \
+        Neural Networks for MR Image Reconstruction. Information Processing in Medical Imaging (IPMI), 2017. \
+        Available at: https://arxiv.org/pdf/1703.00555.pdf
+
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):

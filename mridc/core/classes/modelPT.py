@@ -55,12 +55,11 @@ class ModelPT(LightningModule, Model):
 
         Parameters
         ----------
-        cfg:  configuration object.
-            The cfg object should have (optionally) the following sub-configs:
-            * train_ds - to instantiate training dataset
-            * validation_ds - to instantiate validation dataset
-            * test_ds - to instantiate testing dataset
-            * optim - to instantiate optimizer with learning rate scheduler
+        cfg: configuration object. The cfg object should have (optionally) the following sub-configs:
+            - train_ds - to instantiate training dataset
+            - validation_ds - to instantiate validation dataset
+            - test_ds - to instantiate testing dataset
+            - optim - to instantiate optimizer with learning rate scheduler
         trainer: Pytorch Lightning Trainer instance
         """
         if trainer is not None and not isinstance(trainer, Trainer):
@@ -152,16 +151,19 @@ class ModelPT(LightningModule, Model):
         cls._save_restore_connector = SaveRestoreConnector()
 
     def register_artifact(self, config_path: str, src: str, verify_src_exists: bool = True):
-        """Register model artifacts with this function. These artifacts (files) will be included inside .mridc file
-        when model.save_to("model.mridc") is called.
+        """
+        Register model artifacts with this function. These artifacts (files) will be included inside .mridc file when
+        model.save_to("model.mridc") is called.
+
         How it works:
-        1. It always returns existing absolute path which can be used during Model constructor call
-            EXCEPTION: src is None or "" in which case nothing will be done and src will be returned
-        2. It will add (config_path, model_utils.ArtifactItem()) pair to self.artifacts
+            1. It always returns existing absolute path which can be used during Model constructor call EXCEPTION: \
+            src is None or "" in which case nothing will be done and src will be returned
+            2. It will add (config_path, model_utils.ArtifactItem()) pair to self.artifacts
+
         If "src" is local existing path, then it will be returned in absolute path form.
-        elif "src" starts with "mridc_file:unique_artifact_name":
-            .mridc will be untarred to a temporary folder location and an actual existing path will be returned
-        else an error will be raised.
+        elif "src" starts with "mridc_file:unique_artifact_name" .mridc will be untarred to a temporary folder \
+        location and an actual existing path will be returned else an error will be raised.
+
         WARNING: use .register_artifact calls in your models' constructors.
         The returned path is not guaranteed to exist after you have exited your model's constructor.
 
@@ -169,13 +171,13 @@ class ModelPT(LightningModule, Model):
         ----------
         config_path: Artifact key. Usually corresponds to the model config.
         src: Path to artifact.
-        verify_src_exists: If set to False, then the artifact is optional and register_artifact will return None even
-        if src is not found. Defaults to True.
+        verify_src_exists: If set to False, then the artifact is optional and register_artifact will return None \
+        even if src is not found. Defaults to True.
 
         Returns
         -------
-        If src is not None or empty it always returns absolute path which is guaranteed to exist during model instance
-        life.
+        If src is not None or empty it always returns absolute path which is guaranteed to exist during model \
+        instance life.
         """
         if src is None or not src:
             return src
@@ -198,13 +200,13 @@ class ModelPT(LightningModule, Model):
         """
         Saves model instance (weights and configuration) into .mridc file. You can use "restore_from" method to fully
         restore instance from .mridc file. .mridc file is an archive (tar.gz) with the following:
-            model_config.yaml - model configuration in .yaml format. You can deserialize this into cfg argument for
-            model's constructor
-            model_wights.ckpt - model checkpoint
+        - model_config.yaml - model configuration in .yaml format. You can deserialize this into cfg argument for \
+         model's constructor
+        - model_wights.ckpt - model checkpoint
 
         Parameters
         ----------
-        save_path: Path to .mridc file where model instance should be saved.
+        Path to .mridc file where model instance should be saved.
         """
 
         def maybe_make_save_dir(_path: "Path"):
@@ -244,24 +246,27 @@ class ModelPT(LightningModule, Model):
 
         Parameters
         ----------
-        restore_path: path to .mridc file from which model should be instantiated
-        override_config_path: path to a yaml config that will override the internal config file or an
-        OmegaConf/DictConfig object representing the model config.
-        map_location: Optional torch.device() to map the instantiated model to a device. By default (None), it will
+        restore_path: path to .mridc file from which model should be instantiated override_config_path: path to a \
+        yaml config that will override the internal config file or an OmegaConf/DictConfig object representing the \
+        model config.
+        map_location: Optional torch.device() to map the instantiated model to a device. By default (None), it will \
         select a GPU if available, falling back to CPU otherwise.
         strict: Passed to load_state_dict. By default, True.
-        return_config: If set to true, will return just the underlying config of the restored model as an
+        return_config: If set to true, will return just the underlying config of the restored model as an \
         OmegaConf/DictConfig object without instantiating the model.
-        trainer: Optional, a pytorch lightning Trainer object that will be forwarded to the instantiated model's
+        trainer: Optional, a pytorch lightning Trainer object that will be forwarded to the instantiated model's \
         constructor.
         save_restore_connector: Can be overridden to add custom save and restore logic.
 
         Example
         -------
-            ```
+
+        .. code-block::
+
             model = mridc.collections.asr.models.EncDecCTCModel.restore_from('asr.mridc')
             assert isinstance(model, mridc.collections.asr.models.EncDecCTCModel)
-            ```
+
+
         Returns
         -------
         An instance of type cls or its underlying config (if return_config is set).
@@ -376,16 +381,15 @@ class ModelPT(LightningModule, Model):
         Parameters
         ----------
         optim_config: A dictionary containing the following keys:
-            * "lr": mandatory key for learning rate. Will raise ValueError if not provided.
-            * "optimizer": string name pointing to one of the available optimizers in the registry. \
-            If not provided, defaults to "adam".
-            * "opt_args": Optional list of strings, in the format "arg_name=arg_value". \
-            The list of "arg_value" will be parsed and a dictionary of optimizer kwargs \
-            will be built and supplied to instantiate the optimizer.
+            - lr: mandatory key for learning rate. Will raise ValueError if not provided.
+            - optimizer: string name pointing to one of the available optimizers in the registry. If not provided, \
+            defaults to "adam".
+            - opt_args: Optional list of strings, in the format "arg_name=arg_value". The list of "arg_value" will \
+            be parsed and a dictionary of optimizer kwargs will be built and supplied to instantiate the optimizer.
 
         Returns
         -------
-        optimizer: An instance of an optimizer.
+        An instance of an optimizer.
         """
         if self._optimizer_param_groups is None:
             self.setup_optimizer_param_groups()
@@ -428,17 +432,17 @@ class ModelPT(LightningModule, Model):
                 optim_config["sched"]["t_accumulate_grad_batches"] = self._trainer.accumulate_grad_batches
                 optim_config["sched"]["t_limit_train_batches"] = self._trainer.limit_train_batches
                 if self._trainer.accelerator is None:
-                    optim_config["sched"]["t_num_workers"] = self._trainer.num_gpus or 1
+                    optim_config["sched"]["t_num_workers"] = self._trainer.num_devices or 1
                 elif self._trainer.accelerator == "ddp_cpu":
-                    optim_config["sched"]["t_num_workers"] = self._trainer.num_processes * self._trainer.num_nodes
+                    optim_config["sched"]["t_num_workers"] = self._trainer.num_devices * self._trainer.num_nodes
                 elif self._trainer.accelerator == "ddp":
-                    optim_config["sched"]["t_num_workers"] = self._trainer.num_gpus * self._trainer.num_nodes
+                    optim_config["sched"]["t_num_workers"] = self._trainer.num_devices * self._trainer.num_nodes
                 else:
                     logging.warning(
                         f"The lightning trainer received accelerator: {self._trainer.accelerator}. We "
                         "recommend to use 'ddp' instead."
                     )
-                    optim_config["sched"]["t_num_workers"] = self._trainer.num_gpus * self._trainer.num_nodes
+                    optim_config["sched"]["t_num_workers"] = self._trainer.num_devices * self._trainer.num_nodes
             else:
                 optim_config["sched"]["max_steps"] = self._trainer.max_steps
 
@@ -539,15 +543,18 @@ class ModelPT(LightningModule, Model):
 
     def setup_optimizer_param_groups(self):
         """
-        Used to create param groups for the optimizer.
-        As an example, this can be used to specify per-layer learning rates:
-        optim.SGD([
-                    {'params': model.base.parameters()},
-                    {'params': model.classifier.parameters(), 'lr': 1e-3}
-                    ], lr=1e-2, momentum=0.9)
-        See https://pytorch.org/docs/stable/optim.html for more information.
-        By default, ModelPT will use self.parameters().
-        Override this method to add custom param groups.
+        Used to create param groups for the optimizer. As an example, this can be used to specify per-layer learning
+        rates:
+
+        .. code-block::
+
+            optim.SGD([
+                        {'params': model.base.parameters()},
+                        {'params': model.classifier.parameters(), 'lr': 1e-3}
+                        ], lr=1e-2, momentum=0.9)
+
+        See https://pytorch.org/docs/stable/optim.html for more information. By default, ModelPT will use
+        self.parameters(). Override this method to add custom param groups.
         """
         param_groups = None
         if hasattr(self, "parameters"):
@@ -583,6 +590,7 @@ class ModelPT(LightningModule, Model):
         via `multi_validation_epoch_end`.
         If multi dataset support is not required, override this method entirely in base class.
         In such a case, there is no need to implement `multi_validation_epoch_end` either.
+
         .. note::
             If more than one data loader exists, and they all provide `val_loss`,
             only the `val_loss` of the first data loader will be used by default.
@@ -678,6 +686,7 @@ class ModelPT(LightningModule, Model):
         via `multi_test_epoch_end`.
         If multi dataset support is not required, override this method entirely in base class.
         In such a case, there is no need to implement `multi_test_epoch_end` either.
+
         .. note::
             If more than one data loader exists, and they all provide `test_loss`,
             only the `test_loss` of the first data loader will be used by default.
@@ -793,8 +802,8 @@ class ModelPT(LightningModule, Model):
     @staticmethod
     def multi_test_epoch_end(outputs: Union[object, List[Dict[str, torch.Tensor]]], dataloader_idx: int = 0) -> None:
         """
-        Adds support for multiple test datasets. Should be overridden by subclass,
-        to obtain appropriate logs for each of the dataloaders.
+        Adds support for multiple test datasets. Should be overridden by subclass, to obtain appropriate logs for each
+        of the dataloaders.
 
         Parameters
         ----------
@@ -850,23 +859,25 @@ class ModelPT(LightningModule, Model):
     @rank_zero_only
     def maybe_init_from_pretrained_checkpoint(self, cfg: OmegaConf, map_location: str = "cpu"):
         """
-        Initializes a given model with the parameters obtained via specific config arguments.
-        The state dict of the provided model will be updated with `strict=False` setting to prevent
-        requirement of exact model parameters matching.
+        Initializes a given model with the parameters obtained via specific config arguments. The state dict of the \
+        provided model will be updated with `strict=False` setting to prevent requirement of exact model parameters \
+        matching.
 
         Initializations
-        ---------------
-        init_from_mridc_model: Str path to a .mridc model, which will be instantiated in order to extract the state
+
+        init_from_mridc_model: Str path to a .mridc model, which will be instantiated in order to extract the state \
         dict.
-        init_from_pretrained_model: Str name of a pretrained model checkpoint (obtained via cloud). The model will be
-        downloaded (or a cached copy will be used), instantiated and then its state dict will be extracted.
-        init_from_ptl_ckpt: Str name of a Pytorch Lightning checkpoint file. It will be loaded and the state dict will
-        extract.
+
+        init_from_pretrained_model: Str name of a pretrained model checkpoint (obtained via cloud). The model will \
+        be downloaded (or a cached copy will be used), instantiated and then its state dict will be extracted.
+
+        init_from_ptl_ckpt: Str name of a Pytorch Lightning checkpoint file. It will be loaded and the state dict \
+        will extract.
 
         Parameters
         ----------
         cfg: The config used to instantiate the model. It needs only contain one of the above keys.
-        map_location: str or torch.device() which represents where the intermediate state dict (from the pretrained
+        map_location: str or torch.device() which represents where the intermediate state dict (from the pretrained \
         model or checkpoint) will be loaded.
         """
         args = ["init_from_mridc_model", "init_from_pretrained_model", "init_from_ptl_ckpt"]
@@ -1012,29 +1023,40 @@ class ModelPT(LightningModule, Model):
         save_dir: directory in which the saved state dict(s) should be stored
         split_by_module: bool flag, which determines whether the output checkpoint should be for the entire Model, or
         the individual module's that comprise the Model
-        save_restore_connector (SaveRestoreConnector): Can be overridden to add custom save and restore logic.
+        save_restore_connector: Can be overridden to add custom save and restore logic.
 
         Example
         -------
         To convert the .mridc tarfile into a single Model level PyTorch checkpoint
-        ::
-        state_dict = mridc.collections.asr.models.EncDecCTCModel.extract_state_dict_from('asr.mridc',
-                    './asr_ckpts')
+
+        .. code-block::
+
+            state_dict = mridc.collections.asr.models.EncDecCTCModel.extract_state_dict_from('asr.mridc', \
+            './asr_ckpts')
+
         To restore a model from a Model level checkpoint
-        ::
-        model = mridc.collections.asr.models.EncDecCTCModel(cfg)  # or any other method of restoration
-        model.load_state_dict(torch.load("./asr_ckpts/model_weights.ckpt"))
+
+        .. code-block::
+
+            model = mridc.collections.asr.models.EncDecCTCModel(cfg)  # or any other method of restoration
+            model.load_state_dict(torch.load("./asr_ckpts/model_weights.ckpt"))
+
         To convert the .mridc tarfile into multiple Module level PyTorch checkpoints
-        ::
-        state_dict = mridc.collections.asr.models.EncDecCTCModel.extract_state_dict_from('asr.mridc',
-                    './asr_ckpts', split_by_module=True)
+
+        .. code-block::
+
+            state_dict = mridc.collections.asr.models.EncDecCTCModel.extract_state_dict_from('asr.mridc', \
+            './asr_ckpts', split_by_module=True)
+
         To restore a module from a Module level checkpoint
-        ::
-        model = mridc.collections.asr.models.EncDecCTCModel(cfg)  # or any other method of restoration
-        # load the individual components
-        model.preprocessor.load_state_dict(torch.load("./asr_ckpts/preprocessor.ckpt"))
-        model.encoder.load_state_dict(torch.load("./asr_ckpts/encoder.ckpt"))
-        model.decoder.load_state_dict(torch.load("./asr_ckpts/decoder.ckpt"))
+
+        .. code-block::
+
+            model = mridc.collections.asr.models.EncDecCTCModel(cfg)  # or any other method of restoration
+            # load the individual components
+            model.preprocessor.load_state_dict(torch.load("./asr_ckpts/preprocessor.ckpt"))
+            model.encoder.load_state_dict(torch.load("./asr_ckpts/encoder.ckpt"))
+            model.decoder.load_state_dict(torch.load("./asr_ckpts/decoder.ckpt"))
 
         Returns
         -------
@@ -1051,9 +1073,11 @@ class ModelPT(LightningModule, Model):
 
     def prepare_test(self, trainer: "Trainer") -> bool:
         """
-        Helper method to check whether the model can safely be tested
-        on a dataset after training (or loading a checkpoint).
-        ::
+        Helper method to check whether the model can safely be tested on a dataset after training (or loading a
+        checkpoint).
+
+        .. code-block::
+
             trainer = Trainer()
             if model.prepare_test(trainer):
                 trainer.test(model)
@@ -1066,7 +1090,7 @@ class ModelPT(LightningModule, Model):
             logging.info("No `test_ds` config found within the manifest.")
             return False
 
-        if trainer is not None and trainer.num_gpus > 1:
+        if trainer is not None and trainer.num_devices > 1:
             # Replace ddp multi-gpu until PTL has a fix
             DDP_WARN = """\n\nDuring testing, it is currently advisable to construct a new Trainer "
                     "with single GPU and no DDP to obtain accurate results.
@@ -1093,8 +1117,8 @@ class ModelPT(LightningModule, Model):
         # Update AppState with world information from trainer
         if isinstance(trainer, Trainer):
             app_state = AppState()
-            if self._trainer.num_gpus and self._trainer.num_nodes:  # type: ignore
-                app_state.world_size = self._trainer.num_gpus * self._trainer.num_nodes  # type: ignore
+            if self._trainer.num_devices and self._trainer.num_nodes:  # type: ignore
+                app_state.world_size = self._trainer.num_devices * self._trainer.num_nodes  # type: ignore
         else:
             logging.warning("World size can only be set by PyTorch Lightning Trainer.")
 
@@ -1138,7 +1162,8 @@ class ModelPT(LightningModule, Model):
     def cfg(self):
         """
         Property that holds the finalized internal config of the model.
-        Note:
+
+        .. note::
             Changes to this config are not reflected in the state of the model.
             Please create a new model using an updated config to properly update the model.
         """
@@ -1148,7 +1173,8 @@ class ModelPT(LightningModule, Model):
     def cfg(self, cfg):
         """
         Property that holds the finalized internal config of the model.
-        Note:
+
+        .. note::
             Changes to this config are not reflected in the state of the model.
             Please create a new model using an updated config to properly update the model.
         """

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.utils.config_utils &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>mridc.utils.config_utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.utils.config_utils</h1><div class="highlight"><pre>
+<span></span><span class="c1"># encoding: utf-8</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="c1"># Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/utils/config_utils.py</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">is_dataclass</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Set</span>
+
+<span class="kn">from</span> <span class="nn">omegaconf</span> <span class="kn">import</span> <span class="n">DictConfig</span><span class="p">,</span> <span class="n">OmegaConf</span><span class="p">,</span> <span class="n">open_dict</span>
+
+<span class="kn">from</span> <span class="nn">mridc.core.conf.modelPT</span> <span class="kn">import</span> <span class="n">MRIDCConfig</span>
+<span class="kn">from</span> <span class="nn">mridc.utils</span> <span class="kn">import</span> <span class="n">logging</span>
+
+<span class="n">_HAS_HYDRA</span> <span class="o">=</span> <span class="kc">True</span>
+
+
+<div class="viewcode-block" id="update_model_config"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.config_utils.update_model_config">[docs]</a><span class="k">def</span> <span class="nf">update_model_config</span><span class="p">(</span><span class="n">model_cls</span><span class="p">:</span> <span class="n">MRIDCConfig</span><span class="p">,</span> <span class="n">update_cfg</span><span class="p">:</span> <span class="s2">&quot;DictConfig&quot;</span><span class="p">,</span> <span class="n">drop_missing_subconfigs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper class that updates the default values of a ModelPT config class with the values in a DictConfig that \</span>
+<span class="sd">    mirrors the structure of the config class. Assumes the `update_cfg` is a DictConfig (either generated manually, \</span>
+<span class="sd">    via hydra or instantiated via yaml/model.cfg). This update_cfg is then used to override the default values \</span>
+<span class="sd">    preset inside the ModelPT config class. If `drop_missing_subconfigs` is set, the certain sub-configs of the \</span>
+<span class="sd">    ModelPT config class will be removed, if they are not found in the mirrored `update_cfg`. The following \</span>
+<span class="sd">    sub-configs are subject to potential removal:</span>
+<span class="sd">        -   `train_ds`</span>
+<span class="sd">        -   `validation_ds`</span>
+<span class="sd">        -   `test_ds`</span>
+<span class="sd">        -   `optim` + nested sched</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model_cls: A subclass of MRIDC, that details in entirety all the parameters that constitute the MRIDC Model.</span>
+<span class="sd">    update_cfg: A DictConfig that mirrors the structure of the MRIDCConfig data class. Used to update the default \</span>
+<span class="sd">    values of the config class.</span>
+<span class="sd">    drop_missing_subconfigs: Bool which determines whether to drop certain sub-configs from the MRIDCConfig class, \</span>
+<span class="sd">    if the corresponding sub-config is missing from `update_cfg`.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A DictConfig with updated values that can be used to instantiate the MRIDC Model along with supporting \</span>
+<span class="sd">    infrastructure.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_HAS_HYDRA</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;This function requires Hydra/Omegaconf and it was not installed.&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">is_dataclass</span><span class="p">(</span><span class="n">model_cls</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model_cls</span><span class="p">,</span> <span class="n">DictConfig</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;`model_cfg` must be a dataclass or a structured OmegaConf object&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">update_cfg</span><span class="p">,</span> <span class="n">DictConfig</span><span class="p">):</span>
+        <span class="n">update_cfg</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">update_cfg</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">is_dataclass</span><span class="p">(</span><span class="n">model_cls</span><span class="p">):</span>
+        <span class="n">model_cls</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">structured</span><span class="p">(</span><span class="n">model_cls</span><span class="p">)</span>
+
+    <span class="c1"># Update optional configs</span>
+    <span class="n">model_cls</span> <span class="o">=</span> <span class="n">_update_subconfig</span><span class="p">(</span>
+        <span class="n">model_cls</span><span class="p">,</span> <span class="n">update_cfg</span><span class="p">,</span> <span class="n">subconfig_key</span><span class="o">=</span><span class="s2">&quot;train_ds&quot;</span><span class="p">,</span> <span class="n">drop_missing_subconfigs</span><span class="o">=</span><span class="n">drop_missing_subconfigs</span>
+    <span class="p">)</span>
+    <span class="n">model_cls</span> <span class="o">=</span> <span class="n">_update_subconfig</span><span class="p">(</span>
+        <span class="n">model_cls</span><span class="p">,</span> <span class="n">update_cfg</span><span class="p">,</span> <span class="n">subconfig_key</span><span class="o">=</span><span class="s2">&quot;validation_ds&quot;</span><span class="p">,</span> <span class="n">drop_missing_subconfigs</span><span class="o">=</span><span class="n">drop_missing_subconfigs</span>
+    <span class="p">)</span>
+    <span class="n">model_cls</span> <span class="o">=</span> <span class="n">_update_subconfig</span><span class="p">(</span>
+        <span class="n">model_cls</span><span class="p">,</span> <span class="n">update_cfg</span><span class="p">,</span> <span class="n">subconfig_key</span><span class="o">=</span><span class="s2">&quot;test_ds&quot;</span><span class="p">,</span> <span class="n">drop_missing_subconfigs</span><span class="o">=</span><span class="n">drop_missing_subconfigs</span>
+    <span class="p">)</span>
+    <span class="n">model_cls</span> <span class="o">=</span> <span class="n">_update_subconfig</span><span class="p">(</span>
+        <span class="n">model_cls</span><span class="p">,</span> <span class="n">update_cfg</span><span class="p">,</span> <span class="n">subconfig_key</span><span class="o">=</span><span class="s2">&quot;optim&quot;</span><span class="p">,</span> <span class="n">drop_missing_subconfigs</span><span class="o">=</span><span class="n">drop_missing_subconfigs</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Add optim and sched additional keys to model cls</span>
+    <span class="n">model_cls</span> <span class="o">=</span> <span class="n">_add_subconfig_keys</span><span class="p">(</span><span class="n">model_cls</span><span class="p">,</span> <span class="n">update_cfg</span><span class="p">,</span> <span class="n">subconfig_key</span><span class="o">=</span><span class="s2">&quot;optim&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Perform full merge of model config class and update config</span>
+    <span class="c1"># Remove ModelPT artifact `target`</span>
+    <span class="k">if</span> <span class="s2">&quot;target&quot;</span> <span class="ow">in</span> <span class="n">update_cfg</span><span class="o">.</span><span class="n">model</span> <span class="ow">and</span> <span class="s2">&quot;target&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">model_cls</span><span class="o">.</span><span class="n">model</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+        <span class="k">with</span> <span class="n">open_dict</span><span class="p">(</span><span class="n">update_cfg</span><span class="o">.</span><span class="n">model</span><span class="p">):</span>
+            <span class="n">update_cfg</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;target&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Remove ModelPT artifact `mridc_version`</span>
+    <span class="k">if</span> <span class="s2">&quot;mridc_version&quot;</span> <span class="ow">in</span> <span class="n">update_cfg</span><span class="o">.</span><span class="n">model</span> <span class="ow">and</span> <span class="s2">&quot;mridc_version&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">model_cls</span><span class="o">.</span><span class="n">model</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+        <span class="k">with</span> <span class="n">open_dict</span><span class="p">(</span><span class="n">update_cfg</span><span class="o">.</span><span class="n">model</span><span class="p">):</span>
+            <span class="n">update_cfg</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;mridc_version&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">model_cls</span><span class="p">,</span> <span class="n">update_cfg</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">_update_subconfig</span><span class="p">(</span>
+    <span class="n">model_cfg</span><span class="p">:</span> <span class="s2">&quot;DictConfig&quot;</span><span class="p">,</span> <span class="n">update_cfg</span><span class="p">:</span> <span class="s2">&quot;DictConfig&quot;</span><span class="p">,</span> <span class="n">subconfig_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">drop_missing_subconfigs</span><span class="p">:</span> <span class="nb">bool</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Updates the MRIDCConfig DictConfig such that:</span>
+<span class="sd">        1)  If the sub-config key exists in the `update_cfg`, but does not exist in ModelPT config:</span>
+<span class="sd">            - Add the sub-config from update_cfg to ModelPT config</span>
+<span class="sd">        2) If the sub-config key does not exist in `update_cfg`, but exists in ModelPT config:</span>
+<span class="sd">            - Remove the sub-config from the ModelPT config; iff the `drop_missing_subconfigs` flag is set.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model_cfg: A DictConfig instantiated from the MRIDCConfig subclass.</span>
+<span class="sd">    update_cfg: A DictConfig that mirrors the structure of `model_cfg`, used to update its default values.</span>
+<span class="sd">    subconfig_key: A str key used to check and update the sub-config.</span>
+<span class="sd">    drop_missing_subconfigs: A bool flag, whether to allow deletion of the MRIDCConfig sub-config, if its mirror</span>
+<span class="sd">    sub-config does not exist in the `update_cfg`.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    The updated DictConfig for the MRIDCConfig</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_HAS_HYDRA</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;This function requires Hydra/Omegaconf and it was not installed.&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">open_dict</span><span class="p">(</span><span class="n">model_cfg</span><span class="o">.</span><span class="n">model</span><span class="p">):</span>
+        <span class="c1"># If update config has the key, but model cfg doesnt have the key</span>
+        <span class="c1"># Add the update cfg subconfig to the model cfg</span>
+        <span class="k">if</span> <span class="n">subconfig_key</span> <span class="ow">in</span> <span class="n">update_cfg</span><span class="o">.</span><span class="n">model</span> <span class="ow">and</span> <span class="n">subconfig_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">model_cfg</span><span class="o">.</span><span class="n">model</span><span class="p">:</span>
+            <span class="n">model_cfg</span><span class="o">.</span><span class="n">model</span><span class="p">[</span><span class="n">subconfig_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">update_cfg</span><span class="o">.</span><span class="n">model</span><span class="p">[</span><span class="n">subconfig_key</span><span class="p">]</span>
+
+        <span class="c1"># If update config does not the key, but model cfg has the key</span>
+        <span class="c1"># Remove the model cfg subconfig in order to match layout of update cfg</span>
+        <span class="k">if</span> <span class="n">subconfig_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">update_cfg</span><span class="o">.</span><span class="n">model</span> <span class="ow">and</span> <span class="n">subconfig_key</span> <span class="ow">in</span> <span class="n">model_cfg</span><span class="o">.</span><span class="n">model</span> <span class="ow">and</span> <span class="n">drop_missing_subconfigs</span><span class="p">:</span>
+            <span class="n">model_cfg</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">subconfig_key</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">model_cfg</span>
+
+
+<span class="k">def</span> <span class="nf">_add_subconfig_keys</span><span class="p">(</span><span class="n">model_cfg</span><span class="p">:</span> <span class="s2">&quot;DictConfig&quot;</span><span class="p">,</span> <span class="n">update_cfg</span><span class="p">:</span> <span class="s2">&quot;DictConfig&quot;</span><span class="p">,</span> <span class="n">subconfig_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    For certain sub-configs, the default values specified by the MRIDCConfig class is insufficient.</span>
+<span class="sd">    In order to support every potential value in the merge between the `update_cfg`, it would require explicit</span>
+<span class="sd">    definition of all possible cases.</span>
+<span class="sd">    An example of such a case is Optimizers, and their equivalent Schedulers. All optimizers share a few basic details</span>
+<span class="sd">    - such as name and lr, but almost all require additional parameters - such as weight decay.</span>
+<span class="sd">    It is impractical to create a config for every single optimizer + every single scheduler combination.</span>
+<span class="sd">    In such a case, we perform a dual merge. The Optim and Sched Dataclass contain the bare minimum essential</span>
+<span class="sd">    components. The extra values are provided via update_cfg.</span>
+<span class="sd">    In order to enable the merge, we first need to update the update sub-config to incorporate the keys, with dummy</span>
+<span class="sd">    temporary values (merge update config with model config). This is done on a copy of the update sub-config, as the</span>
+<span class="sd">    actual override values might be overridden by the MRIDCConfig defaults.</span>
+<span class="sd">    Then we perform a merge of this temporary sub-config with the actual override config in a later step (merge</span>
+<span class="sd">    model_cfg with original update_cfg, done outside this function).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model_cfg: A DictConfig instantiated from the MRIDCConfig subclass.</span>
+<span class="sd">    update_cfg: A DictConfig that mirrors the structure of `model_cfg`, used to update its default values.</span>
+<span class="sd">    subconfig_key: A str key used to check and update the sub-config.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A ModelPT DictConfig with additional keys added to the sub-config.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_HAS_HYDRA</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;This function requires Hydra/Omegaconf and it was not installed.&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">open_dict</span><span class="p">(</span><span class="n">model_cfg</span><span class="o">.</span><span class="n">model</span><span class="p">):</span>
+        <span class="c1"># Create copy of original model sub config</span>
+        <span class="k">if</span> <span class="n">subconfig_key</span> <span class="ow">in</span> <span class="n">update_cfg</span><span class="o">.</span><span class="n">model</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">subconfig_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">model_cfg</span><span class="o">.</span><span class="n">model</span><span class="p">:</span>
+                <span class="c1"># create the key as a placeholder</span>
+                <span class="n">model_cfg</span><span class="o">.</span><span class="n">model</span><span class="p">[</span><span class="n">subconfig_key</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="n">subconfig</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">model_cfg</span><span class="o">.</span><span class="n">model</span><span class="p">[</span><span class="n">subconfig_key</span><span class="p">])</span>
+            <span class="n">update_subconfig</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">update_cfg</span><span class="o">.</span><span class="n">model</span><span class="p">[</span><span class="n">subconfig_key</span><span class="p">])</span>
+
+            <span class="c1"># Add the keys and update temporary values, will be updated during full merge</span>
+            <span class="n">subconfig</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">update_subconfig</span><span class="p">,</span> <span class="n">subconfig</span><span class="p">)</span>
+            <span class="c1"># Update sub config</span>
+            <span class="n">model_cfg</span><span class="o">.</span><span class="n">model</span><span class="p">[</span><span class="n">subconfig_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">subconfig</span>
+
+    <span class="k">return</span> <span class="n">model_cfg</span>
+
+
+<div class="viewcode-block" id="assert_dataclass_signature_match"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.config_utils.assert_dataclass_signature_match">[docs]</a><span class="k">def</span> <span class="nf">assert_dataclass_signature_match</span><span class="p">(</span>
+    <span class="bp">cls</span><span class="p">:</span> <span class="s2">&quot;class_type&quot;</span><span class="p">,</span>  <span class="c1"># type: ignore</span>
+    <span class="n">datacls</span><span class="p">:</span> <span class="s2">&quot;dataclass&quot;</span><span class="p">,</span>  <span class="c1"># type: ignore</span>
+    <span class="n">ignore_args</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">remap_args</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Analyses the signature of a provided class and its respective data class,</span>
+<span class="sd">    asserting that the dataclass signature matches the class __init__ signature.</span>
+<span class="sd">    Note:</span>
+<span class="sd">        This is not a value based check. This function only checks if all argument</span>
+<span class="sd">        names exist on both class and dataclass and logs mismatches.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    cls: Any class type - but not an instance of a class. Pass type(x) where x is an instance</span>
+<span class="sd">        if class type is not easily available.</span>
+<span class="sd">    datacls: A corresponding dataclass for the above class.</span>
+<span class="sd">    ignore_args: (Optional) A list of string argument names which are forcibly ignored,</span>
+<span class="sd">        even if mismatched in the signature. Useful when a dataclass is a superset of the</span>
+<span class="sd">        arguments of a class.</span>
+<span class="sd">    remap_args: (Optional) A dictionary, mapping an argument name that exists (in either the</span>
+<span class="sd">        class or its dataclass), to another name. Useful when argument names are mismatched between</span>
+<span class="sd">        a class and its dataclass due to indirect instantiation via a helper method.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A tuple containing information about the analysis:</span>
+<span class="sd">        1) A bool value which is True if the signatures matched exactly / after ignoring values.</span>
+<span class="sd">            False otherwise.</span>
+<span class="sd">        2) A set of arguments names that exist in the class, but *do not* exist in the dataclass.</span>
+<span class="sd">            If exact signature match occurs, this will be None instead.</span>
+<span class="sd">        3) A set of argument names that exist in the data class, but *do not* exist in the class itself.</span>
+<span class="sd">            If exact signature match occurs, this will be None instead.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">class_sig</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="fm">__init__</span><span class="p">)</span>
+
+    <span class="n">class_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="o">**</span><span class="n">class_sig</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
+    <span class="n">class_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;self&quot;</span><span class="p">)</span>
+
+    <span class="n">dataclass_sig</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">datacls</span><span class="p">)</span>
+
+    <span class="n">dataclass_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="o">**</span><span class="n">dataclass_sig</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
+    <span class="n">dataclass_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;_target_&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="n">class_params</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">class_params</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>  <span class="c1"># type: ignore</span>
+    <span class="n">dataclass_params</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">dataclass_params</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>  <span class="c1"># type: ignore</span>
+
+    <span class="k">if</span> <span class="n">remap_args</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">original_arg</span><span class="p">,</span> <span class="n">new_arg</span> <span class="ow">in</span> <span class="n">remap_args</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">original_arg</span> <span class="ow">in</span> <span class="n">class_params</span><span class="p">:</span>
+                <span class="n">class_params</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">original_arg</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+                <span class="n">class_params</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">new_arg</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Remapped </span><span class="si">{</span><span class="n">original_arg</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">new_arg</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">original_arg</span> <span class="ow">in</span> <span class="n">dataclass_params</span><span class="p">:</span>
+                <span class="n">dataclass_params</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">original_arg</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+                <span class="n">dataclass_params</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">new_arg</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Remapped </span><span class="si">{</span><span class="n">original_arg</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">new_arg</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">datacls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">ignore_args</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ignore_args</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">ignore_args</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+        <span class="n">class_params</span> <span class="o">=</span> <span class="n">class_params</span> <span class="o">-</span> <span class="n">ignore_args</span>  <span class="c1"># type: ignore</span>
+        <span class="n">dataclass_params</span> <span class="o">=</span> <span class="n">dataclass_params</span> <span class="o">-</span> <span class="n">ignore_args</span>  <span class="c1"># type: ignore</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Removing ignored arguments - </span><span class="si">{</span><span class="n">ignore_args</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">intersection</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="nb">type</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">class_params</span><span class="p">,</span> <span class="n">dataclass_params</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+    <span class="n">subset_cls</span> <span class="o">=</span> <span class="n">class_params</span> <span class="o">-</span> <span class="n">intersection</span>  <span class="c1"># type: ignore</span>
+    <span class="n">subset_datacls</span> <span class="o">=</span> <span class="n">dataclass_params</span> <span class="o">-</span> <span class="n">intersection</span>  <span class="c1"># type: ignore</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">class_params</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataclass_params</span><span class="p">))</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">subset_cls</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">subset_datacls</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Class </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> arguments do not match &quot;</span> <span class="sa">f</span><span class="s2">&quot;Dataclass </span><span class="si">{</span><span class="n">datacls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">!&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">subset_cls</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Class </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> has additional arguments :</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">subset_cls</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">subset_datacls</span><span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dataclass </span><span class="si">{</span><span class="n">datacls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> has additional arguments :</span><span class="se">\n</span><span class="si">{</span><span class="n">subset_datacls</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="n">subset_cls</span><span class="p">,</span> <span class="n">subset_datacls</span>
+    <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

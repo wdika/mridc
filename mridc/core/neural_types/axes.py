@@ -19,9 +19,9 @@ class AxisKindAbstract(Enum):
 
 class AxisKind(AxisKindAbstract):
     """
-    This Enum represents what does varying axis dimension mean. For example, does this dimension correspond to width,
-    batch, time, etc. The "Dimension" and "Channel" kinds are the same and used to represent a general axis. "Any" axis
-     will accept any axis kind fed to it.
+    This Enum represents what does varying axis dimension mean. For example, does this dimension correspond to width, \
+     batch, time, etc. The "Dimension" and "Channel" kinds are the same and used to represent a general axis. "Any" \
+     axis will accept any axis kind fed to it.
     """
 
     # TODO (wdika): change names of the enums

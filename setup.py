@@ -151,7 +151,7 @@ setuptools.setup(
         #  5 - Production/Stable
         #  6 - Mature
         #  7 - Inactive
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 5 - Production/Stable",
         # Indicate who your project is intended for
         "Intended Audience :: Developers",
         "Intended Audience :: Science/Research",
@@ -160,10 +160,7 @@ setuptools.setup(
         "Topic :: Scientific/Engineering",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Physics",
-        "Topic :: Scientific/Engineering :: Image Reconstruction",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
-        "Topic :: Scientific/Engineering :: Magnetic Resonance Imaging",
-        "Topic :: Scientific/Engineering :: Medical Imaging",
         "Topic :: Software Development :: Libraries",
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Topic :: Utilities",

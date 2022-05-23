@@ -253,7 +253,7 @@ class ConvMGUCell(ConvMGUCellBase):
 
 class IndRNNCellBase(nn.Module):
     """
-    Base class for Independently RNN cells as presented in [1].
+    Base class for Independently RNN cells as presented in [1]_.
 
     References
     ----------

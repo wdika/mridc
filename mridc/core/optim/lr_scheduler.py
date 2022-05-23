@@ -705,37 +705,62 @@ def prepare_lr_scheduler(
     Parameters
     ----------
     optimizer: The optimizer to use for the scheduler.
-      name: <name of optimizer>
-      lr: <maximal learning rate>
-      # <additional optimizer arguments>
-      args:
-        name: auto  # special keyword, resolves to correct optimizer config for given optimizer name
-        # cls: mridc.core.config.optimizers.NovogradParams  # explicit instantiation by class path
-        params:  # optional override parameters for the optimizer config
-          betas: [0.8, 0.5]
-          weight_decay: 0.001
-    scheduler_config: The scheduler config.
-        name: <name of scheduler>
-        iters_per_batch: null # computed at runtime; mandatory to have
-        max_steps: null # computed at runtime or explicitly set here; mandatory to have
-        # pytorch lightning args <mandatory>
-        monitor: val_loss
-        reduce_on_plateau: false
-        # <scheduler config override>
+        name: <name of optimizer>
+
+        lr: <maximal learning rate>
+
+        # <additional optimizer arguments>
+
         args:
-          name: auto  # special keyword, resolves to correct optimizer config for given optimizer name
-          # cls: mridc.core.config.schedulers.CosineAnnealingParams  # explicit instantiation by class path
-          params:  # optional override parameters for the optimizer config
-            warmup_steps: null
-            warmup_ratio: null
-            min_lr: 0.0
-            last_epoch: -1
-    train_dataloader: Optional requirement, must be passed if "iters_per_batch" is defined instead of "max_steps".
+
+            name: auto  # special keyword, resolves to correct optimizer config for given optimizer name
+
+            # cls: mridc.core.config.optimizers.NovogradParams  # explicit instantiation by class path
+
+            params:  # optional override parameters for the optimizer config
+
+                betas: [0.8, 0.5]
+
+                weight_decay: 0.001
+
+    scheduler_config: The scheduler config.
+
+        name: <name of scheduler>
+
+        iters_per_batch: null # computed at runtime; mandatory to have
+
+        max_steps: null # computed at runtime or explicitly set here; mandatory to have
+
+        # pytorch lightning args <mandatory>
+
+        monitor: val_loss
+
+        reduce_on_plateau: false
+
+        # <scheduler config override>
+
+        args:
+
+            name: auto  # special keyword, resolves to correct optimizer config for given optimizer name
+
+            # cls: mridc.core.config.schedulers.CosineAnnealingParams  # explicit instantiation by class path
+
+            params:  # optional override parameters for the optimizer config
+
+                warmup_steps: null
+
+                warmup_ratio: null
+
+                min_lr: 0.0
+
+                last_epoch: -1
+
+    train_dataloader: Optional requirement, must be passed if "iters_per_batch" is defined instead of "max_steps". \
     Used to compute effective "max_steps".
 
     Returns
     -------
-    A dictionary containing the LR Scheduler implementation if the config was successfully parsed along with other
+    A dictionary containing the LR Scheduler implementation if the config was successfully parsed along with other \
     parameters required by Pytorch Lightning, otherwise None.
     """
     if scheduler_config is not None:

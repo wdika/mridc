@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.utils.decorators.port_docs &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>mridc.utils.decorators.port_docs</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.utils.decorators.port_docs</h1><div class="highlight"><pre>
+<span></span><span class="c1"># encoding: utf-8</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="c1"># Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/utils/decorators/port_docs.py</span>
+
+<span class="c1"># The &quot;add_port_docs&quot; decorator is needed to nicely generate neural types in Sphynx for input and output ports</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;add_port_docs&quot;</span><span class="p">]</span>
+
+<span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">import</span> <span class="nn">wrapt</span>
+
+
+<span class="k">def</span> <span class="nf">_normalize_docstring</span><span class="p">(</span><span class="n">docstring</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Normalize docstring indentation. Replaces tabs with spaces, removes leading and trailing blanks lines, and removes</span>
+<span class="sd">     any indentation.</span>
+
+<span class="sd">    Copied from PEP-257: https://www.python.org/dev/peps/pep-0257/#handling-docstring-indentation</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    docstring: The docstring to normalize.</span>
+<span class="sd">        str</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    The normalized docstring.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">docstring</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+    <span class="c1"># Convert tabs to spaces (following the normal Python rules)</span>
+    <span class="c1"># and split into a list of lines:</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="n">docstring</span><span class="o">.</span><span class="n">expandtabs</span><span class="p">()</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+    <span class="c1"># Determine minimum indentation (first line doesn&#39;t count):</span>
+    <span class="c1"># (we use sys.maxsize because sys.maxint doesn&#39;t exist in Python 3)</span>
+    <span class="n">indent</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+        <span class="k">if</span> <span class="n">stripped</span> <span class="o">:=</span> <span class="n">line</span><span class="o">.</span><span class="n">lstrip</span><span class="p">():</span>
+            <span class="n">indent</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">indent</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">stripped</span><span class="p">))</span>
+    <span class="c1"># Remove indentation (first line is special):</span>
+    <span class="n">trimmed</span> <span class="o">=</span> <span class="p">[</span><span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+    <span class="k">if</span> <span class="n">indent</span> <span class="o">&lt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">maxsize</span><span class="p">:</span>
+        <span class="n">trimmed</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="n">indent</span><span class="p">:]</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+    <span class="c1"># Strip off trailing and leading blank lines:</span>
+    <span class="k">while</span> <span class="n">trimmed</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">trimmed</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="n">trimmed</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+    <span class="k">while</span> <span class="n">trimmed</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">trimmed</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="n">trimmed</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="c1"># Return a single string:</span>
+    <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">trimmed</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="add_port_docs"><a class="viewcode-back" href="../../../../mridc.utils.decorators.html#mridc.utils.decorators.port_docs.add_port_docs">[docs]</a><span class="k">def</span> <span class="nf">add_port_docs</span><span class="p">(</span><span class="n">wrapped</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">instance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Adds port documentation to the wrapped function.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    wrapped: The function to decorate.</span>
+<span class="sd">        function</span>
+<span class="sd">    instance: The instance of the function.</span>
+<span class="sd">        object</span>
+<span class="sd">    value: The value of the port.</span>
+<span class="sd">        object</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    The decorated function.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">wrapped</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">add_port_docs</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@wrapt</span><span class="o">.</span><span class="n">decorator</span>
+    <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="n">wrapped</span><span class="p">,</span> <span class="n">instance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adds port documentation to the wrapped function.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        wrapped: The function to decorate.</span>
+<span class="sd">        instance: The instance of the function.</span>
+<span class="sd">        args: The arguments of the function.</span>
+<span class="sd">        kwargs: The keyword arguments of the function.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        The decorated function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">wrapped</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="n">decorated</span> <span class="o">=</span> <span class="n">wrapper</span><span class="p">(</span><span class="n">wrapped</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">port_2_ntype</span> <span class="o">=</span> <span class="n">decorated</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="n">port_2_ntype</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="n">port_description</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">port_2_ntype</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">port</span><span class="p">,</span> <span class="n">ntype</span> <span class="ow">in</span> <span class="n">port_2_ntype</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">port_description</span> <span class="o">+=</span> <span class="s2">&quot;* *&quot;</span> <span class="o">+</span> <span class="n">port</span> <span class="o">+</span> <span class="s2">&quot;* : &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">ntype</span><span class="p">)</span>
+            <span class="n">port_description</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+
+    <span class="vm">__doc__</span> <span class="o">=</span> <span class="n">_normalize_docstring</span><span class="p">(</span><span class="n">wrapped</span><span class="o">.</span><span class="vm">__doc__</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">port_description</span><span class="p">)</span>
+    <span class="vm">__doc__</span> <span class="o">=</span> <span class="n">_normalize_docstring</span><span class="p">(</span><span class="vm">__doc__</span><span class="p">)</span>
+
+    <span class="n">wrapt</span><span class="o">.</span><span class="n">FunctionWrapper</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="n">decorated</span><span class="p">,</span> <span class="s2">&quot;__doc__&quot;</span><span class="p">,</span> <span class="vm">__doc__</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">decorated</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

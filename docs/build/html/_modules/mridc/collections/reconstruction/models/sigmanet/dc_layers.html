@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.collections.reconstruction.models.sigmanet.dc_layers &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../../../../../" id="documentation_options" src="../../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../../_static/jquery.js"></script>
+        <script src="../../../../../../_static/underscore.js"></script>
+        <script src="../../../../../../_static/doctools.js"></script>
+    <script src="../../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../../../index.html">Module code</a> &raquo;</li>
+      <li>mridc.collections.reconstruction.models.sigmanet.dc_layers</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.collections.reconstruction.models.sigmanet.dc_layers</h1><div class="highlight"><pre>
+<span></span><span class="c1"># coding=utf-8</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="c1"># Taken and adapted from:</span>
+<span class="c1"># https://github.com/khammernik/sigmanet/blob/master/reconstruction/common/mytorch/models/datalayer.py</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">fft2c</span><span class="p">,</span> <span class="n">ifft2c</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.utils</span> <span class="kn">import</span> <span class="n">complex_abs</span><span class="p">,</span> <span class="n">complex_conj</span><span class="p">,</span> <span class="n">complex_mul</span>
+
+
+<div class="viewcode-block" id="DataIDLayer"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataIDLayer">[docs]</a><span class="k">class</span> <span class="nc">DataIDLayer</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Placeholder for the data layer.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="DataGDLayer"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataGDLayer">[docs]</a><span class="k">class</span> <span class="nc">DataGDLayer</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;DataLayer computing the gradient on the L2 dataterm.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lambda_init</span><span class="p">,</span> <span class="n">learnable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="s2">&quot;orthogonal&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        lambda_init: Init value of data term weight lambda.</span>
+<span class="sd">        learnable: If True, the data term weight lambda is learnable.</span>
+<span class="sd">        fft_type: Type of FFT to use.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DataGDLayer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lambda_init</span> <span class="o">=</span> <span class="n">lambda_init</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_weight</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span>
+            <span class="n">lambda_init</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data_weight</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_weight</span><span class="o">.</span><span class="n">requires_grad</span> <span class="o">=</span> <span class="n">learnable</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">fft_type</span>
+
+<div class="viewcode-block" id="DataGDLayer.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataGDLayer.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">smaps</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x: Input image.</span>
+<span class="sd">        y: Subsampled k-space data.</span>
+<span class="sd">        smaps: Coil sensitivity maps.</span>
+<span class="sd">        mask: Sampling mask.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        data_loss: Data term loss.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">A_x_y</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
+                <span class="n">fft2c</span><span class="p">(</span><span class="n">complex_mul</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">expand_as</span><span class="p">(</span><span class="n">smaps</span><span class="p">),</span> <span class="n">smaps</span><span class="p">),</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">)</span> <span class="o">*</span> <span class="n">mask</span><span class="p">,</span>
+                <span class="o">-</span><span class="mi">4</span><span class="p">,</span>
+                <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="o">-</span> <span class="n">y</span>
+        <span class="p">)</span>
+        <span class="n">gradD_x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">complex_mul</span><span class="p">(</span><span class="n">ifft2c</span><span class="p">(</span><span class="n">A_x_y</span> <span class="o">*</span> <span class="n">mask</span><span class="p">),</span> <span class="n">complex_conj</span><span class="p">(</span><span class="n">smaps</span><span class="p">)),</span> <span class="n">dim</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">x</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_weight</span> <span class="o">*</span> <span class="n">gradD_x</span></div></div>
+
+
+<div class="viewcode-block" id="DataProxCGLayer"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataProxCGLayer">[docs]</a><span class="k">class</span> <span class="nc">DataProxCGLayer</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Solving the prox wrt. dataterm using Conjugate Gradient as proposed by Aggarwal et al.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lambda_init</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="nb">iter</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">learnable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="s2">&quot;orthogonal&quot;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DataProxCGLayer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lambdaa</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lambdaa</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">lambda_init</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lambdaa_init</span> <span class="o">=</span> <span class="n">lambda_init</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lambdaa</span><span class="o">.</span><span class="n">requires_grad</span> <span class="o">=</span> <span class="n">learnable</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">tol</span> <span class="o">=</span> <span class="n">tol</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iter</span> <span class="o">=</span> <span class="nb">iter</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">op</span> <span class="o">=</span> <span class="n">ConjugateGradient</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">fft_type</span>
+
+<div class="viewcode-block" id="DataProxCGLayer.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataProxCGLayer.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">smaps</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x: Input image.</span>
+<span class="sd">        f: Subsampled k-space data.</span>
+<span class="sd">        smaps: Coil sensitivity maps.</span>
+<span class="sd">        mask: Sampling mask.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        data_loss: Data term loss.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">op</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+            <span class="n">x</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lambdaa</span><span class="p">,</span>
+            <span class="n">f</span><span class="p">,</span>
+            <span class="n">smaps</span><span class="p">,</span>
+            <span class="n">mask</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tol</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">iter</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="DataProxCGLayer.set_learnable"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataProxCGLayer.set_learnable">[docs]</a>    <span class="k">def</span> <span class="nf">set_learnable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flag</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lambdaa</span><span class="o">.</span><span class="n">requires_grad</span> <span class="o">=</span> <span class="n">flag</span></div></div>
+
+
+<div class="viewcode-block" id="ConjugateGradient"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.ConjugateGradient">[docs]</a><span class="k">class</span> <span class="nc">ConjugateGradient</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">autograd</span><span class="o">.</span><span class="n">Function</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Conjugate Gradient solver for the prox of the data term.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ConjugateGradient.complexDot"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.ConjugateGradient.complexDot">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">complexDot</span><span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="n">data2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Complex dot product of two tensors.&quot;&quot;&quot;</span>
+        <span class="n">nBatch</span> <span class="o">=</span> <span class="n">data1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">mult</span> <span class="o">=</span> <span class="n">complex_mul</span><span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="n">complex_conj</span><span class="p">(</span><span class="n">data2</span><span class="p">))</span>
+        <span class="n">re</span><span class="p">,</span> <span class="n">im</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">unbind</span><span class="p">(</span><span class="n">mult</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">nBatch</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">im</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">nBatch</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConjugateGradient.solve"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.ConjugateGradient.solve">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">max_iter</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Solve the linear system Mx=b using conjugate gradient.&quot;&quot;&quot;</span>
+        <span class="n">nBatch</span> <span class="o">=</span> <span class="n">x0</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x0</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">x0</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">x0</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">x0</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+        <span class="n">x0x0</span> <span class="o">=</span> <span class="p">(</span><span class="n">x0</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">nBatch</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">rr</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([(</span><span class="n">r</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">nBatch</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nBatch</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">x0</span><span class="o">.</span><span class="n">device</span><span class="p">)],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">it</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">torch</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">rr</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">x0x0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">tol</span> <span class="ow">and</span> <span class="n">it</span> <span class="o">&lt;</span> <span class="n">max_iter</span><span class="p">:</span>
+            <span class="n">it</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">q</span> <span class="o">=</span> <span class="n">M</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+
+            <span class="n">data1</span> <span class="o">=</span> <span class="n">rr</span>
+            <span class="n">data2</span> <span class="o">=</span> <span class="n">ConjugateGradient</span><span class="o">.</span><span class="n">complexDot</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>
+
+            <span class="n">re1</span><span class="p">,</span> <span class="n">im1</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">unbind</span><span class="p">(</span><span class="n">data1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">re2</span><span class="p">,</span> <span class="n">im2</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">unbind</span><span class="p">(</span><span class="n">data2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">alpha</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">re1</span> <span class="o">*</span> <span class="n">re2</span> <span class="o">+</span> <span class="n">im1</span> <span class="o">*</span> <span class="n">im2</span><span class="p">,</span> <span class="n">im1</span> <span class="o">*</span> <span class="n">re2</span> <span class="o">-</span> <span class="n">re1</span> <span class="o">*</span> <span class="n">im2</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">complex_abs</span><span class="p">(</span><span class="n">data2</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+
+            <span class="n">x</span> <span class="o">+=</span> <span class="n">complex_mul</span><span class="p">(</span><span class="n">alpha</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nBatch</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">p</span><span class="o">.</span><span class="n">clone</span><span class="p">())</span>
+            <span class="n">r</span> <span class="o">-=</span> <span class="n">complex_mul</span><span class="p">(</span><span class="n">alpha</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nBatch</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">q</span><span class="o">.</span><span class="n">clone</span><span class="p">())</span>
+            <span class="n">rr_new</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([(</span><span class="n">r</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">nBatch</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nBatch</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">x0</span><span class="o">.</span><span class="n">device</span><span class="p">)],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">beta</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">rr_new</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">rr</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nBatch</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">x0</span><span class="o">.</span><span class="n">device</span><span class="p">)],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span> <span class="o">+</span> <span class="n">complex_mul</span><span class="p">(</span><span class="n">beta</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nBatch</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">p</span><span class="p">)</span>
+            <span class="n">rr</span> <span class="o">=</span> <span class="n">rr_new</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">x</span></div>
+
+<div class="viewcode-block" id="ConjugateGradient.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.ConjugateGradient.forward">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">lambdaa</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">smaps</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">max_iter</span><span class="p">,</span> <span class="n">fft_type</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Forward pass of the conjugate gradient solver.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        ctx: Context object.</span>
+<span class="sd">        z: Input image.</span>
+<span class="sd">        lambdaa: Regularization parameter.</span>
+<span class="sd">        y: Subsampled k-space data.</span>
+<span class="sd">        smaps: Coil sensitivity maps.</span>
+<span class="sd">        mask: Sampling mask.</span>
+<span class="sd">        tol: Tolerance for the stopping criterion.</span>
+<span class="sd">        max_iter: Maximum number of iterations.</span>
+<span class="sd">        fft_type: FFT type.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        z: Output image.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">tol</span> <span class="o">=</span> <span class="n">tol</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">max_iter</span> <span class="o">=</span> <span class="n">max_iter</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">fft_type</span>
+
+        <span class="k">def</span> <span class="nf">A</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">fft2c</span><span class="p">(</span><span class="n">complex_mul</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">expand_as</span><span class="p">(</span><span class="n">smaps</span><span class="p">),</span> <span class="n">smaps</span><span class="p">),</span> <span class="n">fft_type</span><span class="o">=</span><span class="n">fft_type</span><span class="p">)</span> <span class="o">*</span> <span class="n">mask</span>
+            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">4</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">AT</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">complex_mul</span><span class="p">(</span><span class="n">ifft2c</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">mask</span><span class="p">),</span> <span class="n">complex_conj</span><span class="p">(</span><span class="n">smaps</span><span class="p">)),</span> <span class="n">dim</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">))</span>
+
+        <span class="k">def</span> <span class="nf">M</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">lambdaa</span> <span class="o">*</span> <span class="n">AT</span><span class="p">(</span><span class="n">A</span><span class="p">(</span><span class="n">p</span><span class="p">))</span> <span class="o">+</span> <span class="n">p</span>
+
+        <span class="n">x0</span> <span class="o">=</span> <span class="n">lambdaa</span> <span class="o">*</span> <span class="n">AT</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">+</span> <span class="n">z</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">save_for_backward</span><span class="p">(</span><span class="n">AT</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">x0</span><span class="p">,</span> <span class="n">smaps</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">lambdaa</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ConjugateGradient</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">ctx</span><span class="o">.</span><span class="n">tol</span><span class="p">,</span> <span class="n">ctx</span><span class="o">.</span><span class="n">max_iter</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConjugateGradient.backward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.ConjugateGradient.backward">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">backward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">grad_x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Backward pass of the conjugate gradient solver.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        ctx: Context object.</span>
+<span class="sd">        grad_x: Gradient of the output image.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        grad_z: Gradient of the input image.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ATy</span><span class="p">,</span> <span class="n">rhs</span><span class="p">,</span> <span class="n">smaps</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">lambdaa</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">saved_tensors</span>
+
+        <span class="k">def</span> <span class="nf">A</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">fft2c</span><span class="p">(</span><span class="n">complex_mul</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">expand_as</span><span class="p">(</span><span class="n">smaps</span><span class="p">),</span> <span class="n">smaps</span><span class="p">),</span> <span class="n">fft_type</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">fft_type</span><span class="p">)</span> <span class="o">*</span> <span class="n">mask</span>
+            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">4</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">AT</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">complex_mul</span><span class="p">(</span><span class="n">ifft2c</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">mask</span><span class="p">),</span> <span class="n">complex_conj</span><span class="p">(</span><span class="n">smaps</span><span class="p">)),</span> <span class="n">dim</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">))</span>
+
+        <span class="k">def</span> <span class="nf">M</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">lambdaa</span> <span class="o">*</span> <span class="n">AT</span><span class="p">(</span><span class="n">A</span><span class="p">(</span><span class="n">p</span><span class="p">))</span> <span class="o">+</span> <span class="n">p</span>
+
+        <span class="n">Qe</span> <span class="o">=</span> <span class="n">ConjugateGradient</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">grad_x</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">ctx</span><span class="o">.</span><span class="n">tol</span><span class="p">,</span> <span class="n">ctx</span><span class="o">.</span><span class="n">max_iter</span><span class="p">)</span>
+        <span class="n">QQe</span> <span class="o">=</span> <span class="n">ConjugateGradient</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">Qe</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">ctx</span><span class="o">.</span><span class="n">tol</span><span class="p">,</span> <span class="n">ctx</span><span class="o">.</span><span class="n">max_iter</span><span class="p">)</span>
+
+        <span class="n">grad_z</span> <span class="o">=</span> <span class="n">Qe</span>
+
+        <span class="n">grad_lambdaa</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">complex_mul</span><span class="p">(</span><span class="n">ifft2c</span><span class="p">(</span><span class="n">Qe</span><span class="p">),</span> <span class="n">complex_conj</span><span class="p">(</span><span class="n">ATy</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">-</span> <span class="n">complex_mul</span><span class="p">(</span><span class="n">ifft2c</span><span class="p">(</span><span class="n">QQe</span><span class="p">),</span> <span class="n">complex_conj</span><span class="p">(</span><span class="n">rhs</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">grad_z</span><span class="p">,</span> <span class="n">grad_lambdaa</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span></div></div>
+
+
+<div class="viewcode-block" id="DataVSLayer"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataVSLayer">[docs]</a><span class="k">class</span> <span class="nc">DataVSLayer</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    DataLayer using variable splitting formulation</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alpha_init</span><span class="p">,</span> <span class="n">beta_init</span><span class="p">,</span> <span class="n">learnable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="s2">&quot;orthogonal&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        alpha_init: Init value of data consistency block (DCB)</span>
+<span class="sd">        beta_init: Init value of weighted averaging block (WAB)</span>
+<span class="sd">        learnable: If True, the parameters of the model are learnable</span>
+<span class="sd">        fft_type: Type of FFT to use. Can be &quot;orthogonal&quot;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DataVSLayer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">alpha_init</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">beta</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">beta_init</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">learnable</span> <span class="o">=</span> <span class="n">learnable</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_learnable</span><span class="p">(</span><span class="n">learnable</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">fft_type</span>
+
+<div class="viewcode-block" id="DataVSLayer.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataVSLayer.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">smaps</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Forward pass of the data-consistency block.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x: Input image.</span>
+<span class="sd">        y: Subsampled k-space data.</span>
+<span class="sd">        smaps: Coil sensitivity maps.</span>
+<span class="sd">        mask: Sampling mask.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Output image.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">A_x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
+            <span class="n">fft2c</span><span class="p">(</span><span class="n">complex_mul</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">expand_as</span><span class="p">(</span><span class="n">smaps</span><span class="p">),</span> <span class="n">smaps</span><span class="p">),</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">),</span> <span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+        <span class="n">k_dc</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">mask</span><span class="p">)</span> <span class="o">*</span> <span class="n">A_x</span> <span class="o">+</span> <span class="n">mask</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">A_x</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">)</span> <span class="o">*</span> <span class="n">y</span><span class="p">)</span>
+        <span class="n">x_dc</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">complex_mul</span><span class="p">(</span><span class="n">ifft2c</span><span class="p">(</span><span class="n">k_dc</span><span class="p">),</span> <span class="n">complex_conj</span><span class="p">(</span><span class="n">smaps</span><span class="p">)),</span> <span class="n">dim</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="p">)</span> <span class="o">*</span> <span class="n">x_dc</span></div>
+
+<div class="viewcode-block" id="DataVSLayer.set_learnable"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataVSLayer.set_learnable">[docs]</a>    <span class="k">def</span> <span class="nf">set_learnable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flag</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the learnable flag of the parameters.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        flag: If True, the parameters of the model are learnable.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">learnable</span> <span class="o">=</span> <span class="n">flag</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="o">.</span><span class="n">requires_grad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">learnable</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="o">.</span><span class="n">requires_grad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">learnable</span></div></div>
+
+
+<div class="viewcode-block" id="DCLayer"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.DCLayer">[docs]</a><span class="k">class</span> <span class="nc">DCLayer</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Data Consistency layer from DC-CNN, apply for single coil mainly</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lambda_init</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">learnable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="s2">&quot;orthogonal&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        lambda_init: Init value of data consistency block (DCB)</span>
+<span class="sd">        learnable: If True, the parameters of the model are learnable</span>
+<span class="sd">        fft_type: Type of FFT to use. Can be &quot;orthogonal&quot;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DCLayer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lambda_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lambda_</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">lambda_init</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lambda_</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">learnable</span> <span class="o">=</span> <span class="n">learnable</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_learnable</span><span class="p">(</span><span class="n">learnable</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">fft_type</span>
+
+<div class="viewcode-block" id="DCLayer.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.DCLayer.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Forward pass of the data-consistency block.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x: Input image.</span>
+<span class="sd">        y: Subsampled k-space data.</span>
+<span class="sd">        mask: Sampling mask.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Output image.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">A_x</span> <span class="o">=</span> <span class="n">fft2c</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">)</span>
+        <span class="n">k_dc</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">mask</span><span class="p">)</span> <span class="o">*</span> <span class="n">A_x</span> <span class="o">+</span> <span class="n">mask</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lambda_</span> <span class="o">*</span> <span class="n">A_x</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">lambda_</span><span class="p">)</span> <span class="o">*</span> <span class="n">y</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ifft2c</span><span class="p">(</span><span class="n">k_dc</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DCLayer.set_learnable"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.DCLayer.set_learnable">[docs]</a>    <span class="k">def</span> <span class="nf">set_learnable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flag</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the learnable flag of the parameters.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        flag: If True, the parameters of the model are learnable.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">learnable</span> <span class="o">=</span> <span class="n">flag</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lambda_</span><span class="o">.</span><span class="n">requires_grad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">learnable</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

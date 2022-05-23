@@ -66,10 +66,10 @@ class ElementType(ABC):
     @property
     def fields(self) -> Optional[Tuple]:
         """
-        This should be used to logically represent tuples/structures. For example, if you want to represent a bounding
-        box (x, y, width, height) you can put a tuple with names ('x', y', 'w', 'h') in here. Under the hood this
-        should be converted to the last tensor dimension of fixed size = len(fields). When two types are compared their
-         fields must match.
+        This should be used to logically represent tuples/structures. For example, if you want to represent a \
+        bounding box (x, y, width, height) you can put a tuple with names ('x', y', 'w', 'h') in here. Under the \
+        hood this should be converted to the last tensor dimension of fixed size = len(fields). When two types are \
+        compared their fields must match.
         """
         return None
 

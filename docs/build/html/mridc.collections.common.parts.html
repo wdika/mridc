@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.collections.common.parts package &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="mridc.collections.reconstruction package" href="mridc.collections.reconstruction.html" />
+    <link rel="prev" title="mridc.collections.common.metrics package" href="mridc.collections.common.metrics.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">mridc</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="mridc.html">mridc package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="mridc.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="mridc.collections.html">mridc.collections package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mridc.core.html">mridc.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mridc.utils.html">mridc.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.constants">mridc.constants module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.launch">mridc.launch module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.package_info">mridc.package_info module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">mridc</a> &raquo;</li>
+          <li><a href="mridc.html">mridc package</a> &raquo;</li>
+          <li><a href="mridc.collections.html">mridc.collections package</a> &raquo;</li>
+          <li><a href="mridc.collections.common.html">mridc.collections.common package</a> &raquo;</li>
+      <li>mridc.collections.common.parts package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/mridc.collections.common.parts.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <section id="mridc-collections-common-parts-package">
+<h1>mridc.collections.common.parts package<a class="headerlink" href="#mridc-collections-common-parts-package" title="Permalink to this headline"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline"></a></h2>
+</section>
+<section id="module-mridc.collections.common.parts.fft">
+<span id="mridc-collections-common-parts-fft-module"></span><h2>mridc.collections.common.parts.fft module<a class="headerlink" href="#module-mridc.collections.common.parts.fft" title="Permalink to this headline"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.collections.common.parts.fft.fft2c">
+<span class="sig-prename descclassname"><span class="pre">mridc.collections.common.parts.fft.</span></span><span class="sig-name descname"><span class="pre">fft2c</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'orthogonal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_normalization</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'ortho'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="_modules/mridc/collections/common/parts/fft.html#fft2c"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.common.parts.fft.fft2c" title="Permalink to this definition"></a></dt>
+<dd><p>Apply centered 2 dimensional Fast Fourier Transform.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>Complex valued input data containing at least 3 dimensions: dimensions -2 &amp; -1 are spatial dimensions. All</em>) – </p></li>
+<li><p><strong>dimensions.</strong> (<em>other dimensions are assumed to be batch</em>) – </p></li>
+<li><p><strong>fft_type</strong> (<em>Specify fft type. This is important if an orthogonal transformation is needed</em><em> or </em><em>not.</em>) – </p></li>
+<li><p><strong>fft_normalization</strong> (<em>&quot;ortho&quot; is the default normalization used by PyTorch. Can be changed to &quot;ortho&quot;</em><em> or </em><em>None.</em>) – </p></li>
+<li><p><strong>fft_dim</strong> (<em>dimensions to apply the FFT</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>The FFT of the input.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.collections.common.parts.fft.ifft2c">
+<span class="sig-prename descclassname"><span class="pre">mridc.collections.common.parts.fft.</span></span><span class="sig-name descname"><span class="pre">ifft2c</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'orthogonal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_normalization</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'ortho'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fft_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="_modules/mridc/collections/common/parts/fft.html#ifft2c"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.common.parts.fft.ifft2c" title="Permalink to this definition"></a></dt>
+<dd><p>Apply centered 2 dimensional Inverse Fast Fourier Transform.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>Complex valued input data containing at least 3 dimensions: dimensions -2 &amp; -1 are spatial dimensions. All</em>) – </p></li>
+<li><p><strong>dimensions.</strong> (<em>other dimensions are assumed to be batch</em>) – </p></li>
+<li><p><strong>fft_type</strong> (<em>Specify fft type. This is important if an orthogonal transformation is needed</em><em> or </em><em>not.</em>) – </p></li>
+<li><p><strong>fft_normalization</strong> (<em>&quot;ortho&quot; is the default normalization used by PyTorch. Can be changed to &quot;ortho&quot;</em><em> or </em><em>None.</em>) – </p></li>
+<li><p><strong>fft_dim</strong> (<em>dimensions to apply the FFT</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>The IFFT of the input.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-mridc.collections.common.parts.patch_utils">
+<span id="mridc-collections-common-parts-patch-utils-module"></span><h2>mridc.collections.common.parts.patch_utils module<a class="headerlink" href="#module-mridc.collections.common.parts.patch_utils" title="Permalink to this headline"></a></h2>
+</section>
+<section id="module-mridc.collections.common.parts.ptl_overrides">
+<span id="mridc-collections-common-parts-ptl-overrides-module"></span><h2>mridc.collections.common.parts.ptl_overrides module<a class="headerlink" href="#module-mridc.collections.common.parts.ptl_overrides" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.collections.common.parts.ptl_overrides.MRIDCNativeMixedPrecisionPlugin">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.collections.common.parts.ptl_overrides.</span></span><span class="sig-name descname"><span class="pre">MRIDCNativeMixedPrecisionPlugin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">init_scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">4294967296</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">growth_interval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/common/parts/ptl_overrides.html#MRIDCNativeMixedPrecisionPlugin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.common.parts.ptl_overrides.MRIDCNativeMixedPrecisionPlugin" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pytorch_lightning.plugins.precision.native_amp.NativeMixedPrecisionPlugin</span></code></p>
+<p>Native Mixed Precision Plugin for MRIDC.</p>
+</dd></dl>
+
+</section>
+<section id="module-mridc.collections.common.parts.rnn_utils">
+<span id="mridc-collections-common-parts-rnn-utils-module"></span><h2>mridc.collections.common.parts.rnn_utils module<a class="headerlink" href="#module-mridc.collections.common.parts.rnn_utils" title="Permalink to this headline"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.collections.common.parts.rnn_utils.rnn_weights_init">
+<span class="sig-prename descclassname"><span class="pre">mridc.collections.common.parts.rnn_utils.</span></span><span class="sig-name descname"><span class="pre">rnn_weights_init</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">std_init_range</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.02</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xavier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/common/parts/rnn_utils.html#rnn_weights_init"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.common.parts.rnn_utils.rnn_weights_init" title="Permalink to this definition"></a></dt>
+<dd><p># TODO: check if this is the correct way to initialize RNN weights
+Initialize different weights in Transformer model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>module</strong> (<em>torch.nn.Module to be initialized</em>) – </p></li>
+<li><p><strong>std_init_range</strong> (<em>standard deviation of normal initializer</em>) – </p></li>
+<li><p><strong>xavier</strong> (<em>if True</em><em>, </em><em>xavier initializer will be used in Linear layers as was proposed in AIAYN paper</em><em>, </em><em>otherwise normal</em>) – </p></li>
+<li><p><strong>paper</strong><strong>)</strong> (<em>initializer will be used</em><em> (</em><em>like in BERT</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-mridc.collections.common.parts.utils">
+<span id="mridc-collections-common-parts-utils-module"></span><h2>mridc.collections.common.parts.utils module<a class="headerlink" href="#module-mridc.collections.common.parts.utils" title="Permalink to this headline"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.collections.common.parts.utils.check_stacked_complex">
+<span class="sig-prename descclassname"><span class="pre">mridc.collections.common.parts.utils.</span></span><span class="sig-name descname"><span class="pre">check_stacked_complex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="_modules/mridc/collections/common/parts/utils.html#check_stacked_complex"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.common.parts.utils.check_stacked_complex" title="Permalink to this definition"></a></dt>
+<dd><p>Check if tensor is stacked complex (real &amp; imag parts stacked along last dim) and convert it to a combined complex
+tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>A complex valued tensor</em><em>, </em><em>where the size of the final dimension might be 2.</em>) – </p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>A complex valued tensor.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.collections.common.parts.utils.coil_combination">
+<span class="sig-prename descclassname"><span class="pre">mridc.collections.common.parts.utils.</span></span><span class="sig-name descname"><span class="pre">coil_combination</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensitivity_maps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'SENSE'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="_modules/mridc/collections/common/parts/utils.html#coil_combination"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.common.parts.utils.coil_combination" title="Permalink to this definition"></a></dt>
+<dd><p>Coil combination.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>The input tensor.</em>) – </p></li>
+<li><p><strong>sensitivity_maps</strong> (<em>The sensitivity maps.</em>) – </p></li>
+<li><p><strong>method</strong> (<em>The coil combination method.</em>) – </p></li>
+<li><p><strong>dim</strong> (<em>The dimensions along which to apply the coil combination transform.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Coil combined data.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.collections.common.parts.utils.complex_abs">
+<span class="sig-prename descclassname"><span class="pre">mridc.collections.common.parts.utils.</span></span><span class="sig-name descname"><span class="pre">complex_abs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="_modules/mridc/collections/common/parts/utils.html#complex_abs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.common.parts.utils.complex_abs" title="Permalink to this definition"></a></dt>
+<dd><p>Compute the absolute value of a complex valued input tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>A complex valued tensor</em><em>, </em><em>where the size of the final dimension should be 2.</em>) – </p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Absolute value of data.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.collections.common.parts.utils.complex_abs_sq">
+<span class="sig-prename descclassname"><span class="pre">mridc.collections.common.parts.utils.</span></span><span class="sig-name descname"><span class="pre">complex_abs_sq</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="_modules/mridc/collections/common/parts/utils.html#complex_abs_sq"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.common.parts.utils.complex_abs_sq" title="Permalink to this definition"></a></dt>
+<dd><p>Compute the squared absolute value of a complex tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>A complex valued tensor</em><em>, </em><em>where the size of the final dimension should be 2.</em>) – </p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Squared absolute value of data.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.collections.common.parts.utils.complex_conj">
+<span class="sig-prename descclassname"><span class="pre">mridc.collections.common.parts.utils.</span></span><span class="sig-name descname"><span class="pre">complex_conj</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="_modules/mridc/collections/common/parts/utils.html#complex_conj"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.common.parts.utils.complex_conj" title="Permalink to this definition"></a></dt>
+<dd><p>Complex conjugate.</p>
+<p>This applies the complex conjugate assuming that the input array has the
+last dimension as the complex dimension.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>A PyTorch tensor with the last dimension of size 2.</em>) – </p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>A PyTorch tensor with the last dimension of size 2.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.collections.common.parts.utils.complex_mul">
+<span class="sig-prename descclassname"><span class="pre">mridc.collections.common.parts.utils.</span></span><span class="sig-name descname"><span class="pre">complex_mul</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="_modules/mridc/collections/common/parts/utils.html#complex_mul"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.common.parts.utils.complex_mul" title="Permalink to this definition"></a></dt>
+<dd><p>Complex multiplication.</p>
+<p>This multiplies two complex tensors assuming that they are both stored as
+real arrays with the last dimension being the complex dimension.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>A PyTorch tensor with the last dimension of size 2.</em>) – </p></li>
+<li><p><strong>y</strong> (<em>A PyTorch tensor with the last dimension of size 2.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>A PyTorch tensor with the last dimension of size 2.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.collections.common.parts.utils.rss">
+<span class="sig-prename descclassname"><span class="pre">mridc.collections.common.parts.utils.</span></span><span class="sig-name descname"><span class="pre">rss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="_modules/mridc/collections/common/parts/utils.html#rss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.common.parts.utils.rss" title="Permalink to this definition"></a></dt>
+<dd><p>Compute the Root Sum of Squares (RSS).</p>
+<p>RSS is computed assuming that dim is the coil dimension.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>The input tensor</em>) – </p></li>
+<li><p><strong>dim</strong> (<em>The dimensions along which to apply the RSS transform</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>The RSS value.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.collections.common.parts.utils.rss_complex">
+<span class="sig-prename descclassname"><span class="pre">mridc.collections.common.parts.utils.</span></span><span class="sig-name descname"><span class="pre">rss_complex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="_modules/mridc/collections/common/parts/utils.html#rss_complex"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.common.parts.utils.rss_complex" title="Permalink to this definition"></a></dt>
+<dd><p>Compute the Root Sum of Squares (RSS) for complex inputs.</p>
+<p>RSS is computed assuming that dim is the coil dimension.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>The input tensor</em>) – </p></li>
+<li><p><strong>dim</strong> (<em>The dimensions along which to apply the RSS transform</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>The RSS value.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.collections.common.parts.utils.save_reconstructions">
+<span class="sig-prename descclassname"><span class="pre">mridc.collections.common.parts.utils.</span></span><span class="sig-name descname"><span class="pre">save_reconstructions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reconstructions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/common/parts/utils.html#save_reconstructions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.common.parts.utils.save_reconstructions" title="Permalink to this definition"></a></dt>
+<dd><p>Save reconstruction images.</p>
+<p>This function writes to h5 files that are appropriate for submission to the
+leaderboard.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reconstructions</strong> (<em>A dictionary mapping input filenames to corresponding reconstructions.</em>) – </p></li>
+<li><p><strong>out_dir</strong> (<em>Path to the output directory where the reconstructions should be saved.</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.collections.common.parts.utils.sense">
+<span class="sig-prename descclassname"><span class="pre">mridc.collections.common.parts.utils.</span></span><span class="sig-name descname"><span class="pre">sense</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensitivity_maps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="_modules/mridc/collections/common/parts/utils.html#sense"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.common.parts.utils.sense" title="Permalink to this definition"></a></dt>
+<dd><p>The SENSitivity Encoding (SENSE) transform <a class="footnote-reference brackets" href="#id2" id="id1">1</a>.</p>
+<p class="rubric">References</p>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p>Pruessmann KP, Weiger M, Scheidegger MB, Boesiger P. SENSE: Sensitivity encoding for fast MRI. Magn Reson Med 1999; 42:952-962.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>The input tensor</em>) – </p></li>
+<li><p><strong>sensitivity_maps</strong> (<em>The sensitivity maps</em>) – </p></li>
+<li><p><strong>dim</strong> (<em>The coil dimension</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>A coil-combined image.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.collections.common.parts.utils.tensor_to_complex_np">
+<span class="sig-prename descclassname"><span class="pre">mridc.collections.common.parts.utils.</span></span><span class="sig-name descname"><span class="pre">tensor_to_complex_np</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="reference internal" href="_modules/mridc/collections/common/parts/utils.html#tensor_to_complex_np"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.common.parts.utils.tensor_to_complex_np" title="Permalink to this definition"></a></dt>
+<dd><p>Converts a torch tensor to a numpy array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>Input torch tensor to be converted to numpy.</em>) – </p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Complex Numpy array version of data.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.collections.common.parts.utils.to_tensor">
+<span class="sig-prename descclassname"><span class="pre">mridc.collections.common.parts.utils.</span></span><span class="sig-name descname"><span class="pre">to_tensor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="_modules/mridc/collections/common/parts/utils.html#to_tensor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.common.parts.utils.to_tensor" title="Permalink to this definition"></a></dt>
+<dd><p>Converts a numpy array to a torch tensor.</p>
+<p>For complex arrays, the real and imaginary parts are stacked along the last
+dimension.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>Input numpy array to be converted to torch.</em>) – </p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Torch tensor version of data.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-mridc.collections.common.parts">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-mridc.collections.common.parts" title="Permalink to this headline"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mridc.collections.common.metrics.html" class="btn btn-neutral float-left" title="mridc.collections.common.metrics package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mridc.collections.reconstruction.html" class="btn btn-neutral float-right" title="mridc.collections.reconstruction package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

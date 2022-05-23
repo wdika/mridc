@@ -24,11 +24,18 @@ __all__ = ["CRNNet"]
 
 class CRNNet(BaseMRIReconstructionModel, ABC):
     """
-    Implementation of the Convolutional Recurrent Neural Network, inspired by [1].
+    Implementation of the Convolutional Recurrent Neural Network, inspired by C. Qin, J. Schlemper, J. Caballero, \
+    A. N. Price, J. V. Hajnal and D. Rueckert.
 
     References
     ----------
-    .. [1] C. Qin, J. Schlemper, J. Caballero, A. N. Price, J. V. Hajnal and D. Rueckert, "Convolutional Recurrent Neural Networks for Dynamic MR Image Reconstruction," in IEEE Transactions on Medical Imaging, vol. 38, no. 1, pp. 280-290, Jan. 2019, doi: 10.1109/TMI.2018.2863670.
+
+    ..
+
+        C. Qin, J. Schlemper, J. Caballero, A. N. Price, J. V. Hajnal and D. Rueckert, "Convolutional Recurrent \
+        Neural Networks for Dynamic MR Image Reconstruction," in IEEE Transactions on Medical Imaging, vol. 38, \
+        no. 1, pp. 280-290, Jan. 2019, doi: 10.1109/TMI.2018.2863670.
+
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
@@ -108,7 +115,7 @@ class CRNNet(BaseMRIReconstructionModel, ABC):
         """
         sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         pred = self.crnn(y, sensitivity_maps, mask)
-        yield [self.process_intermediate_eta(x, sensitivity_maps, target) for x in pred]
+        yield [self.process_intermediate_pred(x, sensitivity_maps, target) for x in pred]
 
     def process_intermediate_pred(self, pred, sensitivity_maps, target):
         """

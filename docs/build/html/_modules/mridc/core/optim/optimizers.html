@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.core.optim.optimizers &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>mridc.core.optim.optimizers</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.core.optim.optimizers</h1><div class="highlight"><pre>
+<span></span><span class="c1"># encoding: utf-8</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="c1"># Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/optim/optimizers.py</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">hydra</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.optim</span> <span class="k">as</span> <span class="nn">optim</span>
+<span class="kn">from</span> <span class="nn">omegaconf</span> <span class="kn">import</span> <span class="n">DictConfig</span><span class="p">,</span> <span class="n">OmegaConf</span>
+<span class="kn">from</span> <span class="nn">torch.optim</span> <span class="kn">import</span> <span class="n">adadelta</span><span class="p">,</span> <span class="n">adagrad</span><span class="p">,</span> <span class="n">adamax</span><span class="p">,</span> <span class="n">rmsprop</span><span class="p">,</span> <span class="n">rprop</span>
+<span class="kn">from</span> <span class="nn">torch.optim.optimizer</span> <span class="kn">import</span> <span class="n">Optimizer</span>
+
+<span class="kn">from</span> <span class="nn">mridc.core.conf.optimizers</span> <span class="kn">import</span> <span class="n">OptimizerParams</span><span class="p">,</span> <span class="n">get_optimizer_config</span><span class="p">,</span> <span class="n">register_optimizer_params</span>
+<span class="kn">from</span> <span class="nn">mridc.core.optim.adafactor</span> <span class="kn">import</span> <span class="n">Adafactor</span>
+<span class="kn">from</span> <span class="nn">mridc.core.optim.novograd</span> <span class="kn">import</span> <span class="n">Novograd</span>
+<span class="kn">from</span> <span class="nn">mridc.utils.model_utils</span> <span class="kn">import</span> <span class="n">maybe_update_config_version</span>
+
+<span class="n">AVAILABLE_OPTIMIZERS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;sgd&quot;</span><span class="p">:</span> <span class="n">optim</span><span class="o">.</span><span class="n">SGD</span><span class="p">,</span>
+    <span class="s2">&quot;adam&quot;</span><span class="p">:</span> <span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">,</span>
+    <span class="s2">&quot;adamw&quot;</span><span class="p">:</span> <span class="n">optim</span><span class="o">.</span><span class="n">AdamW</span><span class="p">,</span>
+    <span class="s2">&quot;adadelta&quot;</span><span class="p">:</span> <span class="n">adadelta</span><span class="o">.</span><span class="n">Adadelta</span><span class="p">,</span>
+    <span class="s2">&quot;adamax&quot;</span><span class="p">:</span> <span class="n">adamax</span><span class="o">.</span><span class="n">Adamax</span><span class="p">,</span>
+    <span class="s2">&quot;adagrad&quot;</span><span class="p">:</span> <span class="n">adagrad</span><span class="o">.</span><span class="n">Adagrad</span><span class="p">,</span>
+    <span class="s2">&quot;rmsprop&quot;</span><span class="p">:</span> <span class="n">rmsprop</span><span class="o">.</span><span class="n">RMSprop</span><span class="p">,</span>
+    <span class="s2">&quot;rprop&quot;</span><span class="p">:</span> <span class="n">rprop</span><span class="o">.</span><span class="n">Rprop</span><span class="p">,</span>
+    <span class="s2">&quot;novograd&quot;</span><span class="p">:</span> <span class="n">Novograd</span><span class="p">,</span>
+    <span class="s2">&quot;adafactor&quot;</span><span class="p">:</span> <span class="n">Adafactor</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;AVAILABLE_OPTIMIZERS&quot;</span><span class="p">,</span> <span class="s2">&quot;get_optimizer&quot;</span><span class="p">,</span> <span class="s2">&quot;register_optimizer&quot;</span><span class="p">,</span> <span class="s2">&quot;parse_optimizer_args&quot;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="parse_optimizer_args"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizers.parse_optimizer_args">[docs]</a><span class="k">def</span> <span class="nf">parse_optimizer_args</span><span class="p">(</span>
+    <span class="n">optimizer_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">optimizer_kwargs</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">DictConfig</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">DictConfig</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parses a list of strings, of the format &quot;key=value&quot; or &quot;key2=val1,val2,...&quot;</span>
+<span class="sd">    into a dictionary of type {key=value, key2=[val1, val2], ...}</span>
+<span class="sd">    This dictionary is then used to instantiate the chosen Optimizer.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    optimizer_name: string name of the optimizer, used for auto resolution of params.</span>
+<span class="sd">    optimizer_kwargs: Either a list of strings in a specified format, or a dictionary. If a dictionary is provided, it</span>
+<span class="sd">    is assumed the dictionary is the final parsed value, and simply returned. If a list of strings is provided, each</span>
+<span class="sd">    item in the list is parsed into a new dictionary.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A dictionary of the parsed arguments.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">if</span> <span class="n">optimizer_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">kwargs</span>
+
+    <span class="n">optimizer_kwargs</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">optimizer_kwargs</span><span class="p">)</span>
+    <span class="n">optimizer_kwargs</span> <span class="o">=</span> <span class="n">maybe_update_config_version</span><span class="p">(</span><span class="n">optimizer_kwargs</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">optimizer_kwargs</span><span class="p">,</span> <span class="n">DictConfig</span><span class="p">):</span>
+        <span class="n">optimizer_kwargs</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">to_container</span><span class="p">(</span><span class="n">optimizer_kwargs</span><span class="p">,</span> <span class="n">resolve</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># If it is a dictionary, perform stepwise resolution</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">optimizer_kwargs</span><span class="p">,</span> <span class="s2">&quot;keys&quot;</span><span class="p">):</span>
+        <span class="c1"># Attempt class path resolution</span>
+        <span class="k">if</span> <span class="s2">&quot;_target_&quot;</span> <span class="ow">in</span> <span class="n">optimizer_kwargs</span><span class="p">:</span>  <span class="c1"># captures (target, _target_)</span>
+            <span class="n">optimizer_kwargs_config</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">optimizer_kwargs</span><span class="p">)</span>
+            <span class="n">optimizer_instance</span> <span class="o">=</span> <span class="n">hydra</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">instantiate</span><span class="p">(</span><span class="n">optimizer_kwargs_config</span><span class="p">)</span>  <span class="c1"># type: DictConfig</span>
+            <span class="n">optimizer_instance</span> <span class="o">=</span> <span class="nb">vars</span><span class="p">(</span><span class="n">optimizer_instance</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+            <span class="k">return</span> <span class="n">optimizer_instance</span>
+
+        <span class="c1"># If class path was not provided, perhaps `name` is provided for resolution</span>
+        <span class="k">if</span> <span class="s2">&quot;name&quot;</span> <span class="ow">in</span> <span class="n">optimizer_kwargs</span><span class="p">:</span>
+            <span class="c1"># If `auto` is passed as name for resolution of optimizer name,</span>
+            <span class="c1"># then lookup optimizer name and resolve its parameter config</span>
+            <span class="k">if</span> <span class="n">optimizer_kwargs</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
+                <span class="n">optimizer_params_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">optimizer_name</span><span class="si">}</span><span class="s2">_params&quot;</span>
+                <span class="n">optimizer_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">optimizer_params_name</span> <span class="o">=</span> <span class="n">optimizer_kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Override arguments provided in the config yaml file</span>
+            <span class="k">if</span> <span class="s2">&quot;params&quot;</span> <span class="ow">in</span> <span class="n">optimizer_kwargs</span><span class="p">:</span>
+                <span class="c1"># If optimizer kwarg overrides are wrapped in yaml `params`</span>
+                <span class="n">optimizer_params_override</span> <span class="o">=</span> <span class="n">optimizer_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;params&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># If the kwargs themselves are a DictConfig</span>
+                <span class="n">optimizer_params_override</span> <span class="o">=</span> <span class="n">optimizer_kwargs</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">optimizer_params_override</span><span class="p">,</span> <span class="n">DictConfig</span><span class="p">):</span>
+                <span class="n">optimizer_params_override</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">to_container</span><span class="p">(</span><span class="n">optimizer_params_override</span><span class="p">,</span> <span class="n">resolve</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="n">optimizer_params_cls</span> <span class="o">=</span> <span class="n">get_optimizer_config</span><span class="p">(</span><span class="n">optimizer_params_name</span><span class="p">,</span> <span class="o">**</span><span class="n">optimizer_params_override</span><span class="p">)</span>
+
+            <span class="c1"># If we are provided just a Config object, simply return the dictionary of that object</span>
+            <span class="k">if</span> <span class="n">optimizer_params_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">optimizer_params</span> <span class="o">=</span> <span class="nb">vars</span><span class="p">(</span><span class="n">optimizer_params_cls</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">optimizer_params</span>
+            <span class="c1"># If we are provided a partial class instantiation of a Config, instantiate it and retrieve its vars</span>
+            <span class="c1"># as a dictionary.</span>
+            <span class="n">optimizer_params</span> <span class="o">=</span> <span class="nb">vars</span><span class="p">(</span><span class="n">optimizer_params_cls</span><span class="p">)</span>  <span class="c1"># instantiate the parameters object</span>
+            <span class="k">return</span> <span class="n">optimizer_params</span>
+
+        <span class="c1"># simply return the dictionary that was provided</span>
+        <span class="k">return</span> <span class="n">optimizer_kwargs</span>
+
+    <span class="k">return</span> <span class="n">kwargs</span></div>
+
+
+<div class="viewcode-block" id="register_optimizer"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizers.register_optimizer">[docs]</a><span class="k">def</span> <span class="nf">register_optimizer</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">:</span> <span class="n">Optimizer</span><span class="p">,</span> <span class="n">optimizer_params</span><span class="p">:</span> <span class="n">OptimizerParams</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Checks if the optimizer name exists in the registry, and if it doesn&#39;t, adds it.</span>
+<span class="sd">    This allows custom optimizers to be added and called by name during instantiation.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name: Name of the optimizer. Will be used as key to retrieve the optimizer.</span>
+<span class="sd">    optimizer: Optimizer class.</span>
+<span class="sd">    optimizer_params: The parameters as a dataclass of the optimizer.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">AVAILABLE_OPTIMIZERS</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cannot override pre-existing optimizers. Conflicting optimizer name = </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">AVAILABLE_OPTIMIZERS</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">optimizer</span>
+
+    <span class="n">optim_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">optimizer</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">_params&quot;</span>
+    <span class="n">register_optimizer_params</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">optim_name</span><span class="p">,</span> <span class="n">optimizer_params</span><span class="o">=</span><span class="n">optimizer_params</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_optimizer"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizers.get_optimizer">[docs]</a><span class="k">def</span> <span class="nf">get_optimizer</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">partial</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convenience method to obtain an Optimizer class and partially instantiate it with optimizer kwargs.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name: Name of the Optimizer in the registry.</span>
+<span class="sd">    kwargs: Optional kwargs of the optimizer used during instantiation.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A partially instantiated Optimizer.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">AVAILABLE_OPTIMIZERS</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Cannot resolve optimizer &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;. Available optimizers are : &quot;</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">AVAILABLE_OPTIMIZERS</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;fused_adam&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;CUDA must be available to use fused_adam.&quot;</span><span class="p">)</span>
+
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">AVAILABLE_OPTIMIZERS</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">optimizer</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

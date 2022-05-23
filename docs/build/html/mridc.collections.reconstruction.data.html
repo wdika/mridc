@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.collections.reconstruction.data package &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="mridc.collections.reconstruction.metrics package" href="mridc.collections.reconstruction.metrics.html" />
+    <link rel="prev" title="mridc.collections.reconstruction package" href="mridc.collections.reconstruction.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">mridc</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="mridc.html">mridc package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="mridc.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="mridc.collections.html">mridc.collections package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mridc.core.html">mridc.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mridc.utils.html">mridc.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.constants">mridc.constants module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.launch">mridc.launch module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.package_info">mridc.package_info module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">mridc</a> &raquo;</li>
+          <li><a href="mridc.html">mridc package</a> &raquo;</li>
+          <li><a href="mridc.collections.html">mridc.collections package</a> &raquo;</li>
+          <li><a href="mridc.collections.reconstruction.html">mridc.collections.reconstruction package</a> &raquo;</li>
+      <li>mridc.collections.reconstruction.data package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/mridc.collections.reconstruction.data.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <section id="mridc-collections-reconstruction-data-package">
+<h1>mridc.collections.reconstruction.data package<a class="headerlink" href="#mridc-collections-reconstruction-data-package" title="Permalink to this headline"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline"></a></h2>
+</section>
+<section id="module-mridc.collections.reconstruction.data.mri_data">
+<span id="mridc-collections-reconstruction-data-mri-data-module"></span><h2>mridc.collections.reconstruction.data.mri_data module<a class="headerlink" href="#module-mridc.collections.reconstruction.data.mri_data" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.mri_data.FastMRICombinedSliceDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.collections.reconstruction.data.mri_data.</span></span><span class="sig-name descname"><span class="pre">FastMRICombinedSliceDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">roots</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">challenges</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sense_roots</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transforms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">volume_sample_rates</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_dataset_cache</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_cache_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">os.PathLike</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'dataset_cache.yaml'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_cols</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/mri_data.html#FastMRICombinedSliceDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.mri_data.FastMRICombinedSliceDataset" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.data.dataset.Dataset</span></code></p>
+<p>A dataset that combines multiple datasets.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.mri_data.FastMRISliceDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.collections.reconstruction.data.mri_data.</span></span><span class="sig-name descname"><span class="pre">FastMRISliceDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">root</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">os.PathLike</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">challenge</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'multicoil'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sense_root</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">os.PathLike</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_dataset_cache</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">volume_sample_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_cache_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">os.PathLike</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'dataset_cache.yaml'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_cols</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_root</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">os.PathLike</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/mri_data.html#FastMRISliceDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.mri_data.FastMRISliceDataset" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.data.dataset.Dataset</span></code></p>
+<p>A dataset that loads slices from a single dataset.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.mri_data.et_query">
+<span class="sig-prename descclassname"><span class="pre">mridc.collections.reconstruction.data.mri_data.</span></span><span class="sig-name descname"><span class="pre">et_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">root</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qlist</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">namespace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'https://www.ismrm.org/ISMRMRD'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/mri_data.html#et_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.mri_data.et_query" title="Permalink to this definition"></a></dt>
+<dd><p>Query an XML element for a list of attributes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>root</strong> (<em>The root element of the XML tree.</em>) – </p></li>
+<li><p><strong>qlist</strong> (<em>A list of strings</em><em>, </em><em>each of which is an attribute name.</em>) – </p></li>
+<li><p><strong>namespace</strong> (<em>The namespace of the XML tree.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>A string containing the value of the last attribute in the list.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-mridc.collections.reconstruction.data.subsample">
+<span id="mridc-collections-reconstruction-data-subsample-module"></span><h2>mridc.collections.reconstruction.data.subsample module<a class="headerlink" href="#module-mridc.collections.reconstruction.data.subsample" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.subsample.EquispacedMaskFunc">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.collections.reconstruction.data.subsample.</span></span><span class="sig-name descname"><span class="pre">EquispacedMaskFunc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">center_fractions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">accelerations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/subsample.html#EquispacedMaskFunc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.subsample.EquispacedMaskFunc" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mridc.collections.reconstruction.data.subsample.MaskFunc" title="mridc.collections.reconstruction.data.subsample.MaskFunc"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.collections.reconstruction.data.subsample.MaskFunc</span></code></a></p>
+<p>EquispacedMaskFunc creates a sub-sampling mask of a given shape.</p>
+<dl class="simple">
+<dt>The mask selects a subset of columns from the input k-space data. If the k-space data has N columns, the mask     picks out:</dt><dd><ol class="arabic simple">
+<li><p>N_low_freqs = (N * center_fraction) columns in the center corresponding to low-frequencies.</p></li>
+<li><p>The other columns are selected with equal spacing at a proportion that reaches the desired acceleration         rate taking into consideration the number of low frequencies. This ensures that the expected number of         columns selected is equal to (N / acceleration)</p></li>
+</ol>
+</dd>
+</dl>
+<p>It is possible to use multiple center_fractions and accelerations, in which case one possible (center_fraction,     acceleration) is chosen uniformly at random each time the EquispacedMaskFunc object is called.</p>
+<p>Note that this function may not give equispaced samples (documented in     <a class="reference external" href="https://github.com/facebookresearch/fastMRI/issues/54">https://github.com/facebookresearch/fastMRI/issues/54</a>), which will require modifications to standard GRAPPA     approaches. Nonetheless, this aspect of the function has been preserved to match the public multicoil data.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.subsample.EquispacedMaskFunc.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">half_scan_percentage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.02</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/subsample.html#EquispacedMaskFunc.__call__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.subsample.EquispacedMaskFunc.__call__" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shape</strong> (<em>The shape of the mask to be created. The shape should have at least 3 dimensions. Samples are drawn         along the second last dimension.</em>) – </p></li>
+<li><p><strong>seed</strong> (<em>Seed for the random number generator. Setting the seed ensures the same mask is generated each time for         the same shape. The random state is reset afterwards.</em>) – </p></li>
+<li><p><strong>half_scan_percentage</strong> (<em>Optional; Defines a fraction of the k-space data that is not sampled.</em>) – </p></li>
+<li><p><strong>scale</strong> (<em>Optional; Defines the scale of the center of the mask.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>A tuple of the mask and the number of columns selected.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.subsample.Gaussian1DMaskFunc">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.collections.reconstruction.data.subsample.</span></span><span class="sig-name descname"><span class="pre">Gaussian1DMaskFunc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">center_fractions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">accelerations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/subsample.html#Gaussian1DMaskFunc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.subsample.Gaussian1DMaskFunc" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mridc.collections.reconstruction.data.subsample.MaskFunc" title="mridc.collections.reconstruction.data.subsample.MaskFunc"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.collections.reconstruction.data.subsample.MaskFunc</span></code></a></p>
+<p>Creates a 1D sub-sampling mask of a given shape.</p>
+<p>For autocalibration purposes, data points near the k-space center will be fully sampled within an ellipse of     which the half-axes will set to the set scale % of the fully sampled region. The remaining points will be sampled     according to a Gaussian distribution.</p>
+<p>The center fractions here act as Full-Width at Half-Maximum (FWHM) values.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.subsample.Gaussian1DMaskFunc.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">half_scan_percentage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.02</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/subsample.html#Gaussian1DMaskFunc.__call__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.subsample.Gaussian1DMaskFunc.__call__" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shape</strong> (<em>The shape of the mask to be created. The shape should have at least 3 dimensions. Samples are drawn         along the second last dimension.</em>) – </p></li>
+<li><p><strong>seed</strong> (<em>Seed for the random number generator. Setting the seed ensures the same mask is generated each time         for the same shape. The random state is reset afterwards.</em>) – </p></li>
+<li><p><strong>half_scan_percentage</strong> (<em>Optional; Defines a fraction of the k-space data that is not sampled.</em>) – </p></li>
+<li><p><strong>scale</strong> (<em>For autocalibration purposes</em><em>, </em><em>data points near the k-space center will be fully sampled within an         ellipse of which the half-axes will set to the set scale % of the fully sampled region</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>A tuple of the mask and the number of columns selected.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.subsample.Gaussian1DMaskFunc.gaussian_coordinates">
+<span class="sig-name descname"><span class="pre">gaussian_coordinates</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/subsample.html#Gaussian1DMaskFunc.gaussian_coordinates"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.subsample.Gaussian1DMaskFunc.gaussian_coordinates" title="Permalink to this definition"></a></dt>
+<dd><p>Creates a Gaussian sampled k-space coordinates.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.subsample.Gaussian1DMaskFunc.gaussian_kernel">
+<span class="sig-name descname"><span class="pre">gaussian_kernel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/subsample.html#Gaussian1DMaskFunc.gaussian_kernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.subsample.Gaussian1DMaskFunc.gaussian_kernel" title="Permalink to this definition"></a></dt>
+<dd><p>Creates a Gaussian sampled k-space kernel.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.subsample.Gaussian1DMaskFunc.gaussian_kspace">
+<span class="sig-name descname"><span class="pre">gaussian_kspace</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/subsample.html#Gaussian1DMaskFunc.gaussian_kspace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.subsample.Gaussian1DMaskFunc.gaussian_kspace" title="Permalink to this definition"></a></dt>
+<dd><p>Creates a Gaussian sampled k-space center.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.subsample.Gaussian2DMaskFunc">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.collections.reconstruction.data.subsample.</span></span><span class="sig-name descname"><span class="pre">Gaussian2DMaskFunc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">center_fractions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">accelerations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/subsample.html#Gaussian2DMaskFunc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.subsample.Gaussian2DMaskFunc" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mridc.collections.reconstruction.data.subsample.MaskFunc" title="mridc.collections.reconstruction.data.subsample.MaskFunc"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.collections.reconstruction.data.subsample.MaskFunc</span></code></a></p>
+<p>Creates a 2D sub-sampling mask of a given shape.</p>
+<p>For autocalibration purposes, data points near the k-space center will be fully sampled within an ellipse of     which the half-axes will set to the set scale % of the fully sampled region. The remaining points will be sampled     according to a Gaussian distribution.</p>
+<p>The center fractions here act as Full-Width at Half-Maximum (FWHM) values.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.subsample.Gaussian2DMaskFunc.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">half_scan_percentage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.02</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/subsample.html#Gaussian2DMaskFunc.__call__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.subsample.Gaussian2DMaskFunc.__call__" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shape</strong> (<em>The shape of the mask to be created. The shape should have at least 3 dimensions. Samples are drawn         along the second last dimension.</em>) – </p></li>
+<li><p><strong>seed</strong> (<em>Seed for the random number generator. Setting the seed ensures the same mask is generated each time for          the same shape. The random state is reset afterwards.</em>) – </p></li>
+<li><p><strong>half_scan_percentage</strong> (<em>Optional; Defines a fraction of the k-space data that is not sampled.</em>) – </p></li>
+<li><p><strong>scale</strong> (<em>For autocalibration purposes</em><em>, </em><em>data points near the k-space center will be fully sampled within an         ellipse of which the half-axes will set to the set scale % of the fully sampled region</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>A tuple of the mask and the number of columns selected.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.subsample.Gaussian2DMaskFunc.gaussian_coordinates">
+<span class="sig-name descname"><span class="pre">gaussian_coordinates</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/subsample.html#Gaussian2DMaskFunc.gaussian_coordinates"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.subsample.Gaussian2DMaskFunc.gaussian_coordinates" title="Permalink to this definition"></a></dt>
+<dd><p>Creates a Gaussian sampled k-space coordinates.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.subsample.Gaussian2DMaskFunc.gaussian_kernel">
+<span class="sig-name descname"><span class="pre">gaussian_kernel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/subsample.html#Gaussian2DMaskFunc.gaussian_kernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.subsample.Gaussian2DMaskFunc.gaussian_kernel" title="Permalink to this definition"></a></dt>
+<dd><p>Creates a Gaussian kernel.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.subsample.Gaussian2DMaskFunc.gaussian_kspace">
+<span class="sig-name descname"><span class="pre">gaussian_kspace</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/subsample.html#Gaussian2DMaskFunc.gaussian_kspace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.subsample.Gaussian2DMaskFunc.gaussian_kspace" title="Permalink to this definition"></a></dt>
+<dd><p>Creates a Gaussian sampled k-space center.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.subsample.MaskFunc">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.collections.reconstruction.data.subsample.</span></span><span class="sig-name descname"><span class="pre">MaskFunc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">center_fractions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">accelerations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/subsample.html#MaskFunc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.subsample.MaskFunc" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A class that defines a mask function.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.subsample.MaskFunc.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">half_scan_percentage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.02</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/subsample.html#MaskFunc.__call__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.subsample.MaskFunc.__call__" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shape</strong> (<em>Shape of the input tensor.</em>) – </p></li>
+<li><p><strong>seed</strong> (<em>Seed for the random number generator.</em>) – </p></li>
+<li><p><strong>half_scan_percentage</strong> (<em>Percentage of the low-frequency columns to be retained.</em>) – </p></li>
+<li><p><strong>scale</strong> (<em>Scale of the mask.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>A tuple of the mask and the number of low-frequency columns retained.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.subsample.MaskFunc.choose_acceleration">
+<span class="sig-name descname"><span class="pre">choose_acceleration</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/subsample.html#MaskFunc.choose_acceleration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.subsample.MaskFunc.choose_acceleration" title="Permalink to this definition"></a></dt>
+<dd><p>Choose acceleration.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.subsample.Poisson2DMaskFunc">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.collections.reconstruction.data.subsample.</span></span><span class="sig-name descname"><span class="pre">Poisson2DMaskFunc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">center_fractions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">accelerations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/subsample.html#Poisson2DMaskFunc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.subsample.Poisson2DMaskFunc" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mridc.collections.reconstruction.data.subsample.MaskFunc" title="mridc.collections.reconstruction.data.subsample.MaskFunc"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.collections.reconstruction.data.subsample.MaskFunc</span></code></a></p>
+<p>Creates a 2D sub-sampling mask of a given shape.</p>
+<p>For autocalibration purposes, data points near the k-space center will be fully sampled within an ellipse of     which the half-axes will set to the set scale % of the fully sampled region. The remaining points will be sampled      according to a (variable density) Poisson distribution.</p>
+<p>For a given acceleration factor to be accurate, the scale for the fully sampled center should remain at the     default 0.02. A predefined list is used to convert the acceleration factor to the appropriate r parameter needed     for the variable density calculation. This list has been made to accommodate acceleration factors of 4 up to 21,     rounding off to the nearest one available. As such, acceleration factors outside this range cannot be used.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.subsample.Poisson2DMaskFunc.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">half_scan_percentage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.02</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/subsample.html#Poisson2DMaskFunc.__call__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.subsample.Poisson2DMaskFunc.__call__" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shape</strong> (<em>The shape of the mask to be created. The shape should have at least 3 dimensions. Samples are drawn         along the second last dimension.</em>) – </p></li>
+<li><p><strong>seed</strong> (<em>Seed for the random number generator. Setting the seed ensures the same mask is generated each time         for the same shape. The random state is reset afterwards.</em>) – </p></li>
+<li><p><strong>half_scan_percentage</strong> (<em>Optional; Defines a fraction of the k-space data that is not sampled.</em>) – </p></li>
+<li><p><strong>scale</strong> (<em>For autocalibration purposes</em><em>, </em><em>data points near the k-space center will be fully sampled within an         ellipse of which the half-axes will set to the set scale % of the fully sampled region</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>A tuple of the mask and the number of columns selected.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.subsample.Poisson2DMaskFunc.centered_circle">
+<span class="sig-name descname"><span class="pre">centered_circle</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/subsample.html#Poisson2DMaskFunc.centered_circle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.subsample.Poisson2DMaskFunc.centered_circle" title="Permalink to this definition"></a></dt>
+<dd><p>Creates a boolean centered circle image using the scale as a radius.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.subsample.Poisson2DMaskFunc.poisson_disc2d">
+<span class="sig-name descname"><span class="pre">poisson_disc2d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/subsample.html#Poisson2DMaskFunc.poisson_disc2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.subsample.Poisson2DMaskFunc.poisson_disc2d" title="Permalink to this definition"></a></dt>
+<dd><p>Creates a 2D Poisson disc pattern.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.subsample.RandomMaskFunc">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.collections.reconstruction.data.subsample.</span></span><span class="sig-name descname"><span class="pre">RandomMaskFunc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">center_fractions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">accelerations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/subsample.html#RandomMaskFunc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.subsample.RandomMaskFunc" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mridc.collections.reconstruction.data.subsample.MaskFunc" title="mridc.collections.reconstruction.data.subsample.MaskFunc"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.collections.reconstruction.data.subsample.MaskFunc</span></code></a></p>
+<p>RandomMaskFunc creates a sub-sampling mask of a given shape.</p>
+<dl class="simple">
+<dt>The mask selects a subset of columns from the input k-space data. If the k-space data has N columns, the mask     picks out:</dt><dd><ol class="arabic simple">
+<li><p>N_low_freqs = (N * center_fraction) columns in the center corresponding to low-frequencies.</p></li>
+<li><p>The other columns are selected uniformly at random with a probability equal to:         prob = (N / acceleration - N_low_freqs) /  (N - N_low_freqs). This ensures that the expected number of         columns selected is equal to (N / acceleration).</p></li>
+</ol>
+</dd>
+</dl>
+<p>It is possible to use multiple center_fractions and accelerations, in which case one possible (center_fraction,     acceleration) is chosen uniformly at random each time the RandomMaskFunc object is called.</p>
+<p>For example, if accelerations = [4, 8] and center_fractions = [0.08, 0.04], then there is a 50% probability that     4-fold acceleration with 8% center  fraction is selected and a 50% probability that 8-fold acceleration with 4%     center fraction is selected.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.subsample.RandomMaskFunc.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">half_scan_percentage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.02</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/subsample.html#RandomMaskFunc.__call__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.subsample.RandomMaskFunc.__call__" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shape</strong> (<em>The shape of the mask to be created. The shape should have at least 3 dimensions. Samples are drawn         along the second last dimension.</em>) – </p></li>
+<li><p><strong>seed</strong> (<em>Seed for the random number generator. Setting the seed ensures the same mask is generated each time         for the same shape. The random state is reset afterwards.</em>) – </p></li>
+<li><p><strong>half_scan_percentage</strong> (<em>Optional; Defines a fraction of the k-space data that is not sampled.</em>) – </p></li>
+<li><p><strong>scale</strong> (<em>Optional; Defines the scale of the center of the mask.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>A tuple of the mask and the number of columns selected.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.subsample.create_mask_for_mask_type">
+<span class="sig-prename descclassname"><span class="pre">mridc.collections.reconstruction.data.subsample.</span></span><span class="sig-name descname"><span class="pre">create_mask_for_mask_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mask_type_str</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">center_fractions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">accelerations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#mridc.collections.reconstruction.data.subsample.MaskFunc" title="mridc.collections.reconstruction.data.subsample.MaskFunc"><span class="pre">mridc.collections.reconstruction.data.subsample.MaskFunc</span></a></span></span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/subsample.html#create_mask_for_mask_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.subsample.create_mask_for_mask_type" title="Permalink to this definition"></a></dt>
+<dd><p>Creates a MaskFunc object for the given mask type.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mask_type_str</strong> (<em>The string representation of the mask type.</em>) – </p></li>
+<li><p><strong>center_fractions</strong> (<em>The center fractions for the mask.</em>) – </p></li>
+<li><p><strong>accelerations</strong> (<em>The accelerations for the mask.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>A MaskFunc object.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="mridc.collections.reconstruction.data.subsample.temp_seed">
+<span class="sig-prename descclassname"><span class="pre">mridc.collections.reconstruction.data.subsample.</span></span><span class="sig-name descname"><span class="pre">temp_seed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">rng:</span> <span class="pre">&lt;module</span> <span class="pre">'numpy.random'</span> <span class="pre">from</span> <span class="pre">'/home/dimitris/anaconda3/lib/python3.9/site-packages/numpy/random/__init__.py'&gt;,</span> <span class="pre">seed:</span> <span class="pre">typing.Optional[typing.Union[int,</span> <span class="pre">typing.Tuple[int,</span> <span class="pre">...]]]</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/data/subsample.html#temp_seed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.data.subsample.temp_seed" title="Permalink to this definition"></a></dt>
+<dd><p>Temporarily sets the seed of the given random number generator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rng</strong> (<em>The random number generator.</em>) – </p></li>
+<li><p><strong>seed</strong> (<em>The seed to set.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>A context manager.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-mridc.collections.reconstruction.data">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-mridc.collections.reconstruction.data" title="Permalink to this headline"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mridc.collections.reconstruction.html" class="btn btn-neutral float-left" title="mridc.collections.reconstruction package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mridc.collections.reconstruction.metrics.html" class="btn btn-neutral float-right" title="mridc.collections.reconstruction.metrics package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

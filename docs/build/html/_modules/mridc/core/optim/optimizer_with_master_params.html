@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.core.optim.optimizer_with_master_params &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>mridc.core.optim.optimizer_with_master_params</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.core.optim.optimizer_with_master_params</h1><div class="highlight"><pre>
+<span></span><span class="c1"># encoding: utf-8</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="c1"># Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/optim/optimizer_with_master_params.py</span>
+
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">contextmanager</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="kn">from</span> <span class="nn">mridc.utils</span> <span class="kn">import</span> <span class="n">logging</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">apex.multi_tensor_apply</span> <span class="kn">import</span> <span class="n">multi_tensor_applier</span>
+    <span class="kn">from</span> <span class="nn">apex.transformer.parallel_state</span> <span class="kn">import</span> <span class="n">get_data_parallel_world_size</span><span class="p">,</span> <span class="n">get_data_parallel_group</span>
+    <span class="kn">from</span> <span class="nn">apex.transformer.tensor_parallel</span> <span class="kn">import</span> <span class="n">copy_tensor_model_parallel_attributes</span>
+    <span class="kn">import</span> <span class="nn">amp_C</span>
+
+    <span class="n">HAVE_APEX</span> <span class="o">=</span> <span class="kc">True</span>
+
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+
+    <span class="n">HAVE_APEX</span> <span class="o">=</span> <span class="kc">False</span>
+
+
+<span class="k">def</span> <span class="nf">_zero_grad_group_helper</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">set_to_none</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Zero out the gradient for a group of parameters. Note: copied from torch.optim.optimizer.&quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">group</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">grad</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">set_to_none</span><span class="p">:</span>
+                <span class="n">param</span><span class="o">.</span><span class="n">grad</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">grad_fn</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">param</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">detach_</span><span class="p">()</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">param</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">requires_grad_</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+                <span class="n">param</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">zero_</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">_multi_tensor_copy_this_to_that</span><span class="p">(</span><span class="n">this</span><span class="p">,</span> <span class="n">that</span><span class="p">,</span> <span class="n">overflow_buf</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Use multi-tensor-applier to copy values from one list to another. We don&#39;t have a blfoat16 implementation so for</span>
+<span class="sd">    now if the overflow_buf is not provided, we default back to simple loop copy to be compatible with bfloat16.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">overflow_buf</span><span class="p">:</span>
+        <span class="c1"># Scaling with factor `1.0` is equivalent to copy.</span>
+        <span class="n">multi_tensor_applier</span><span class="p">(</span><span class="n">amp_C</span><span class="o">.</span><span class="n">multi_tensor_scale</span><span class="p">,</span> <span class="n">overflow_buf</span><span class="p">,</span> <span class="p">[</span><span class="n">this</span><span class="p">,</span> <span class="n">that</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># FIXME: use multi-tensor applier for bf16</span>
+        <span class="k">for</span> <span class="n">this_</span><span class="p">,</span> <span class="n">that_</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">this</span><span class="p">,</span> <span class="n">that</span><span class="p">):</span>
+            <span class="n">that_</span><span class="o">.</span><span class="n">copy_</span><span class="p">(</span><span class="n">this_</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="GradBucket"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizer_with_master_params.GradBucket">[docs]</a><span class="k">class</span> <span class="nc">GradBucket</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Persistent buffer for main gradients that remains allocated between training iterations.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">numel</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">HAVE_APEX</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s2">&quot;Apex was not found. Using model parallel models will error out.&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">numel</span> <span class="o">=</span> <span class="n">numel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">numel</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">current_device</span><span class="p">(),</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<div class="viewcode-block" id="GradBucket.zero"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizer_with_master_params.GradBucket.zero">[docs]</a>    <span class="k">def</span> <span class="nf">zero</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Reset the buffer to zero.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">zero_</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="GradBucket.allreduce_buffer"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizer_with_master_params.GradBucket.allreduce_buffer">[docs]</a>    <span class="k">def</span> <span class="nf">allreduce_buffer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Synchronous buffer data allreduce&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">div_</span><span class="p">(</span><span class="n">get_data_parallel_world_size</span><span class="p">())</span>
+        <span class="n">torch</span><span class="o">.</span><span class="n">distributed</span><span class="o">.</span><span class="n">all_reduce</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">get_data_parallel_group</span><span class="p">())</span>  <span class="c1"># type: ignore</span></div>
+
+<div class="viewcode-block" id="GradBucket.get"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizer_with_master_params.GradBucket.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">start_index</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a tensor with the input `shape` as a view into the 1-D data starting at `start_index`.&quot;&quot;&quot;</span>
+        <span class="n">end_index</span> <span class="o">=</span> <span class="n">start_index</span> <span class="o">+</span> <span class="n">shape</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">end_index</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">numel</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;requested tensor is out of the buffer range.&quot;</span><span class="p">)</span>
+        <span class="n">buffer_tensor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">start_index</span><span class="p">:</span><span class="n">end_index</span><span class="p">]</span>
+        <span class="n">buffer_tensor</span> <span class="o">=</span> <span class="n">buffer_tensor</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">buffer_tensor</span></div></div>
+
+
+<div class="viewcode-block" id="MainParamsOptimizerWrapper"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper">[docs]</a><span class="k">class</span> <span class="nc">MainParamsOptimizerWrapper</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Float16 optimizer wrapper for half precision (fp16 and bf16) data types.</span>
+<span class="sd">    This optimizer wrapper holds main parameters and gradients in fp32 to support</span>
+<span class="sd">    stable convergence.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    optimizer: base optimizer such as Adam or SGD.</span>
+<span class="sd">    fp32_grad_accum: to enable the use of fp32 in gradient accumulation and allreduce.</span>
+<span class="sd">    contiguous_grad_bucket: to enable allocating the master gradients in the contiguous memory space to reduce memory</span>
+<span class="sd">    fragmentation.</span>
+<span class="sd">    async_grad_allreduce: enable asynchronous gradient allreduce that is executed along with the training step back prop.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">optimizer</span><span class="p">,</span>
+        <span class="n">fp32_grad_accum</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">contiguous_grad_bucket</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">async_grad_allreduce</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">optimizer</span><span class="o">.</span><span class="n">param_groups</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">HAVE_APEX</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s2">&quot;Apex was not found. Using model parallel models will error out.&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span> <span class="o">=</span> <span class="n">optimizer</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;no optimizer is provided.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">contiguous_grad_bucket</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">fp32_grad_accum</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;contiguous gradient buffer assumes using fp32 grad.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">async_grad_allreduce</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">fp32_grad_accum</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span>
+                    <span class="s2">&quot;async allreduce applies to master gradients only, &quot;</span>
+                    <span class="s2">&quot;which is supposed to be accumulated after grad op.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">contiguous_grad_bucket</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span>
+                    <span class="s2">&quot;currently async_grad_allreduce is supported only &quot;</span> <span class="s2">&quot;with contiguous_grad_bucket.&quot;</span>
+                <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fp32_grad_accum</span> <span class="o">=</span> <span class="n">fp32_grad_accum</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_contiguous_grad_bucket</span> <span class="o">=</span> <span class="n">contiguous_grad_bucket</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_async_grad_allreduce</span> <span class="o">=</span> <span class="n">async_grad_allreduce</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_require_backward_grad_sync</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># Dummy tensor needed for apex multi-apply tensor.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dummy_overflow_buf</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Create persistent buffers for main gradients in contiguous memory space</span>
+        <span class="c1"># - Chunked element-wise and allreduce ops without creating a temporary buffer for merged operation</span>
+        <span class="c1"># - Low memory fragmentation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_main_grad_buffers</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contiguous_grad_bucket</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_main_grad_buffers</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="c1"># get the size of buffers</span>
+            <span class="n">num_elements</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">param_group</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">param_groups</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">param_group</span><span class="p">[</span><span class="s2">&quot;params&quot;</span><span class="p">]:</span>
+                    <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">requires_grad</span><span class="p">:</span>
+                        <span class="n">num_elements</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">num_elements</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="n">param</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">nelement</span><span class="p">()</span>
+
+                <span class="c1"># Allocate gradient memory buffers for each data type</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_main_grad_buffers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">GradBucket</span><span class="p">(</span><span class="n">num_elements</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+        <span class="c1"># Three groups of parameters:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">float16_groups</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># original float16 parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fp32_from_float16_groups</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># fp32 copy of float16 parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fp32_from_fp32_groups</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># original fp32 parameters</span>
+
+        <span class="c1"># gradient function hooks</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fp32_grad_accum</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">grad_accs</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># For all the groups in the original optimizer:</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">param_group</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">param_groups</span><span class="p">):</span>
+            <span class="n">float16_params_this_group</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">fp32_params_this_group</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">fp32_from_float16_params_this_group</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="c1"># For all the parameters in this group:</span>
+            <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">param_group</span><span class="p">[</span><span class="s2">&quot;params&quot;</span><span class="p">]):</span>
+                <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">requires_grad</span><span class="p">:</span>
+                    <span class="c1"># float16 params:</span>
+                    <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">type</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;torch.cuda.HalfTensor&quot;</span><span class="p">,</span> <span class="s2">&quot;torch.cuda.BFloat16Tensor&quot;</span><span class="p">]:</span>
+                        <span class="n">float16_params_this_group</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">param</span><span class="p">)</span>
+
+                        <span class="c1"># Allocate the main parameter</span>
+                        <span class="n">main_param</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
+
+                        <span class="c1"># Copy tensor model parallel attributes.</span>
+                        <span class="n">copy_tensor_model_parallel_attributes</span><span class="p">(</span><span class="n">main_param</span><span class="p">,</span> <span class="n">param</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="s2">&quot;shared&quot;</span><span class="p">):</span>
+                            <span class="n">main_param</span><span class="o">.</span><span class="n">shared</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">shared</span>
+
+                        <span class="c1"># Assign the grad buffer offset to main parameters</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contiguous_grad_bucket</span><span class="p">:</span>
+                            <span class="n">num_elements</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-=</span> <span class="n">param</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">nelement</span><span class="p">()</span>
+                            <span class="n">main_param</span><span class="o">.</span><span class="n">grad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_main_grad_buffers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">num_elements</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                            <span class="n">param</span><span class="o">.</span><span class="n">main_grad</span> <span class="o">=</span> <span class="n">main_param</span><span class="o">.</span><span class="n">grad</span>
+
+                        <span class="c1"># Replace the optimizer params with the new fp32 copy.</span>
+                        <span class="n">param_group</span><span class="p">[</span><span class="s2">&quot;params&quot;</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">main_param</span>
+                        <span class="n">fp32_from_float16_params_this_group</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">main_param</span><span class="p">)</span>
+                        <span class="c1"># Reset existing state dict key to the new main param.</span>
+                        <span class="k">if</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">state</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">state</span><span class="p">[</span><span class="n">main_param</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">param</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">param</span><span class="o">.</span><span class="n">type</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;torch.cuda.FloatTensor&quot;</span><span class="p">:</span>
+                        <span class="n">fp32_params_this_group</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">param</span><span class="p">)</span>
+                        <span class="n">param_group</span><span class="p">[</span><span class="s2">&quot;params&quot;</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span>
+
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                            <span class="s2">&quot;Wrapped parameters must be one of torch.cuda.FloatTensor,  torch.cuda.HalfTensor, &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;or torch.cuda.BFloat16Tensor. Received </span><span class="si">{</span><span class="n">param</span><span class="o">.</span><span class="n">type</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="p">)</span>
+
+                <span class="c1"># Add gradient accumulation hook for fp32 grad accumulation</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fp32_grad_accum</span><span class="p">:</span>
+                    <span class="c1"># Expand so we get access to grad_fn.</span>
+                    <span class="n">param_tmp</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">expand_as</span><span class="p">(</span><span class="n">param</span><span class="p">)</span>
+                    <span class="c1"># Get the gradient accumulator function.</span>
+                    <span class="n">grad_acc</span> <span class="o">=</span> <span class="n">param_tmp</span><span class="o">.</span><span class="n">grad_fn</span><span class="o">.</span><span class="n">next_functions</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">grad_acc</span><span class="o">.</span><span class="n">register_hook</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_make_param_hook</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">main_param</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">grad_accs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">grad_acc</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">float16_groups</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">float16_params_this_group</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fp32_from_float16_groups</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fp32_from_float16_params_this_group</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fp32_from_fp32_groups</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fp32_params_this_group</span><span class="p">)</span>
+
+        <span class="c1"># Leverage state_dict() and load_state_dict() to</span>
+        <span class="c1"># recast preexisting per-param state tensors</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">state_dict</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">_make_param_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">main_param</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create the grad accumulation and all-reduce hook for back prop.&quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">param_hook</span><span class="p">(</span><span class="o">*</span><span class="n">unused</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;Gradient accumulation and all-reduce.&quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">main_param</span><span class="o">.</span><span class="n">grad</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">main_param</span><span class="o">.</span><span class="n">grad</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">main_param</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">add_</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+                <span class="c1"># Deallocate grad memory.</span>
+                <span class="n">param</span><span class="o">.</span><span class="n">grad</span> <span class="o">=</span> <span class="kc">None</span>
+
+                <span class="c1"># Asynchronous gradients allreduce across data_parallel ranks</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_require_backward_grad_sync</span><span class="p">:</span>
+                    <span class="n">main_param</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">div_</span><span class="p">(</span><span class="n">get_data_parallel_world_size</span><span class="p">())</span>
+                    <span class="n">torch</span><span class="o">.</span><span class="n">distributed</span><span class="o">.</span><span class="n">all_reduce</span><span class="p">(</span>  <span class="c1"># type: ignore</span>
+                        <span class="n">main_param</span><span class="o">.</span><span class="n">grad</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">get_data_parallel_group</span><span class="p">(),</span> <span class="n">async_op</span><span class="o">=</span><span class="kc">True</span>
+                    <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">param_hook</span>
+
+<div class="viewcode-block" id="MainParamsOptimizerWrapper.zero_grad"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.zero_grad">[docs]</a>    <span class="k">def</span> <span class="nf">zero_grad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">set_to_none</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        We only need to zero the model related parameters, i.e., float16_groups &amp; fp32_from_fp32_groups. We</span>
+<span class="sd">        additionally zero fp32_from_float16_groups as a memory optimization to reduce fragmentation; in the case of</span>
+<span class="sd">        set_to_none==True, the space used by this field can be safely deallocated at this point.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">float16_groups</span><span class="p">:</span>
+            <span class="n">_zero_grad_group_helper</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">set_to_none</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contiguous_grad_bucket</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_main_grad_buffers</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_main_grad_buffers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">zero</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fp32_from_float16_groups</span><span class="p">:</span>
+                <span class="n">_zero_grad_group_helper</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">set_to_none</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fp32_from_fp32_groups</span><span class="p">:</span>
+            <span class="n">_zero_grad_group_helper</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">set_to_none</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MainParamsOptimizerWrapper.copy_model_grads_to_main_grads"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.copy_model_grads_to_main_grads">[docs]</a>    <span class="k">def</span> <span class="nf">copy_model_grads_to_main_grads</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Copy model grads to main grads.&quot;&quot;&quot;</span>
+        <span class="c1"># This only needs to be done for the float16 group.</span>
+        <span class="k">for</span> <span class="n">model_group</span><span class="p">,</span> <span class="n">main_group</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">float16_groups</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fp32_from_float16_groups</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">model_param</span><span class="p">,</span> <span class="n">main_param</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">model_group</span><span class="p">,</span> <span class="n">main_group</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">model_param</span><span class="o">.</span><span class="n">grad</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">main_param</span><span class="o">.</span><span class="n">grad</span> <span class="o">=</span> <span class="n">model_param</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
+
+                <span class="c1"># Safe to deallocate model&#39;s grad after copying.</span>
+                <span class="c1"># (If using contiguous buffers, main_grad&#39;s memory should</span>
+                <span class="c1"># persist and therefore should not be deallocated.)</span>
+                <span class="n">model_param</span><span class="o">.</span><span class="n">grad</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_model_and_main_params_data_float16</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get model and main params data in float16.&quot;&quot;&quot;</span>
+        <span class="n">model_data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">main_data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">half_dtype</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">model_group</span><span class="p">,</span> <span class="n">main_group</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">float16_groups</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fp32_from_float16_groups</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">model_param</span><span class="p">,</span> <span class="n">main_param</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">model_group</span><span class="p">,</span> <span class="n">main_group</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">half_dtype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">half_dtype</span> <span class="o">=</span> <span class="n">model_param</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">dtype</span>
+                <span class="n">model_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model_param</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+                <span class="n">main_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">main_param</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">model_data</span><span class="p">,</span> <span class="n">main_data</span><span class="p">,</span> <span class="n">half_dtype</span>
+
+    <span class="k">def</span> <span class="nf">_set_overflow_buffer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">half_dtype</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set overflow buffer.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">half_dtype</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dummy_overflow_buf</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_dummy_overflow_buf</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">IntTensor</span><span class="p">([</span><span class="mi">0</span><span class="p">])</span>  <span class="c1"># type: ignore</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_dummy_overflow_buf</span><span class="o">.</span><span class="n">fill_</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_copy_main_params_to_model_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Copy main params to model params.&quot;&quot;&quot;</span>
+        <span class="c1"># Only needed for the float16 params.</span>
+        <span class="n">model_data</span><span class="p">,</span> <span class="n">main_data</span><span class="p">,</span> <span class="n">half_dtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_model_and_main_params_data_float16</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_overflow_buffer</span><span class="p">(</span><span class="n">half_dtype</span><span class="p">)</span>
+        <span class="n">_multi_tensor_copy_this_to_that</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">main_data</span><span class="p">,</span> <span class="n">that</span><span class="o">=</span><span class="n">model_data</span><span class="p">,</span> <span class="n">overflow_buf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_dummy_overflow_buf</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_copy_model_params_to_main_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Copy model params to main params.&quot;&quot;&quot;</span>
+        <span class="c1"># Only needed for the float16 params.</span>
+        <span class="n">model_data</span><span class="p">,</span> <span class="n">main_data</span><span class="p">,</span> <span class="n">half_dtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_model_and_main_params_data_float16</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_overflow_buffer</span><span class="p">(</span><span class="n">half_dtype</span><span class="p">)</span>
+        <span class="n">_multi_tensor_copy_this_to_that</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">model_data</span><span class="p">,</span> <span class="n">that</span><span class="o">=</span><span class="n">main_data</span><span class="p">,</span> <span class="n">overflow_buf</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_dummy_overflow_buf</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MainParamsOptimizerWrapper.reload_model_params"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.reload_model_params">[docs]</a>    <span class="k">def</span> <span class="nf">reload_model_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Reload model params.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_copy_model_params_to_main_params</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="MainParamsOptimizerWrapper.step"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.step">[docs]</a>    <span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Step the optimizer.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">closure</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># Update params from main params.</span>
+        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_copy_main_params_to_model_params</span><span class="p">()</span>
+        <span class="c1"># Successful update.</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="MainParamsOptimizerWrapper.state_dict"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.state_dict">[docs]</a>    <span class="k">def</span> <span class="nf">state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the state of the optimizer.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;optimizer&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">state_dict</span><span class="p">(),</span> <span class="s2">&quot;fp32_from_fp16_params&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">fp32_from_float16_groups</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="MainParamsOptimizerWrapper.load_state_dict"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.load_state_dict">[docs]</a>    <span class="k">def</span> <span class="nf">load_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state_dict</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Load the state of the optimizer.&quot;&quot;&quot;</span>
+        <span class="c1"># Optimizer.</span>
+        <span class="n">optimizer_key</span> <span class="o">=</span> <span class="s2">&quot;optimizer&quot;</span>
+        <span class="k">if</span> <span class="n">optimizer_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">state_dict</span><span class="p">:</span>
+            <span class="n">optimizer_key</span> <span class="o">=</span> <span class="s2">&quot;optimizer_state_dict&quot;</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;***WARNING*** loading optimizer from &quot;</span> <span class="s2">&quot;an old checkpoint ...&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">state_dict</span><span class="p">[</span><span class="n">optimizer_key</span><span class="p">])</span>
+
+        <span class="c1"># Copy data for the main params.</span>
+        <span class="n">fp32_from_float16_params_key</span> <span class="o">=</span> <span class="s2">&quot;fp32_from_fp16_params&quot;</span>
+        <span class="k">if</span> <span class="n">fp32_from_float16_params_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">state_dict</span><span class="p">:</span>
+            <span class="n">fp32_from_float16_params_key</span> <span class="o">=</span> <span class="s2">&quot;fp32_from_fp16&quot;</span>
+        <span class="k">for</span> <span class="n">current_group</span><span class="p">,</span> <span class="n">saved_group</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fp32_from_float16_groups</span><span class="p">,</span> <span class="n">state_dict</span><span class="p">[</span><span class="n">fp32_from_float16_params_key</span><span class="p">]):</span>
+            <span class="k">for</span> <span class="n">current_param</span><span class="p">,</span> <span class="n">saved_param</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">current_group</span><span class="p">,</span> <span class="n">saved_group</span><span class="p">):</span>
+                <span class="n">current_param</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy_</span><span class="p">(</span><span class="n">saved_param</span><span class="o">.</span><span class="n">data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MainParamsOptimizerWrapper.allreduce_main_grads"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.allreduce_main_grads">[docs]</a>    <span class="k">def</span> <span class="nf">allreduce_main_grads</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;All reduce main grads.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_main_grad_buffers</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_main_grad_buffers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">allreduce_buffer</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="MainParamsOptimizerWrapper.grad_sync"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.grad_sync">[docs]</a>    <span class="nd">@contextmanager</span>
+    <span class="k">def</span> <span class="nf">grad_sync</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A context manager to disable gradient synchronizations across data-parallel ranks.&quot;&quot;&quot;</span>
+        <span class="n">old_require_backward_grad_sync</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_require_backward_grad_sync</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_require_backward_grad_sync</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">yield</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_require_backward_grad_sync</span> <span class="o">=</span> <span class="n">old_require_backward_grad_sync</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">async_master_grads_allreudce</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return whether to use async allreduce for master grads.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_async_grad_allreduce</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">fp32_grad_accumulation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return whether to accumulate gradients in fp32.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fp32_grad_accum</span>
+
+<div class="viewcode-block" id="MainParamsOptimizerWrapper.get_parameters"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.get_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">get_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the parameters of the optimizer.&quot;&quot;&quot;</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">param_group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">param_groups</span><span class="p">:</span>
+            <span class="n">params</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">param_group</span><span class="p">[</span><span class="s2">&quot;params&quot;</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">params</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Promote state, so it can be retrieved or set via &quot;optimizer_instance.state.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">state</span>
+
+    <span class="k">def</span> <span class="nf">_set_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Promote state, so it can be retrieved or set via &quot;optimizer_instance.state.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="n">state</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_get_state</span><span class="p">,</span> <span class="n">_set_state</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_param_groups</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Promote param_groups, so it can be retrieved or set via &quot;optimizer_instance.param_groups.</span>
+<span class="sd">        (for example, to adjust the learning rate)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">param_groups</span>
+
+    <span class="k">def</span> <span class="nf">_set_param_groups</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set param_groups.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">param_groups</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="n">param_groups</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">_get_param_groups</span><span class="p">,</span> <span class="n">_set_param_groups</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

@@ -200,7 +200,7 @@ def rss_complex(data: torch.Tensor, dim: int = 0) -> torch.Tensor:
 
 def sense(data: torch.Tensor, sensitivity_maps: torch.Tensor, dim: int = 0) -> torch.Tensor:
     """
-    The SENSitivity Encoding (SENSE) transform [1].
+    The SENSitivity Encoding (SENSE) transform [1]_.
 
     References
     ----------

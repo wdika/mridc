@@ -38,7 +38,7 @@ class WeightedAverageTerm(torch.nn.Module):
 
 class VSNetBlock(torch.nn.Module):
     """
-    Model block for the Variable-Splitting Network inspired by [1].
+    Model block for the Variable-Splitting Network inspired by [1]_.
 
     References
     ----------

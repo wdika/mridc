@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.collections.reconstruction.models.cirim &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../_static/jquery.js"></script>
+        <script src="../../../../../_static/underscore.js"></script>
+        <script src="../../../../../_static/doctools.js"></script>
+    <script src="../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../../index.html">Module code</a> &raquo;</li>
+      <li>mridc.collections.reconstruction.models.cirim</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.collections.reconstruction.models.cirim</h1><div class="highlight"><pre>
+<span></span><span class="c1"># coding=utf-8</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">omegaconf</span> <span class="kn">import</span> <span class="n">DictConfig</span><span class="p">,</span> <span class="n">OmegaConf</span>
+<span class="kn">from</span> <span class="nn">pytorch_lightning</span> <span class="kn">import</span> <span class="n">Trainer</span>
+<span class="kn">from</span> <span class="nn">torch.nn</span> <span class="kn">import</span> <span class="n">L1Loss</span>
+
+<span class="kn">from</span> <span class="nn">mridc.collections.common.losses.ssim</span> <span class="kn">import</span> <span class="n">SSIMLoss</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">ifft2c</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.rnn_utils</span> <span class="kn">import</span> <span class="n">rnn_weights_init</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.utils</span> <span class="kn">import</span> <span class="n">coil_combination</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.models.base</span> <span class="kn">import</span> <span class="n">BaseMRIReconstructionModel</span><span class="p">,</span> <span class="n">BaseSensitivityModel</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.models.rim.rim_block</span> <span class="kn">import</span> <span class="n">RIMBlock</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.parts.utils</span> <span class="kn">import</span> <span class="n">center_crop_to_smallest</span>
+<span class="kn">from</span> <span class="nn">mridc.core.classes.common</span> <span class="kn">import</span> <span class="n">typecheck</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;CIRIM&quot;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="CIRIM"><a class="viewcode-back" href="../../../../../mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.cirim.CIRIM">[docs]</a><span class="k">class</span> <span class="nc">CIRIM</span><span class="p">(</span><span class="n">BaseMRIReconstructionModel</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Implementation of the Cascades of Independently Recurrent Inference Machines, as presented in \</span>
+<span class="sd">    Karkalousos, D. et al.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    ..</span>
+
+<span class="sd">        Karkalousos, D. et al. (2021) ‘Assessment of Data Consistency through Cascades of Independently Recurrent \</span>
+<span class="sd">        Inference Machines for fast and robust accelerated MRI reconstruction’. Available at: \</span>
+<span class="sd">        https://arxiv.org/abs/2111.15498v1</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="n">DictConfig</span><span class="p">,</span> <span class="n">trainer</span><span class="p">:</span> <span class="n">Trainer</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># init superclass</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">cfg</span><span class="o">=</span><span class="n">cfg</span><span class="p">,</span> <span class="n">trainer</span><span class="o">=</span><span class="n">trainer</span><span class="p">)</span>
+
+        <span class="c1"># Cascades of RIM blocks</span>
+        <span class="n">cfg_dict</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">to_container</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">resolve</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">recurrent_filters</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;recurrent_filters&quot;</span><span class="p">)</span>
+
+        <span class="c1"># make time-steps size divisible by 8 for fast fp16 training</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_steps</span> <span class="o">=</span> <span class="mi">8</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;time_steps&quot;</span><span class="p">)</span> <span class="o">/</span> <span class="mi">8</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">no_dc</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;no_dc&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fft_type&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_cascades</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;num_cascades&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">cirim</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="n">RIMBlock</span><span class="p">(</span>
+                    <span class="n">recurrent_layer</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;recurrent_layer&quot;</span><span class="p">),</span>
+                    <span class="n">conv_filters</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;conv_filters&quot;</span><span class="p">),</span>
+                    <span class="n">conv_kernels</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;conv_kernels&quot;</span><span class="p">),</span>
+                    <span class="n">conv_dilations</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;conv_dilations&quot;</span><span class="p">),</span>
+                    <span class="n">conv_bias</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;conv_bias&quot;</span><span class="p">),</span>
+                    <span class="n">recurrent_filters</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">recurrent_filters</span><span class="p">,</span>
+                    <span class="n">recurrent_kernels</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;recurrent_kernels&quot;</span><span class="p">),</span>
+                    <span class="n">recurrent_dilations</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;recurrent_dilations&quot;</span><span class="p">),</span>
+                    <span class="n">recurrent_bias</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;recurrent_bias&quot;</span><span class="p">),</span>
+                    <span class="n">depth</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;depth&quot;</span><span class="p">),</span>
+                    <span class="n">time_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">time_steps</span><span class="p">,</span>
+                    <span class="n">conv_dim</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;conv_dim&quot;</span><span class="p">),</span>
+                    <span class="n">no_dc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">no_dc</span><span class="p">,</span>
+                    <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_cascades</span><span class="p">)</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Keep estimation through the cascades if keep_eta is True or re-estimate it if False.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">keep_eta</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;keep_eta&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_type</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_type&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Initialize the sensitivity network if use_sens_net is True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_sens_net</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;use_sens_net&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_sens_net</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sens_net</span> <span class="o">=</span> <span class="n">BaseSensitivityModel</span><span class="p">(</span>
+                <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sens_chans&quot;</span><span class="p">),</span>
+                <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sens_pools&quot;</span><span class="p">),</span>
+                <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">,</span>
+                <span class="n">mask_type</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sens_mask_type&quot;</span><span class="p">),</span>
+                <span class="n">normalize</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sens_normalize&quot;</span><span class="p">),</span>
+                <span class="n">mask_center</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sens_mask_center&quot;</span><span class="p">),</span>
+            <span class="p">)</span>
+
+        <span class="c1"># initialize weights if not using pretrained cirim</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pretrained&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+            <span class="n">std_init_range</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">recurrent_filters</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">**</span> <span class="mf">0.5</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cirim</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">module</span><span class="p">:</span> <span class="n">rnn_weights_init</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">std_init_range</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_loss_fn</span> <span class="o">=</span> <span class="n">SSIMLoss</span><span class="p">()</span> <span class="k">if</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;train_loss_fn&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;ssim&quot;</span> <span class="k">else</span> <span class="n">L1Loss</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eval_loss_fn</span> <span class="o">=</span> <span class="n">SSIMLoss</span><span class="p">()</span> <span class="k">if</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;eval_loss_fn&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;ssim&quot;</span> <span class="k">else</span> <span class="n">L1Loss</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dc_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">accumulate_estimates</span> <span class="o">=</span> <span class="kc">True</span>
+
+<div class="viewcode-block" id="CIRIM.forward"><a class="viewcode-back" href="../../../../../mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.cirim.CIRIM.forward">[docs]</a>    <span class="nd">@typecheck</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">y</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">sensitivity_maps</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">init_pred</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">target</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Generator</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Forward pass of the network.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        y: Subsampled k-space data.</span>
+<span class="sd">            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]</span>
+<span class="sd">        sensitivity_maps: Coil sensitivity maps.</span>
+<span class="sd">            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]</span>
+<span class="sd">        mask: Sampling mask.</span>
+<span class="sd">            torch.Tensor, shape [1, 1, n_x, n_y, 1]</span>
+<span class="sd">        init_pred: Initial prediction.</span>
+<span class="sd">            torch.Tensor, shape [batch_size, n_x, n_y, 2]</span>
+<span class="sd">        target: Target data to compute the loss.</span>
+<span class="sd">            torch.Tensor, shape [batch_size, n_x, n_y, 2]</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pred: list of torch.Tensor, shape [batch_size, n_x, n_y, 2], or  torch.Tensor, shape [batch_size, n_x, n_y, 2]</span>
+<span class="sd">             If self.accumulate_loss is True, returns a list of all intermediate estimates.</span>
+<span class="sd">             If False, returns the final estimate.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sensitivity_maps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sens_net</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_sens_net</span> <span class="k">else</span> <span class="n">sensitivity_maps</span>
+        <span class="n">prediction</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+        <span class="n">init_pred</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">init_pred</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">init_pred</span><span class="o">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">4</span> <span class="k">else</span> <span class="n">init_pred</span>
+        <span class="n">hx</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">sigma</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="n">cascades_etas</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">cascade</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cirim</span><span class="p">):</span>
+            <span class="c1"># Forward pass through the cascades</span>
+            <span class="n">prediction</span><span class="p">,</span> <span class="n">hx</span> <span class="o">=</span> <span class="n">cascade</span><span class="p">(</span>
+                <span class="n">prediction</span><span class="p">,</span>
+                <span class="n">y</span><span class="p">,</span>
+                <span class="n">sensitivity_maps</span><span class="p">,</span>
+                <span class="n">mask</span><span class="p">,</span>
+                <span class="n">init_pred</span><span class="p">,</span>
+                <span class="n">hx</span><span class="p">,</span>
+                <span class="n">sigma</span><span class="p">,</span>
+                <span class="n">keep_eta</span><span class="o">=</span><span class="kc">False</span> <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">keep_eta</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">time_steps_etas</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">process_intermediate_pred</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">sensitivity_maps</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span> <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">prediction</span><span class="p">]</span>
+            <span class="n">cascades_etas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">time_steps_etas</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">cascades_etas</span></div>
+
+<div class="viewcode-block" id="CIRIM.process_intermediate_pred"><a class="viewcode-back" href="../../../../../mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.cirim.CIRIM.process_intermediate_pred">[docs]</a>    <span class="k">def</span> <span class="nf">process_intermediate_pred</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pred</span><span class="p">,</span> <span class="n">sensitivity_maps</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">do_coil_combination</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Process the intermediate prediction.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        pred: Intermediate prediction.</span>
+<span class="sd">            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]</span>
+<span class="sd">        sensitivity_maps: Coil sensitivity maps.</span>
+<span class="sd">            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]</span>
+<span class="sd">        target: Target data to crop to size.</span>
+<span class="sd">            torch.Tensor, shape [batch_size, n_x, n_y, 2]</span>
+<span class="sd">        do_coil_combination: Whether to do coil combination.</span>
+<span class="sd">            bool, default False</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pred: torch.Tensor, shape [batch_size, n_x, n_y, 2]</span>
+<span class="sd">            Processed prediction.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Take the last time step of the eta</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">no_dc</span> <span class="ow">or</span> <span class="n">do_coil_combination</span><span class="p">:</span>
+            <span class="n">pred</span> <span class="o">=</span> <span class="n">ifft2c</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">)</span>
+            <span class="n">pred</span> <span class="o">=</span> <span class="n">coil_combination</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">sensitivity_maps</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_type</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">pred</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">view_as_complex</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">pred</span> <span class="o">=</span> <span class="n">center_crop_to_smallest</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">pred</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pred</span></div>
+
+<div class="viewcode-block" id="CIRIM.process_loss"><a class="viewcode-back" href="../../../../../mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.cirim.CIRIM.process_loss">[docs]</a>    <span class="k">def</span> <span class="nf">process_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">pred</span><span class="p">,</span> <span class="n">_loss_fn</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Process the loss.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        target: Target data.</span>
+<span class="sd">            torch.Tensor, shape [batch_size, n_x, n_y, 2]</span>
+<span class="sd">        pred: Final prediction(s).</span>
+<span class="sd">            list of torch.Tensor, shape [batch_size, n_x, n_y, 2], or</span>
+<span class="sd">            torch.Tensor, shape [batch_size, n_x, n_y, 2]</span>
+<span class="sd">        _loss_fn: Loss function.</span>
+<span class="sd">            torch.nn.Module, default torch.nn.L1Loss()</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        loss: torch.FloatTensor, shape [1]</span>
+<span class="sd">            If self.accumulate_loss is True, returns an accumulative result of all intermediate losses.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">target</span> <span class="o">/</span> <span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">target</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="s2">&quot;ssim&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">_loss_fn</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+            <span class="n">max_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">target</span><span class="p">))</span><span class="o">.</span><span class="n">item</span><span class="p">())</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+            <span class="k">def</span> <span class="nf">loss_fn</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+                <span class="sd">&quot;&quot;&quot;Calculate the ssim loss.&quot;&quot;&quot;</span>
+                <span class="k">return</span> <span class="n">_loss_fn</span><span class="p">(</span>
+                    <span class="n">x</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                    <span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y</span> <span class="o">/</span> <span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y</span><span class="p">)))</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                    <span class="n">data_range</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">max_value</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">),</span>
+                <span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="k">def</span> <span class="nf">loss_fn</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+                <span class="sd">&quot;&quot;&quot;Calculate other loss.&quot;&quot;&quot;</span>
+                <span class="k">return</span> <span class="n">_loss_fn</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y</span> <span class="o">/</span> <span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y</span><span class="p">))))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">accumulate_estimates</span><span class="p">:</span>
+            <span class="n">cascades_loss</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">cascade_pred</span> <span class="ow">in</span> <span class="n">pred</span><span class="p">:</span>
+                <span class="n">time_steps_loss</span> <span class="o">=</span> <span class="p">[</span><span class="n">loss_fn</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">time_step_pred</span><span class="p">)</span> <span class="k">for</span> <span class="n">time_step_pred</span> <span class="ow">in</span> <span class="n">cascade_pred</span><span class="p">]</span>
+                <span class="n">_loss</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">x</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">time_steps</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">time_steps_loss</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">time_steps_loss</span>
+                <span class="p">]</span>
+                <span class="n">cascades_loss</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">_loss</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_steps</span><span class="p">))</span>
+            <span class="k">yield</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">cascades_loss</span><span class="p">))</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cirim</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">loss_fn</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">pred</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

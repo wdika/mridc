@@ -86,6 +86,8 @@ def main(cfg: DictConfig) -> None:
         model.load_state_dict(torch.load(checkpoint)["state_dict"])
 
     if cfg.get("mode", None) == "train":
+        logging.info("Validating")
+        trainer.validate(model)
         logging.info("Training")
         trainer.fit(model)
     else:

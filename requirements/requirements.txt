@@ -19,5 +19,6 @@ sphinxcontrib-apidoc>=0.3.0
 torch>=1.8.0
 torchmetrics~=0.6.1
 tqdm>=4.62.3
+wandb>=0.12.16
 wget>=1.20.1
 wrapt>=1.13.3

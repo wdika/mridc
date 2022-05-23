@@ -22,12 +22,16 @@ __all__ = ["VarNet"]
 
 class VarNet(BaseMRIReconstructionModel, ABC):
     """
-    Implementation of the End-to-end Variational Network (VN), as presented in [1].
+    Implementation of the End-to-end Variational Network (VN), as presented in Sriram, A. et al.
 
     References
     ----------
 
-    .. [1] Sriram, A. et al. (2020) ‘End-to-End Variational Networks for Accelerated MRI Reconstruction’. Available at: https://github.com/facebookresearch/fastMRI.
+    ..
+
+        Sriram, A. et al. (2020) ‘End-to-End Variational Networks for Accelerated MRI Reconstruction’. Available \
+        at: https://github.com/facebookresearch/fastMRI.
+
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):

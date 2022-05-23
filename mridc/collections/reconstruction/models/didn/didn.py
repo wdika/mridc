@@ -11,11 +11,17 @@ import torch.nn.functional as F
 
 class Subpixel(nn.Module):
     """
-    Subpixel convolution layer for up-scaling of low resolution features at super-resolution as implemented in [1].
+    Subpixel convolution layer for up-scaling of low resolution features at super-resolution as implemented in \
+    Yu, Songhyun, et al.
 
     References
     ----------
-    .. [1] Yu, Songhyun, et al. “Deep Iterative Down-Up CNN for Image Denoising.” 2019 IEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops (CVPRW), 2019, pp. 2095–103. IEEE Xplore, https://doi.org/10.1109/CVPRW.2019.00262.
+
+    ..
+        Yu, Songhyun, et al. “Deep Iterative Down-Up CNN for Image Denoising.” 2019 IEEE/CVF Conference on Computer \
+        Vision and Pattern Recognition Workshops (CVPRW), 2019, pp. 2095–103. IEEE Xplore, \
+        https://doi.org/10.1109/CVPRW.2019.00262.
+
     """
 
     def __init__(self, in_channels, out_channels, upscale_factor, kernel_size, padding=0):
@@ -43,11 +49,16 @@ class Subpixel(nn.Module):
 
 class ReconBlock(nn.Module):
     """
-    Reconstruction Block of DIDN model as implemented in [1].
+    Reconstruction Block of DIDN model as implemented in Yu, Songhyun, et al.
 
     References
     ----------
-    .. [1] Yu, Songhyun, et al. “Deep Iterative Down-Up CNN for Image Denoising.” 2019 IEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops (CVPRW), 2019, pp. 2095–103. IEEE Xplore, https://doi.org/10.1109/CVPRW.2019.00262.
+
+    ..
+        Yu, Songhyun, et al. “Deep Iterative Down-Up CNN for Image Denoising.” 2019 IEEE/CVF Conference on Computer \
+        Vision and Pattern Recognition Workshops (CVPRW), 2019, pp. 2095–103. IEEE Xplore, \
+        https://doi.org/10.1109/CVPRW.2019.00262.
+
     """
 
     def __init__(self, in_channels, num_convs):
@@ -91,11 +102,16 @@ class ReconBlock(nn.Module):
 
 class DUB(nn.Module):
     """
-    Down-up block (DUB) for DIDN model as implemented in [1].
+    Down-up block (DUB) for DIDN model as implemented in Yu, Songhyun, et al.
 
     References
     ----------
-    .. [1] Yu, Songhyun, et al. “Deep Iterative Down-Up CNN for Image Denoising.” 2019 IEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops (CVPRW), 2019, pp. 2095–103. IEEE Xplore, https://doi.org/10.1109/CVPRW.2019.00262.
+
+    ..
+        Yu, Songhyun, et al. “Deep Iterative Down-Up CNN for Image Denoising.” 2019 IEEE/CVF Conference on Computer \
+        Vision and Pattern Recognition Workshops (CVPRW), 2019, pp. 2095–103. IEEE Xplore, \
+        https://doi.org/10.1109/CVPRW.2019.00262.
+
     """
 
     def __init__(
@@ -221,11 +237,16 @@ class DUB(nn.Module):
 
 class DIDN(nn.Module):
     """
-    Deep Iterative Down-up convolutional Neural network (DIDN) implementation as in [1].
+    Deep Iterative Down-up convolutional Neural network (DIDN) implementation as in Yu, Songhyun, et al.
 
     References
     ----------
-    .. [1] Yu, Songhyun, et al. “Deep Iterative Down-Up CNN for Image Denoising.” 2019 IEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops (CVPRW), 2019, pp. 2095–103. IEEE Xplore, https://doi.org/10.1109/CVPRW.2019.00262.
+
+    ..
+        Yu, Songhyun, et al. “Deep Iterative Down-Up CNN for Image Denoising.” 2019 IEEE/CVF Conference on Computer \
+        Vision and Pattern Recognition Workshops (CVPRW), 2019, pp. 2095–103. IEEE Xplore, \
+        https://doi.org/10.1109/CVPRW.2019.00262.
+
     """
 
     def __init__(

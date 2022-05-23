@@ -21,12 +21,18 @@ __all__ = ["JointICNet"]
 
 class JointICNet(BaseMRIReconstructionModel, ABC):
     """
-    Implementation of the Joint Deep Model-Based MR Image and Coil Sensitivity Reconstruction Network (Joint-ICNet), as
-    presented in [1].
+    Implementation of the Joint Deep Model-Based MR Image and Coil Sensitivity Reconstruction Network (Joint-ICNet), \
+    as presented in Jun, Yohan, et al.
 
     References
     ----------
-    .. [1] Jun, Yohan, et al. “Joint Deep Model-Based MR Image and Coil Sensitivity Reconstruction Network (Joint-ICNet) for Fast MRI.” 2021 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), IEEE, 2021, pp. 5266–75. DOI.org (Crossref), https://doi.org/10.1109/CVPR46437.2021.00523.
+
+    ..
+
+        Jun, Yohan, et al. “Joint Deep Model-Based MR Image and Coil Sensitivity Reconstruction Network (Joint-ICNet) \
+         for Fast MRI.” 2021 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), IEEE, 2021, pp. \
+          5266–75. DOI.org (Crossref), https://doi.org/10.1109/CVPR46437.2021.00523.
+
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):

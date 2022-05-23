@@ -36,7 +36,8 @@ class OptimizerParams:
 class SGDParams(OptimizerParams):
     """
     Default configuration for Adam optimizer.
-    ..note:
+
+    .. note::
         For the details on the function/meanings of the arguments, please refer to:
         https://pytorch.org/docs/stable/optim.html?highlight=sgd#torch.optim.SGD
     """
@@ -51,7 +52,8 @@ class SGDParams(OptimizerParams):
 class AdamParams(OptimizerParams):
     """
     Default configuration for Adam optimizer.
-    ..note:
+
+    .. note::
         For the details on the function/meanings of the arguments, please refer to:
         https://pytorch.org/docs/stable/optim.html?highlight=adam#torch.optim.Adam
     """
@@ -66,7 +68,8 @@ class AdamParams(OptimizerParams):
 class AdamWParams(OptimizerParams):
     """
     Default configuration for AdamW optimizer.
-    ..note:
+
+    .. note::
         For the details on the function/meanings of the arguments, please refer to:
         https://pytorch.org/docs/stable/optim.html#torch.optim.AdamW
     """
@@ -81,7 +84,8 @@ class AdamWParams(OptimizerParams):
 class AdadeltaParams(OptimizerParams):
     """
     Default configuration for Adadelta optimizer.
-    ..note:
+
+    .. note::
         For the details on the function/meanings of the arguments, please refer to:
         https://pytorch.org/docs/stable/optim.html#torch.optim.Adadelta
     """
@@ -95,7 +99,8 @@ class AdadeltaParams(OptimizerParams):
 class AdamaxParams(OptimizerParams):
     """
     Default configuration for Adamax optimizer.
-    ..note:
+
+    .. note::
         For the details on the function/meanings of the arguments, please refer to:
         https://pytorch.org/docs/stable/optim.html#torch.optim.Adamax
     """
@@ -109,7 +114,8 @@ class AdamaxParams(OptimizerParams):
 class AdagradParams(OptimizerParams):
     """
     Default configuration for Adagrad optimizer.
-    ..note:
+
+    .. note::
         For the details on the function/meanings of the arguments, please refer to:
         https://pytorch.org/docs/stable/optim.html#torch.optim.Adagrad
     """
@@ -124,7 +130,8 @@ class AdagradParams(OptimizerParams):
 class RMSpropParams(OptimizerParams):
     """
     Default configuration for RMSprop optimizer.
-    ..note:
+
+    .. note::
         For the details on the function/meanings of the arguments, please refer to:
         https://pytorch.org/docs/stable/optim.html#torch.optim.RMSprop
     """
@@ -140,7 +147,8 @@ class RMSpropParams(OptimizerParams):
 class RpropParams(OptimizerParams):
     """
     Default configuration for RpropParams optimizer.
-    ..note:
+
+    .. note::
         For the details on the function/meanings of the arguments, please refer to:
         https://pytorch.org/docs/stable/optim.html#torch.optim.Rprop
     """
@@ -152,18 +160,9 @@ class RpropParams(OptimizerParams):
 @dataclass
 class NovogradParams(OptimizerParams):
     """
-    Configuration of the Novograd optimizer. It has been proposed  in "Stochastic Gradient Methods with Layer-wise
-    Adaptive Moments for Training of Deep Networks" (https://arxiv.org/abs/1905.11286).
-    The OptimizerParams is a Base Optimizer params with no values.
-    User can choose it to explicitly override via command line arguments.
-        lr (float, optional): learning rate (default: 1e-3)
-        betas (Tuple[float, float], optional): coefficients used for computing
-            running averages of gradient and its square (default: (0.9, 0.999))
-        eps (float, optional): term added to the denominator to improve
-            numerical stability (default: 1e-8)
-        weight_decay (float, optional): weight decay (L2 penalty) (default: 0)
-        amsgrad (boolean, optional): whether to use the AMSGrad variant of this
-            algorithm from the paper "On the Convergence of Adam and Beyond"
+    Configuration of the Novograd optimizer. It has been proposed in "Stochastic Gradient Methods with Layer-wise
+    Adaptive Moments for Training of Deep Networks" (https://arxiv.org/abs/1905.11286). The OptimizerParams is a Base
+    Optimizer params with no values. User can choose to explicitly override it via command line arguments.
     """
 
     betas: Tuple[float, float] = (0.95, 0.98)
@@ -171,6 +170,7 @@ class NovogradParams(OptimizerParams):
     weight_decay: float = 0
     grad_averaging: bool = False
     amsgrad: bool = False
+    lr: float = 1e-3
     luc: bool = False
     luc_trust: float = 1e-3
     luc_eps: float = 1e-8

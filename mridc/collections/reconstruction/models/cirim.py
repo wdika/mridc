@@ -25,11 +25,18 @@ __all__ = ["CIRIM"]
 
 class CIRIM(BaseMRIReconstructionModel, ABC):
     """
-    Implementation of the Cascades of Independently Recurrent Inference Machines, as presented in [1].
+    Implementation of the Cascades of Independently Recurrent Inference Machines, as presented in \
+    Karkalousos, D. et al.
 
     References
     ----------
-    .. [1] Karkalousos, D. et al. (2021) ‘Assessment of Data Consistency through Cascades of Independently Recurrent Inference Machines for fast and robust accelerated MRI reconstruction’. Available at: https://arxiv.org/abs/2111.15498v1
+
+    ..
+
+        Karkalousos, D. et al. (2021) ‘Assessment of Data Consistency through Cascades of Independently Recurrent \
+        Inference Machines for fast and robust accelerated MRI reconstruction’. Available at: \
+        https://arxiv.org/abs/2111.15498v1
+
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):

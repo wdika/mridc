@@ -15,6 +15,7 @@ __all__ = ["DataLoaderConfig"]
 class DataLoaderConfig:
     """
     Configuration of PyTorch DataLoader.
+
     ..note:
         For the details on the function/meanings of the arguments, please refer to:
         https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader

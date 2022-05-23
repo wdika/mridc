@@ -20,12 +20,17 @@ __all__ = ["ZF"]
 
 class ZF(BaseMRIReconstructionModel, ABC):
     """
-    Zero-Filled reconstruction using either root-sum-of-squares (RSS) or SENSE (SENSitivity Encoding) [1].
+    Zero-Filled reconstruction using either root-sum-of-squares (RSS) or SENSE (SENSitivity Encoding), as presented \
+    in Pruessmann KP, Weiger M, Scheidegger MB, Boesiger P.
 
     References
     ----------
 
-    .. [1] Pruessmann KP, Weiger M, Scheidegger MB, Boesiger P. SENSE: Sensitivity encoding for fast MRI. Magn Reson Med 1999; 42:952-962.
+    ..
+
+        Pruessmann KP, Weiger M, Scheidegger MB, Boesiger P. SENSE: Sensitivity encoding for fast MRI. Magn Reson \
+        Med 1999; 42:952-962.
+
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):

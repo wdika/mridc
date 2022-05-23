@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.utils.model_utils &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>mridc.utils.model_utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.utils.model_utils</h1><div class="highlight"><pre>
+<span></span><span class="c1"># encoding: utf-8</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="c1"># Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/utils/model_utils.py</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">is_dataclass</span>
+<span class="kn">from</span> <span class="nn">distutils.version</span> <span class="kn">import</span> <span class="n">Version</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Set</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">wrapt</span>
+<span class="kn">from</span> <span class="nn">omegaconf</span> <span class="kn">import</span> <span class="n">DictConfig</span><span class="p">,</span> <span class="n">ListConfig</span><span class="p">,</span> <span class="n">OmegaConf</span>
+<span class="kn">from</span> <span class="nn">omegaconf.errors</span> <span class="kn">import</span> <span class="n">OmegaConfBaseException</span>
+<span class="kn">from</span> <span class="nn">pytorch_lightning</span> <span class="kn">import</span> <span class="n">LightningModule</span>
+
+<span class="kn">import</span> <span class="nn">mridc</span>
+<span class="kn">from</span> <span class="nn">mridc.constants</span> <span class="kn">import</span> <span class="n">MRIDC_ENV_CACHE_DIR</span>
+<span class="kn">from</span> <span class="nn">mridc.core.classes.common</span> <span class="kn">import</span> <span class="n">PretrainedModelInfo</span>
+<span class="kn">from</span> <span class="nn">mridc.core.classes.modelPT</span> <span class="kn">import</span> <span class="n">ModelPT</span>
+<span class="kn">from</span> <span class="nn">mridc.core.conf.modelPT</span> <span class="kn">import</span> <span class="n">MRIDCConfig</span>
+<span class="kn">from</span> <span class="nn">mridc.utils.app_state</span> <span class="kn">import</span> <span class="n">AppState</span>
+<span class="kn">from</span> <span class="nn">mridc.utils</span> <span class="kn">import</span> <span class="n">logging</span>
+
+<span class="n">_HAS_HYDRA</span> <span class="o">=</span> <span class="kc">True</span>
+
+<span class="n">_VAL_TEST_FASTPATH_KEY</span> <span class="o">=</span> <span class="s2">&quot;ds_item&quot;</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;ArtifactPathType&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ArtifactItem&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;resolve_dataset_name_from_cfg&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;parse_dataset_as_name&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;unique_names_check&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;resolve_validation_dataloaders&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;wrap_training_step&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;convert_model_config_to_dict_config&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;_convert_config&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;maybe_update_config_version&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;import_class_by_path&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;resolve_subclass_pretrained_model_info&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;check_lib_version&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;resolve_cache_dir&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;inject_model_parallel_rank&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;uninject_model_parallel_rank&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="ArtifactPathType"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.model_utils.ArtifactPathType">[docs]</a><span class="k">class</span> <span class="nc">ArtifactPathType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    ArtifactPathType refers to the type of the path that the artifact is located at.</span>
+<span class="sd">    LOCAL_PATH: A user local filepath that exists on the file system.</span>
+<span class="sd">    TAR_PATH: A (generally flattened) filepath that exists inside of an archive (that may have its own full path).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">LOCAL_PATH</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">TAR_PATH</span> <span class="o">=</span> <span class="mi">1</span></div>
+
+
+<div class="viewcode-block" id="ArtifactItem"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.model_utils.ArtifactItem">[docs]</a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">ArtifactItem</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;ArtifactItem is a dataclass that holds the information of an artifact.&quot;&quot;&quot;</span>
+
+    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">path_type</span><span class="p">:</span> <span class="n">ArtifactPathType</span>
+    <span class="n">hashed_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="resolve_dataset_name_from_cfg"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.model_utils.resolve_dataset_name_from_cfg">[docs]</a><span class="k">def</span> <span class="nf">resolve_dataset_name_from_cfg</span><span class="p">(</span><span class="n">cfg</span><span class="p">:</span> <span class="s2">&quot;DictConfig&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">Enum</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parses items of the provided sub-config to find the first potential key that resolves to an existing file or</span>
+<span class="sd">    directory.</span>
+
+<span class="sd">    # Fast-path Resolution</span>
+<span class="sd">    In order to handle cases where we need to resolve items that are not paths, a fastpath key can be provided as</span>
+<span class="sd">    defined in the global `_VAL_TEST_FASTPATH_KEY`.</span>
+
+<span class="sd">    This key can be used in two ways :</span>
+<span class="sd">    ## _VAL_TEST_FASTPATH_KEY points to another key in the config</span>
+<span class="sd">    If this _VAL_TEST_FASTPATH_KEY points to another key in this config itself, then we assume we want to loop through</span>
+<span class="sd">    the values of that key. This allows for any key in the config to become a fastpath key.</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    validation_ds:</span>
+
+<span class="sd">    .. code-block::</span>
+
+<span class="sd">        splits: &quot;val&quot;</span>
+<span class="sd">        ...</span>
+<span class="sd">        &lt;_VAL_TEST_FASTPATH_KEY&gt;: &quot;splits&quot;  &lt;-- this points to the key name &quot;splits&quot;</span>
+
+<span class="sd">    Then we can write the following when overriding in hydra:</span>
+<span class="sd">    ```python</span>
+<span class="sd">    python train_file.py ... model.validation_ds.splits=[val1, val2, dev1, dev2] ...</span>
+<span class="sd">    ```</span>
+<span class="sd">    ## _VAL_TEST_FASTPATH_KEY itself acts as the resolved key</span>
+<span class="sd">    If this _VAL_TEST_FASTPATH_KEY does not point to another key in the config, then it is assumed that the items of</span>
+<span class="sd">    this key itself are used for resolution.</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    validation_ds:</span>
+
+<span class="sd">    .. code-block::</span>
+
+<span class="sd">        &lt;_VAL_TEST_FASTPATH_KEY&gt;: &quot;val&quot;  &lt;-- this points to the key name &quot;splits&quot;</span>
+
+<span class="sd">    Then we can write the following when overriding in hydra:</span>
+<span class="sd">    ```python</span>
+<span class="sd">    python train_file.py ... model.validation_ds.&lt;_VAL_TEST_FASTPATH_KEY&gt;=[val1, val2, dev1, dev2] ...</span>
+<span class="sd">    ```</span>
+<span class="sd">    # IMPORTANT NOTE:</span>
+<span class="sd">    It &lt;can&gt; potentially mismatch if there exist more than 2 valid paths, and the first path does *not* resolve the</span>
+<span class="sd">    path of the data file (but does resolve to some other valid path). To avoid this side effect, place the data path</span>
+<span class="sd">    as the first item on the config file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    cfg: Sub-config of the config file.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A str representing the `key` of the config which hosts the filepath(s), or None in case path could not be resolved.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">_VAL_TEST_FASTPATH_KEY</span> <span class="ow">in</span> <span class="n">cfg</span> <span class="ow">and</span> <span class="n">cfg</span><span class="p">[</span><span class="n">_VAL_TEST_FASTPATH_KEY</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fastpath_key</span> <span class="o">=</span> <span class="n">cfg</span><span class="p">[</span><span class="n">_VAL_TEST_FASTPATH_KEY</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fastpath_key</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">fastpath_key</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">cfg</span><span class="p">[</span><span class="n">fastpath_key</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">_VAL_TEST_FASTPATH_KEY</span>
+
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="ow">in</span> <span class="p">[</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">ListConfig</span><span class="p">]:</span>
+            <span class="c1"># Count the number of valid paths in the list</span>
+            <span class="n">values_are_paths</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">val_i</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+                <span class="n">val_i</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">val_i</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">val_i</span><span class="p">)</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">val_i</span><span class="p">):</span>
+                    <span class="n">values_are_paths</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># reset counter and break inner loop</span>
+                    <span class="k">break</span>
+
+            <span class="k">if</span> <span class="n">values_are_paths</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">key</span>
+
+        <span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">))</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="n">key</span>
+
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="parse_dataset_as_name"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.model_utils.parse_dataset_as_name">[docs]</a><span class="k">def</span> <span class="nf">parse_dataset_as_name</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Constructs a valid prefix-name from a provided file path.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name: Path to some valid data/manifest file or a python object that will be used as a name for the data loader (via</span>
+<span class="sd">    str() cast).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A valid prefix-name for the data loader.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">stem</span> <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="k">else</span> <span class="n">name</span>
+    <span class="c1"># cleanup name</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="s2">&quot;manifest&quot;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;manifest&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="s2">&quot;dataset&quot;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;dataset&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Test if the manifest/dataset name was simply `manifest.yaml` or `dataset.yaml`: Invalid names.</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Provided dataset / manifest filename was `manifest.json` or `dataset.json`.</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;Such a name is invalid, since multiple datasets/manifests can share the same name,</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;thereby overriding their results during logging. Please pick a more descriptive filename </span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;for the provided dataset / manifest file.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">name</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;_&quot;</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_&quot;</span>
+
+    <span class="k">return</span> <span class="n">name</span></div>
+
+
+<div class="viewcode-block" id="unique_names_check"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.model_utils.unique_names_check">[docs]</a><span class="k">def</span> <span class="nf">unique_names_check</span><span class="p">(</span><span class="n">name_list</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Performs a uniqueness check on the name list resolved, so that it can warn users about non-unique keys.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name_list: List of strings resolved for data loaders.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">name_list</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Name uniqueness checks</span>
+    <span class="n">names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">name_list</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Name resolution has found more than one data loader having the same name !</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;In such cases, logs will nor be properly generated. &quot;</span>
+                <span class="s2">&quot;Please rename the item to have unique names.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Resolved name : </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">names</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>  <span class="c1"># we need just hash key check, value is just a placeholder</span></div>
+
+
+<div class="viewcode-block" id="resolve_validation_dataloaders"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.model_utils.resolve_validation_dataloaders">[docs]</a><span class="k">def</span> <span class="nf">resolve_validation_dataloaders</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">ModelPT</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper method that operates on the ModelPT class to automatically support multiple dataloaders for the validation</span>
+<span class="sd">    set. It does so by first resolving the path to one/more data files via `resolve_dataset_name_from_cfg()`.</span>
+<span class="sd">    If this resolution fails, it assumes the data loader is prepared to manually support / not support multiple data</span>
+<span class="sd">    loaders and simply calls the appropriate setup method.</span>
+<span class="sd">    If resolution succeeds:</span>
+<span class="sd">    - Checks if provided path is to a single file or a list of files.</span>
+<span class="sd">    If a single file is provided, simply tags that file as such and loads it via the setup method.</span>
+<span class="sd">    If multiple files are provided:</span>
+<span class="sd">    - Inject a new manifest path at index &quot;i&quot; into the resolved key.</span>
+<span class="sd">    - Calls the appropriate setup method to set the data loader.</span>
+<span class="sd">    - Collects the initialized data loader in a list and preserves it.</span>
+<span class="sd">    - Once all data loaders are processed, assigns the list of loaded loaders to the ModelPT.</span>
+<span class="sd">    - Finally, assigns a list of unique names resolved from the file paths to the ModelPT.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model: ModelPT subclass, which requires &gt;=1 Validation Dataloaders to be setup.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_HAS_HYDRA</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;This function requires Hydra/OmegaConf and it was not installed.&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">_cfg</span><span class="p">)</span>
+    <span class="n">dataloaders</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># process val_loss_idx</span>
+    <span class="k">if</span> <span class="s2">&quot;val_dl_idx&quot;</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">validation_ds</span><span class="p">:</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">to_container</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+        <span class="n">val_dl_idx</span> <span class="o">=</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;validation_ds&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;val_dl_idx&quot;</span><span class="p">)</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">val_dl_idx</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1"># Set val_loss_idx</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">_val_dl_idx</span> <span class="o">=</span> <span class="n">val_dl_idx</span>
+
+    <span class="n">ds_key</span> <span class="o">=</span> <span class="n">resolve_dataset_name_from_cfg</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">validation_ds</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">ds_key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Could not resolve file path from provided config - </span><span class="si">{</span><span class="n">cfg</span><span class="o">.</span><span class="n">validation_ds</span><span class="si">}</span><span class="s2">. &quot;</span>
+            <span class="s2">&quot;Disabling support for multi-dataloaders.&quot;</span>
+        <span class="p">)</span>
+
+        <span class="n">model</span><span class="o">.</span><span class="n">setup_validation_data</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">validation_ds</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="n">ds_values</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">validation_ds</span><span class="p">[</span><span class="n">ds_key</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds_values</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">ListConfig</span><span class="p">)):</span>
+
+        <span class="k">for</span> <span class="n">ds_value</span> <span class="ow">in</span> <span class="n">ds_values</span><span class="p">:</span>
+            <span class="n">cfg</span><span class="o">.</span><span class="n">validation_ds</span><span class="p">[</span><span class="n">ds_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds_value</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">setup_validation_data</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">validation_ds</span><span class="p">)</span>
+            <span class="n">dataloaders</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">validation_dl</span><span class="p">)</span>
+
+        <span class="n">model</span><span class="o">.</span><span class="n">validation_dl</span> <span class="o">=</span> <span class="n">dataloaders</span>  <span class="c1"># type: ignore</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">validation_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">parse_dataset_as_name</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span> <span class="k">for</span> <span class="n">ds</span> <span class="ow">in</span> <span class="n">ds_values</span><span class="p">]</span>  <span class="c1"># type: ignore</span>
+
+        <span class="n">unique_names_check</span><span class="p">(</span><span class="n">name_list</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">validation_names</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">setup_validation_data</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">validation_ds</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">validation_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">parse_dataset_as_name</span><span class="p">(</span><span class="n">ds_values</span><span class="p">)]</span>
+
+    <span class="n">unique_names_check</span><span class="p">(</span><span class="n">name_list</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">validation_names</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">resolve_test_dataloaders</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="s2">&quot;ModelPT&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper method that operates on the ModelPT class to automatically support</span>
+<span class="sd">    multiple dataloaders for the test set.</span>
+<span class="sd">    It does so by first resolving the path to one/more data files via `resolve_dataset_name_from_cfg()`.</span>
+<span class="sd">    If this resolution fails, it assumes the data loader is prepared to manually support / not support</span>
+<span class="sd">    multiple data loaders and simply calls the appropriate setup method.</span>
+<span class="sd">    If resolution succeeds:</span>
+<span class="sd">        Checks if provided path is to a single file or a list of files.</span>
+<span class="sd">        If a single file is provided, simply tags that file as such and loads it via the setup method.</span>
+<span class="sd">        If multiple files are provided:</span>
+<span class="sd">            Inject a new manifest path at index &quot;i&quot; into the resolved key.</span>
+<span class="sd">            Calls the appropriate setup method to set the data loader.</span>
+<span class="sd">            Collects the initialized data loader in a list and preserves it.</span>
+<span class="sd">            Once all data loaders are processed, assigns the list of loaded loaders to the ModelPT.</span>
+<span class="sd">            Finally, assigns a list of unique names resolved from the file paths to the ModelPT.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model: ModelPT subclass, which requires &gt;=1 Test Dataloaders to be setup.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_HAS_HYDRA</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;This function requires Hydra/OmegaConf and it was not installed.&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">_cfg</span><span class="p">)</span>
+    <span class="n">dataloaders</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># process test_loss_idx</span>
+    <span class="k">if</span> <span class="s2">&quot;test_dl_idx&quot;</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">test_ds</span><span class="p">:</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">to_container</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+        <span class="n">test_dl_idx</span> <span class="o">=</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;test_ds&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;test_dl_idx&quot;</span><span class="p">)</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">test_dl_idx</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1"># Set val_loss_idx</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">_test_dl_idx</span> <span class="o">=</span> <span class="n">test_dl_idx</span>
+
+    <span class="n">ds_key</span> <span class="o">=</span> <span class="n">resolve_dataset_name_from_cfg</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">test_ds</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">ds_key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Could not resolve file path from provided config - </span><span class="si">{</span><span class="n">cfg</span><span class="o">.</span><span class="n">test_ds</span><span class="si">}</span><span class="s2">. &quot;</span>
+            <span class="s2">&quot;Disabling support for multi-dataloaders.&quot;</span>
+        <span class="p">)</span>
+
+        <span class="n">model</span><span class="o">.</span><span class="n">setup_test_data</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">test_ds</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="n">ds_values</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">test_ds</span><span class="p">[</span><span class="n">ds_key</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds_values</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">ListConfig</span><span class="p">)):</span>
+
+        <span class="k">for</span> <span class="n">ds_value</span> <span class="ow">in</span> <span class="n">ds_values</span><span class="p">:</span>
+            <span class="n">cfg</span><span class="o">.</span><span class="n">test_ds</span><span class="p">[</span><span class="n">ds_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds_value</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">setup_test_data</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">test_ds</span><span class="p">)</span>
+            <span class="n">dataloaders</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">test_dl</span><span class="p">)</span>
+
+        <span class="n">model</span><span class="o">.</span><span class="n">test_dl</span> <span class="o">=</span> <span class="n">dataloaders</span>  <span class="c1"># type: ignore</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">test_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">parse_dataset_as_name</span><span class="p">(</span><span class="n">ds</span><span class="p">)</span> <span class="k">for</span> <span class="n">ds</span> <span class="ow">in</span> <span class="n">ds_values</span><span class="p">]</span>  <span class="c1"># type: ignore</span>
+
+        <span class="n">unique_names_check</span><span class="p">(</span><span class="n">name_list</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">test_names</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">setup_test_data</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">test_ds</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">test_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">parse_dataset_as_name</span><span class="p">(</span><span class="n">ds_values</span><span class="p">)]</span>
+
+    <span class="n">unique_names_check</span><span class="p">(</span><span class="n">name_list</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">test_names</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="wrap_training_step"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.model_utils.wrap_training_step">[docs]</a><span class="nd">@wrapt</span><span class="o">.</span><span class="n">decorator</span>
+<span class="k">def</span> <span class="nf">wrap_training_step</span><span class="p">(</span><span class="n">wrapped</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">LightningModule</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Wraps the training step of the LightningModule.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    wrapped: The wrapped function.</span>
+<span class="sd">    instance: The LightningModule instance.</span>
+<span class="sd">    args: The arguments passed to the wrapped function.</span>
+<span class="sd">    kwargs: The keyword arguments passed to the wrapped function.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    The return value of the wrapped function.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">output_dict</span> <span class="o">=</span> <span class="n">wrapped</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output_dict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="n">output_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="s2">&quot;log&quot;</span> <span class="ow">in</span> <span class="n">output_dict</span><span class="p">:</span>
+        <span class="n">log_dict</span> <span class="o">=</span> <span class="n">output_dict</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;log&quot;</span><span class="p">)</span>
+        <span class="n">instance</span><span class="o">.</span><span class="n">log_dict</span><span class="p">(</span><span class="n">log_dict</span><span class="p">,</span> <span class="n">on_step</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">output_dict</span></div>
+
+
+<div class="viewcode-block" id="convert_model_config_to_dict_config"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.model_utils.convert_model_config_to_dict_config">[docs]</a><span class="k">def</span> <span class="nf">convert_model_config_to_dict_config</span><span class="p">(</span><span class="n">cfg</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">DictConfig</span><span class="p">,</span> <span class="n">MRIDCConfig</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">DictConfig</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts its input into a standard DictConfig.</span>
+
+<span class="sd">    Possible input values are:</span>
+<span class="sd">        - DictConfig</span>
+<span class="sd">        - A dataclass which is a subclass of MRIDCConfig</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    cfg: A dict-like object.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    The equivalent DictConfig.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_HAS_HYDRA</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;This function requires Hydra/OmegaConf and it was not installed.&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="p">(</span><span class="n">OmegaConf</span><span class="p">,</span> <span class="n">DictConfig</span><span class="p">))</span> <span class="ow">and</span> <span class="n">is_dataclass</span><span class="p">(</span><span class="n">cfg</span><span class="p">):</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">structured</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">DictConfig</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;cfg constructor argument must be of type DictConfig/dict but got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span><span class="si">}</span><span class="s2"> instead.&quot;</span><span class="p">)</span>
+
+    <span class="n">config</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">to_container</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">resolve</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">config</span></div>
+
+
+<span class="k">def</span> <span class="nf">_convert_config</span><span class="p">(</span><span class="n">cfg</span><span class="p">:</span> <span class="s2">&quot;OmegaConf&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Recursive function converting the configuration from old hydra format to the new one.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_HAS_HYDRA</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;This function requires Hydra/OmegaConf and it was not installed.&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Get rid of cls -&gt; _target_.</span>
+    <span class="k">if</span> <span class="s2">&quot;cls&quot;</span> <span class="ow">in</span> <span class="n">cfg</span> <span class="ow">and</span> <span class="s2">&quot;_target_&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">:</span>
+        <span class="n">cfg</span><span class="o">.</span><span class="n">_target_</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;cls&quot;</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+    <span class="c1"># Get rid of params.</span>
+    <span class="k">if</span> <span class="s2">&quot;params&quot;</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">:</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;params&quot;</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+        <span class="k">for</span> <span class="n">param_key</span><span class="p">,</span> <span class="n">param_val</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">cfg</span><span class="p">[</span><span class="n">param_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">param_val</span>
+
+    <span class="c1"># Recursion.</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">sub_cfg</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>  <span class="c1"># type: ignore</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sub_cfg</span><span class="p">,</span> <span class="n">DictConfig</span><span class="p">):</span>
+                <span class="n">_convert_config</span><span class="p">(</span><span class="n">sub_cfg</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+    <span class="k">except</span> <span class="n">OmegaConfBaseException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Skipped conversion for config/subconfig:</span><span class="se">\n</span><span class="si">{</span><span class="n">cfg</span><span class="si">}</span><span class="se">\n</span><span class="s2"> Reason: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="maybe_update_config_version"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.model_utils.maybe_update_config_version">[docs]</a><span class="k">def</span> <span class="nf">maybe_update_config_version</span><span class="p">(</span><span class="n">cfg</span><span class="p">:</span> <span class="s2">&quot;DictConfig&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Recursively convert Hydra 0.x configs to Hydra 1.x configs.</span>
+<span class="sd">    Changes include:</span>
+<span class="sd">    -   `cls` -&gt; `_target_`.</span>
+<span class="sd">    -   `params` -&gt; drop params and shift all arguments to parent.</span>
+<span class="sd">    -   `target` -&gt; `_target_` cannot be performed due to ModelPT injecting `target` inside class.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    cfg: Any Hydra compatible DictConfig</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    An updated DictConfig that conforms to Hydra 1.x format.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_HAS_HYDRA</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;This function requires Hydra/OmegaConf and it was not installed.&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">cfg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">DictConfig</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">temp_cfg</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+            <span class="n">cfg</span> <span class="o">=</span> <span class="n">temp_cfg</span>
+        <span class="k">except</span> <span class="n">OmegaConfBaseException</span><span class="p">:</span>
+            <span class="c1"># Cannot be cast to DictConfig, skip updating.</span>
+            <span class="k">return</span> <span class="n">cfg</span>
+
+    <span class="c1"># Make a copy of model config.</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+    <span class="n">OmegaConf</span><span class="o">.</span><span class="n">set_struct</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+    <span class="c1"># Convert config.</span>
+    <span class="n">_convert_config</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+    <span class="c1"># Update model config.</span>
+    <span class="n">OmegaConf</span><span class="o">.</span><span class="n">set_struct</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">cfg</span></div>
+
+
+<div class="viewcode-block" id="import_class_by_path"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.model_utils.import_class_by_path">[docs]</a><span class="k">def</span> <span class="nf">import_class_by_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Recursive import of class by path string.&quot;&quot;&quot;</span>
+    <span class="n">paths</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">paths</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">class_name</span> <span class="o">=</span> <span class="n">paths</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">mod</span> <span class="o">=</span> <span class="nb">__import__</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">fromlist</span><span class="o">=</span><span class="p">[</span><span class="n">class_name</span><span class="p">])</span>
+    <span class="n">mod</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="n">class_name</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">mod</span></div>
+
+
+<div class="viewcode-block" id="resolve_subclass_pretrained_model_info"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.model_utils.resolve_subclass_pretrained_model_info">[docs]</a><span class="k">def</span> <span class="nf">resolve_subclass_pretrained_model_info</span><span class="p">(</span><span class="n">base_class</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">PretrainedModelInfo</span><span class="p">],</span> <span class="n">Set</span><span class="p">[</span><span class="n">Any</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Recursively traverses the inheritance graph of subclasses to extract all pretrained model info.</span>
+<span class="sd">    First constructs a set of unique pretrained model info by performing DFS over the inheritance graph.</span>
+<span class="sd">    All model info belonging to the same class is added together.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    base_class: The root class, whose subclass graph will be traversed.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A list of unique pretrained model infos belonging to all the inherited subclasses of this baseclass.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">list_of_models</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">recursive_subclass_walk</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Recursively traverses the inheritance graph of subclasses to extract all pretrained model info.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        cls: The class to be traversed.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        A list of unique pretrained model infos belonging to all the inherited subclasses of this baseclass.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">subclass</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">__subclasses__</span><span class="p">():</span>
+            <span class="c1"># step into its immediate subclass</span>
+            <span class="n">recursive_subclass_walk</span><span class="p">(</span><span class="n">subclass</span><span class="p">)</span>
+
+            <span class="n">subclass_models</span> <span class="o">=</span> <span class="n">subclass</span><span class="o">.</span><span class="n">list_available_models</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">subclass_models</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">subclass_models</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c1"># Inject subclass info into pretrained model info, if not already overridden by subclass.</span>
+                <span class="k">for</span> <span class="n">model_info</span> <span class="ow">in</span> <span class="n">subclass_models</span><span class="p">:</span>
+                    <span class="c1"># If subclass manually injects class_, dont override.</span>
+                    <span class="k">if</span> <span class="n">model_info</span><span class="o">.</span><span class="n">class_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">model_info</span><span class="o">.</span><span class="n">class_</span> <span class="o">=</span> <span class="n">subclass</span>
+
+                <span class="k">for</span> <span class="n">model_info</span> <span class="ow">in</span> <span class="n">subclass_models</span><span class="p">:</span>
+                    <span class="n">list_of_models</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">model_info</span><span class="p">)</span>
+
+    <span class="n">recursive_subclass_walk</span><span class="p">(</span><span class="n">base_class</span><span class="p">)</span>
+    <span class="n">list_of_models</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">list_of_models</span><span class="p">))</span>  <span class="c1"># type: ignore</span>
+    <span class="k">return</span> <span class="n">list_of_models</span></div>
+
+
+<div class="viewcode-block" id="check_lib_version"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.model_utils.check_lib_version">[docs]</a><span class="k">def</span> <span class="nf">check_lib_version</span><span class="p">(</span><span class="n">lib_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">checked_version</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">operator</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Checks if a library is installed, and if it is, checks the operator(lib.__version__, checked_version) as a result.</span>
+<span class="sd">    This bool result along with a string analysis of result is returned.</span>
+<span class="sd">    If the library is not installed at all, then returns None instead, along with a string explaining</span>
+<span class="sd">    that the library is not installed</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    lib_name: lower case str name of the library that must be imported.</span>
+<span class="sd">    checked_version: semver string that is compared against lib.__version__.</span>
+<span class="sd">    operator: binary callable function func(a, b) -&gt; bool; that compares lib.__version__ against version in some</span>
+<span class="sd">    manner. Must return a boolean.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A tuple of results:</span>
+<span class="sd">        -   Bool or None. Bool if the library could be imported, and the result of</span>
+<span class="sd">            operator(lib.__version__, checked_version) or False if __version__ is not implemented in lib.</span>
+<span class="sd">            None is passed if the library is not installed at all.</span>
+<span class="sd">        -   A string analysis of the check.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s2">&quot;.&quot;</span> <span class="ow">in</span> <span class="n">lib_name</span><span class="p">:</span>
+            <span class="n">mod</span> <span class="o">=</span> <span class="n">import_class_by_path</span><span class="p">(</span><span class="n">lib_name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mod</span> <span class="o">=</span> <span class="nb">__import__</span><span class="p">(</span><span class="n">lib_name</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="s2">&quot;__version__&quot;</span><span class="p">):</span>
+            <span class="n">lib_ver</span> <span class="o">=</span> <span class="n">Version</span><span class="p">(</span><span class="n">mod</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+            <span class="n">match_ver</span> <span class="o">=</span> <span class="n">Version</span><span class="p">(</span><span class="n">checked_version</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+            <span class="k">if</span> <span class="n">operator</span><span class="p">(</span><span class="n">lib_ver</span><span class="p">,</span> <span class="n">match_ver</span><span class="p">):</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Lib </span><span class="si">{</span><span class="n">lib_name</span><span class="si">}</span><span class="s2"> version is satisfied !&quot;</span>
+                <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="n">msg</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Lib </span><span class="si">{</span><span class="n">lib_name</span><span class="si">}</span><span class="s2"> version (</span><span class="si">{</span><span class="n">lib_ver</span><span class="si">}</span><span class="s2">) is not </span><span class="si">{</span><span class="n">operator</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> than required version &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">checked_version</span><span class="si">}</span><span class="s2">.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Please upgrade the lib using either pip or conda to the latest version.&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="n">msg</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Lib </span><span class="si">{</span><span class="n">lib_name</span><span class="si">}</span><span class="s2"> does not implement __version__ in its init file. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Could not check version compatibility.&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="n">msg</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+    <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Lib </span><span class="si">{</span><span class="n">lib_name</span><span class="si">}</span><span class="s2"> has not been installed. Please use pip or conda to install this package.&quot;</span>
+    <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="n">msg</span></div>
+
+
+<div class="viewcode-block" id="resolve_cache_dir"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.model_utils.resolve_cache_dir">[docs]</a><span class="k">def</span> <span class="nf">resolve_cache_dir</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Utility method to resolve a cache directory for MRIDC that can be overridden by an environment variable.</span>
+<span class="sd">    Example:</span>
+<span class="sd">        MRIDC_CACHE_DIR=&quot;~/mridc_cache_dir/&quot; python mridc_example_script.py</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A Path object, resolved to the absolute path of the cache directory. If no override is provided, uses an inbuilt</span>
+<span class="sd">    default which adapts to mridc versions strings.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">override_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">MRIDC_ENV_CACHE_DIR</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">Path</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">(),</span> <span class="sa">f</span><span class="s2">&quot;.cache/torch/MRIDC/MRIDC_</span><span class="si">{</span><span class="n">mridc</span><span class="o">.</span><span class="n">__version__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">override_dir</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">else</span> <span class="n">Path</span><span class="p">(</span><span class="n">override_dir</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="uninject_model_parallel_rank"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.model_utils.uninject_model_parallel_rank">[docs]</a><span class="k">def</span> <span class="nf">uninject_model_parallel_rank</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Uninjects tensor/pipeline model parallel ranks from the filepath.&quot;&quot;&quot;</span>
+    <span class="n">filepath</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s2">&quot;mp_rank&quot;</span> <span class="ow">in</span> <span class="n">filepath</span> <span class="ow">or</span> <span class="s2">&quot;tp_rank&quot;</span> <span class="ow">in</span> <span class="n">filepath</span><span class="p">:</span>
+        <span class="n">dirname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">filepath</span><span class="p">))</span>
+        <span class="n">basename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+        <span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirname</span><span class="p">,</span> <span class="n">basename</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">filepath</span></div>
+
+
+<div class="viewcode-block" id="inject_model_parallel_rank"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.model_utils.inject_model_parallel_rank">[docs]</a><span class="k">def</span> <span class="nf">inject_model_parallel_rank</span><span class="p">(</span><span class="n">filepath</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Injects tensor/pipeline model parallel ranks into the filepath. Does nothing if not using model parallelism.&quot;&quot;&quot;</span>
+    <span class="n">filepath</span> <span class="o">=</span> <span class="n">uninject_model_parallel_rank</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+    <span class="n">app_state</span> <span class="o">=</span> <span class="n">AppState</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">app_state</span><span class="o">.</span><span class="n">model_parallel_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">app_state</span><span class="o">.</span><span class="n">model_parallel_size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="c1"># filepath needs to be updated to include mp_rank</span>
+        <span class="n">dirname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+        <span class="n">basename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">app_state</span><span class="o">.</span><span class="n">pipeline_model_parallel_size</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">app_state</span><span class="o">.</span><span class="n">pipeline_model_parallel_size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">filepath</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dirname</span><span class="si">}</span><span class="s2">/mp_rank_</span><span class="si">{</span><span class="n">app_state</span><span class="o">.</span><span class="n">tensor_model_parallel_rank</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">basename</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">filepath</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dirname</span><span class="si">}</span><span class="s2">/tp_rank_</span><span class="si">{</span><span class="n">app_state</span><span class="o">.</span><span class="n">tensor_model_parallel_rank</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">_pp_rank_&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">app_state</span><span class="o">.</span><span class="n">pipeline_model_parallel_rank</span><span class="si">:</span><span class="s2">03d</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">basename</span><span class="si">}</span><span class="s2"> &quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">filepath</span>
+    <span class="k">return</span> <span class="n">filepath</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

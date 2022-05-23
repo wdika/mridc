@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.launch &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      <li>mridc.launch</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.launch</h1><div class="highlight"><pre>
+<span></span><span class="c1"># encoding: utf-8</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="kn">import</span> <span class="nn">pytorch_lightning</span> <span class="k">as</span> <span class="nn">pl</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">omegaconf</span> <span class="kn">import</span> <span class="n">DictConfig</span><span class="p">,</span> <span class="n">OmegaConf</span>
+
+<span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.models.ccnn</span> <span class="kn">import</span> <span class="n">CascadeNet</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.models.cirim</span> <span class="kn">import</span> <span class="n">CIRIM</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.models.crnn</span> <span class="kn">import</span> <span class="n">CRNNet</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.models.dunet</span> <span class="kn">import</span> <span class="n">DUNet</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.models.jointicnet</span> <span class="kn">import</span> <span class="n">JointICNet</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.models.kikinet</span> <span class="kn">import</span> <span class="n">KIKINet</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.models.lpd</span> <span class="kn">import</span> <span class="n">LPDNet</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.models.multidomainnet</span> <span class="kn">import</span> <span class="n">MultiDomainNet</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.models.pics</span> <span class="kn">import</span> <span class="n">PICS</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.models.rvn</span> <span class="kn">import</span> <span class="n">RecurrentVarNet</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.models.unet</span> <span class="kn">import</span> <span class="n">UNet</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.models.vn</span> <span class="kn">import</span> <span class="n">VarNet</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.models.vsnet</span> <span class="kn">import</span> <span class="n">VSNet</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.models.xpdnet</span> <span class="kn">import</span> <span class="n">XPDNet</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.models.zf</span> <span class="kn">import</span> <span class="n">ZF</span>
+<span class="kn">from</span> <span class="nn">mridc.core.conf.hydra_runner</span> <span class="kn">import</span> <span class="n">hydra_runner</span>
+<span class="kn">from</span> <span class="nn">mridc.utils</span> <span class="kn">import</span> <span class="n">logging</span>
+<span class="kn">from</span> <span class="nn">mridc.utils.exp_manager</span> <span class="kn">import</span> <span class="n">exp_manager</span>
+
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../mridc.html#mridc.launch.main">[docs]</a><span class="nd">@hydra_runner</span><span class="p">(</span><span class="n">config_path</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">config_name</span><span class="o">=</span><span class="s2">&quot;config&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">cfg</span><span class="p">:</span> <span class="n">DictConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Main function for training and running a model</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    cfg: Configuration (yaml) file.</span>
+<span class="sd">        DictConfig</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Config: </span><span class="si">{</span><span class="n">OmegaConf</span><span class="o">.</span><span class="n">to_yaml</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">trainer</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">Trainer</span><span class="p">(</span><span class="o">**</span><span class="n">cfg</span><span class="o">.</span><span class="n">trainer</span><span class="p">)</span>
+    <span class="n">exp_manager</span><span class="p">(</span><span class="n">trainer</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exp_manager&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+
+    <span class="n">model_name</span> <span class="o">=</span> <span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">model</span><span class="p">[</span><span class="s2">&quot;model_name&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">model_name</span> <span class="o">==</span> <span class="s2">&quot;CASCADENET&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">CascadeNet</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">trainer</span><span class="o">=</span><span class="n">trainer</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">model_name</span> <span class="o">==</span> <span class="s2">&quot;CIRIM&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">CIRIM</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">trainer</span><span class="o">=</span><span class="n">trainer</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">model_name</span> <span class="o">==</span> <span class="s2">&quot;CRNNET&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">CRNNet</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">trainer</span><span class="o">=</span><span class="n">trainer</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">model_name</span> <span class="o">==</span> <span class="s2">&quot;DUNET&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">DUNet</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">trainer</span><span class="o">=</span><span class="n">trainer</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">model_name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;E2EVN&quot;</span><span class="p">,</span> <span class="s2">&quot;VN&quot;</span><span class="p">):</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">VarNet</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">trainer</span><span class="o">=</span><span class="n">trainer</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">model_name</span> <span class="o">==</span> <span class="s2">&quot;JOINTICNET&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">JointICNet</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">trainer</span><span class="o">=</span><span class="n">trainer</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">model_name</span> <span class="o">==</span> <span class="s2">&quot;KIKINET&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">KIKINet</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">trainer</span><span class="o">=</span><span class="n">trainer</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">model_name</span> <span class="o">==</span> <span class="s2">&quot;LPDNET&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">LPDNet</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">trainer</span><span class="o">=</span><span class="n">trainer</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">model_name</span> <span class="o">==</span> <span class="s2">&quot;MULTIDOMAINNET&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">MultiDomainNet</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">trainer</span><span class="o">=</span><span class="n">trainer</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">model_name</span> <span class="o">==</span> <span class="s2">&quot;PICS&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">PICS</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">trainer</span><span class="o">=</span><span class="n">trainer</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">model_name</span> <span class="o">==</span> <span class="s2">&quot;RVN&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">RecurrentVarNet</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">trainer</span><span class="o">=</span><span class="n">trainer</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">model_name</span> <span class="o">==</span> <span class="s2">&quot;UNET&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">UNet</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">trainer</span><span class="o">=</span><span class="n">trainer</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">model_name</span> <span class="o">==</span> <span class="s2">&quot;VSNET&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">VSNet</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">trainer</span><span class="o">=</span><span class="n">trainer</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">model_name</span> <span class="o">==</span> <span class="s2">&quot;XPDNET&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">XPDNet</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">trainer</span><span class="o">=</span><span class="n">trainer</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">model_name</span> <span class="o">==</span> <span class="s2">&quot;ZF&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">ZF</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">trainer</span><span class="o">=</span><span class="n">trainer</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> is not implemented in MRIDC. You can use one of the following methods: &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;CASCADENET, CIRIM, CRNNET, DUNET, E2EVN, JOINTICNET, KIKINET, LPDNET, MULTIDOMAINNET, PICS, RVN, UNET, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;VSNET, XPDNET, or Zero-Filled. /n&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;If you implemented a new model, please consider adding it through a PR on GitHub.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pretrained&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="n">checkpoint</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;checkpoint&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loading pretrained model from </span><span class="si">{</span><span class="n">checkpoint</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)[</span><span class="s2">&quot;state_dict&quot;</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;train&quot;</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Validating&quot;</span><span class="p">)</span>
+        <span class="n">trainer</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Training&quot;</span><span class="p">)</span>
+        <span class="n">trainer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Evaluating&quot;</span><span class="p">)</span>
+        <span class="n">trainer</span><span class="o">.</span><span class="n">test</span><span class="p">(</span><span class="n">model</span><span class="p">)</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

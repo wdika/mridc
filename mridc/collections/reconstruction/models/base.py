@@ -10,15 +10,18 @@ from typing import Dict, Optional, Tuple
 import h5py
 import numpy as np
 import torch
+import wandb
 from omegaconf import DictConfig
 from pytorch_lightning import Trainer
 from torch import nn
 from torch.utils.data import DataLoader
+from torchmetrics.metric import Metric
 
 from mridc.collections.common.parts.fft import ifft2c
 from mridc.collections.common.parts.utils import rss_complex
 from mridc.collections.reconstruction.data.mri_data import FastMRISliceDataset
 from mridc.collections.reconstruction.data.subsample import create_mask_for_mask_type
+from mridc.collections.reconstruction.metrics.evaluate import mse, nmse, psnr, ssim
 from mridc.collections.reconstruction.models.unet_base.unet_block import NormUnet
 from mridc.collections.reconstruction.parts.transforms import MRIDataTransforms
 from mridc.collections.reconstruction.parts.utils import batched_mask_center
@@ -26,6 +29,26 @@ from mridc.core.classes.modelPT import ModelPT
 from mridc.utils.model_utils import convert_model_config_to_dict_config, maybe_update_config_version
 
 __all__ = ["BaseMRIReconstructionModel", "BaseSensitivityModel"]
+
+
+class DistributedMetricSum(Metric):
+    """
+    A metric that sums the values of a metric across all workers.
+    Taken from: https://github.com/facebookresearch/fastMRI/blob/main/fastmri/pl_modules/mri_module.py
+    """
+
+    def __init__(self, dist_sync_on_step=True):
+        super().__init__(dist_sync_on_step=dist_sync_on_step)
+
+        self.add_state("quantity", default=torch.tensor(0.0), dist_reduce_fx="sum")
+
+    def update(self, batch: torch.Tensor):  # type: ignore
+        """Update the metric with a batch of data."""
+        self.quantity += batch
+
+    def compute(self):
+        """Compute the metric value."""
+        return self.quantity
 
 
 class BaseMRIReconstructionModel(ModelPT, ABC):
@@ -36,13 +59,25 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         # Get global rank and total number of GPU workers for IterableDataset partitioning, if applicable
         self.world_size = 1
         if trainer is not None:
-            self.world_size = trainer.num_nodes * trainer.num_gpus
+            self.world_size = trainer.num_nodes * trainer.num_devices
 
         cfg = convert_model_config_to_dict_config(cfg)
         cfg = maybe_update_config_version(cfg)
 
         # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
+
+        self.MSE = DistributedMetricSum()
+        self.NMSE = DistributedMetricSum()
+        self.SSIM = DistributedMetricSum()
+        self.PSNR = DistributedMetricSum()
+        self.TotExamples = DistributedMetricSum()
+
+        # Set evaluation metrics dictionaries
+        self.mse_vals: Dict = defaultdict(dict)
+        self.nmse_vals: Dict = defaultdict(dict)
+        self.ssim_vals: Dict = defaultdict(dict)
+        self.psnr_vals: Dict = defaultdict(dict)
 
     # skipcq: PYL-R0201
     def process_loss(self, target, pred, _loss_fn):
@@ -85,7 +120,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         return loss_fn(target, pred)
 
     @staticmethod
-    def process_inputs(y, mask):
+    def process_inputs(y, mask, init_pred):
         """
         Processes the inputs to the method.
 
@@ -95,6 +130,8 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
             list of torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
         mask: Sampling mask.
             list of torch.Tensor, shape [1, 1, n_x, n_y, 1]
+        init_pred: Initial prediction.
+            list of torch.Tensor, shape [batch_size, n_x, n_y, 2]
 
         Returns
         -------
@@ -102,6 +139,8 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
             randomly selected y
         mask: Sampling mask.
             randomly selected mask
+        init_pred: Initial prediction.
+            randomly selected init_pred
         r: Random index.
         """
         if isinstance(y, list):
@@ -110,7 +149,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
             mask = mask[r]
         else:
             r = 0
-        return y, mask, r
+        return y, mask, init_pred, r
 
     def training_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
         """
@@ -153,7 +192,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
             dict, shape [1]
         """
         y, sensitivity_maps, mask, init_pred, target, _, _, acc = batch
-        y, mask, r = self.process_inputs(y, mask)
+        y, mask, init_pred, r = self.process_inputs(y, mask, init_pred)
         preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
 
         if self.accumulate_estimates:
@@ -179,9 +218,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
 
         Parameters
         ----------
-        batch: Batch of data.
-            Dict[str, torch.Tensor], with keys,
-
+        batch: Batch of data. Dict[str, torch.Tensor], with keys,
             'y': subsampled kspace,
                 torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
             'sensitivity_maps': sensitivity_maps,
@@ -214,7 +251,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
             dict, shape [1]
         """
         y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
-        y, mask, _ = self.process_inputs(y, mask)
+        y, mask, init_pred, _ = self.process_inputs(y, mask, init_pred)
         preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
 
         if self.accumulate_estimates:
@@ -245,6 +282,17 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         self.log_image(f"{key}/reconstruction", output)
         self.log_image(f"{key}/error", error)
 
+        target = target.numpy()  # type: ignore
+        output = output.numpy()  # type: ignore
+        self.mse_vals[fname][slice_num] = torch.tensor(mse(target, output)).view(1)
+        self.nmse_vals[fname][slice_num] = torch.tensor(nmse(target, output)).view(1)
+        self.ssim_vals[fname][slice_num] = torch.tensor(ssim(target, output, maxval=output.max() - output.min())).view(
+            1
+        )
+        self.psnr_vals[fname][slice_num] = torch.tensor(psnr(target, output, maxval=output.max() - output.min())).view(
+            1
+        )
+
         return {"val_loss": val_loss}
 
     def test_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Tuple[str, int, torch.Tensor]:
@@ -253,9 +301,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
 
         Parameters
         ----------
-        batch: Batch of data.
-            Dict[str, torch.Tensor], with keys,
-
+        batch: Batch of data. Dict[str, torch.Tensor], with keys,
             'y': subsampled kspace,
                 torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
             'sensitivity_maps': sensitivity_maps,
@@ -289,7 +335,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
             torch.Tensor, shape [batch_size, n_x, n_y, 2]
         """
         y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
-        y, mask, _ = self.process_inputs(y, mask)
+        y, mask, init_pred, _ = self.process_inputs(y, mask, init_pred)
         preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
 
         if self.accumulate_estimates:
@@ -334,9 +380,11 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
             str
         image: Image to log.
             torch.Tensor, shape [batch_size, n_x, n_y, 2]
-
         """
-        self.logger.experiment.add_image(name, image, global_step=self.global_step)
+        if "wandb" in self.logger.__module__.lower():
+            self.logger.experiment.log({name: wandb.Image(image.numpy())})
+        else:
+            self.logger.experiment.add_image(name, image, global_step=self.global_step)
 
     def validation_epoch_end(self, outputs):
         """
@@ -353,6 +401,48 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
             dict
         """
         self.log("val_loss", torch.stack([x["val_loss"] for x in outputs]).mean())
+
+        # Log metrics.
+        # Taken from: https://github.com/facebookresearch/fastMRI/blob/main/fastmri/pl_modules/mri_module.py
+        mse_vals = defaultdict(dict)
+        nmse_vals = defaultdict(dict)
+        ssim_vals = defaultdict(dict)
+        psnr_vals = defaultdict(dict)
+
+        for k in self.mse_vals.keys():
+            mse_vals[k].update(self.mse_vals[k])
+        for k in self.nmse_vals.keys():
+            nmse_vals[k].update(self.nmse_vals[k])
+        for k in self.ssim_vals.keys():
+            ssim_vals[k].update(self.ssim_vals[k])
+        for k in self.psnr_vals.keys():
+            psnr_vals[k].update(self.psnr_vals[k])
+
+        # apply means across image volumes
+        metrics = {"MSE": 0, "NMSE": 0, "SSIM": 0, "PSNR": 0}
+        local_examples = 0
+        for fname in mse_vals:
+            local_examples += 1
+            metrics["MSE"] = metrics["MSE"] + torch.mean(torch.cat([v.view(-1) for _, v in mse_vals[fname].items()]))
+            metrics["NMSE"] = metrics["NMSE"] + torch.mean(
+                torch.cat([v.view(-1) for _, v in nmse_vals[fname].items()])
+            )
+            metrics["SSIM"] = metrics["SSIM"] + torch.mean(
+                torch.cat([v.view(-1) for _, v in ssim_vals[fname].items()])
+            )
+            metrics["PSNR"] = metrics["PSNR"] + torch.mean(
+                torch.cat([v.view(-1) for _, v in psnr_vals[fname].items()])
+            )
+
+        # reduce across ddp via sum
+        metrics["MSE"] = self.MSE(metrics["MSE"])
+        metrics["NMSE"] = self.NMSE(metrics["NMSE"])
+        metrics["SSIM"] = self.SSIM(metrics["SSIM"])
+        metrics["PSNR"] = self.PSNR(metrics["PSNR"])
+
+        tot_examples = self.TotExamples(torch.tensor(local_examples))
+        for metric, value in metrics.items():
+            self.log(f"{metric}", value / tot_examples)
 
     def test_epoch_end(self, outputs):
         """
@@ -463,7 +553,6 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                 if len(accelerations) > 2
                 else [create_mask_for_mask_type(mask_type, center_fractions, accelerations)]
             )
-
         else:
             mask_func = None  # type: ignore
             mask_center_scale = 0.02
@@ -492,7 +581,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
 
         return torch.utils.data.DataLoader(
             dataset=dataset,
-            batch_size=1,
+            batch_size=cfg.get("batch_size"),
             sampler=sampler,
             num_workers=cfg.get("num_workers", 2),
             pin_memory=cfg.get("pin_memory", False),
@@ -503,7 +592,6 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
 class BaseSensitivityModel(nn.Module, ABC):
     """
     Model for learning sensitivity estimation from k-space data.
-
     This model applies an IFFT to multichannel k-space data and then a U-Net to the coil images to estimate coil
     sensitivities.
     """

@@ -25,11 +25,16 @@ __all__ = ["LPDNet"]
 
 class LPDNet(BaseMRIReconstructionModel, ABC):
     """
-    Implementation of the Learned Primal Dual network, inspired by [1].
+    Implementation of the Learned Primal Dual network, inspired by Adler, Jonas, and Ozan Öktem.
 
     References
     ----------
-    .. [1] Adler, Jonas, and Ozan Öktem. “Learned Primal-Dual Reconstruction.” IEEE Transactions on Medical Imaging, vol. 37, no. 6, June 2018, pp. 1322–32. arXiv.org, https://doi.org/10.1109/TMI.2018.2799231.
+
+    ..
+
+        Adler, Jonas, and Ozan Öktem. “Learned Primal-Dual Reconstruction.” IEEE Transactions on Medical Imaging, \
+        vol. 37, no. 6, June 2018, pp. 1322–32. arXiv.org, https://doi.org/10.1109/TMI.2018.2799231.
+
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):

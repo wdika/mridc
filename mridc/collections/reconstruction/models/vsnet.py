@@ -28,11 +28,17 @@ __all__ = ["VSNet"]
 
 class VSNet(BaseMRIReconstructionModel, ABC):
     """
-    Implementation of the Variable-Splitting Net, as presented in [1].
+    Implementation of the Variable-Splitting Net, as presented in Duan, J. et al.
 
     References
     ----------
-    .. [1] Duan, J. et al. (2019) ‘Vs-net: Variable splitting network for accelerated parallel MRI reconstruction’, Lecture Notes in Computer Science (including subseries Lecture Notes in Artificial Intelligence and Lecture Notes in Bioinformatics), 11767 LNCS, pp. 713–722. doi: 10.1007/978-3-030-32251-9_78.
+
+    ..
+
+        Duan, J. et al. (2019) ‘Vs-net: Variable splitting network for accelerated parallel MRI reconstruction’, \
+        Lecture Notes in Computer Science (including subseries Lecture Notes in Artificial Intelligence and Lecture \
+        Notes in Bioinformatics), 11767 LNCS, pp. 713–722. doi: 10.1007/978-3-030-32251-9_78.
+
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):

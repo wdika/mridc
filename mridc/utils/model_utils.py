@@ -75,16 +75,20 @@ def resolve_dataset_name_from_cfg(cfg: "DictConfig") -> Union[Union[str, int, En
     directory.
 
     # Fast-path Resolution
-    In order to handle cases where we need to resolve items that are not paths, a fastpath
-    key can be provided as defined in the global `_VAL_TEST_FASTPATH_KEY`.
+    In order to handle cases where we need to resolve items that are not paths, a fastpath key can be provided as
+    defined in the global `_VAL_TEST_FASTPATH_KEY`.
 
     This key can be used in two ways :
-        ## _VAL_TEST_FASTPATH_KEY points to another key in the config
+    ## _VAL_TEST_FASTPATH_KEY points to another key in the config
     If this _VAL_TEST_FASTPATH_KEY points to another key in this config itself, then we assume we want to loop through
     the values of that key. This allows for any key in the config to become a fastpath key.
 
-    Example:
+    Example
+    -------
     validation_ds:
+
+    .. code-block::
+
         splits: "val"
         ...
         <_VAL_TEST_FASTPATH_KEY>: "splits"  <-- this points to the key name "splits"
@@ -97,18 +101,22 @@ def resolve_dataset_name_from_cfg(cfg: "DictConfig") -> Union[Union[str, int, En
     If this _VAL_TEST_FASTPATH_KEY does not point to another key in the config, then it is assumed that the items of
     this key itself are used for resolution.
 
-    Example:
+    Example
+    -------
     validation_ds:
-        ...
+
+    .. code-block::
+
         <_VAL_TEST_FASTPATH_KEY>: "val"  <-- this points to the key name "splits"
+
     Then we can write the following when overriding in hydra:
     ```python
     python train_file.py ... model.validation_ds.<_VAL_TEST_FASTPATH_KEY>=[val1, val2, dev1, dev2] ...
     ```
     # IMPORTANT NOTE:
     It <can> potentially mismatch if there exist more than 2 valid paths, and the first path does *not* resolve the
-    path of the data file (but does resolve to some other valid path).
-    To avoid this side effect, place the data path as the first item on the config file.
+    path of the data file (but does resolve to some other valid path). To avoid this side effect, place the data path
+    as the first item on the config file.
 
     Parameters
     ----------
@@ -213,19 +221,18 @@ def unique_names_check(name_list: Optional[List[str]]):
 def resolve_validation_dataloaders(model: ModelPT):
     """
     Helper method that operates on the ModelPT class to automatically support multiple dataloaders for the validation
-    set.
-    It does so by first resolving the path to one/more data files via `resolve_dataset_name_from_cfg()`.
-    If this resolution fails, it assumes the data loader is prepared to manually support / not support
-    multiple data loaders and simply calls the appropriate setup method.
+    set. It does so by first resolving the path to one/more data files via `resolve_dataset_name_from_cfg()`.
+    If this resolution fails, it assumes the data loader is prepared to manually support / not support multiple data
+    loaders and simply calls the appropriate setup method.
     If resolution succeeds:
-        Checks if provided path is to a single file or a list of files.
-        If a single file is provided, simply tags that file as such and loads it via the setup method.
-        If multiple files are provided:
-            Inject a new manifest path at index "i" into the resolved key.
-            Calls the appropriate setup method to set the data loader.
-            Collects the initialized data loader in a list and preserves it.
-            Once all data loaders are processed, assigns the list of loaded loaders to the ModelPT.
-            Finally, assigns a list of unique names resolved from the file paths to the ModelPT.
+    - Checks if provided path is to a single file or a list of files.
+    If a single file is provided, simply tags that file as such and loads it via the setup method.
+    If multiple files are provided:
+    - Inject a new manifest path at index "i" into the resolved key.
+    - Calls the appropriate setup method to set the data loader.
+    - Collects the initialized data loader in a list and preserves it.
+    - Once all data loaders are processed, assigns the list of loaded loaders to the ModelPT.
+    - Finally, assigns a list of unique names resolved from the file paths to the ModelPT.
 
     Parameters
     ----------
@@ -376,9 +383,10 @@ def wrap_training_step(wrapped, instance: LightningModule, args, kwargs):
 def convert_model_config_to_dict_config(cfg: Union[DictConfig, MRIDCConfig]) -> DictConfig:
     """
     Converts its input into a standard DictConfig.
+
     Possible input values are:
-        -   DictConfig
-        -   A dataclass which is a subclass of MRIDCConfig
+        - DictConfig
+        - A dataclass which is a subclass of MRIDCConfig
 
     Parameters
     ----------
@@ -386,7 +394,7 @@ def convert_model_config_to_dict_config(cfg: Union[DictConfig, MRIDCConfig]) -> 
 
     Returns
     -------
-    The equivalent DictConfig
+    The equivalent DictConfig.
     """
     if not _HAS_HYDRA:
         logging.error("This function requires Hydra/OmegaConf and it was not installed.")
@@ -431,9 +439,9 @@ def maybe_update_config_version(cfg: "DictConfig"):
     """
     Recursively convert Hydra 0.x configs to Hydra 1.x configs.
     Changes include:
-        -   `cls` -> `_target_`.
-        -   `params` -> drop params and shift all arguments to parent.
-        -   `target` -> `_target_` cannot be performed due to ModelPT injecting `target` inside class.
+    -   `cls` -> `_target_`.
+    -   `params` -> drop params and shift all arguments to parent.
+    -   `target` -> `_target_` cannot be performed due to ModelPT injecting `target` inside class.
 
     Parameters
     ----------

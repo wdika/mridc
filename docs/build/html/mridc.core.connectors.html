@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.core.connectors package &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="mridc.core.neural_types package" href="mridc.core.neural_types.html" />
+    <link rel="prev" title="mridc.core.conf package" href="mridc.core.conf.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">mridc</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="mridc.html">mridc package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="mridc.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="mridc.collections.html">mridc.collections package</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="mridc.core.html">mridc.core package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mridc.utils.html">mridc.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.constants">mridc.constants module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.launch">mridc.launch module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc.package_info">mridc.package_info module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.html#module-mridc">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">mridc</a> &raquo;</li>
+          <li><a href="mridc.html">mridc package</a> &raquo;</li>
+          <li><a href="mridc.core.html">mridc.core package</a> &raquo;</li>
+      <li>mridc.core.connectors package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/mridc.core.connectors.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <section id="mridc-core-connectors-package">
+<h1>mridc.core.connectors package<a class="headerlink" href="#mridc-core-connectors-package" title="Permalink to this headline"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline"></a></h2>
+</section>
+<section id="module-mridc.core.connectors.save_restore_connector">
+<span id="mridc-core-connectors-save-restore-connector-module"></span><h2>mridc.core.connectors.save_restore_connector module<a class="headerlink" href="#module-mridc.core.connectors.save_restore_connector" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="mridc.core.connectors.save_restore_connector.SaveRestoreConnector">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.connectors.save_restore_connector.</span></span><span class="sig-name descname"><span class="pre">SaveRestoreConnector</span></span><a class="reference internal" href="_modules/mridc/core/connectors/save_restore_connector.html#SaveRestoreConnector"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.connectors.save_restore_connector.SaveRestoreConnector" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This class is used to save and restore the model state.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.connectors.save_restore_connector.SaveRestoreConnector.extract_state_dict_from">
+<span class="sig-name descname"><span class="pre">extract_state_dict_from</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">restore_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split_by_module</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/connectors/save_restore_connector.html#SaveRestoreConnector.extract_state_dict_from"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.connectors.save_restore_connector.SaveRestoreConnector.extract_state_dict_from" title="Permalink to this definition"></a></dt>
+<dd><p>Extract the state dict(s) from a provided .mridc tarfile and save it to a directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>restore_path</strong> (<em>path to .mridc file from which state dict</em><em>(</em><em>s</em><em>) </em><em>should be extracted</em>) – </p></li>
+<li><p><strong>save_dir</strong> (<em>directory in which the saved state dict</em><em>(</em><em>s</em><em>) </em><em>should be stored</em>) – </p></li>
+<li><p><strong>split_by_module</strong> (<em>bool flag</em><em>, </em><em>which determines whether the output checkpoint should be for the entire Model</em><em>, </em><em>or</em>) – </p></li>
+<li><p><strong>Model.</strong> (<em>the individual module's that comprise the</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p>To convert the .mridc tarfile into a single Model level PyTorch checkpoint
+::
+state_dict = mridc.collections.asr.models.EncDecCTCModel.extract_state_dict_from(‘asr.mridc’,
+‘./asr_ckpts’)
+To restore a model from a Model level checkpoint
+::
+model = mridc.collections.asr.models.EncDecCTCModel(cfg)  # or any other method of restoration
+model.load_state_dict(torch.load(“./asr_ckpts/model_weights.ckpt”))
+To convert the .mridc tarfile into multiple Module level PyTorch checkpoints
+::
+state_dict = mridc.collections.asr.models.EncDecCTCModel.extract_state_dict_from(‘asr.mridc’,
+‘./asr_ckpts’, split_by_module=True). To restore a module from a Module level checkpoint
+::
+model = mridc.collections.asr.models.EncDecCTCModel(cfg)  # or any other method of restoration
+# load the individual components
+model.preprocessor.load_state_dict(torch.load(“./asr_ckpts/preprocessor.ckpt”))
+model.encoder.load_state_dict(torch.load(“./asr_ckpts/encoder.ckpt”))
+model.decoder.load_state_dict(torch.load(“./asr_ckpts/decoder.ckpt”))</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>The state dict that was loaded from the original .mridc checkpoint.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.connectors.save_restore_connector.SaveRestoreConnector.load_config_and_state_dict">
+<span class="sig-name descname"><span class="pre">load_config_and_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calling_cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restore_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">override_config_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">omegaconf.omegaconf.OmegaConf</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">map_location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.device</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trainer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">pytorch_lightning.trainer.trainer.Trainer</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/connectors/save_restore_connector.html#SaveRestoreConnector.load_config_and_state_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.connectors.save_restore_connector.SaveRestoreConnector.load_config_and_state_dict" title="Permalink to this definition"></a></dt>
+<dd><p>Restores model instance (weights and configuration) into .mridc file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>calling_cls</strong> (<em>Class of the model to be restored.</em>) – </p></li>
+<li><p><strong>restore_path</strong> (<em>path to .mridc file from which model should be instantiated</em>) – </p></li>
+<li><p><strong>override_config_path</strong> (<em>path to a yaml config that will override the internal config file</em><em> or </em><em>an</em>) – </p></li>
+<li><p><strong>config.</strong> (<em>OmegaConf/DictConfig object representing the model</em>) – </p></li>
+<li><p><strong>map_location</strong> (<em>Optional torch.device</em><em>(</em><em>) </em><em>to map the instantiated model to a device. By default</em><em> (</em><em>None</em><em>)</em><em>, </em><em>it will</em>) – </p></li>
+<li><p><strong>available</strong> (<em>select a GPU if</em>) – </p></li>
+<li><p><strong>otherwise.</strong> (<em>falling back to CPU</em>) – </p></li>
+<li><p><strong>strict</strong> (<em>Passed to load_state_dict. By default</em><em>, </em><em>True.</em>) – </p></li>
+<li><p><strong>return_config</strong> (<em>If set to true</em><em>, </em><em>will return just the underlying config of the restored model as an OmegaConf</em>) – </p></li>
+<li><p><strong>model.</strong> (<em>DictConfig object without instantiating the</em>) – </p></li>
+<li><p><strong>trainer</strong> (<em>Optional trainer object to be used for model parallelism.</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p><code class="docutils literal notranslate"><span class="pre">`</span>
+<span class="pre">model</span> <span class="pre">=</span> <span class="pre">mridc.collections.asr.models.EncDecCTCModel.restore_from('asr.mridc')</span>
+<span class="pre">assert</span> <span class="pre">isinstance(model,</span> <span class="pre">mridc.collections.asr.models.EncDecCTCModel)</span>
+<span class="pre">`</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>An instance of type cls or its underlying config (if return_config is set).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.connectors.save_restore_connector.SaveRestoreConnector.load_instance_with_state_dict">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load_instance_with_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/connectors/save_restore_connector.html#SaveRestoreConnector.load_instance_with_state_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.connectors.save_restore_connector.SaveRestoreConnector.load_instance_with_state_dict" title="Permalink to this definition"></a></dt>
+<dd><p>Loads the state dict into the instance.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="mridc.core.connectors.save_restore_connector.SaveRestoreConnector.model_config_yaml">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model_config_yaml</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#mridc.core.connectors.save_restore_connector.SaveRestoreConnector.model_config_yaml" title="Permalink to this definition"></a></dt>
+<dd><p>This property is used to get the path to the model config yaml file.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="mridc.core.connectors.save_restore_connector.SaveRestoreConnector.model_weights_ckpt">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model_weights_ckpt</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#mridc.core.connectors.save_restore_connector.SaveRestoreConnector.model_weights_ckpt" title="Permalink to this definition"></a></dt>
+<dd><p>This property is used to get the path to the model weights ckpt file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.connectors.save_restore_connector.SaveRestoreConnector.register_artifact">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">register_artifact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verify_src_exists</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/connectors/save_restore_connector.html#SaveRestoreConnector.register_artifact"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.connectors.save_restore_connector.SaveRestoreConnector.register_artifact" title="Permalink to this definition"></a></dt>
+<dd><p>Register model artifacts with this function. These artifacts (files) will be included inside .mridc file
+when model.save_to(“mymodel.mridc”) is called.</p>
+<p>How it works:
+1. It always returns existing absolute path which can be used during Model constructor call. EXCEPTION: src is
+None or “” in which case nothing will be done and src will be returned
+2. It will add (config_path, model_utils.ArtifactItem()) pair to self.artifacts. If “src” is local existing
+path, then it will be returned in absolute path form. elif “src” starts with “mridc_file:unique_artifact_name”:
+.mridc will be untarred to a temporary folder location and an actual existing path will be returned else an
+error will be raised.</p>
+<p>WARNING: use .register_artifact calls in your models’ constructors.
+The returned path is not guaranteed to exist after you have exited your model’s constructor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>ModelPT object to register artifact for.</em>) – </p></li>
+<li><p><strong>config_path</strong> (<em>Artifact key. Usually corresponds to the model config.</em>) – </p></li>
+<li><p><strong>src</strong> (<em>Path to artifact.</em>) – </p></li>
+<li><p><strong>verify_src_exists</strong> (<em>If set to False</em><em>, </em><em>then the artifact is optional and register_artifact will return None</em>) – even if src is not found. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>life.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>If src is not None or empty it always returns absolute path which is guaranteed to exist during model instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.connectors.save_restore_connector.SaveRestoreConnector.restore_from">
+<span class="sig-name descname"><span class="pre">restore_from</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calling_cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restore_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">override_config_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">omegaconf.omegaconf.OmegaConf</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">map_location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.device</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trainer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">pytorch_lightning.trainer.trainer.Trainer</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/connectors/save_restore_connector.html#SaveRestoreConnector.restore_from"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.connectors.save_restore_connector.SaveRestoreConnector.restore_from" title="Permalink to this definition"></a></dt>
+<dd><p>Restores model instance (weights and configuration) into .mridc file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>calling_cls</strong> (<em>The class of the model to be restored.</em>) – </p></li>
+<li><p><strong>restore_path</strong> (<em>path to .mridc file from which model should be instantiated</em>) – </p></li>
+<li><p><strong>override_config_path</strong> (<em>path to a yaml config that will override the internal config file</em><em> or </em><em>an</em>) – </p></li>
+<li><p><strong>config.</strong> (<em>OmegaConf/DictConfig object representing the model</em>) – </p></li>
+<li><p><strong>map_location</strong> (<em>Optional torch.device</em><em>(</em><em>) </em><em>to map the instantiated model to a device. By default</em><em> (</em><em>None</em><em>)</em><em>, </em><em>it will</em>) – </p></li>
+<li><p><strong>available</strong> (<em>select a GPU if</em>) – </p></li>
+<li><p><strong>otherwise.</strong> (<em>falling back to CPU</em>) – </p></li>
+<li><p><strong>strict</strong> (<em>Passed to load_state_dict. By default</em><em>, </em><em>True.</em>) – </p></li>
+<li><p><strong>return_config</strong> (<em>If set to true</em><em>, </em><em>will return just the underlying config of the restored model as an</em>) – </p></li>
+<li><p><strong>model.</strong> (<em>OmegaConf/DictConfig object without instantiating the</em>) – </p></li>
+<li><p><strong>trainer</strong> (<em>Optional trainer object to be used for restoring the model.</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>An instance of type cls or its underlying config (if return_config is set).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.connectors.save_restore_connector.SaveRestoreConnector.save_to">
+<span class="sig-name descname"><span class="pre">save_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/connectors/save_restore_connector.html#SaveRestoreConnector.save_to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.connectors.save_restore_connector.SaveRestoreConnector.save_to" title="Permalink to this definition"></a></dt>
+<dd><p>Saves model instance (weights and configuration) into .mridc file.
+You can use “restore_from” method to fully restore instance from .mridc file.
+.mridc file is an archive (tar.gz) with the following:
+- model_config.yaml - model configuration in .yaml format. You can deserialize this into cfg argument for         model’s constructor
+- model_wights.chpt - model checkpoint</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>ModelPT object to be saved.</em>) – </p></li>
+<li><p><strong>save_path</strong> (<em>Path to .mridc file where model instance should be saved</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-mridc.core.connectors">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-mridc.core.connectors" title="Permalink to this headline"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mridc.core.conf.html" class="btn btn-neutral float-left" title="mridc.core.conf package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mridc.core.neural_types.html" class="btn btn-neutral float-right" title="mridc.core.neural_types package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

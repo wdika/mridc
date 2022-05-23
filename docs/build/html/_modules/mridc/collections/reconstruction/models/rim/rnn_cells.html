@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.collections.reconstruction.models.rim.rnn_cells &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../../../../../" id="documentation_options" src="../../../../../../_static/documentation_options.js"></script>
+        <script src="../../../../../../_static/jquery.js"></script>
+        <script src="../../../../../../_static/underscore.js"></script>
+        <script src="../../../../../../_static/doctools.js"></script>
+    <script src="../../../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../../../index.html">Module code</a> &raquo;</li>
+      <li>mridc.collections.reconstruction.models.rim.rnn_cells</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.collections.reconstruction.models.rim.rnn_cells</h1><div class="highlight"><pre>
+<span></span><span class="c1"># coding=utf-8</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+
+
+<div class="viewcode-block" id="ConvGRUCellBase"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.ConvGRUCellBase">[docs]</a><span class="k">class</span> <span class="nc">ConvGRUCellBase</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class for Conv Gated Recurrent Unit (GRU) cells.</span>
+<span class="sd">    # TODO: add paper reference</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="n">conv_dim</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">,</span> <span class="n">dilation</span><span class="p">,</span> <span class="n">bias</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ConvGRUCellBase</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_size</span> <span class="o">=</span> <span class="n">input_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="n">hidden_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="n">bias</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv_dim</span> <span class="o">=</span> <span class="n">conv_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv_class</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">determine_conv_class</span><span class="p">(</span><span class="n">conv_dim</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ih</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span>
+            <span class="n">input_size</span><span class="p">,</span>
+            <span class="mi">3</span> <span class="o">*</span> <span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">kernel_size</span><span class="p">,</span>
+            <span class="n">padding</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">dilation</span> <span class="o">*</span> <span class="p">(</span><span class="n">kernel_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">2</span><span class="p">,</span> <span class="n">rounding_mode</span><span class="o">=</span><span class="s2">&quot;trunc&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span>
+            <span class="n">dilation</span><span class="o">=</span><span class="n">dilation</span><span class="p">,</span>
+            <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hh</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span>
+            <span class="n">hidden_size</span><span class="p">,</span>
+            <span class="mi">3</span> <span class="o">*</span> <span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">kernel_size</span><span class="p">,</span>
+            <span class="n">padding</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">dilation</span> <span class="o">*</span> <span class="p">(</span><span class="n">kernel_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">2</span><span class="p">,</span> <span class="n">rounding_mode</span><span class="o">=</span><span class="s2">&quot;trunc&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span>
+            <span class="n">dilation</span><span class="o">=</span><span class="n">dilation</span><span class="p">,</span>
+            <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">()</span>
+
+<div class="viewcode-block" id="ConvGRUCellBase.reset_parameters"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.ConvGRUCellBase.reset_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize parameters following the way proposed in the paper.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ih</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">orthotogonalize_weights</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ih</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hh</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">orthotogonalize_weights</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hh</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">zeros_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ih</span><span class="o">.</span><span class="n">bias</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConvGRUCellBase.orthotogonalize_weights"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.ConvGRUCellBase.orthotogonalize_weights">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">orthotogonalize_weights</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">chunks</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Orthogonalize the weights of a convolutional layer.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">orthogonal_</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">weights</span><span class="o">.</span><span class="n">chunk</span><span class="p">(</span><span class="n">chunks</span><span class="p">,</span> <span class="mi">0</span><span class="p">)],</span> <span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConvGRUCellBase.determine_conv_class"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.ConvGRUCellBase.determine_conv_class">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">determine_conv_class</span><span class="p">(</span><span class="n">n_dim</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Determine the convolutional class to use.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">n_dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv1d</span>
+        <span class="k">if</span> <span class="n">n_dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span>
+        <span class="k">if</span> <span class="n">n_dim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv3d</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;No convolution of this dimensionality implemented&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConvGRUCellBase.extra_repr"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.ConvGRUCellBase.extra_repr">[docs]</a>    <span class="k">def</span> <span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extra information to be printed when printing the model.&quot;&quot;&quot;</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{input_size}</span><span class="s2">, </span><span class="si">{hidden_size}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="s2">&quot;bias&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;, bias=</span><span class="si">{bias}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="s2">&quot;nonlinearity&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">nonlinearity</span> <span class="o">!=</span> <span class="s2">&quot;tanh&quot;</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;, nonlinearity=</span><span class="si">{nonlinearity}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">s</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConvGRUCellBase.check_forward_input"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.ConvGRUCellBase.check_forward_input">[docs]</a>    <span class="k">def</span> <span class="nf">check_forward_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check forward input.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">_input</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;input has inconsistent input_size: got </span><span class="si">{</span><span class="n">_input</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="s2">, expected </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">input_size</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConvGRUCellBase.check_forward_hidden"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.ConvGRUCellBase.check_forward_hidden">[docs]</a>    <span class="k">def</span> <span class="nf">check_forward_hidden</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_input</span><span class="p">,</span> <span class="n">hx</span><span class="p">,</span> <span class="n">hidden_label</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check forward hidden.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">_input</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">!=</span> <span class="n">hx</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Input batch size </span><span class="si">{</span><span class="n">_input</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="si">}</span><span class="s2"> doesn&#39;t match hidden</span><span class="si">{</span><span class="n">hidden_label</span><span class="si">}</span><span class="s2"> batch size </span><span class="si">{</span><span class="n">hx</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">hx</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;hidden</span><span class="si">{</span><span class="n">hidden_label</span><span class="si">}</span><span class="s2"> has inconsistent hidden_size: got </span><span class="si">{</span><span class="n">hx</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="s2">, expected </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="ConvGRUCell"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.ConvGRUCell">[docs]</a><span class="k">class</span> <span class="nc">ConvGRUCell</span><span class="p">(</span><span class="n">ConvGRUCellBase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A Convolutional GRU cell.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="n">conv_dim</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">,</span> <span class="n">dilation</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the ConvGRUCell.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_size: The number of channels in the input.</span>
+<span class="sd">        hidden_size: The number of channels in the hidden state.</span>
+<span class="sd">        conv_dim: The number of dimensions of the convolutional layer.</span>
+<span class="sd">        kernel_size: The size of the convolutional kernel.</span>
+<span class="sd">        dilation: The dilation of the convolutional kernel.</span>
+<span class="sd">        bias: Whether to add a bias.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ConvGRUCell</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">input_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="n">conv_dim</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">,</span> <span class="n">dilation</span><span class="p">,</span> <span class="n">bias</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ConvGRUCell.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.ConvGRUCell.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_input</span><span class="p">,</span> <span class="n">hx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Forward pass of the ConvGRUCell.&quot;&quot;&quot;</span>
+        <span class="n">ih</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ih</span><span class="p">(</span><span class="n">_input</span><span class="p">)</span><span class="o">.</span><span class="n">chunk</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">hh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hh</span><span class="p">(</span><span class="n">hx</span><span class="p">)</span><span class="o">.</span><span class="n">chunk</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">r</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">ih</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">hh</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">ih</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">hh</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tanh</span><span class="p">(</span><span class="n">ih</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">r</span> <span class="o">*</span> <span class="n">hh</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+
+        <span class="n">hx</span> <span class="o">=</span> <span class="n">n</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">z</span><span class="p">)</span> <span class="o">+</span> <span class="n">z</span> <span class="o">*</span> <span class="n">hx</span>
+
+        <span class="k">return</span> <span class="n">hx</span></div></div>
+
+
+<div class="viewcode-block" id="ConvMGUCellBase"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.ConvMGUCellBase">[docs]</a><span class="k">class</span> <span class="nc">ConvMGUCellBase</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A base class for a Convolutional Minimal Gated Unit cell.</span>
+<span class="sd">    # TODO: add paper reference</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="n">conv_dim</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">,</span> <span class="n">dilation</span><span class="p">,</span> <span class="n">bias</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the ConvMGUCellBase.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_size: The number of channels in the input.</span>
+<span class="sd">        hidden_size: The number of channels in the hidden state.</span>
+<span class="sd">        conv_dim: The number of dimensions of the convolutional layer.</span>
+<span class="sd">        kernel_size: The size of the convolutional kernel.</span>
+<span class="sd">        dilation: The dilation of the convolutional kernel.</span>
+<span class="sd">        bias: Whether to add a bias.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ConvMGUCellBase</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_size</span> <span class="o">=</span> <span class="n">input_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="n">hidden_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="n">bias</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv_dim</span> <span class="o">=</span> <span class="n">conv_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv_class</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">determine_conv_class</span><span class="p">(</span><span class="n">conv_dim</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ih</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span>
+            <span class="n">input_size</span><span class="p">,</span>
+            <span class="mi">2</span> <span class="o">*</span> <span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">kernel_size</span><span class="p">,</span>
+            <span class="n">padding</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">dilation</span> <span class="o">*</span> <span class="p">(</span><span class="n">kernel_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">2</span><span class="p">,</span> <span class="n">rounding_mode</span><span class="o">=</span><span class="s2">&quot;trunc&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span>
+            <span class="n">dilation</span><span class="o">=</span><span class="n">dilation</span><span class="p">,</span>
+            <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hh</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span>
+            <span class="n">hidden_size</span><span class="p">,</span>
+            <span class="mi">2</span> <span class="o">*</span> <span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">kernel_size</span><span class="p">,</span>
+            <span class="n">padding</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">dilation</span> <span class="o">*</span> <span class="p">(</span><span class="n">kernel_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">2</span><span class="p">,</span> <span class="n">rounding_mode</span><span class="o">=</span><span class="s2">&quot;trunc&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span>
+            <span class="n">dilation</span><span class="o">=</span><span class="n">dilation</span><span class="p">,</span>
+            <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">()</span>
+
+<div class="viewcode-block" id="ConvMGUCellBase.reset_parameters"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.ConvMGUCellBase.reset_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Reset the parameters.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ih</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">orthotogonalize_weights</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ih</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hh</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">orthotogonalize_weights</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hh</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">xavier_uniform_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ih</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">calculate_gain</span><span class="p">(</span><span class="s2">&quot;relu&quot;</span><span class="p">))</span>
+        <span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">xavier_uniform_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hh</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">zeros_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ih</span><span class="o">.</span><span class="n">bias</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConvMGUCellBase.orthotogonalize_weights"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.ConvMGUCellBase.orthotogonalize_weights">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">orthotogonalize_weights</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">chunks</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Orthogonalize the weights.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">orthogonal_</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">weights</span><span class="o">.</span><span class="n">chunk</span><span class="p">(</span><span class="n">chunks</span><span class="p">,</span> <span class="mi">0</span><span class="p">)],</span> <span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConvMGUCellBase.determine_conv_class"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.ConvMGUCellBase.determine_conv_class">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">determine_conv_class</span><span class="p">(</span><span class="n">n_dim</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Determine the convolutional class.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">n_dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv1d</span>
+        <span class="k">if</span> <span class="n">n_dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span>
+        <span class="k">if</span> <span class="n">n_dim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv3d</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Convolution of: </span><span class="si">{</span><span class="n">n_dim</span><span class="si">}</span><span class="s2"> dims is not implemented&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConvMGUCellBase.extra_repr"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.ConvMGUCellBase.extra_repr">[docs]</a>    <span class="k">def</span> <span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extra information about the ConvMGUCellBase.&quot;&quot;&quot;</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{input_size}</span><span class="s2">, </span><span class="si">{hidden_size}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="s2">&quot;bias&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;, bias=</span><span class="si">{bias}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="s2">&quot;nonlinearity&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">nonlinearity</span> <span class="o">!=</span> <span class="s2">&quot;tanh&quot;</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;, nonlinearity=</span><span class="si">{nonlinearity}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">s</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConvMGUCellBase.check_forward_input"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.ConvMGUCellBase.check_forward_input">[docs]</a>    <span class="k">def</span> <span class="nf">check_forward_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check the forward input.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">_input</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;input has inconsistent input_size: got </span><span class="si">{</span><span class="n">_input</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="s2">, expected </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">input_size</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConvMGUCellBase.check_forward_hidden"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.ConvMGUCellBase.check_forward_hidden">[docs]</a>    <span class="k">def</span> <span class="nf">check_forward_hidden</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_input</span><span class="p">,</span> <span class="n">hx</span><span class="p">,</span> <span class="n">hidden_label</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check the forward hidden.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">_input</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">!=</span> <span class="n">hx</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Input batch size </span><span class="si">{</span><span class="n">_input</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="si">}</span><span class="s2"> doesn&#39;t match hidden</span><span class="si">{</span><span class="n">hidden_label</span><span class="si">}</span><span class="s2"> batch size </span><span class="si">{</span><span class="n">hx</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">hx</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;hidden</span><span class="si">{</span><span class="n">hidden_label</span><span class="si">}</span><span class="s2"> has inconsistent hidden_size: got </span><span class="si">{</span><span class="n">hx</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="s2">, expected </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="ConvMGUCell"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.ConvMGUCell">[docs]</a><span class="k">class</span> <span class="nc">ConvMGUCell</span><span class="p">(</span><span class="n">ConvMGUCellBase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convolutional Minimal Gated Unit cell.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="n">conv_dim</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">,</span> <span class="n">dilation</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the ConvMGUCell.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_size: The input size.</span>
+<span class="sd">        hidden_size: The hidden size.</span>
+<span class="sd">        conv_dim: The convolutional dimension.</span>
+<span class="sd">        kernel_size: The kernel size.</span>
+<span class="sd">        dilation: The dilation.</span>
+<span class="sd">        bias: Whether to use a bias.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ConvMGUCell</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">input_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="n">conv_dim</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">,</span> <span class="n">dilation</span><span class="p">,</span> <span class="n">bias</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ConvMGUCell.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.ConvMGUCell.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_input</span><span class="p">,</span> <span class="n">hx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Forward the ConvMGUCell.&quot;&quot;&quot;</span>
+        <span class="n">ih</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ih</span><span class="p">(</span><span class="n">_input</span><span class="p">)</span><span class="o">.</span><span class="n">chunk</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">hh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hh</span><span class="p">(</span><span class="n">hx</span><span class="p">)</span><span class="o">.</span><span class="n">chunk</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">f</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">ih</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">hh</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tanh</span><span class="p">(</span><span class="n">ih</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">f</span> <span class="o">*</span> <span class="n">hh</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">c</span> <span class="o">+</span> <span class="n">f</span> <span class="o">*</span> <span class="p">(</span><span class="n">hx</span> <span class="o">-</span> <span class="n">c</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="IndRNNCellBase"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.IndRNNCellBase">[docs]</a><span class="k">class</span> <span class="nc">IndRNNCellBase</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class for Independently RNN cells as presented in [1]_.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] Li, S. et al. (2018) ‘Independently Recurrent Neural Network (IndRNN): Building A Longer and Deeper RNN’, Proceedings of the IEEE Computer Society Conference on Computer Vision and Pattern Recognition, (1), pp. 5457–5466. doi: 10.1109/CVPR.2018.00572.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="n">conv_dim</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">,</span> <span class="n">dilation</span><span class="p">,</span> <span class="n">bias</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the IndRNNCellBase.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_size: The input size.</span>
+<span class="sd">        hidden_size: The hidden size.</span>
+<span class="sd">        conv_dim: The convolutional dimension.</span>
+<span class="sd">        kernel_size: The kernel size.</span>
+<span class="sd">        dilation: The dilation.</span>
+<span class="sd">        bias: Whether to use a bias.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">IndRNNCellBase</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_size</span> <span class="o">=</span> <span class="n">input_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="n">hidden_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kernel_size</span> <span class="o">=</span> <span class="n">kernel_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="o">=</span> <span class="n">bias</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv_dim</span> <span class="o">=</span> <span class="n">conv_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv_class</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">determine_conv_class</span><span class="p">(</span><span class="n">conv_dim</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ih</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span>
+            <span class="n">input_size</span><span class="p">,</span>
+            <span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">kernel_size</span><span class="p">,</span>
+            <span class="n">padding</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">dilation</span> <span class="o">*</span> <span class="p">(</span><span class="n">kernel_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">2</span><span class="p">,</span> <span class="n">rounding_mode</span><span class="o">=</span><span class="s2">&quot;trunc&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span>
+            <span class="n">dilation</span><span class="o">=</span><span class="n">dilation</span><span class="p">,</span>
+            <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hh</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">normal_</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">std</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">hidden_size</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">kernel_size</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">()</span>
+
+<div class="viewcode-block" id="IndRNNCellBase.reset_parameters"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.IndRNNCellBase.reset_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Reset the parameters.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ih</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">orthotogonalize_weights</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ih</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">normal_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ih</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">std</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">kernel_size</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">zeros_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ih</span><span class="o">.</span><span class="n">bias</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="IndRNNCellBase.orthotogonalize_weights"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.IndRNNCellBase.orthotogonalize_weights">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">orthotogonalize_weights</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">chunks</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Orthogonalize the weights.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">orthogonal_</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">weights</span><span class="o">.</span><span class="n">chunk</span><span class="p">(</span><span class="n">chunks</span><span class="p">,</span> <span class="mi">0</span><span class="p">)],</span> <span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="IndRNNCellBase.determine_conv_class"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.IndRNNCellBase.determine_conv_class">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">determine_conv_class</span><span class="p">(</span><span class="n">n_dim</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Determine the convolutional class.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">n_dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv1d</span>
+        <span class="k">if</span> <span class="n">n_dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span>
+        <span class="k">if</span> <span class="n">n_dim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv3d</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;No convolution of this dimensionality implemented&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="IndRNNCellBase.extra_repr"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.IndRNNCellBase.extra_repr">[docs]</a>    <span class="k">def</span> <span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extra information about the module, used for printing.&quot;&quot;&quot;</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{input_size}</span><span class="s2">, </span><span class="si">{hidden_size}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="s2">&quot;bias&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;, bias=</span><span class="si">{bias}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="s2">&quot;nonlinearity&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">nonlinearity</span> <span class="o">!=</span> <span class="s2">&quot;tanh&quot;</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="s2">&quot;, nonlinearity=</span><span class="si">{nonlinearity}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">s</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="IndRNNCellBase.check_forward_input"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.IndRNNCellBase.check_forward_input">[docs]</a>    <span class="k">def</span> <span class="nf">check_forward_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_input</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check forward input.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">_input</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;input has inconsistent input_size: got </span><span class="si">{</span><span class="n">_input</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="s2">, expected </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">input_size</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="IndRNNCellBase.check_forward_hidden"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.IndRNNCellBase.check_forward_hidden">[docs]</a>    <span class="k">def</span> <span class="nf">check_forward_hidden</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_input</span><span class="p">,</span> <span class="n">hx</span><span class="p">,</span> <span class="n">hidden_label</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check forward hidden.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">_input</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">!=</span> <span class="n">hx</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Input batch size </span><span class="si">{</span><span class="n">_input</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="si">}</span><span class="s2"> doesn&#39;t match hidden</span><span class="si">{</span><span class="n">hidden_label</span><span class="si">}</span><span class="s2"> batch size </span><span class="si">{</span><span class="n">hx</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">hx</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;hidden</span><span class="si">{</span><span class="n">hidden_label</span><span class="si">}</span><span class="s2"> has inconsistent hidden_size: got </span><span class="si">{</span><span class="n">hx</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="s2">, expected </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="IndRNNCell"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.IndRNNCell">[docs]</a><span class="k">class</span> <span class="nc">IndRNNCell</span><span class="p">(</span><span class="n">IndRNNCellBase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Independently Recurrent Neural Network cell.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="n">conv_dim</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">,</span> <span class="n">dilation</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_size: The number of expected features in the input.</span>
+<span class="sd">        hidden_size: The number of features in the hidden state.</span>
+<span class="sd">        conv_dim: The dimension of the convolutional layer.</span>
+<span class="sd">        kernel_size: The size of the convolved kernel.</span>
+<span class="sd">        dilation: The spacing between the kernel points.</span>
+<span class="sd">        bias: If ``False``, then the layer does not use bias weights `b_ih` and `b_hh`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">IndRNNCell</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">input_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="n">conv_dim</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">,</span> <span class="n">dilation</span><span class="p">,</span> <span class="n">bias</span><span class="p">)</span>
+
+<div class="viewcode-block" id="IndRNNCell.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.IndRNNCell.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_input</span><span class="p">,</span> <span class="n">hx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Forward propagate the RNN cell.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">()(</span><span class="bp">self</span><span class="o">.</span><span class="n">ih</span><span class="p">(</span><span class="n">_input</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">hh</span> <span class="o">*</span> <span class="n">hx</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

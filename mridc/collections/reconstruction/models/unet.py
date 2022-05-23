@@ -21,12 +21,16 @@ __all__ = ["UNet"]
 
 class UNet(BaseMRIReconstructionModel, ABC):
     """
-    Implementation of the UNet, as presented in [1].
+    Implementation of the UNet, as presented in O. Ronneberger, P. Fischer, and Thomas Brox.
 
     References
     ----------
+    ..
 
-    .. [1] O. Ronneberger, P. Fischer, and Thomas Brox. U-net: Convolutional networks for biomedical image segmentation. In International Conference on Medical image computing and computer-assisted intervention, pages 234–241. Springer, 2015.
+        O. Ronneberger, P. Fischer, and Thomas Brox. U-net: Convolutional networks for biomedical image segmentation. \
+         In International Conference on Medical image computing and computer-assisted intervention, pages 234–241.  \
+         Springer, 2015.
+
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):

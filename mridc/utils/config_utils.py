@@ -20,28 +20,28 @@ _HAS_HYDRA = True
 
 def update_model_config(model_cls: MRIDCConfig, update_cfg: "DictConfig", drop_missing_subconfigs: bool = True):
     """
-    Helper class that updates the default values of a ModelPT config class with the values in a DictConfig that mirrors
-    the structure of the config class. Assumes the `update_cfg` is a DictConfig (either generated manually, via hydra
-    or instantiated via yaml/model.cfg). This update_cfg is then used to override the default values preset inside the
-    ModelPT config class. If `drop_missing_subconfigs` is set, the certain sub-configs of the ModelPT config class
-    will be removed, if they are not found in the mirrored `update_cfg`. The following sub-configs are subject to
-    potential removal:
+    Helper class that updates the default values of a ModelPT config class with the values in a DictConfig that \
+    mirrors the structure of the config class. Assumes the `update_cfg` is a DictConfig (either generated manually, \
+    via hydra or instantiated via yaml/model.cfg). This update_cfg is then used to override the default values \
+    preset inside the ModelPT config class. If `drop_missing_subconfigs` is set, the certain sub-configs of the \
+    ModelPT config class will be removed, if they are not found in the mirrored `update_cfg`. The following \
+    sub-configs are subject to potential removal:
         -   `train_ds`
         -   `validation_ds`
         -   `test_ds`
-        -   `optim` + nested `sched`.
+        -   `optim` + nested sched
 
     Parameters
     ----------
     model_cls: A subclass of MRIDC, that details in entirety all the parameters that constitute the MRIDC Model.
-    update_cfg: A DictConfig that mirrors the structure of the MRIDCConfig data class. Used to update the default
+    update_cfg: A DictConfig that mirrors the structure of the MRIDCConfig data class. Used to update the default \
     values of the config class.
-    drop_missing_subconfigs: Bool which determines whether to drop certain sub-configs from the MRIDCConfig class, if
-    the corresponding sub-config is missing from `update_cfg`.
+    drop_missing_subconfigs: Bool which determines whether to drop certain sub-configs from the MRIDCConfig class, \
+    if the corresponding sub-config is missing from `update_cfg`.
 
     Returns
     -------
-    A DictConfig with updated values that can be used to instantiate the MRIDC Model along with supporting
+    A DictConfig with updated values that can be used to instantiate the MRIDC Model along with supporting \
     infrastructure.
     """
     if not _HAS_HYDRA:

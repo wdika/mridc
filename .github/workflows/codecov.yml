@@ -30,3 +30,4 @@ jobs:
         flags: pytests # optional
         name: codecov-umbrella # optional
         verbose: true # optional (default = false)
+        version: "v0.1.15"

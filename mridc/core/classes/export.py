@@ -3,7 +3,6 @@ __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/classes/exportable.py
 
-import os
 from abc import ABC
 
 import torch

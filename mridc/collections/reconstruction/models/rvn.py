@@ -24,11 +24,17 @@ __all__ = ["RecurrentVarNet"]
 
 class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
     """
-    Implementation of the Recurrent Variational Network implementation, as presented in [1].
+    Implementation of the Recurrent Variational Network implementation, as presented in Yiasemis, George, et al.
 
     References
     ----------
-    .. [1] Yiasemis, George, et al. “Recurrent Variational Network: A Deep Learning Inverse Problem Solver Applied to the Task of Accelerated MRI Reconstruction.” ArXiv:2111.09639 [Physics], Nov. 2021. arXiv.org, http://arxiv.org/abs/2111.09639.
+
+    ..
+
+        Yiasemis, George, et al. “Recurrent Variational Network: A Deep Learning Inverse Problem Solver Applied to \
+        the Task of Accelerated MRI Reconstruction.” ArXiv:2111.09639 [Physics], Nov. 2021. arXiv.org, \
+        http://arxiv.org/abs/2111.09639.
+
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):

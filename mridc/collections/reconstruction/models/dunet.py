@@ -29,11 +29,17 @@ __all__ = ["DUNet"]
 
 class DUNet(BaseMRIReconstructionModel, ABC):
     """
-    Implementation of the Down-Up NET, inspired by [1].
+    Implementation of the Down-Up NET, inspired by Hammernik, K, Schlemper, J, Qin, C, et al.
 
     References
     ----------
-    .. [1]  Hammernik, K, Schlemper, J, Qin, C, et al. Systematic evaluation of iterative deep neural networks for fast parallel MRI reconstruction with sensitivity-weighted coil combination. Magn Reson Med. 2021; 86: 1859– 1872. https://doi.org/10.1002/mrm.28827
+
+    ..
+
+        Hammernik, K, Schlemper, J, Qin, C, et al. Systematic evaluation of iterative deep neural networks for fast \
+        parallel MRI reconstruction with sensitivity-weighted coil combination. Magn Reson Med. 2021; 86: 1859– 1872. \
+         https://doi.org/10.1002/mrm.28827
+
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):

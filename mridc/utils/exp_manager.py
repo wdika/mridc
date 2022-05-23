@@ -9,7 +9,7 @@ import sys
 import time
 from copy import deepcopy
 from dataclasses import dataclass
-from datetime import timedelta
+
 from pathlib import Path
 from shutil import copy, move
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -20,7 +20,7 @@ from hydra.utils import get_original_cwd
 from omegaconf import DictConfig, OmegaConf, open_dict
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
-from pytorch_lightning.callbacks.timer import Interval, Timer
+from pytorch_lightning.callbacks.timer import Timer
 from pytorch_lightning.loggers import LoggerCollection as _LoggerCollection, TensorBoardLogger, WandbLogger
 from pytorch_lightning.strategies.ddp import DDPStrategy
 
@@ -175,68 +175,66 @@ class TimingCallback(Callback):
 
 def exp_manager(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None) -> Optional[Path]:
     """
-    exp_manager is a helper function used to manage folders for experiments. It follows the pytorch lightning paradigm
-    of exp_dir/model_or_experiment_name/version. If the lightning trainer has a logger, exp_manager will get exp_dir,
-    name, and version from the logger. Otherwise, it will use the exp_dir and name arguments to create the logging
-    directory. exp_manager also allows for explicit folder creation via explicit_log_dir.
+    exp_manager is a helper function used to manage folders for experiments. It follows the pytorch lightning \
+    paradigm of exp_dir/model_or_experiment_name/version. If the lightning trainer has a logger, exp_manager will \
+    get exp_dir, name, and version from the logger. Otherwise, it will use the exp_dir and name arguments to create \
+    the logging directory. exp_manager also allows for explicit folder creation via explicit_log_dir.
 
-    The version can be a datetime string or an integer. Datetime version can be disabled if you use_datetime_version is
-    set to False. It optionally creates TensorBoardLogger, WandBLogger, ModelCheckpoint objects from pytorch lightning.
-    It copies sys.argv, and git information if available to the logging directory. It creates a log file for each
-    process to log their output into.
+    The version can be a datetime string or an integer. Datetime version can be disabled if you use_datetime_version \
+    is set to False. It optionally creates TensorBoardLogger, WandBLogger, ModelCheckpoint objects from pytorch \
+    lightning. It copies sys.argv, and git information if available to the logging directory. It creates a log file \
+    for each process to log their output into.
 
-    exp_manager additionally has a resume feature (resume_if_exists) which can be used to continuing training from
-    the constructed log_dir. When you need to continue the training repeatedly (like on a cluster which you need
-    multiple consecutive jobs), you need to avoid creating the version folders. Therefore, from v1.0.0, when
+    exp_manager additionally has a resume feature (resume_if_exists) which can be used to continuing training from \
+    the constructed log_dir. When you need to continue the training repeatedly (like on a cluster which you need \
+    multiple consecutive jobs), you need to avoid creating the version folders. Therefore, from v1.0.0, when \
     resume_if_exists is set to True, creating the version folders is ignored.
 
     Parameters
     ----------
-    trainer: The lightning trainer.
+    trainer: The lightning trainer object.
     cfg: Can have the following keys:
-        - explicit_log_dir (str, Path): Can be used to override exp_dir/name/version folder creation. Defaults to
-            None, which will use exp_dir, name, and version to construct the logging directory.
-        - exp_dir (str, Path): The base directory to create the logging directory. Defaults to None, which logs to
-            ./mridc_experiments.
-        - name (str): The name of the experiment. Defaults to None which turns into "default" via name = name or
-            "default".
-        - version (str): The version of the experiment. Defaults to None which uses either a datetime string or
-            lightning's TensorboardLogger system of using version_{int}.
-        - use_datetime_version (bool): Whether to use a datetime string for version. Defaults to True.
-        - resume_if_exists (bool): Whether this experiment is resuming from a previous run. If True, it sets
-            trainer._checkpoint_connector.resume_from_checkpoint_fit_path so that the trainer should auto-resume.
-            exp_manager will move files under log_dir to log_dir/run_{int}. Defaults to False. From v1.0.0, when
-            resume_if_exists is True, we would not create version folders to make it easier to find the log folder
-             for next runs.
-        - resume_past_end (bool): exp_manager errors out if resume_if_exists is True and a checkpoint matching
-            *end.ckpt indicating a previous training run fully completed. This behaviour can be disabled, in which
-            case the *end.ckpt will be loaded by setting resume_past_end to True. Defaults to False.
-        - resume_ignore_no_checkpoint (bool): exp_manager errors out if resume_if_exists is True and no checkpoint
-            could be found. This behaviour can be disabled, in which case exp_manager will print a message and
-            continue without restoring, by setting resume_ignore_no_checkpoint to True. Defaults to False.
-        - create_tensorboard_logger (bool): Whether to create a tensorboard logger and attach it to the pytorch
-            lightning trainer. Defaults to True.
-        - summary_writer_kwargs (dict): A dictionary of kwargs that can be passed to lightning's TensorboardLogger
-            class. Note that log_dir is passed by exp_manager and cannot exist in this dict. Defaults to None.
-        - create_wandb_logger (bool): Whether to create a Weights and Biases logger and attach it to the pytorch
-            lightning trainer. Defaults to False.
-        - wandb_logger_kwargs (dict): A dictionary of kwargs that can be passed to lightning's WandBLogger
-            class. Note that name and project are required parameters if create_wandb_logger is True.
-            Defaults to None.
-        - create_checkpoint_callback (bool): Whether to create a ModelCheckpoint callback and attach it to the
-            pytorch lightning trainer. The ModelCheckpoint saves the top 3 models with the best "val_loss", the
-            most recent checkpoint under *last.ckpt, and the final checkpoint after training completes under
-            *end.ckpt. Defaults to True.
-        - files_to_copy (list): A list of files to copy to the experiment logging directory. Defaults to None which
-            copies no files.
-        - log_local_rank_0_only (bool): Whether to only create log files for local rank 0. Defaults to False.
-            Set this to True if you are using DDP with many GPUs and do not want many log files in your exp dir.
-        - log_global_rank_0_only (bool): Whether to only create log files for global rank 0. Defaults to False.
-            Set this to True if you are using DDP with many GPUs and do not want many log files in your exp dir.
+        - explicit_log_dir: Can be used to override exp_dir/name/version folder creation. Defaults to None, which \
+        will use exp_dir, name, and version to construct the logging directory.
+        - exp_dir: The base directory to create the logging directory. Defaults to None, which logs to \
+         ./mridc_experiments.
+        - name: The name of the experiment. Defaults to None which turns into "default" via name = name or "default".
+        - version: The version of the experiment. Defaults to None which uses either a datetime string or lightning's \
+         TensorboardLogger system of using version_{int}.
+        - use_datetime_version: Whether to use a datetime string for version. Defaults to True.
+        - resume_if_exists: Whether this experiment is resuming from a previous run. If True, it sets \
+        trainer._checkpoint_connector.resume_from_checkpoint_fit_path so that the trainer should auto-resume. \
+        exp_manager will move files under log_dir to log_dir/run_{int}. Defaults to False. From v1.0.0, when \
+        resume_if_exists is True, we would not create version folders to make it easier to find the log folder for \
+        next runs.
+        - resume_past_end: exp_manager errors out if resume_if_exists is True and a checkpoint matching \*end.ckpt \
+        indicating a previous training run fully completed. This behaviour can be disabled, in which case the \
+        \*end.ckpt will be loaded by setting resume_past_end to True. Defaults to False.
+        - resume_ignore_no_checkpoint: exp_manager errors out if resume_if_exists is True and no checkpoint could be \
+         found. This behaviour can be disabled, in which case exp_manager will print a message and continue without \
+         restoring, by setting resume_ignore_no_checkpoint to True. Defaults to False.
+        - create_tensorboard_logger: Whether to create a tensorboard logger and attach it to the pytorch lightning \
+        trainer. Defaults to True.
+        - summary_writer_kwargs: A dictionary of kwargs that can be passed to lightning's TensorboardLogger class. \
+        Note that log_dir is passed by exp_manager and cannot exist in this dict. Defaults to None.
+        - create_wandb_logger: Whether to create a Weights and Biases logger and attach it to the pytorch lightning \
+        trainer. Defaults to False.
+        - wandb_logger_kwargs: A dictionary of kwargs that can be passed to lightning's WandBLogger class. Note that \
+         name and project are required parameters if create_wandb_logger is True. Defaults to None.
+        - create_checkpoint_callback: Whether to create a ModelCheckpoint callback and attach it to the pytorch \
+        lightning trainer. The ModelCheckpoint saves the top 3 models with the best "val_loss", the most recent \
+        checkpoint under \*last.ckpt, and the final checkpoint after training completes under \*end.ckpt. \
+        Defaults to True.
+        - files_to_copy: A list of files to copy to the experiment logging directory. Defaults to None which copies \
+        no files.
+        - log_local_rank_0_only: Whether to only create log files for local rank 0. Defaults to False. Set this to \
+        True if you are using DDP with many GPUs and do not want many log files in your exp dir.
+        - log_global_rank_0_only: Whether to only create log files for global rank 0. Defaults to False. Set this to \
+        True if you are using DDP with many GPUs and do not want many log files in your exp dir.
+
     Returns
     -------
-    log_dir: The final logging directory where logging files are saved. Usually the concatenation of exp_dir, name, and
-    version.
+    The final logging directory where logging files are saved. Usually the concatenation of exp_dir, name, and version.
     """
     # Add rank information to logger
     # Note: trainer.global_rank and trainer.is_global_zero are not set until trainer.fit, so have to hack around it

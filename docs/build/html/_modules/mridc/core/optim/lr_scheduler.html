@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.core.optim.lr_scheduler &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>mridc.core.optim.lr_scheduler</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.core.optim.lr_scheduler</h1><div class="highlight"><pre>
+<span></span><span class="c1"># encoding: utf-8</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="c1"># Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/optim/lr_scheduler.py</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">dataclasses</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">hydra</span>
+<span class="kn">import</span> <span class="nn">torch.optim</span> <span class="k">as</span> <span class="nn">optim</span>
+<span class="kn">import</span> <span class="nn">torch.optim.lr_scheduler</span> <span class="k">as</span> <span class="nn">pt_scheduler</span>
+<span class="kn">import</span> <span class="nn">torch.utils.data.dataloader</span> <span class="k">as</span> <span class="nn">dataloader</span>
+<span class="kn">from</span> <span class="nn">omegaconf</span> <span class="kn">import</span> <span class="n">DictConfig</span><span class="p">,</span> <span class="n">OmegaConf</span>
+<span class="kn">from</span> <span class="nn">torch.optim.lr_scheduler</span> <span class="kn">import</span> <span class="n">_LRScheduler</span>  <span class="c1"># type: ignore</span>
+
+<span class="kn">from</span> <span class="nn">mridc.core.conf.schedulers</span> <span class="kn">import</span> <span class="n">SchedulerParams</span><span class="p">,</span> <span class="n">get_scheduler_config</span><span class="p">,</span> <span class="n">register_scheduler_params</span>
+<span class="kn">from</span> <span class="nn">mridc.utils</span> <span class="kn">import</span> <span class="n">logging</span>
+<span class="kn">from</span> <span class="nn">mridc.utils.model_utils</span> <span class="kn">import</span> <span class="n">maybe_update_config_version</span>
+
+
+<div class="viewcode-block" id="WarmupPolicy"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.lr_scheduler.WarmupPolicy">[docs]</a><span class="k">class</span> <span class="nc">WarmupPolicy</span><span class="p">(</span><span class="n">_LRScheduler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Adds warmup kwargs and warmup logic to lr policy. All arguments should be passed as kwargs for clarity.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    warmup_steps: Number of training steps in warmup stage.</span>
+<span class="sd">    warmup_ratio: Ratio of warmup steps to total steps.</span>
+<span class="sd">    max_steps: Total number of steps while training or `None` for infinite training.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    lr: Learning rate for current step.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">warmup_steps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">warmup_ratio</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_steps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">min_lr</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">last_epoch</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        optimizer: optimizer</span>
+<span class="sd">        warmup_steps: Number of training steps in warmup stage</span>
+<span class="sd">        warmup_ratio: Ratio of warmup steps to total steps</span>
+<span class="sd">        max_steps: Total number of steps while training or `None` for infinite training</span>
+<span class="sd">        min_lr: Minimum learning rate</span>
+<span class="sd">        last_epoch: Last epoch</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">warmup_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">warmup_ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;Either use particular number of step or ratio&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">warmup_ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">max_steps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;If there is a ratio, there should be a total steps&quot;</span><span class="p">)</span>
+
+        <span class="c1"># It is necessary to assign all attributes *before* __init__,</span>
+        <span class="c1"># as class is wrapped by an inner class.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span> <span class="o">=</span> <span class="n">max_steps</span>
+        <span class="k">if</span> <span class="n">warmup_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span> <span class="o">=</span> <span class="n">warmup_steps</span>
+        <span class="k">elif</span> <span class="n">warmup_ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">warmup_ratio</span> <span class="o">*</span> <span class="n">max_steps</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span> <span class="o">=</span> <span class="n">min_lr</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">last_epoch</span><span class="p">)</span>
+
+<div class="viewcode-block" id="WarmupPolicy.get_lr"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.lr_scheduler.WarmupPolicy.get_lr">[docs]</a>    <span class="k">def</span> <span class="nf">get_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get learning rate at current step.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_lr_called_within_step</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;To get the last learning rate computed by the scheduler, please use `get_last_lr()`.&quot;</span><span class="p">,</span> <span class="ne">UserWarning</span>
+            <span class="p">)</span>
+
+        <span class="n">step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_epoch</span>
+
+        <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span> <span class="o">&gt;=</span> <span class="n">step</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_warmup_lr</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">step</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_lr</span><span class="p">(</span><span class="n">step</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_warmup_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Linear warmup&quot;&quot;&quot;</span>
+        <span class="n">lr_val</span> <span class="o">=</span> <span class="p">(</span><span class="n">step</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">initial_lr</span> <span class="o">*</span> <span class="n">lr_val</span> <span class="k">for</span> <span class="n">initial_lr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_get_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Simple const lr policy&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span></div>
+
+
+<div class="viewcode-block" id="SquareRootConstantPolicy"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.lr_scheduler.SquareRootConstantPolicy">[docs]</a><span class="k">class</span> <span class="nc">SquareRootConstantPolicy</span><span class="p">(</span><span class="n">_LRScheduler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Adds warmup kwargs and warmup logic to lr policy. All arguments should be passed as kwargs for clarity.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    warmup_steps: Number of training steps in warmup stage</span>
+<span class="sd">    warmup_ratio: Ratio of warmup steps to total steps</span>
+<span class="sd">    max_steps: Total number of steps while training or `None` for infinite training</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">constant_steps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">constant_ratio</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_steps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">min_lr</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">last_epoch</span><span class="o">=-</span><span class="mi">1</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        optimizer: optimizer</span>
+<span class="sd">        constant_steps: Number of training steps in constant stage</span>
+<span class="sd">        constant_ratio: Ratio of constant steps to total steps</span>
+<span class="sd">        max_steps: Total number of steps while training or `None` for infinite training</span>
+<span class="sd">        min_lr: Minimum learning rate</span>
+<span class="sd">        last_epoch: Last epoch</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">constant_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">constant_ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;Either use particular number of step or ratio&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">constant_ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">max_steps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;If there is a ratio, there should be a total steps&quot;</span><span class="p">)</span>
+
+        <span class="c1"># It is necessary to assign all attributes *before* __init__, as class is wrapped by an inner class.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span> <span class="o">=</span> <span class="n">max_steps</span>
+        <span class="k">if</span> <span class="n">constant_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">constant_steps</span> <span class="o">=</span> <span class="n">constant_steps</span>
+        <span class="k">elif</span> <span class="n">constant_ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">constant_steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">constant_ratio</span> <span class="o">*</span> <span class="n">max_steps</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">constant_steps</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">constant_lr</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">constant_steps</span><span class="o">**</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span> <span class="o">=</span> <span class="n">min_lr</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">last_epoch</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SquareRootConstantPolicy.get_lr"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.lr_scheduler.SquareRootConstantPolicy.get_lr">[docs]</a>    <span class="k">def</span> <span class="nf">get_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get learning rate at current step.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_lr_called_within_step</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;To get the last learning rate computed by the scheduler, please use `get_last_lr()`.&quot;</span><span class="p">,</span> <span class="ne">UserWarning</span>
+            <span class="p">)</span>
+
+        <span class="n">step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_epoch</span>
+
+        <span class="k">if</span> <span class="n">step</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">constant_steps</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">constant_lr</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">step</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_lr</span><span class="p">(</span><span class="n">step</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Simple const lr policy&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span></div>
+
+
+<div class="viewcode-block" id="WarmupHoldPolicy"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.lr_scheduler.WarmupHoldPolicy">[docs]</a><span class="k">class</span> <span class="nc">WarmupHoldPolicy</span><span class="p">(</span><span class="n">WarmupPolicy</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Variant of WarmupPolicy which maintains high learning rate for a defined number of steps. All arguments should be</span>
+<span class="sd">    passed as kwargs for clarity,</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    warmup_steps: Number of training steps in warmup stage</span>
+<span class="sd">    warmup_ratio: Ratio of warmup steps to total steps</span>
+<span class="sd">    hold_steps: Number of training steps to hold the learning rate after warm up</span>
+<span class="sd">    hold_ratio: Ratio of hold steps to total steps</span>
+<span class="sd">    max_steps: Total number of steps while training or `None` for infinite training</span>
+
+<span class="sd">    Results</span>
+<span class="sd">    -------</span>
+<span class="sd">    Learning rate is linearly increased from 0 to 1 over warmup steps, then linearly decreased from 1 to 0 over hold</span>
+<span class="sd">    steps.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">optimizer</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">warmup_steps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">warmup_ratio</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">hold_steps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">hold_ratio</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_steps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">min_lr</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">last_epoch</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        optimizer: optimizer</span>
+<span class="sd">        warmup_steps: Number of training steps in warmup stage.</span>
+<span class="sd">        warmup_ratio: Ratio of warmup steps to total steps.</span>
+<span class="sd">        hold_steps: Number of training steps to hold the learning rate after warm up.</span>
+<span class="sd">        hold_ratio: Ratio of hold steps to total steps.</span>
+<span class="sd">        max_steps: Total number of steps while training or `None` for infinite training.</span>
+<span class="sd">        min_lr: Minimum learning rate.</span>
+<span class="sd">        last_epoch: Last epoch.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">hold_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">hold_ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;Either use particular number of step or ratio&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">hold_ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">max_steps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;If there is a ratio, there should be a total steps&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span> <span class="o">=</span> <span class="n">min_lr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_warmup_lr</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="c1"># Necessary to duplicate as class attributes are hidden in inner class</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span> <span class="o">=</span> <span class="n">max_steps</span>
+        <span class="k">if</span> <span class="n">warmup_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span> <span class="o">=</span> <span class="n">warmup_steps</span>
+        <span class="k">elif</span> <span class="n">warmup_ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">warmup_ratio</span> <span class="o">*</span> <span class="n">max_steps</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="n">hold_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hold_steps</span> <span class="o">=</span> <span class="n">hold_steps</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span>
+        <span class="k">elif</span> <span class="n">hold_ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hold_steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">hold_ratio</span> <span class="o">*</span> <span class="n">max_steps</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hold_steps</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">optimizer</span><span class="p">,</span>
+            <span class="n">warmup_steps</span><span class="o">=</span><span class="n">warmup_steps</span><span class="p">,</span>
+            <span class="n">warmup_ratio</span><span class="o">=</span><span class="n">warmup_ratio</span><span class="p">,</span>
+            <span class="n">max_steps</span><span class="o">=</span><span class="n">max_steps</span><span class="p">,</span>
+            <span class="n">last_epoch</span><span class="o">=</span><span class="n">last_epoch</span><span class="p">,</span>
+            <span class="n">min_lr</span><span class="o">=</span><span class="n">min_lr</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="WarmupHoldPolicy.get_lr"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.lr_scheduler.WarmupHoldPolicy.get_lr">[docs]</a>    <span class="k">def</span> <span class="nf">get_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get learning rate at current step.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_lr_called_within_step</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;To get the last learning rate computed by the scheduler, &quot;</span> <span class="s2">&quot;please use `get_last_lr()`.&quot;</span><span class="p">,</span> <span class="ne">UserWarning</span>
+            <span class="p">)</span>
+
+        <span class="n">step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_epoch</span>
+
+        <span class="c1"># Warmup phase</span>
+        <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span> <span class="o">&gt;=</span> <span class="n">step</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_warmup_lr</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+
+        <span class="c1"># Hold phase</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hold_steps</span> <span class="o">&lt;</span> <span class="n">step</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span>
+
+        <span class="k">if</span> <span class="n">step</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_lr</span><span class="p">(</span><span class="n">step</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="WarmupAnnealHoldPolicy"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.lr_scheduler.WarmupAnnealHoldPolicy">[docs]</a><span class="k">class</span> <span class="nc">WarmupAnnealHoldPolicy</span><span class="p">(</span><span class="n">_LRScheduler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Adds warmup kwargs and warmup logic to lr policy. All arguments should be passed as kwargs for clarity.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    warmup_steps: Number of training steps in warmup stage</span>
+<span class="sd">    warmup_ratio: Ratio of warmup steps to total steps</span>
+<span class="sd">    max_steps: Total number of steps while training or `None` for infinite training</span>
+<span class="sd">    min_lr: Minimum lr to hold the learning rate after decay at.</span>
+<span class="sd">    constant_steps: Number of steps to keep lr constant at.</span>
+<span class="sd">    constant_ratio: Ratio of steps to keep lr constant.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">optimizer</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">warmup_steps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">warmup_ratio</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">constant_steps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">constant_ratio</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_steps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">min_lr</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">last_epoch</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        optimizer: Optimizer</span>
+<span class="sd">        warmup_steps: Number of training steps in warmup stage.</span>
+<span class="sd">        warmup_ratio: Ratio of warmup steps to total steps.</span>
+<span class="sd">        constant_steps: Number of steps to keep lr constant at.</span>
+<span class="sd">        constant_ratio: Ratio of steps to keep lr constant.</span>
+<span class="sd">        max_steps: Total number of steps while training or `None` for infinite training.</span>
+<span class="sd">        min_lr: Minimum lr to hold the learning rate after decay at.</span>
+<span class="sd">        last_epoch: The index of last epoch.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">warmup_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">warmup_ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;Either use particular number of step or ratio&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">constant_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">constant_ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;Either use constant_steps or constant_ratio&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">warmup_ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">max_steps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;If there is a ratio, there should be a total steps&quot;</span><span class="p">)</span>
+
+        <span class="c1"># It is necessary to assign all attributes *before* __init__, as class is wrapped by an inner class.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span> <span class="o">=</span> <span class="n">max_steps</span>
+
+        <span class="k">if</span> <span class="n">warmup_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span> <span class="o">=</span> <span class="n">warmup_steps</span>
+        <span class="k">elif</span> <span class="n">warmup_ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">warmup_ratio</span> <span class="o">*</span> <span class="n">max_steps</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="n">constant_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">constant_steps</span> <span class="o">=</span> <span class="n">constant_steps</span>
+        <span class="k">elif</span> <span class="n">constant_ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">constant_steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">constant_ratio</span> <span class="o">*</span> <span class="n">max_steps</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">constant_steps</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">decay_steps</span> <span class="o">=</span> <span class="n">max_steps</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">constant_steps</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span> <span class="o">=</span> <span class="n">min_lr</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">last_epoch</span><span class="p">)</span>
+
+<div class="viewcode-block" id="WarmupAnnealHoldPolicy.get_lr"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.lr_scheduler.WarmupAnnealHoldPolicy.get_lr">[docs]</a>    <span class="k">def</span> <span class="nf">get_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get learning rate at current step.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_lr_called_within_step</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;To get the last learning rate computed by the scheduler, please use `get_last_lr()`.&quot;</span><span class="p">,</span> <span class="ne">UserWarning</span>
+            <span class="p">)</span>
+
+        <span class="n">step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_epoch</span>
+
+        <span class="c1"># Warmup steps</span>
+        <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span> <span class="o">&gt;=</span> <span class="n">step</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_warmup_lr</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+
+        <span class="c1"># Constant steps after warmup and decay</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">constant_steps</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">decay_steps</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">step</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_constant_lr</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+
+        <span class="c1"># Min lr after max steps of updates</span>
+        <span class="k">if</span> <span class="n">step</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_lr</span><span class="p">(</span><span class="n">step</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_warmup_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get learning rate at warmup stage.&quot;&quot;&quot;</span>
+        <span class="n">lr_val</span> <span class="o">=</span> <span class="p">(</span><span class="n">step</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">initial_lr</span> <span class="o">*</span> <span class="n">lr_val</span> <span class="k">for</span> <span class="n">initial_lr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_get_constant_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get learning rate at constant stage.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_get_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Simple const lr policy&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span></div>
+
+
+<span class="k">def</span> <span class="nf">_sqrt_annealing</span><span class="p">(</span><span class="n">initial_lr</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">max_steps</span><span class="p">,</span> <span class="n">min_lr</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Anneal learning rate by sqrt.&quot;&quot;&quot;</span>
+    <span class="n">mult</span> <span class="o">=</span> <span class="p">((</span><span class="n">max_steps</span> <span class="o">-</span> <span class="n">step</span><span class="p">)</span> <span class="o">/</span> <span class="n">max_steps</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span>
+    <span class="n">out_lr</span> <span class="o">=</span> <span class="n">initial_lr</span> <span class="o">*</span> <span class="n">mult</span>
+    <span class="n">out_lr</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">out_lr</span><span class="p">,</span> <span class="n">min_lr</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out_lr</span>
+
+
+<span class="k">def</span> <span class="nf">_square_annealing</span><span class="p">(</span><span class="n">initial_lr</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">max_steps</span><span class="p">,</span> <span class="n">min_lr</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Anneal learning rate by square.&quot;&quot;&quot;</span>
+    <span class="n">mult</span> <span class="o">=</span> <span class="p">((</span><span class="n">max_steps</span> <span class="o">-</span> <span class="n">step</span><span class="p">)</span> <span class="o">/</span> <span class="n">max_steps</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+    <span class="n">out_lr</span> <span class="o">=</span> <span class="n">initial_lr</span> <span class="o">*</span> <span class="n">mult</span>
+    <span class="n">out_lr</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">out_lr</span><span class="p">,</span> <span class="n">min_lr</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out_lr</span>
+
+
+<span class="k">def</span> <span class="nf">_cosine_annealing</span><span class="p">(</span><span class="n">initial_lr</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">max_steps</span><span class="p">,</span> <span class="n">min_lr</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Anneal learning rate by cosine.&quot;&quot;&quot;</span>
+    <span class="n">mult</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">step</span> <span class="o">/</span> <span class="n">max_steps</span><span class="p">))</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">initial_lr</span> <span class="o">-</span> <span class="n">min_lr</span><span class="p">)</span> <span class="o">*</span> <span class="n">mult</span> <span class="o">+</span> <span class="n">min_lr</span>
+
+
+<span class="k">def</span> <span class="nf">_linear_warmup_with_cosine_annealing</span><span class="p">(</span><span class="n">max_lr</span><span class="p">,</span> <span class="n">warmup_steps</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">decay_steps</span><span class="p">,</span> <span class="n">min_lr</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Anneal learning rate by linear warmup and cosine annealing.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">max_lr</span> <span class="o">&lt;=</span> <span class="n">min_lr</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">AssertionError</span>
+    <span class="c1"># Use linear warmup for the initial part.</span>
+    <span class="k">if</span> <span class="n">warmup_steps</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">step</span> <span class="o">&lt;=</span> <span class="n">warmup_steps</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">max_lr</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">step</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">warmup_steps</span><span class="p">)</span>
+
+    <span class="c1"># For any steps larger than `decay_steps`, use `min_lr`.</span>
+    <span class="k">if</span> <span class="n">step</span> <span class="o">&gt;</span> <span class="n">warmup_steps</span> <span class="o">+</span> <span class="n">decay_steps</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">min_lr</span>
+
+    <span class="c1"># If we are done with the warmup period, use the decay style.</span>
+    <span class="n">num_steps_</span> <span class="o">=</span> <span class="n">step</span> <span class="o">-</span> <span class="n">warmup_steps</span>
+    <span class="n">decay_steps_</span> <span class="o">=</span> <span class="n">decay_steps</span>
+    <span class="n">decay_ratio</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">num_steps_</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">decay_steps_</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">decay_ratio</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">AssertionError</span>
+    <span class="k">if</span> <span class="n">decay_ratio</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">AssertionError</span>
+    <span class="n">delta_lr</span> <span class="o">=</span> <span class="n">max_lr</span> <span class="o">-</span> <span class="n">min_lr</span>
+
+    <span class="n">coeff</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">decay_ratio</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1.0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">min_lr</span> <span class="o">+</span> <span class="n">coeff</span> <span class="o">*</span> <span class="n">delta_lr</span>
+
+
+<span class="k">def</span> <span class="nf">_poly_decay</span><span class="p">(</span><span class="n">initial_lr</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">decay_steps</span><span class="p">,</span> <span class="n">power</span><span class="p">,</span> <span class="n">min_lr</span><span class="p">,</span> <span class="n">cycle</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Polynomial decay of learning rate.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">cycle</span><span class="p">:</span>
+        <span class="n">multiplier</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="k">if</span> <span class="n">step</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">step</span> <span class="o">/</span> <span class="n">decay_steps</span><span class="p">)</span>
+        <span class="n">decay_steps</span> <span class="o">*=</span> <span class="n">multiplier</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">step</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">decay_steps</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">step</span> <span class="o">/</span> <span class="n">decay_steps</span>
+    <span class="n">lr</span> <span class="o">=</span> <span class="p">(</span><span class="n">initial_lr</span> <span class="o">-</span> <span class="n">min_lr</span><span class="p">)</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">p</span><span class="p">,</span> <span class="n">power</span><span class="p">)</span>
+    <span class="n">lr</span> <span class="o">+=</span> <span class="n">min_lr</span>
+    <span class="k">return</span> <span class="n">lr</span>
+
+
+<div class="viewcode-block" id="SquareAnnealing"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.lr_scheduler.SquareAnnealing">[docs]</a><span class="k">class</span> <span class="nc">SquareAnnealing</span><span class="p">(</span><span class="n">WarmupPolicy</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Anneal learning rate by square.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_steps</span><span class="p">,</span> <span class="n">min_lr</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">last_epoch</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">max_steps</span><span class="o">=</span><span class="n">max_steps</span><span class="p">,</span> <span class="n">last_epoch</span><span class="o">=</span><span class="n">last_epoch</span><span class="p">,</span> <span class="n">min_lr</span><span class="o">=</span><span class="n">min_lr</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get learning rate at current step.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">_square_annealing</span><span class="p">(</span>
+                <span class="n">initial_lr</span><span class="o">=</span><span class="n">initial_lr</span><span class="p">,</span>
+                <span class="n">step</span><span class="o">=</span><span class="n">step</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span><span class="p">,</span>
+                <span class="n">max_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span><span class="p">,</span>
+                <span class="n">min_lr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">initial_lr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span>
+        <span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="SquareRootAnnealing"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.lr_scheduler.SquareRootAnnealing">[docs]</a><span class="k">class</span> <span class="nc">SquareRootAnnealing</span><span class="p">(</span><span class="n">WarmupPolicy</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Anneal learning rate by square root.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_steps</span><span class="p">,</span> <span class="n">min_lr</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">last_epoch</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">max_steps</span><span class="o">=</span><span class="n">max_steps</span><span class="p">,</span> <span class="n">last_epoch</span><span class="o">=</span><span class="n">last_epoch</span><span class="p">,</span> <span class="n">min_lr</span><span class="o">=</span><span class="n">min_lr</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get learning rate at current step.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">_sqrt_annealing</span><span class="p">(</span>
+                <span class="n">initial_lr</span><span class="o">=</span><span class="n">initial_lr</span><span class="p">,</span>
+                <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">,</span>
+                <span class="n">max_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span><span class="p">,</span>
+                <span class="n">min_lr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">initial_lr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span>
+        <span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="CosineAnnealing"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.lr_scheduler.CosineAnnealing">[docs]</a><span class="k">class</span> <span class="nc">CosineAnnealing</span><span class="p">(</span><span class="n">WarmupAnnealHoldPolicy</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Anneal learning rate by cosine.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_steps</span><span class="p">,</span> <span class="n">min_lr</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">last_epoch</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">max_steps</span><span class="o">=</span><span class="n">max_steps</span><span class="p">,</span> <span class="n">last_epoch</span><span class="o">=</span><span class="n">last_epoch</span><span class="p">,</span> <span class="n">min_lr</span><span class="o">=</span><span class="n">min_lr</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get learning rate at current step.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">initial_lr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">initial_lr</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s2"> received an initial learning rate that was lower than the minimum learning rate.&quot;</span>
+                <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="p">[</span>
+                <span class="n">_cosine_annealing</span><span class="p">(</span>
+                    <span class="n">initial_lr</span><span class="o">=</span><span class="n">initial_lr</span><span class="p">,</span>
+                    <span class="n">step</span><span class="o">=</span><span class="n">step</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span><span class="p">,</span>
+                    <span class="n">max_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span><span class="p">,</span>
+                    <span class="n">min_lr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">initial_lr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span>
+            <span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">constant_steps</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">constant_steps</span> <span class="o">==</span> <span class="mi">0</span>
+            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_linear_warmup_with_cosine_annealing_lr</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_warmup_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the warmup learning rate for the given step.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">constant_steps</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">constant_steps</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_get_warmup_lr</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+
+        <span class="c1"># Use linear warmup for the initial part.</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_linear_warmup_with_cosine_annealing_lr</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_constant_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Only called when constant_steps is not None and not 0.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_linear_warmup_with_cosine_annealing_lr</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_linear_warmup_with_cosine_annealing_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Cosine Schedule, slightly different warmup schedule + constant LR at the end.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">_linear_warmup_with_cosine_annealing</span><span class="p">(</span>
+                <span class="n">max_lr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="n">warmup_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span><span class="p">,</span>
+                <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">,</span>
+                <span class="n">decay_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">decay_steps</span><span class="p">,</span>
+                <span class="n">min_lr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span>
+        <span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="NoamAnnealing"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.lr_scheduler.NoamAnnealing">[docs]</a><span class="k">class</span> <span class="nc">NoamAnnealing</span><span class="p">(</span><span class="n">_LRScheduler</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Noam learning rate annealing.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">d_model</span><span class="p">,</span> <span class="n">warmup_steps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">warmup_ratio</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_steps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">min_lr</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">last_epoch</span><span class="o">=-</span><span class="mi">1</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_normalize</span> <span class="o">=</span> <span class="n">d_model</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">warmup_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">warmup_ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;Either use particular number of step or ratio&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">warmup_ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">max_steps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;If there is a ratio, there should be a total steps&quot;</span><span class="p">)</span>
+
+        <span class="c1"># It is necessary to assign all attributes *before* __init__,</span>
+        <span class="c1"># as class is wrapped by an inner class.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span> <span class="o">=</span> <span class="n">max_steps</span>
+        <span class="k">if</span> <span class="n">warmup_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span> <span class="o">=</span> <span class="n">warmup_steps</span>
+        <span class="k">elif</span> <span class="n">warmup_ratio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">warmup_ratio</span> <span class="o">*</span> <span class="n">max_steps</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span> <span class="o">=</span> <span class="n">min_lr</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">last_epoch</span><span class="p">)</span>
+
+<div class="viewcode-block" id="NoamAnnealing.get_lr"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.lr_scheduler.NoamAnnealing.get_lr">[docs]</a>    <span class="k">def</span> <span class="nf">get_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get learning rate at current step.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_lr_called_within_step</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;To get the last learning rate computed by the scheduler, please use `get_last_lr()`.&quot;</span><span class="p">,</span> <span class="ne">UserWarning</span>
+            <span class="p">)</span>
+
+        <span class="n">step</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_epoch</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">step</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">initial_lr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">initial_lr</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s2"> received an initial learning rate that was lower than the minimum learning rate.&quot;</span>
+                <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_noam_annealing</span><span class="p">(</span><span class="n">initial_lr</span><span class="o">=</span><span class="n">initial_lr</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">)</span> <span class="k">for</span> <span class="n">initial_lr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span><span class="p">]</span></div>
+
+    <span class="k">def</span> <span class="nf">_noam_annealing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">initial_lr</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Noam learning rate annealing.&quot;&quot;&quot;</span>
+        <span class="n">mult</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize</span> <span class="o">*</span> <span class="nb">min</span><span class="p">(</span><span class="n">step</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">),</span> <span class="n">step</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="mf">1.5</span><span class="p">)))</span>
+        <span class="n">out_lr</span> <span class="o">=</span> <span class="n">initial_lr</span> <span class="o">*</span> <span class="n">mult</span>
+        <span class="k">if</span> <span class="n">step</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span><span class="p">:</span>
+            <span class="n">out_lr</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">out_lr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out_lr</span></div>
+
+
+<div class="viewcode-block" id="WarmupAnnealing"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.lr_scheduler.WarmupAnnealing">[docs]</a><span class="k">class</span> <span class="nc">WarmupAnnealing</span><span class="p">(</span><span class="n">WarmupPolicy</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Warmup learning rate annealing.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_steps</span><span class="p">,</span> <span class="n">last_epoch</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">min_lr</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">max_steps</span><span class="o">=</span><span class="n">max_steps</span><span class="p">,</span> <span class="n">last_epoch</span><span class="o">=</span><span class="n">last_epoch</span><span class="p">,</span> <span class="n">min_lr</span><span class="o">=</span><span class="n">min_lr</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get learning rate at current step.&quot;&quot;&quot;</span>
+        <span class="n">delta_lr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span>
+        <span class="n">mult</span> <span class="o">=</span> <span class="p">(</span><span class="n">step</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">mult</span><span class="p">)</span> <span class="o">*</span> <span class="n">delta_lr</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="InverseSquareRootAnnealing"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.lr_scheduler.InverseSquareRootAnnealing">[docs]</a><span class="k">class</span> <span class="nc">InverseSquareRootAnnealing</span><span class="p">(</span><span class="n">WarmupPolicy</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Inverse square root learning rate annealing.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_steps</span><span class="p">,</span> <span class="n">last_epoch</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">min_lr</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">max_steps</span><span class="o">=</span><span class="n">max_steps</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">last_epoch</span><span class="o">=</span><span class="n">last_epoch</span><span class="p">,</span> <span class="n">min_lr</span><span class="o">=</span><span class="n">min_lr</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get learning rate at current step.&quot;&quot;&quot;</span>
+        <span class="n">denom</span> <span class="o">=</span> <span class="p">((</span><span class="n">step</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="o">**</span> <span class="mf">0.5</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">initial_lr</span> <span class="o">/</span> <span class="n">denom</span> <span class="k">for</span> <span class="n">initial_lr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="T5InverseSquareRootAnnealing"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.lr_scheduler.T5InverseSquareRootAnnealing">[docs]</a><span class="k">class</span> <span class="nc">T5InverseSquareRootAnnealing</span><span class="p">(</span><span class="n">SquareRootConstantPolicy</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Inverse square root learning rate annealing.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_steps</span><span class="p">,</span> <span class="n">last_epoch</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">min_lr</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">max_steps</span><span class="o">=</span><span class="n">max_steps</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">last_epoch</span><span class="o">=</span><span class="n">last_epoch</span><span class="p">,</span> <span class="n">min_lr</span><span class="o">=</span><span class="n">min_lr</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get learning rate at current step.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">step</span><span class="o">**</span><span class="mf">0.5</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="PolynomialDecayAnnealing"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.lr_scheduler.PolynomialDecayAnnealing">[docs]</a><span class="k">class</span> <span class="nc">PolynomialDecayAnnealing</span><span class="p">(</span><span class="n">WarmupPolicy</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Polynomial decay learning rate annealing.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_steps</span><span class="p">,</span> <span class="n">min_lr</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">power</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">cycle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">last_epoch</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">power</span> <span class="o">=</span> <span class="n">power</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cycle</span> <span class="o">=</span> <span class="n">cycle</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">max_steps</span><span class="o">=</span><span class="n">max_steps</span><span class="p">,</span> <span class="n">last_epoch</span><span class="o">=</span><span class="n">last_epoch</span><span class="p">,</span> <span class="n">min_lr</span><span class="o">=</span><span class="n">min_lr</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get learning rate at current step.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">_poly_decay</span><span class="p">(</span>
+                <span class="n">initial_lr</span><span class="p">,</span>
+                <span class="n">step</span><span class="o">=</span><span class="n">step</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span><span class="p">,</span>
+                <span class="n">decay_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span><span class="p">,</span>
+                <span class="n">power</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">power</span><span class="p">,</span>
+                <span class="n">min_lr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span><span class="p">,</span>
+                <span class="n">cycle</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cycle</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">initial_lr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span>
+        <span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="PolynomialHoldDecayAnnealing"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.lr_scheduler.PolynomialHoldDecayAnnealing">[docs]</a><span class="k">class</span> <span class="nc">PolynomialHoldDecayAnnealing</span><span class="p">(</span><span class="n">WarmupHoldPolicy</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Polynomial decay learning rate annealing.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_steps</span><span class="p">,</span> <span class="n">min_lr</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">power</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">cycle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">last_epoch</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">power</span> <span class="o">=</span> <span class="n">power</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cycle</span> <span class="o">=</span> <span class="n">cycle</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">max_steps</span><span class="o">=</span><span class="n">max_steps</span><span class="p">,</span> <span class="n">last_epoch</span><span class="o">=</span><span class="n">last_epoch</span><span class="p">,</span> <span class="n">min_lr</span><span class="o">=</span><span class="n">min_lr</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get learning rate at current step.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">_poly_decay</span><span class="p">(</span>
+                <span class="n">initial_lr</span><span class="p">,</span>
+                <span class="n">step</span><span class="o">=</span><span class="n">step</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">hold_steps</span><span class="p">,</span>
+                <span class="n">decay_steps</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_steps</span> <span class="o">-</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">warmup_steps</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hold_steps</span><span class="p">),</span>
+                <span class="n">power</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">power</span><span class="p">,</span>
+                <span class="n">min_lr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">min_lr</span><span class="p">,</span>
+                <span class="n">cycle</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cycle</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">initial_lr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_lrs</span>
+        <span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="register_scheduler"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.lr_scheduler.register_scheduler">[docs]</a><span class="k">def</span> <span class="nf">register_scheduler</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">scheduler</span><span class="p">:</span> <span class="n">_LRScheduler</span><span class="p">,</span> <span class="n">scheduler_params</span><span class="p">:</span> <span class="n">SchedulerParams</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Checks if the scheduler name exists in the registry, and if it doesn&#39;t, adds it.</span>
+<span class="sd">    This allows custom schedulers to be added and called by name during instantiation.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name: Name of the optimizer. Will be used as key to retrieve the optimizer.</span>
+<span class="sd">    scheduler: Scheduler class (inherits from _LRScheduler)</span>
+<span class="sd">    scheduler_params: The parameters as a dataclass of the scheduler</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">AVAILABLE_SCHEDULERS</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cannot override pre-existing schedulers. Conflicting scheduler name = </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">AVAILABLE_SCHEDULERS</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">scheduler</span>
+
+    <span class="n">sched_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">scheduler</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">_params&quot;</span>
+    <span class="n">register_scheduler_params</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">sched_name</span><span class="p">,</span> <span class="n">scheduler_params</span><span class="o">=</span><span class="n">scheduler_params</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_scheduler"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.lr_scheduler.get_scheduler">[docs]</a><span class="k">def</span> <span class="nf">get_scheduler</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">_LRScheduler</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convenience method to obtain an _LRScheduler class and partially instantiate it with optimizer kwargs.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name: Name of the scheduler in the registry.</span>
+<span class="sd">    kwargs: Optional kwargs of the scheduler used during instantiation.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A partially instantiated _LRScheduler</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">AVAILABLE_SCHEDULERS</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Cannot resolve scheduler</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;. Available optimizers are : &quot;</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">AVAILABLE_SCHEDULERS</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">scheduler_cls</span> <span class="o">=</span> <span class="n">AVAILABLE_SCHEDULERS</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">partial</span><span class="p">(</span><span class="n">scheduler_cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="prepare_lr_scheduler"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.lr_scheduler.prepare_lr_scheduler">[docs]</a><span class="k">def</span> <span class="nf">prepare_lr_scheduler</span><span class="p">(</span>
+    <span class="n">optimizer</span><span class="p">:</span> <span class="n">optim</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">,</span>
+    <span class="n">scheduler_config</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">DictConfig</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span>
+    <span class="n">train_dataloader</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">dataloader</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Constructs an LR Scheduler (optionally) for a given optimizer, based on a config with the following schema.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    optimizer: The optimizer to use for the scheduler.</span>
+<span class="sd">        name: &lt;name of optimizer&gt;</span>
+
+<span class="sd">        lr: &lt;maximal learning rate&gt;</span>
+
+<span class="sd">        # &lt;additional optimizer arguments&gt;</span>
+
+<span class="sd">        args:</span>
+
+<span class="sd">            name: auto  # special keyword, resolves to correct optimizer config for given optimizer name</span>
+
+<span class="sd">            # cls: mridc.core.config.optimizers.NovogradParams  # explicit instantiation by class path</span>
+
+<span class="sd">            params:  # optional override parameters for the optimizer config</span>
+
+<span class="sd">                betas: [0.8, 0.5]</span>
+
+<span class="sd">                weight_decay: 0.001</span>
+
+<span class="sd">    scheduler_config: The scheduler config.</span>
+
+<span class="sd">        name: &lt;name of scheduler&gt;</span>
+
+<span class="sd">        iters_per_batch: null # computed at runtime; mandatory to have</span>
+
+<span class="sd">        max_steps: null # computed at runtime or explicitly set here; mandatory to have</span>
+
+<span class="sd">        # pytorch lightning args &lt;mandatory&gt;</span>
+
+<span class="sd">        monitor: val_loss</span>
+
+<span class="sd">        reduce_on_plateau: false</span>
+
+<span class="sd">        # &lt;scheduler config override&gt;</span>
+
+<span class="sd">        args:</span>
+
+<span class="sd">            name: auto  # special keyword, resolves to correct optimizer config for given optimizer name</span>
+
+<span class="sd">            # cls: mridc.core.config.schedulers.CosineAnnealingParams  # explicit instantiation by class path</span>
+
+<span class="sd">            params:  # optional override parameters for the optimizer config</span>
+
+<span class="sd">                warmup_steps: null</span>
+
+<span class="sd">                warmup_ratio: null</span>
+
+<span class="sd">                min_lr: 0.0</span>
+
+<span class="sd">                last_epoch: -1</span>
+
+<span class="sd">    train_dataloader: Optional requirement, must be passed if &quot;iters_per_batch&quot; is defined instead of &quot;max_steps&quot;. \</span>
+<span class="sd">    Used to compute effective &quot;max_steps&quot;.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A dictionary containing the LR Scheduler implementation if the config was successfully parsed along with other \</span>
+<span class="sd">    parameters required by Pytorch Lightning, otherwise None.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">scheduler_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">scheduler_config</span> <span class="o">=</span> <span class="n">maybe_update_config_version</span><span class="p">(</span><span class="n">scheduler_config</span><span class="p">)</span>
+
+    <span class="c1"># Build nested dictionary for convenience out of structured objects</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">scheduler_config</span><span class="p">,</span> <span class="n">DictConfig</span><span class="p">):</span>
+        <span class="n">scheduler_config</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">to_container</span><span class="p">(</span><span class="n">scheduler_config</span><span class="p">,</span> <span class="n">resolve</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">is_dataclass</span><span class="p">(</span><span class="n">scheduler_config</span><span class="p">):</span>
+        <span class="c1"># Recursively transform data classes to basic dictionaries</span>
+        <span class="n">scheduler_config</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">scheduler_config</span><span class="p">)</span>
+        <span class="n">scheduler_config</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">to_container</span><span class="p">(</span><span class="n">scheduler_config</span><span class="p">,</span> <span class="n">resolve</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Test to see if config follows above schema</span>
+
+    <span class="n">add_max_args_flag</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">interval</span> <span class="o">=</span> <span class="s2">&quot;step&quot;</span>
+    <span class="k">if</span> <span class="n">scheduler_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s2">&quot;args&quot;</span> <span class="ow">in</span> <span class="n">scheduler_config</span><span class="p">:</span>
+            <span class="n">scheduler_args</span> <span class="o">=</span> <span class="n">scheduler_config</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;args&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">scheduler_args</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">scheduler_config</span><span class="p">)</span>
+
+            <span class="c1"># Remove extra parameters from scheduler_args nest</span>
+            <span class="c1"># Assume all other parameters are to be passed into scheduler constructor</span>
+
+            <span class="k">if</span> <span class="s2">&quot;name&quot;</span> <span class="ow">in</span> <span class="n">scheduler_args</span> <span class="ow">and</span> <span class="n">scheduler_args</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;ReduceLROnPlateau&quot;</span><span class="p">:</span>
+                <span class="n">add_max_args_flag</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">interval</span> <span class="o">=</span> <span class="s2">&quot;epoch&quot;</span>
+
+            <span class="n">scheduler_args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">scheduler_args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;t_max_epochs&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">scheduler_args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;t_accumulate_grad_batches&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">scheduler_args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;t_limit_train_batches&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">scheduler_args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;t_num_workers&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">scheduler_args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;monitor&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">scheduler_args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;reduce_on_plateau&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Return gracefully in case `sched` was not supplied; inform user</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Scheduler not initialized as no `sched` config supplied to setup_optimizer()&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># Try instantiation of scheduler params from config class path</span>
+    <span class="k">if</span> <span class="s2">&quot;_target_&quot;</span> <span class="ow">in</span> <span class="n">scheduler_args</span><span class="p">:</span>
+        <span class="n">scheduler_args_cfg</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">scheduler_args</span><span class="p">)</span>
+        <span class="n">scheduler_conf</span> <span class="o">=</span> <span class="n">hydra</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">instantiate</span><span class="p">(</span><span class="n">scheduler_args_cfg</span><span class="p">)</span>
+        <span class="n">scheduler_args</span> <span class="o">=</span> <span class="nb">vars</span><span class="p">(</span><span class="n">scheduler_conf</span><span class="p">)</span>
+
+        <span class="c1"># Get name of the scheduler</span>
+        <span class="n">scheduler_name</span> <span class="o">=</span> <span class="n">scheduler_conf</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
+
+        <span class="k">if</span> <span class="s2">&quot;Params&quot;</span> <span class="ow">in</span> <span class="n">scheduler_name</span><span class="p">:</span>
+            <span class="n">scheduler_name</span> <span class="o">=</span> <span class="n">scheduler_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Params&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Class path instantiation failed; try resolving &quot;name&quot; component</span>
+
+        <span class="c1"># Get name of the scheduler</span>
+        <span class="k">if</span> <span class="s2">&quot;name&quot;</span> <span class="ow">in</span> <span class="n">scheduler_config</span><span class="p">:</span>
+            <span class="n">scheduler_name</span> <span class="o">=</span> <span class="n">scheduler_config</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Could not resolve classpath for Scheduler Config, and `name` &quot;</span>
+                <span class="s2">&quot;was not provided either. </span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;Scheduler cannot be instantiated !&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># If class path was not provided, perhaps `name` is provided for resolution</span>
+        <span class="k">if</span> <span class="s2">&quot;name&quot;</span> <span class="ow">in</span> <span class="n">scheduler_args</span><span class="p">:</span>
+            <span class="c1"># If `auto` is passed as name for resolution of optimizer name,</span>
+            <span class="c1"># then lookup optimizer name and resolve its parameter config</span>
+            <span class="k">if</span> <span class="n">scheduler_args</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
+                <span class="n">scheduler_params_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">scheduler_name</span><span class="si">}</span><span class="s2">Params&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">scheduler_params_name</span> <span class="o">=</span> <span class="n">scheduler_args</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+
+            <span class="c1"># Get override arguments provided in the config yaml file / Dict Config</span>
+            <span class="n">scheduler_params_override</span> <span class="o">=</span> <span class="n">scheduler_args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;params&quot;</span><span class="p">,</span> <span class="p">{})</span>
+
+            <span class="c1"># If params is itself a dict config object provided explicitly in Dict Config</span>
+            <span class="c1"># Resolve to dictionary for convenience</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">scheduler_params_override</span><span class="p">,</span> <span class="n">DictConfig</span><span class="p">):</span>
+                <span class="n">scheduler_params_override</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">to_container</span><span class="p">(</span><span class="n">scheduler_params_override</span><span class="p">,</span> <span class="n">resolve</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="c1"># Get and instantiate the Config dataclass for this scheduler</span>
+            <span class="n">scheduler_params_cls</span> <span class="o">=</span> <span class="n">get_scheduler_config</span><span class="p">(</span><span class="n">scheduler_params_name</span><span class="p">,</span> <span class="o">**</span><span class="n">scheduler_params_override</span><span class="p">)</span>
+            <span class="n">scheduler_params</span> <span class="o">=</span> <span class="n">scheduler_params_cls</span>  <span class="c1"># instantiate the parameters object</span>
+            <span class="n">scheduler_args</span> <span class="o">=</span> <span class="nb">vars</span><span class="p">(</span><span class="n">scheduler_params</span><span class="p">)</span>  <span class="c1"># extract just the dictionary from the Config object</span>
+
+    <span class="c1"># Extract value to monitor in losses, if provided.</span>
+    <span class="k">if</span> <span class="s2">&quot;monitor&quot;</span> <span class="ow">in</span> <span class="n">scheduler_config</span><span class="p">:</span>
+        <span class="n">monitor</span> <span class="o">=</span> <span class="n">scheduler_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;monitor&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Default to train loss</span>
+        <span class="n">monitor</span> <span class="o">=</span> <span class="s2">&quot;loss&quot;</span>
+
+    <span class="c1"># Store exact max_steps if it is provided</span>
+    <span class="k">if</span> <span class="s2">&quot;max_steps&quot;</span> <span class="ow">in</span> <span class="n">scheduler_config</span> <span class="ow">and</span> <span class="n">scheduler_config</span><span class="p">[</span><span class="s2">&quot;max_steps&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">max_steps</span> <span class="o">=</span> <span class="n">scheduler_config</span><span class="p">[</span><span class="s2">&quot;max_steps&quot;</span><span class="p">]</span>
+
+    <span class="k">elif</span> <span class="s2">&quot;t_max_epochs&quot;</span> <span class="ow">in</span> <span class="n">scheduler_config</span><span class="p">:</span>
+        <span class="c1"># Compute effective max_steps if t_max_epochs is provided</span>
+        <span class="k">if</span> <span class="n">train_dataloader</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;As `t_max_epochs` is provided/computed, it is required to pass the train dataloader in order</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;to compute effective maximum number of steps.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;Scheduler will not be instantiated !&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># Raise exception if neither `max_steps` nor `t_max_epochs` is provided</span>
+        <span class="k">if</span> <span class="n">scheduler_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;t_max_epochs&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;`t_max_epochs` cannot be None when `max_steps` is not not provided.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;This can occur when `train dataloader` is not available to correctly &quot;</span>
+                <span class="s2">&quot;prepare the scheduler.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;Scheduler will not be instantiated !&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># Get iters_per_batch</span>
+        <span class="n">max_epochs</span> <span class="o">=</span> <span class="n">scheduler_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;t_max_epochs&quot;</span><span class="p">)</span>
+        <span class="n">accumulate_grad_batches</span> <span class="o">=</span> <span class="n">scheduler_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;t_accumulate_grad_batches&quot;</span><span class="p">)</span>
+        <span class="n">limit_train_batches</span> <span class="o">=</span> <span class="n">scheduler_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;t_limit_train_batches&quot;</span><span class="p">)</span>
+        <span class="n">num_workers</span> <span class="o">=</span> <span class="n">scheduler_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;t_num_workers&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Compute effective num max_steps</span>
+        <span class="n">num_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_dataloader</span><span class="o">.</span><span class="n">dataset</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+        <span class="c1"># we may need to override ModelPT setup_optimization</span>
+        <span class="k">if</span> <span class="n">train_dataloader</span><span class="o">.</span><span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">batch_size</span> <span class="o">=</span> <span class="n">train_dataloader</span><span class="o">.</span><span class="n">batch_size</span>
+        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">train_dataloader</span><span class="p">,</span> <span class="s2">&quot;batch_sampler&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">train_dataloader</span><span class="o">.</span><span class="n">batch_sampler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">train_dataloader</span><span class="o">.</span><span class="n">batch_sampler</span><span class="o">.</span><span class="n">micro_batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">batch_size</span> <span class="o">=</span> <span class="n">train_dataloader</span><span class="o">.</span><span class="n">batch_sampler</span><span class="o">.</span><span class="n">micro_batch_size</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not find batch_size from batch_sampler: </span><span class="si">{</span><span class="n">train_dataloader</span><span class="o">.</span><span class="n">batch_sampler</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not find batch_size from train_dataloader: </span><span class="si">{</span><span class="n">train_dataloader</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">drop_last</span> <span class="o">=</span> <span class="n">train_dataloader</span><span class="o">.</span><span class="n">drop_last</span>
+
+        <span class="n">max_steps</span> <span class="o">=</span> <span class="n">compute_max_steps</span><span class="p">(</span>
+            <span class="n">max_epochs</span><span class="o">=</span><span class="n">max_epochs</span><span class="p">,</span>
+            <span class="n">accumulate_grad_batches</span><span class="o">=</span><span class="n">accumulate_grad_batches</span><span class="p">,</span>
+            <span class="n">limit_train_batches</span><span class="o">=</span><span class="n">limit_train_batches</span><span class="p">,</span>
+            <span class="n">num_workers</span><span class="o">=</span><span class="n">num_workers</span><span class="p">,</span>
+            <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
+            <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+            <span class="n">drop_last</span><span class="o">=</span><span class="n">drop_last</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">&quot;Neither `max_steps` nor `iters_per_batch` were provided to `optim.sched`, &quot;</span>
+            <span class="s2">&quot;cannot compute effective `max_steps` !</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="s2">&quot;Scheduler will not be instantiated !&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># Inject max_steps (effective or provided) into the scheduler config</span>
+    <span class="k">if</span> <span class="n">add_max_args_flag</span> <span class="ow">and</span> <span class="n">scheduler_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;ExponentialLR&quot;</span><span class="p">:</span>
+        <span class="n">scheduler_args</span><span class="p">[</span><span class="s2">&quot;max_steps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">max_steps</span>
+
+    <span class="c1"># Get the scheduler class from the config</span>
+    <span class="n">scheduler_cls</span> <span class="o">=</span> <span class="n">get_scheduler</span><span class="p">(</span><span class="n">scheduler_name</span><span class="p">,</span> <span class="o">**</span><span class="n">scheduler_args</span><span class="p">)</span>
+
+    <span class="c1"># Instantiate the LR schedule</span>
+    <span class="n">schedule</span> <span class="o">=</span> <span class="n">scheduler_cls</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="o">**</span><span class="n">scheduler_args</span><span class="p">)</span>
+
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+        <span class="s1">&#39;Scheduler &quot;</span><span class="si">%s</span><span class="s1">&quot; </span><span class="se">\n</span><span class="s1">will be used during training (effective maximum steps = </span><span class="si">%d</span><span class="s1">) - </span><span class="se">\n</span><span class="s1">Parameters : </span><span class="se">\n</span><span class="s1">(</span><span class="si">%s</span><span class="s1">)&#39;</span><span class="p">,</span>
+        <span class="nb">str</span><span class="p">(</span><span class="n">schedule</span><span class="p">),</span>
+        <span class="n">max_steps</span><span class="p">,</span>
+        <span class="n">OmegaConf</span><span class="o">.</span><span class="n">to_yaml</span><span class="p">(</span><span class="n">OmegaConf</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">scheduler_args</span><span class="p">)),</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Wrap the schedule in PTL arguments to perform stepwise computation</span>
+    <span class="c1"># Rather than epoch level computation</span>
+    <span class="n">reduce_lr_on_plateau</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">schedule</span><span class="p">,</span> <span class="n">optim</span><span class="o">.</span><span class="n">lr_scheduler</span><span class="o">.</span><span class="n">ReduceLROnPlateau</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;scheduler&quot;</span><span class="p">:</span> <span class="n">schedule</span><span class="p">,</span>
+        <span class="s2">&quot;interval&quot;</span><span class="p">:</span> <span class="n">interval</span><span class="p">,</span>
+        <span class="s2">&quot;frequency&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s2">&quot;monitor&quot;</span><span class="p">:</span> <span class="n">monitor</span><span class="p">,</span>
+        <span class="s2">&quot;reduce_on_plateau&quot;</span><span class="p">:</span> <span class="n">reduce_lr_on_plateau</span><span class="p">,</span>
+    <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="compute_max_steps"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.lr_scheduler.compute_max_steps">[docs]</a><span class="k">def</span> <span class="nf">compute_max_steps</span><span class="p">(</span>
+    <span class="n">max_epochs</span><span class="p">,</span> <span class="n">accumulate_grad_batches</span><span class="p">,</span> <span class="n">limit_train_batches</span><span class="p">,</span> <span class="n">num_workers</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">drop_last</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compute effective max_steps from the provided parameters.&quot;&quot;&quot;</span>
+    <span class="n">_round</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span> <span class="k">if</span> <span class="n">drop_last</span> <span class="k">else</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span>
+
+    <span class="n">sampler_num_samples</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">num_samples</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_workers</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">drop_last</span> <span class="ow">and</span> <span class="n">num_workers</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">&quot;Please note that drop_last is broken in pytorch 1.6.0. We will fix when pytorch 1.7.0 is released&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">steps_per_epoch</span> <span class="o">=</span> <span class="n">_round</span><span class="p">(</span><span class="n">sampler_num_samples</span> <span class="o">/</span> <span class="n">batch_size</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">limit_train_batches</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">limit_train_batches</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
+        <span class="n">steps_per_epoch</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">steps_per_epoch</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">limit_train_batches</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">steps_per_epoch</span> <span class="o">!=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">):</span>
+        <span class="c1"># limit_train_batches is a percentage of batches per epoch</span>
+        <span class="n">steps_per_epoch</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">steps_per_epoch</span> <span class="o">*</span> <span class="n">limit_train_batches</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">steps_per_epoch</span> <span class="o">/</span> <span class="n">accumulate_grad_batches</span><span class="p">)</span> <span class="o">*</span> <span class="n">max_epochs</span></div>
+
+
+<span class="n">AVAILABLE_SCHEDULERS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;WarmupPolicy&quot;</span><span class="p">:</span> <span class="n">WarmupPolicy</span><span class="p">,</span>
+    <span class="s2">&quot;WarmupHoldPolicy&quot;</span><span class="p">:</span> <span class="n">WarmupHoldPolicy</span><span class="p">,</span>
+    <span class="s2">&quot;SquareAnnealing&quot;</span><span class="p">:</span> <span class="n">SquareAnnealing</span><span class="p">,</span>
+    <span class="s2">&quot;CosineAnnealing&quot;</span><span class="p">:</span> <span class="n">CosineAnnealing</span><span class="p">,</span>
+    <span class="s2">&quot;NoamAnnealing&quot;</span><span class="p">:</span> <span class="n">NoamAnnealing</span><span class="p">,</span>
+    <span class="s2">&quot;WarmupAnnealing&quot;</span><span class="p">:</span> <span class="n">WarmupAnnealing</span><span class="p">,</span>
+    <span class="s2">&quot;InverseSquareRootAnnealing&quot;</span><span class="p">:</span> <span class="n">InverseSquareRootAnnealing</span><span class="p">,</span>
+    <span class="s2">&quot;T5InverseSquareRootAnnealing&quot;</span><span class="p">:</span> <span class="n">T5InverseSquareRootAnnealing</span><span class="p">,</span>
+    <span class="s2">&quot;SquareRootAnnealing&quot;</span><span class="p">:</span> <span class="n">SquareRootAnnealing</span><span class="p">,</span>
+    <span class="s2">&quot;PolynomialDecayAnnealing&quot;</span><span class="p">:</span> <span class="n">PolynomialDecayAnnealing</span><span class="p">,</span>
+    <span class="s2">&quot;PolynomialHoldDecayAnnealing&quot;</span><span class="p">:</span> <span class="n">PolynomialHoldDecayAnnealing</span><span class="p">,</span>
+    <span class="s2">&quot;StepLR&quot;</span><span class="p">:</span> <span class="n">pt_scheduler</span><span class="o">.</span><span class="n">StepLR</span><span class="p">,</span>
+    <span class="s2">&quot;ExponentialLR&quot;</span><span class="p">:</span> <span class="n">pt_scheduler</span><span class="o">.</span><span class="n">ExponentialLR</span><span class="p">,</span>
+    <span class="s2">&quot;ReduceLROnPlateau&quot;</span><span class="p">:</span> <span class="n">pt_scheduler</span><span class="o">.</span><span class="n">ReduceLROnPlateau</span><span class="p">,</span>
+    <span class="s2">&quot;CyclicLR&quot;</span><span class="p">:</span> <span class="n">pt_scheduler</span><span class="o">.</span><span class="n">CyclicLR</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

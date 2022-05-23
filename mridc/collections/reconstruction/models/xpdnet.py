@@ -24,11 +24,16 @@ __all__ = ["XPDNet"]
 
 class XPDNet(BaseMRIReconstructionModel, ABC):
     """
-    Implementation of the XPDNet, as presented in [1].
+    Implementation of the XPDNet, as presented in Ramzi, Zaccharie, et al.
 
     References
     ----------
-    .. [1] Ramzi, Zaccharie, et al. “XPDNet for MRI Reconstruction: An Application to the 2020 FastMRI Challenge.” ArXiv:2010.07290 [Physics, Stat], July 2021. arXiv.org, http://arxiv.org/abs/2010.07290.
+
+    ..
+
+        Ramzi, Zaccharie, et al. “XPDNet for MRI Reconstruction: An Application to the 2020 FastMRI Challenge. \
+        ” ArXiv:2010.07290 [Physics, Stat], July 2021. arXiv.org, http://arxiv.org/abs/2010.07290.
+
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):

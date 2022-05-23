@@ -46,10 +46,10 @@ class MaskFunc:
 
         Parameters
         ----------
-        center_fractions: Fraction of low-frequency columns to be retained. If multiple values are provided, then
-            one of these numbers is chosen uniformly each time. For 2D setting this value corresponds to setting
-            the Full-Width-Half-Maximum.
-        accelerations: Amount of under-sampling. This should have the same length as center_fractions. If multiple
+        center_fractions: Fraction of low-frequency columns to be retained. If multiple values are provided, then \
+        one of these numbers is chosen uniformly each time. For 2D setting this value corresponds to setting the \
+        Full-Width-Half-Maximum.
+        accelerations: Amount of under-sampling. This should have the same length as center_fractions. If multiple \
         values are provided, then one of these is chosen uniformly each time.
         """
         if len(center_fractions) != len(accelerations):
@@ -66,6 +66,19 @@ class MaskFunc:
         half_scan_percentage: Optional[float] = 0.0,
         scale: Optional[float] = 0.02,
     ) -> Tuple[torch.Tensor, int]:
+        """
+
+        Parameters
+        ----------
+        shape: Shape of the input tensor.
+        seed: Seed for the random number generator.
+        half_scan_percentage: Percentage of the low-frequency columns to be retained.
+        scale: Scale of the mask.
+
+        Returns
+        -------
+        A tuple of the mask and the number of low-frequency columns retained.
+        """
         raise NotImplementedError
 
     def choose_acceleration(self):
@@ -81,22 +94,18 @@ class RandomMaskFunc(MaskFunc):
     """
     RandomMaskFunc creates a sub-sampling mask of a given shape.
 
-    The mask selects a subset of columns from the input k-space data. If the
-    k-space data has N columns, the mask picks out:
-        1. N_low_freqs = (N * center_fraction) columns in the center
-           corresponding to low-frequencies.
-        2. The other columns are selected uniformly at random with a
-        probability equal to: prob = (N / acceleration - N_low_freqs) /
-        (N - N_low_freqs). This ensures that the expected number of columns
-        selected is equal to (N / acceleration).
+    The mask selects a subset of columns from the input k-space data. If the k-space data has N columns, the mask \
+    picks out:
+        1. N_low_freqs = (N * center_fraction) columns in the center corresponding to low-frequencies.
+        2. The other columns are selected uniformly at random with a probability equal to: \
+        prob = (N / acceleration - N_low_freqs) /  (N - N_low_freqs). This ensures that the expected number of \
+        columns selected is equal to (N / acceleration).
 
-    It is possible to use multiple center_fractions and accelerations, in which
-    case one possible (center_fraction, acceleration) is chosen uniformly at
-    random each time the RandomMaskFunc object is called.
+    It is possible to use multiple center_fractions and accelerations, in which case one possible (center_fraction, \
+    acceleration) is chosen uniformly at random each time the RandomMaskFunc object is called.
 
-    For example, if accelerations = [4, 8] and center_fractions = [0.08, 0.04],
-    then there is a 50% probability that 4-fold acceleration with 8% center
-    fraction is selected and a 50% probability that 8-fold acceleration with 4%
+    For example, if accelerations = [4, 8] and center_fractions = [0.08, 0.04], then there is a 50% probability that \
+    4-fold acceleration with 8% center  fraction is selected and a 50% probability that 8-fold acceleration with 4% \
     center fraction is selected.
     """
 
@@ -110,10 +119,10 @@ class RandomMaskFunc(MaskFunc):
         """
         Parameters
         ----------
-        shape: The shape of the mask to be created. The shape should have at least 3 dimensions. Samples are drawn
-            along the second last dimension.
-        seed: Seed for the random number generator. Setting the seed ensures the same mask is generated each time
-            for the same shape. The random state is reset afterwards.
+        shape: The shape of the mask to be created. The shape should have at least 3 dimensions. Samples are drawn \
+        along the second last dimension.
+        seed: Seed for the random number generator. Setting the seed ensures the same mask is generated each time \
+        for the same shape. The random state is reset afterwards.
         half_scan_percentage: Optional; Defines a fraction of the k-space data that is not sampled.
         scale: Optional; Defines the scale of the center of the mask.
 
@@ -147,23 +156,19 @@ class EquispacedMaskFunc(MaskFunc):
     """
     EquispacedMaskFunc creates a sub-sampling mask of a given shape.
 
-    The mask selects a subset of columns from the input k-space data. If the
-    k-space data has N columns, the mask picks out:
-        1. N_low_freqs = (N * center_fraction) columns in the center
-           corresponding to low-frequencies.
-        2. The other columns are selected with equal spacing at a proportion
-           that reaches the desired acceleration rate taking into consideration
-           the number of low frequencies. This ensures that the expected number
-           of columns selected is equal to (N / acceleration)
+    The mask selects a subset of columns from the input k-space data. If the k-space data has N columns, the mask \
+    picks out:
+        1. N_low_freqs = (N * center_fraction) columns in the center corresponding to low-frequencies.
+        2. The other columns are selected with equal spacing at a proportion that reaches the desired acceleration \
+        rate taking into consideration the number of low frequencies. This ensures that the expected number of \
+        columns selected is equal to (N / acceleration)
 
-    It is possible to use multiple center_fractions and accelerations, in which
-    case one possible (center_fraction, acceleration) is chosen uniformly at
-    random each time the EquispacedMaskFunc object is called.
+    It is possible to use multiple center_fractions and accelerations, in which case one possible (center_fraction, \
+    acceleration) is chosen uniformly at random each time the EquispacedMaskFunc object is called.
 
-    Note that this function may not give equispaced samples (documented in
-    https://github.com/facebookresearch/fastMRI/issues/54), which will require
-    modifications to standard GRAPPA approaches. Nonetheless, this aspect of
-    the function has been preserved to match the public multicoil data.
+    Note that this function may not give equispaced samples (documented in \
+    https://github.com/facebookresearch/fastMRI/issues/54), which will require modifications to standard GRAPPA \
+    approaches. Nonetheless, this aspect of the function has been preserved to match the public multicoil data.
     """
 
     def __call__(
@@ -176,9 +181,9 @@ class EquispacedMaskFunc(MaskFunc):
         """
         Parameters
         ----------
-        shape: The shape of the mask to be created. The shape should have at least 3 dimensions. Samples are drawn
+        shape: The shape of the mask to be created. The shape should have at least 3 dimensions. Samples are drawn \
         along the second last dimension.
-        seed: Seed for the random number generator. Setting the seed ensures the same mask is generated each time for
+        seed: Seed for the random number generator. Setting the seed ensures the same mask is generated each time for \
         the same shape. The random state is reset afterwards.
         half_scan_percentage: Optional; Defines a fraction of the k-space data that is not sampled.
         scale: Optional; Defines the scale of the center of the mask.
@@ -220,8 +225,8 @@ class Gaussian1DMaskFunc(MaskFunc):
     """
     Creates a 1D sub-sampling mask of a given shape.
 
-    For autocalibration purposes, data points near the k-space center will be fully sampled within an ellipse of which
-    the half-axes will set to the set scale % of the fully sampled region. The remaining points will be sampled
+    For autocalibration purposes, data points near the k-space center will be fully sampled within an ellipse of \
+    which the half-axes will set to the set scale % of the fully sampled region. The remaining points will be sampled \
     according to a Gaussian distribution.
 
     The center fractions here act as Full-Width at Half-Maximum (FWHM) values.
@@ -237,13 +242,13 @@ class Gaussian1DMaskFunc(MaskFunc):
         """
         Parameters
         ----------
-        shape: The shape of the mask to be created. The shape should have at least 3 dimensions. Samples are drawn
-            along the second last dimension.
-        seed: Seed for the random number generator. Setting the seed ensures the same mask is generated each time
-            for the same shape. The random state is reset afterwards.
+        shape: The shape of the mask to be created. The shape should have at least 3 dimensions. Samples are drawn \
+        along the second last dimension.
+        seed: Seed for the random number generator. Setting the seed ensures the same mask is generated each time \
+        for the same shape. The random state is reset afterwards.
         half_scan_percentage: Optional; Defines a fraction of the k-space data that is not sampled.
-        scale: For autocalibration purposes, data points near the k-space center will be fully sampled within an
-            ellipse of which the half-axes will set to the set scale % of the fully sampled region
+        scale: For autocalibration purposes, data points near the k-space center will be fully sampled within an \
+        ellipse of which the half-axes will set to the set scale % of the fully sampled region
 
         Returns
         -------
@@ -307,8 +312,8 @@ class Gaussian2DMaskFunc(MaskFunc):
     """
     Creates a 2D sub-sampling mask of a given shape.
 
-    For autocalibration purposes, data points near the k-space center will be fully sampled within an ellipse of which
-    the half-axes will set to the set scale % of the fully sampled region. The remaining points will be sampled
+    For autocalibration purposes, data points near the k-space center will be fully sampled within an ellipse of \
+    which the half-axes will set to the set scale % of the fully sampled region. The remaining points will be sampled \
     according to a Gaussian distribution.
 
     The center fractions here act as Full-Width at Half-Maximum (FWHM) values.
@@ -324,13 +329,13 @@ class Gaussian2DMaskFunc(MaskFunc):
         """
         Parameters
         ----------
-        shape: The shape of the mask to be created. The shape should have at least 3 dimensions. Samples are drawn
-            along the second last dimension.
-        seed: Seed for the random number generator. Setting the seed ensures the same mask is generated each time
-            for the same shape. The random state is reset afterwards.
+        shape: The shape of the mask to be created. The shape should have at least 3 dimensions. Samples are drawn \
+        along the second last dimension.
+        seed: Seed for the random number generator. Setting the seed ensures the same mask is generated each time for \
+         the same shape. The random state is reset afterwards.
         half_scan_percentage: Optional; Defines a fraction of the k-space data that is not sampled.
-        scale: For autocalibration purposes, data points near the k-space center will be fully sampled within an
-            ellipse of which the half-axes will set to the set scale % of the fully sampled region
+        scale: For autocalibration purposes, data points near the k-space center will be fully sampled within an \
+        ellipse of which the half-axes will set to the set scale % of the fully sampled region
 
         Returns
         -------
@@ -390,14 +395,14 @@ class Poisson2DMaskFunc(MaskFunc):
     """
     Creates a 2D sub-sampling mask of a given shape.
 
-    For autocalibration purposes, data points near the k-space center will be fully sampled within an ellipse of which
-    the half-axes will set to the set scale % of the fully sampled region. The remaining points will be sampled
-    according to a (variable density) Poisson distribution.
+    For autocalibration purposes, data points near the k-space center will be fully sampled within an ellipse of \
+    which the half-axes will set to the set scale % of the fully sampled region. The remaining points will be sampled \
+     according to a (variable density) Poisson distribution.
 
-    For a given acceleration factor to be accurate, the scale for the fully sampled center should remain at the default
-    0.02. A predefined list is used to convert the acceleration factor to the appropriate r parameter needed for the
-    variable density calculation. This list has been made to accommodate acceleration factors of 4 up to 21, rounding
-    off to the nearest one available. As such, acceleration factors outside this range cannot be used.
+    For a given acceleration factor to be accurate, the scale for the fully sampled center should remain at the \
+    default 0.02. A predefined list is used to convert the acceleration factor to the appropriate r parameter needed \
+    for the variable density calculation. This list has been made to accommodate acceleration factors of 4 up to 21, \
+    rounding off to the nearest one available. As such, acceleration factors outside this range cannot be used.
     """
 
     def __call__(
@@ -410,13 +415,13 @@ class Poisson2DMaskFunc(MaskFunc):
         """
         Parameters
         ----------
-        shape: The shape of the mask to be created. The shape should have at least 3 dimensions. Samples are drawn
-            along the second last dimension.
-        seed: Seed for the random number generator. Setting the seed ensures the same mask is generated each time
-            for the same shape. The random state is reset afterwards.
+        shape: The shape of the mask to be created. The shape should have at least 3 dimensions. Samples are drawn \
+        along the second last dimension.
+        seed: Seed for the random number generator. Setting the seed ensures the same mask is generated each time \
+        for the same shape. The random state is reset afterwards.
         half_scan_percentage: Optional; Defines a fraction of the k-space data that is not sampled.
-        scale: For autocalibration purposes, data points near the k-space center will be fully sampled within an
-            ellipse of which the half-axes will set to the set scale % of the fully sampled region
+        scale: For autocalibration purposes, data points near the k-space center will be fully sampled within an \
+        ellipse of which the half-axes will set to the set scale % of the fully sampled region
 
         Returns
         -------

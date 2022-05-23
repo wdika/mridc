@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mridc.utils.exp_manager &mdash; mridc v.0.0.1 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+</head>
+
+<body class="wy-body-for-nav">
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> mridc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">mridc</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">mridc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>mridc.utils.exp_manager</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+
+  <h1>Source code for mridc.utils.exp_manager</h1><div class="highlight"><pre>
+<span></span><span class="c1"># encoding: utf-8</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
+
+<span class="c1"># Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/utils/exp_manager.py</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">shutil</span> <span class="kn">import</span> <span class="n">copy</span><span class="p">,</span> <span class="n">move</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">hydra.core.hydra_config</span> <span class="kn">import</span> <span class="n">HydraConfig</span>
+<span class="kn">from</span> <span class="nn">hydra.utils</span> <span class="kn">import</span> <span class="n">get_original_cwd</span>
+<span class="kn">from</span> <span class="nn">omegaconf</span> <span class="kn">import</span> <span class="n">DictConfig</span><span class="p">,</span> <span class="n">OmegaConf</span><span class="p">,</span> <span class="n">open_dict</span>
+<span class="kn">from</span> <span class="nn">pytorch_lightning</span> <span class="kn">import</span> <span class="n">Trainer</span>
+<span class="kn">from</span> <span class="nn">pytorch_lightning.callbacks</span> <span class="kn">import</span> <span class="n">Callback</span><span class="p">,</span> <span class="n">ModelCheckpoint</span>
+<span class="kn">from</span> <span class="nn">pytorch_lightning.callbacks.timer</span> <span class="kn">import</span> <span class="n">Timer</span>
+<span class="kn">from</span> <span class="nn">pytorch_lightning.loggers</span> <span class="kn">import</span> <span class="n">LoggerCollection</span> <span class="k">as</span> <span class="n">_LoggerCollection</span><span class="p">,</span> <span class="n">TensorBoardLogger</span><span class="p">,</span> <span class="n">WandbLogger</span>
+<span class="kn">from</span> <span class="nn">pytorch_lightning.strategies.ddp</span> <span class="kn">import</span> <span class="n">DDPStrategy</span>
+
+<span class="kn">import</span> <span class="nn">mridc.utils</span>
+<span class="kn">from</span> <span class="nn">mridc.constants</span> <span class="kn">import</span> <span class="n">MRIDC_ENV_VARNAME_TESTING</span><span class="p">,</span> <span class="n">MRIDC_ENV_VARNAME_VERSION</span>
+<span class="kn">from</span> <span class="nn">mridc.utils</span> <span class="kn">import</span> <span class="n">logging</span><span class="p">,</span> <span class="n">timers</span>
+<span class="kn">from</span> <span class="nn">mridc.utils.app_state</span> <span class="kn">import</span> <span class="n">AppState</span>
+<span class="kn">from</span> <span class="nn">mridc.utils.env_var_parsing</span> <span class="kn">import</span> <span class="n">get_envbool</span>
+<span class="kn">from</span> <span class="nn">mridc.utils.exceptions</span> <span class="kn">import</span> <span class="n">MRIDCBaseException</span>
+<span class="kn">from</span> <span class="nn">mridc.utils.get_rank</span> <span class="kn">import</span> <span class="n">is_global_rank_zero</span>
+<span class="kn">from</span> <span class="nn">mridc.utils.lightning_logger_patch</span> <span class="kn">import</span> <span class="n">add_filehandlers_to_pl_logger</span>
+
+
+<div class="viewcode-block" id="NotFoundError"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.NotFoundError">[docs]</a><span class="k">class</span> <span class="nc">NotFoundError</span><span class="p">(</span><span class="n">MRIDCBaseException</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Raised when a file or folder is not found&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="LoggerMisconfigurationError"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.LoggerMisconfigurationError">[docs]</a><span class="k">class</span> <span class="nc">LoggerMisconfigurationError</span><span class="p">(</span><span class="n">MRIDCBaseException</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Raised when a mismatch between trainer.logger and exp_manager occurs&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">message</span> <span class="o">+</span> <span class="s2">&quot;You can disable lightning&#39;s trainer from creating a logger by passing logger=False to its &quot;</span>
+            <span class="s2">&quot;constructor. &quot;</span>
+        <span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CheckpointMisconfigurationError"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.CheckpointMisconfigurationError">[docs]</a><span class="k">class</span> <span class="nc">CheckpointMisconfigurationError</span><span class="p">(</span><span class="n">MRIDCBaseException</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Raised when a mismatch between trainer.callbacks and exp_manager occurs&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="CallbackParams"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.CallbackParams">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">CallbackParams</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Parameters for a callback&quot;&quot;&quot;</span>
+
+    <span class="n">filepath</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Deprecated</span>
+    <span class="n">dirpath</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># If None, exp_manager will attempt to handle the filepath</span>
+    <span class="n">filename</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># If None, exp_manager will attempt to handle the filepath</span>
+    <span class="n">monitor</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;val_loss&quot;</span>
+    <span class="n">verbose</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">save_last</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">save_top_k</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">save_weights_only</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">mode</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;min&quot;</span>
+    <span class="n">every_n_epochs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">prefix</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># If None, exp_manager will attempt to handle the filepath</span>
+    <span class="n">postfix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;.mridc&quot;</span>
+    <span class="n">save_best_model</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">always_save_mridc</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">save_mridc_on_train_end</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># Automatically save .mridc file during on_train_end hook</span>
+    <span class="n">model_parallel_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># tensor parallel size * pipeline parallel size</span></div>
+
+
+<div class="viewcode-block" id="StepTimingParams"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.StepTimingParams">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">StepTimingParams</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Parameters for the step timing callback.&quot;&quot;&quot;</span>
+
+    <span class="n">reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;mean&quot;</span>
+    <span class="c1"># if True torch.cuda.synchronize() is called on start/stop</span>
+    <span class="n">sync_cuda</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="c1"># if positive, defines the size of a sliding window for computing mean</span>
+    <span class="n">buffer_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span></div>
+
+
+<div class="viewcode-block" id="ExpManagerConfig"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.ExpManagerConfig">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">ExpManagerConfig</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Configuration for the experiment manager.&quot;&quot;&quot;</span>
+
+    <span class="c1"># Log dir creation parameters</span>
+    <span class="n">explicit_log_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">exp_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">use_datetime_version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">resume_if_exists</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">resume_past_end</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">resume_ignore_no_checkpoint</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="c1"># Logging parameters</span>
+    <span class="n">create_tensorboard_logger</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">summary_writer_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">create_wandb_logger</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">wandb_logger_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1"># Checkpointing parameters</span>
+    <span class="n">create_checkpoint_callback</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">checkpoint_callback_params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CallbackParams</span><span class="p">]</span> <span class="o">=</span> <span class="n">CallbackParams</span><span class="p">()</span>
+    <span class="c1"># Additional exp_manager arguments</span>
+    <span class="n">files_to_copy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1"># logs timing of train/val/test steps</span>
+    <span class="n">log_step_timing</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">step_timing_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StepTimingParams</span><span class="p">]</span> <span class="o">=</span> <span class="n">StepTimingParams</span><span class="p">()</span>
+    <span class="c1"># Configures creation of log files for different ranks</span>
+    <span class="n">log_local_rank_0_only</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">log_global_rank_0_only</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">model_parallel_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="TimingCallback"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.TimingCallback">[docs]</a><span class="k">class</span> <span class="nc">TimingCallback</span><span class="p">(</span><span class="n">Callback</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Logs execution time of train/val/test steps&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timer_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize TimingCallback&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">timer_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">timer_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span> <span class="o">=</span> <span class="n">timers</span><span class="o">.</span><span class="n">NamedTimer</span><span class="p">(</span><span class="o">**</span><span class="n">timer_kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_on_batch_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Called at the beginning of each batch&quot;&quot;&quot;</span>
+        <span class="c1"># reset only if we do not return mean of a sliding window</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">buffer_size</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_on_batch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Called at the end of each batch&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">stop</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">pl_module</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="n">on_step</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">on_epoch</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TimingCallback.on_train_batch_start"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.TimingCallback.on_train_batch_start">[docs]</a>    <span class="k">def</span> <span class="nf">on_train_batch_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Called at the beginning of each training batch&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_on_batch_start</span><span class="p">(</span><span class="s2">&quot;train_step_timing&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TimingCallback.on_train_batch_end"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.TimingCallback.on_train_batch_end">[docs]</a>    <span class="k">def</span> <span class="nf">on_train_batch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">,</span> <span class="n">outputs</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Logs the time taken by the training batch&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_on_batch_end</span><span class="p">(</span><span class="s2">&quot;train_step_timing&quot;</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TimingCallback.on_validation_batch_start"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.TimingCallback.on_validation_batch_start">[docs]</a>    <span class="k">def</span> <span class="nf">on_validation_batch_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">,</span> <span class="n">dataloader_idx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Logs the time taken by the validation batch&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_on_batch_start</span><span class="p">(</span><span class="s2">&quot;validation_step_timing&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TimingCallback.on_validation_batch_end"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.TimingCallback.on_validation_batch_end">[docs]</a>    <span class="k">def</span> <span class="nf">on_validation_batch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">,</span> <span class="n">outputs</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">,</span> <span class="n">dataloader_idx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Logs the time taken by the validation step&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_on_batch_end</span><span class="p">(</span><span class="s2">&quot;validation_step_timing&quot;</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TimingCallback.on_test_batch_start"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.TimingCallback.on_test_batch_start">[docs]</a>    <span class="k">def</span> <span class="nf">on_test_batch_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">,</span> <span class="n">dataloader_idx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Logs execution time of test steps&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_on_batch_start</span><span class="p">(</span><span class="s2">&quot;test_step_timing&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TimingCallback.on_test_batch_end"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.TimingCallback.on_test_batch_end">[docs]</a>    <span class="k">def</span> <span class="nf">on_test_batch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">,</span> <span class="n">outputs</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">,</span> <span class="n">dataloader_idx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Logs execution time of test steps&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_on_batch_end</span><span class="p">(</span><span class="s2">&quot;test_step_timing&quot;</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TimingCallback.on_before_backward"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.TimingCallback.on_before_backward">[docs]</a>    <span class="k">def</span> <span class="nf">on_before_backward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">,</span> <span class="n">loss</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Logs the time taken for backward pass&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_on_batch_start</span><span class="p">(</span><span class="s2">&quot;train_backward_timing&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TimingCallback.on_after_backward"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.TimingCallback.on_after_backward">[docs]</a>    <span class="k">def</span> <span class="nf">on_after_backward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Note: this is called after the optimizer step&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_on_batch_end</span><span class="p">(</span><span class="s2">&quot;train_backward_timing&quot;</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="exp_manager"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.exp_manager">[docs]</a><span class="k">def</span> <span class="nf">exp_manager</span><span class="p">(</span><span class="n">trainer</span><span class="p">:</span> <span class="n">Trainer</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">DictConfig</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    exp_manager is a helper function used to manage folders for experiments. It follows the pytorch lightning \</span>
+<span class="sd">    paradigm of exp_dir/model_or_experiment_name/version. If the lightning trainer has a logger, exp_manager will \</span>
+<span class="sd">    get exp_dir, name, and version from the logger. Otherwise, it will use the exp_dir and name arguments to create \</span>
+<span class="sd">    the logging directory. exp_manager also allows for explicit folder creation via explicit_log_dir.</span>
+
+<span class="sd">    The version can be a datetime string or an integer. Datetime version can be disabled if you use_datetime_version \</span>
+<span class="sd">    is set to False. It optionally creates TensorBoardLogger, WandBLogger, ModelCheckpoint objects from pytorch \</span>
+<span class="sd">    lightning. It copies sys.argv, and git information if available to the logging directory. It creates a log file \</span>
+<span class="sd">    for each process to log their output into.</span>
+
+<span class="sd">    exp_manager additionally has a resume feature (resume_if_exists) which can be used to continuing training from \</span>
+<span class="sd">    the constructed log_dir. When you need to continue the training repeatedly (like on a cluster which you need \</span>
+<span class="sd">    multiple consecutive jobs), you need to avoid creating the version folders. Therefore, from v1.0.0, when \</span>
+<span class="sd">    resume_if_exists is set to True, creating the version folders is ignored.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    trainer: The lightning trainer object.</span>
+<span class="sd">    cfg: Can have the following keys:</span>
+<span class="sd">        - explicit_log_dir: Can be used to override exp_dir/name/version folder creation. Defaults to None, which \</span>
+<span class="sd">        will use exp_dir, name, and version to construct the logging directory.</span>
+<span class="sd">        - exp_dir: The base directory to create the logging directory. Defaults to None, which logs to \</span>
+<span class="sd">         ./mridc_experiments.</span>
+<span class="sd">        - name: The name of the experiment. Defaults to None which turns into &quot;default&quot; via name = name or &quot;default&quot;.</span>
+<span class="sd">        - version: The version of the experiment. Defaults to None which uses either a datetime string or lightning&#39;s \</span>
+<span class="sd">         TensorboardLogger system of using version_{int}.</span>
+<span class="sd">        - use_datetime_version: Whether to use a datetime string for version. Defaults to True.</span>
+<span class="sd">        - resume_if_exists: Whether this experiment is resuming from a previous run. If True, it sets \</span>
+<span class="sd">        trainer._checkpoint_connector.resume_from_checkpoint_fit_path so that the trainer should auto-resume. \</span>
+<span class="sd">        exp_manager will move files under log_dir to log_dir/run_{int}. Defaults to False. From v1.0.0, when \</span>
+<span class="sd">        resume_if_exists is True, we would not create version folders to make it easier to find the log folder for \</span>
+<span class="sd">        next runs.</span>
+<span class="sd">        - resume_past_end: exp_manager errors out if resume_if_exists is True and a checkpoint matching \*end.ckpt \</span>
+<span class="sd">        indicating a previous training run fully completed. This behaviour can be disabled, in which case the \</span>
+<span class="sd">        \*end.ckpt will be loaded by setting resume_past_end to True. Defaults to False.</span>
+<span class="sd">        - resume_ignore_no_checkpoint: exp_manager errors out if resume_if_exists is True and no checkpoint could be \</span>
+<span class="sd">         found. This behaviour can be disabled, in which case exp_manager will print a message and continue without \</span>
+<span class="sd">         restoring, by setting resume_ignore_no_checkpoint to True. Defaults to False.</span>
+<span class="sd">        - create_tensorboard_logger: Whether to create a tensorboard logger and attach it to the pytorch lightning \</span>
+<span class="sd">        trainer. Defaults to True.</span>
+<span class="sd">        - summary_writer_kwargs: A dictionary of kwargs that can be passed to lightning&#39;s TensorboardLogger class. \</span>
+<span class="sd">        Note that log_dir is passed by exp_manager and cannot exist in this dict. Defaults to None.</span>
+<span class="sd">        - create_wandb_logger: Whether to create a Weights and Biases logger and attach it to the pytorch lightning \</span>
+<span class="sd">        trainer. Defaults to False.</span>
+<span class="sd">        - wandb_logger_kwargs: A dictionary of kwargs that can be passed to lightning&#39;s WandBLogger class. Note that \</span>
+<span class="sd">         name and project are required parameters if create_wandb_logger is True. Defaults to None.</span>
+<span class="sd">        - create_checkpoint_callback: Whether to create a ModelCheckpoint callback and attach it to the pytorch \</span>
+<span class="sd">        lightning trainer. The ModelCheckpoint saves the top 3 models with the best &quot;val_loss&quot;, the most recent \</span>
+<span class="sd">        checkpoint under \*last.ckpt, and the final checkpoint after training completes under \*end.ckpt. \</span>
+<span class="sd">        Defaults to True.</span>
+<span class="sd">        - files_to_copy: A list of files to copy to the experiment logging directory. Defaults to None which copies \</span>
+<span class="sd">        no files.</span>
+<span class="sd">        - log_local_rank_0_only: Whether to only create log files for local rank 0. Defaults to False. Set this to \</span>
+<span class="sd">        True if you are using DDP with many GPUs and do not want many log files in your exp dir.</span>
+<span class="sd">        - log_global_rank_0_only: Whether to only create log files for global rank 0. Defaults to False. Set this to \</span>
+<span class="sd">        True if you are using DDP with many GPUs and do not want many log files in your exp dir.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    The final logging directory where logging files are saved. Usually the concatenation of exp_dir, name, and version.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Add rank information to logger</span>
+    <span class="c1"># Note: trainer.global_rank and trainer.is_global_zero are not set until trainer.fit, so have to hack around it</span>
+    <span class="n">local_rank</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;LOCAL_RANK&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="n">global_rank</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">node_rank</span> <span class="o">*</span> <span class="n">trainer</span><span class="o">.</span><span class="n">num_devices</span> <span class="o">+</span> <span class="n">local_rank</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">rank</span> <span class="o">=</span> <span class="n">global_rank</span>
+
+    <span class="k">if</span> <span class="n">cfg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;exp_manager did not receive a cfg argument. It will be disabled.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">trainer</span><span class="o">.</span><span class="n">fast_dev_run</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Trainer was called with fast_dev_run. exp_manager will return without any functionality.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># Ensure passed cfg is compliant with ExpManagerConfig</span>
+    <span class="n">schema</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">structured</span><span class="p">(</span><span class="n">ExpManagerConfig</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">DictConfig</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;cfg was type: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span><span class="si">}</span><span class="s2">. Expected either a dict or a DictConfig&quot;</span><span class="p">)</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">OmegaConf</span><span class="o">.</span><span class="n">to_container</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">resolve</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">cfg</span><span class="p">)</span>
+
+    <span class="n">error_checks</span><span class="p">(</span><span class="n">trainer</span><span class="p">,</span> <span class="n">cfg</span><span class="p">)</span>  <span class="c1"># Ensures that trainer options are compliant with MRIDC and exp_manager arguments</span>
+
+    <span class="n">log_dir</span><span class="p">,</span> <span class="n">exp_dir</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">version</span> <span class="o">=</span> <span class="n">get_log_dir</span><span class="p">(</span>
+        <span class="n">trainer</span><span class="o">=</span><span class="n">trainer</span><span class="p">,</span>
+        <span class="n">exp_dir</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">exp_dir</span><span class="p">,</span>
+        <span class="n">name</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="n">version</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">version</span><span class="p">,</span>
+        <span class="n">explicit_log_dir</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">explicit_log_dir</span><span class="p">,</span>
+        <span class="n">use_datetime_version</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">use_datetime_version</span><span class="p">,</span>
+        <span class="n">resume_if_exists</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">resume_if_exists</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">cfg</span><span class="o">.</span><span class="n">resume_if_exists</span><span class="p">:</span>
+        <span class="n">check_resume</span><span class="p">(</span><span class="n">trainer</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">log_dir</span><span class="p">),</span> <span class="n">cfg</span><span class="o">.</span><span class="n">resume_past_end</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">resume_ignore_no_checkpoint</span><span class="p">)</span>
+
+    <span class="n">checkpoint_name</span> <span class="o">=</span> <span class="n">name</span>
+    <span class="c1"># If name returned from get_log_dir is &quot;&quot;, use cfg.name for checkpointing</span>
+    <span class="k">if</span> <span class="n">checkpoint_name</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">checkpoint_name</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+        <span class="n">checkpoint_name</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">name</span> <span class="ow">or</span> <span class="s2">&quot;default&quot;</span>
+    <span class="n">cfg</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>  <span class="c1"># Used for configure_loggers so that the log_dir is properly set even if name is &quot;&quot;</span>
+    <span class="n">cfg</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="n">version</span>
+
+    <span class="c1"># update app_state with log_dir, exp_dir, etc</span>
+    <span class="n">app_state</span> <span class="o">=</span> <span class="n">AppState</span><span class="p">()</span>
+    <span class="n">app_state</span><span class="o">.</span><span class="n">log_dir</span> <span class="o">=</span> <span class="n">log_dir</span>
+    <span class="n">app_state</span><span class="o">.</span><span class="n">exp_dir</span> <span class="o">=</span> <span class="n">exp_dir</span>
+    <span class="n">app_state</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+    <span class="n">app_state</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="n">version</span>
+    <span class="n">app_state</span><span class="o">.</span><span class="n">checkpoint_name</span> <span class="o">=</span> <span class="n">checkpoint_name</span>
+    <span class="n">app_state</span><span class="o">.</span><span class="n">create_checkpoint_callback</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">create_checkpoint_callback</span>
+    <span class="n">app_state</span><span class="o">.</span><span class="n">checkpoint_callback_params</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">checkpoint_callback_params</span>
+
+    <span class="c1"># Create the logging directory if it does not exist</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">log_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># Cannot limit creation to global zero as all ranks write to own log file</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Experiments will be logged at </span><span class="si">{</span><span class="n">log_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">trainer</span><span class="o">.</span><span class="n">_default_root_dir</span> <span class="o">=</span> <span class="n">log_dir</span>
+
+    <span class="k">if</span> <span class="n">cfg</span><span class="o">.</span><span class="n">log_local_rank_0_only</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">and</span> <span class="n">cfg</span><span class="o">.</span><span class="n">log_global_rank_0_only</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Cannot set both log_local_rank_0_only and log_global_rank_0_only to True.&quot;</span>
+            <span class="s2">&quot;Please set either one or neither.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># This is set if the env var MRIDC_TESTING is set to True.</span>
+    <span class="n">mridc_testing</span> <span class="o">=</span> <span class="n">get_envbool</span><span class="p">(</span><span class="n">MRIDC_ENV_VARNAME_TESTING</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">log_file</span> <span class="o">=</span> <span class="n">log_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;mridc_log_globalrank-</span><span class="si">{</span><span class="n">global_rank</span><span class="si">}</span><span class="s2">_localrank-</span><span class="si">{</span><span class="n">local_rank</span><span class="si">}</span><span class="s2">.txt&quot;</span>
+    <span class="c1"># Handle logging to file</span>
+    <span class="c1"># Logs local rank 0 only</span>
+    <span class="k">if</span> <span class="n">local_rank</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">cfg</span><span class="o">.</span><span class="n">log_local_rank_0_only</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">mridc_testing</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">add_file_handler</span><span class="p">(</span><span class="n">log_file</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">global_rank</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">cfg</span><span class="o">.</span><span class="n">log_global_rank_0_only</span> <span class="ow">and</span> <span class="n">mridc_testing</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">add_file_handler</span><span class="p">(</span><span class="n">log_file</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">add_file_handler</span><span class="p">(</span><span class="n">log_file</span><span class="p">)</span>
+
+    <span class="c1"># For some reason, LearningRateLogger requires trainer to have a logger. Safer to create logger on all ranks</span>
+    <span class="c1"># not just global rank 0.</span>
+    <span class="k">if</span> <span class="n">cfg</span><span class="o">.</span><span class="n">create_tensorboard_logger</span> <span class="ow">or</span> <span class="n">cfg</span><span class="o">.</span><span class="n">create_wandb_logger</span><span class="p">:</span>
+        <span class="n">configure_loggers</span><span class="p">(</span>
+            <span class="n">trainer</span><span class="p">,</span>
+            <span class="p">[</span><span class="n">Path</span><span class="p">(</span><span class="n">exp_dir</span><span class="p">)],</span>
+            <span class="n">cfg</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">cfg</span><span class="o">.</span><span class="n">version</span><span class="p">,</span>
+            <span class="n">cfg</span><span class="o">.</span><span class="n">create_tensorboard_logger</span><span class="p">,</span>
+            <span class="n">cfg</span><span class="o">.</span><span class="n">summary_writer_kwargs</span><span class="p">,</span>
+            <span class="n">cfg</span><span class="o">.</span><span class="n">create_wandb_logger</span><span class="p">,</span>
+            <span class="n">cfg</span><span class="o">.</span><span class="n">wandb_logger_kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="c1"># add loggers timing callbacks</span>
+    <span class="k">if</span> <span class="n">cfg</span><span class="o">.</span><span class="n">log_step_timing</span><span class="p">:</span>
+        <span class="n">timing_callback</span> <span class="o">=</span> <span class="n">TimingCallback</span><span class="p">(</span><span class="n">timer_kwargs</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">step_timing_kwargs</span> <span class="ow">or</span> <span class="p">{})</span>
+        <span class="n">trainer</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">timing_callback</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">cfg</span><span class="o">.</span><span class="n">create_checkpoint_callback</span><span class="p">:</span>
+        <span class="n">configure_checkpointing</span><span class="p">(</span>
+            <span class="n">trainer</span><span class="p">,</span> <span class="n">log_dir</span><span class="p">,</span> <span class="n">checkpoint_name</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">resume_if_exists</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">checkpoint_callback_params</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">is_global_rank_zero</span><span class="p">():</span>
+        <span class="c1"># Move files_to_copy to folder and add git information if present</span>
+        <span class="k">if</span> <span class="n">cfg</span><span class="o">.</span><span class="n">files_to_copy</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">_file</span> <span class="ow">in</span> <span class="n">cfg</span><span class="o">.</span><span class="n">files_to_copy</span><span class="p">:</span>
+                <span class="n">copy</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">_file</span><span class="p">),</span> <span class="n">log_dir</span><span class="p">)</span>
+
+        <span class="c1"># Create files for cmd args and git info</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">log_dir</span> <span class="o">/</span> <span class="s2">&quot;cmd-args.log&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">_file</span><span class="p">:</span>
+            <span class="n">_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">))</span>
+
+        <span class="c1"># Try to get git hash</span>
+        <span class="n">git_repo</span><span class="p">,</span> <span class="n">git_hash</span> <span class="o">=</span> <span class="n">get_git_hash</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">git_repo</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">log_dir</span> <span class="o">/</span> <span class="s2">&quot;git-info.log&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">_file</span><span class="p">:</span>
+                <span class="n">_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;commit hash: </span><span class="si">{</span><span class="n">git_hash</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">get_git_diff</span><span class="p">())</span>
+
+        <span class="c1"># Add err_file logging to global_rank zero</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">add_err_file_handler</span><span class="p">(</span><span class="n">log_dir</span> <span class="o">/</span> <span class="s2">&quot;mridc_error_log.txt&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Add lightning file logging to global_rank zero</span>
+        <span class="n">add_filehandlers_to_pl_logger</span><span class="p">(</span><span class="n">log_dir</span> <span class="o">/</span> <span class="s2">&quot;lightning_logs.txt&quot;</span><span class="p">,</span> <span class="n">log_dir</span> <span class="o">/</span> <span class="s2">&quot;mridc_error_log.txt&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">log_dir</span></div>
+
+
+<div class="viewcode-block" id="error_checks"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.error_checks">[docs]</a><span class="k">def</span> <span class="nf">error_checks</span><span class="p">(</span><span class="n">trainer</span><span class="p">:</span> <span class="n">Trainer</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">DictConfig</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Checks that the passed trainer is compliant with MRIDC and exp_manager&#39;s passed configuration. Checks that:</span>
+<span class="sd">        - Throws error when hydra has changed the working directory. This causes issues with lightning&#39;s DDP</span>
+<span class="sd">        - Throws error when trainer has loggers defined but create_tensorboard_logger or create_WandB_logger is True</span>
+<span class="sd">        - Prints error messages when 1) run on multi-node and not Slurm, and 2) run on multi-gpu without DDP</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">HydraConfig</span><span class="o">.</span><span class="n">initialized</span><span class="p">()</span> <span class="ow">and</span> <span class="n">get_original_cwd</span><span class="p">()</span> <span class="o">!=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Hydra changed the working directory. This interferes with ExpManger&#39;s functionality. Please pass &quot;</span>
+            <span class="s2">&quot;hydra.run.dir=. to your python script.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">trainer</span><span class="o">.</span><span class="n">logger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">create_tensorboard_logger</span> <span class="ow">or</span> <span class="n">cfg</span><span class="o">.</span><span class="n">create_wandb_logger</span><span class="p">):</span>  <span class="c1"># type: ignore</span>
+        <span class="k">raise</span> <span class="n">LoggerMisconfigurationError</span><span class="p">(</span>
+            <span class="s2">&quot;The pytorch lightning trainer that was passed to exp_manager contained a logger, and either &quot;</span>
+            <span class="s2">&quot;create_tensorboard_logger or create_wandb_logger was set to True. These can only be used if trainer does &quot;</span>
+            <span class="s2">&quot;not already have a logger.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">trainer</span><span class="o">.</span><span class="n">num_nodes</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">check_slurm</span><span class="p">(</span><span class="n">trainer</span><span class="p">):</span>  <span class="c1"># type: ignore</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+            <span class="s2">&quot;You are running multi-node training without SLURM handling the processes.&quot;</span>
+            <span class="s2">&quot; Please note that this is not tested in MRIDC and could result in errors.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">trainer</span><span class="o">.</span><span class="n">num_devices</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">trainer</span><span class="o">.</span><span class="n">strategy</span><span class="p">,</span> <span class="n">DDPStrategy</span><span class="p">):</span>  <span class="c1"># type: ignore</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+            <span class="s2">&quot;You are running multi-gpu without ddp.Please note that this is not tested in MRIDC and could result in &quot;</span>
+            <span class="s2">&quot;errors.&quot;</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="check_resume"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.check_resume">[docs]</a><span class="k">def</span> <span class="nf">check_resume</span><span class="p">(</span>
+    <span class="n">trainer</span><span class="p">:</span> <span class="n">Trainer</span><span class="p">,</span>
+    <span class="n">log_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">resume_past_end</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">resume_ignore_no_checkpoint</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Checks that resume=True was used correctly with the arguments pass to exp_manager. Sets</span>
+<span class="sd">    trainer._checkpoint_connector.resume_from_checkpoint_fit_path as necessary.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    trainer: The trainer that is being used.</span>
+<span class="sd">    log_dir: The directory where the logs are being saved.</span>
+<span class="sd">    resume_past_end: Whether to resume from the end of the experiment.</span>
+<span class="sd">    resume_ignore_no_checkpoint: Whether to ignore if there is no checkpoint to resume from.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    NotFoundError: If resume is True, resume_ignore_no_checkpoint is False, and checkpoints could not be found.</span>
+<span class="sd">    ValueError: If resume is True, and there were more than 1 checkpoint could found.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">log_dir</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Resuming requires the log_dir </span><span class="si">{</span><span class="n">log_dir</span><span class="si">}</span><span class="s2"> to be passed to exp_manager&quot;</span><span class="p">)</span>
+
+    <span class="n">checkpoint_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">log_dir</span><span class="p">)</span> <span class="o">/</span> <span class="s2">&quot;checkpoints&quot;</span><span class="p">)</span>
+
+    <span class="n">checkpoint</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">end_checkpoints</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">checkpoint_dir</span><span class="o">.</span><span class="n">rglob</span><span class="p">(</span><span class="s2">&quot;*end.ckpt&quot;</span><span class="p">))</span>
+    <span class="n">last_checkpoints</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">checkpoint_dir</span><span class="o">.</span><span class="n">rglob</span><span class="p">(</span><span class="s2">&quot;*last.ckpt&quot;</span><span class="p">))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">checkpoint_dir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">resume_ignore_no_checkpoint</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;There was no checkpoint folder at checkpoint_dir :</span><span class="si">{</span><span class="n">checkpoint_dir</span><span class="si">}</span><span class="s2">. Cannot resume.&quot;</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;There was no checkpoint folder at checkpoint_dir :</span><span class="si">{</span><span class="n">checkpoint_dir</span><span class="si">}</span><span class="s2">. Training from scratch.&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="k">if</span> <span class="n">end_checkpoints</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">resume_past_end</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="n">end_checkpoints</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> indicating that the last training run has already completed.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">end_checkpoints</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;mp_rank&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">end_checkpoints</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                <span class="n">checkpoint</span> <span class="o">=</span> <span class="n">end_checkpoints</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Multiple checkpoints </span><span class="si">{</span><span class="n">end_checkpoints</span><span class="si">}</span><span class="s2"> that matches *end.ckpt.&quot;</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Resuming from </span><span class="si">{</span><span class="n">end_checkpoints</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">last_checkpoints</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">resume_ignore_no_checkpoint</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;There were no checkpoints found in </span><span class="si">{</span><span class="n">checkpoint_dir</span><span class="si">}</span><span class="s2">. Cannot resume.&quot;</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;There were no checkpoints found in </span><span class="si">{</span><span class="n">checkpoint_dir</span><span class="si">}</span><span class="s2">. Training from scratch.&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">last_checkpoints</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s2">&quot;mp_rank&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">last_checkpoints</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">and</span> <span class="s2">&quot;tp_rank&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">last_checkpoints</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Multiple checkpoints </span><span class="si">{</span><span class="n">last_checkpoints</span><span class="si">}</span><span class="s2"> that matches *last.ckpt.&quot;</span><span class="p">)</span>
+        <span class="n">checkpoint</span> <span class="o">=</span> <span class="n">last_checkpoints</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">checkpoint</span> <span class="o">=</span> <span class="n">mridc</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">model_utils</span><span class="o">.</span><span class="n">uninject_model_parallel_rank</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Resuming from </span><span class="si">{</span><span class="n">last_checkpoints</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">checkpoint</span> <span class="o">=</span> <span class="n">last_checkpoints</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">trainer</span><span class="o">.</span><span class="n">_checkpoint_connector</span><span class="o">.</span><span class="n">resume_from_checkpoint_fit_path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">is_global_rank_zero</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">files_to_move</span> <span class="o">:=</span> <span class="p">[</span><span class="n">child</span> <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">Path</span><span class="p">(</span><span class="n">log_dir</span><span class="p">)</span><span class="o">.</span><span class="n">iterdir</span><span class="p">()</span> <span class="k">if</span> <span class="n">child</span><span class="o">.</span><span class="n">is_file</span><span class="p">()]:</span>
+            <span class="c1"># Move old files to a new folder</span>
+            <span class="n">other_run_dirs</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">log_dir</span><span class="p">)</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;run_*&quot;</span><span class="p">)</span>
+            <span class="n">run_count</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">bool</span><span class="p">(</span><span class="n">fold</span><span class="o">.</span><span class="n">is_dir</span><span class="p">())</span> <span class="k">for</span> <span class="n">fold</span> <span class="ow">in</span> <span class="n">other_run_dirs</span><span class="p">)</span>
+            <span class="n">new_run_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">log_dir</span><span class="p">)</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;run_</span><span class="si">{</span><span class="n">run_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">new_run_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">_file</span> <span class="ow">in</span> <span class="n">files_to_move</span><span class="p">:</span>
+                <span class="n">move</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">_file</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">new_run_dir</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="check_explicit_log_dir"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.check_explicit_log_dir">[docs]</a><span class="k">def</span> <span class="nf">check_explicit_log_dir</span><span class="p">(</span>
+    <span class="n">trainer</span><span class="p">:</span> <span class="n">Trainer</span><span class="p">,</span> <span class="n">explicit_log_dir</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">exp_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">version</span><span class="p">:</span> <span class="nb">str</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Checks that the passed arguments are compatible with explicit_log_dir.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    trainer: The trainer to check.</span>
+<span class="sd">    explicit_log_dir: The explicit log dir to check.</span>
+<span class="sd">    exp_dir: The experiment directory to check.</span>
+<span class="sd">    name: The experiment name to check.</span>
+<span class="sd">    version: The experiment version to check.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    The log_dir, exp_dir, name, and version that should be used.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    LoggerMisconfigurationError</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">trainer</span><span class="o">.</span><span class="n">logger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">LoggerMisconfigurationError</span><span class="p">(</span>
+            <span class="s2">&quot;The pytorch lightning trainer that was passed to exp_manager contained a logger and explicit_log_dir: &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">explicit_log_dir</span><span class="si">}</span><span class="s2"> was pass to exp_manager. Please remove the logger from the lightning trainer.&quot;</span>
+        <span class="p">)</span>
+    <span class="c1"># Checking only (explicit_log_dir) vs (exp_dir and version).</span>
+    <span class="c1"># The `name` will be used as the actual name of checkpoint/archive.</span>
+    <span class="k">if</span> <span class="n">exp_dir</span> <span class="ow">or</span> <span class="n">version</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;exp_manager received explicit_log_dir: </span><span class="si">{</span><span class="n">explicit_log_dir</span><span class="si">}</span><span class="s2"> and at least one of exp_dir: </span><span class="si">{</span><span class="n">exp_dir</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;or version: </span><span class="si">{</span><span class="n">version</span><span class="si">}</span><span class="s2">. Please note that exp_dir, name, and version will be ignored.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">is_global_rank_zero</span><span class="p">()</span> <span class="ow">and</span> <span class="n">Path</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">explicit_log_dir</span><span class="p">))</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exp_manager is logging to </span><span class="si">{</span><span class="n">explicit_log_dir</span><span class="si">}</span><span class="s2">, but it already exists.&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">explicit_log_dir</span><span class="p">)),</span> <span class="nb">str</span><span class="p">(</span><span class="n">explicit_log_dir</span><span class="p">),</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="get_log_dir"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.get_log_dir">[docs]</a><span class="k">def</span> <span class="nf">get_log_dir</span><span class="p">(</span>
+    <span class="n">trainer</span><span class="p">:</span> <span class="n">Trainer</span><span class="p">,</span>
+    <span class="n">exp_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">explicit_log_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">use_datetime_version</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">resume_if_exists</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Obtains the log_dir used for exp_manager.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    trainer: The trainer to check.</span>
+<span class="sd">    exp_dir: The experiment directory to check.</span>
+<span class="sd">    name: The experiment name to check.</span>
+<span class="sd">    version: The experiment version to check.</span>
+<span class="sd">    explicit_log_dir: The explicit log dir to check.</span>
+<span class="sd">    use_datetime_version: Whether to use datetime versioning.</span>
+<span class="sd">    resume_if_exists: Whether to resume if the log_dir already exists.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    -------</span>
+<span class="sd">    LoggerMisconfigurationError: If trainer is incompatible with arguments</span>
+<span class="sd">    NotFoundError: If resume is True, resume_ignore_no_checkpoint is False, and checkpoints could not be found.</span>
+<span class="sd">    ValueError: If resume is True, and there were more than 1 checkpoint could found.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">explicit_log_dir</span><span class="p">:</span>  <span class="c1"># If explicit log_dir was passed, short circuit</span>
+        <span class="k">return</span> <span class="n">check_explicit_log_dir</span><span class="p">(</span><span class="n">trainer</span><span class="p">,</span> <span class="p">[</span><span class="n">Path</span><span class="p">(</span><span class="n">explicit_log_dir</span><span class="p">)],</span> <span class="n">exp_dir</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">version</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+    <span class="c1"># Default exp_dir to ./mridc_experiments if None was passed</span>
+    <span class="n">_exp_dir</span> <span class="o">=</span> <span class="n">exp_dir</span>
+    <span class="k">if</span> <span class="n">exp_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">_exp_dir</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;mridc_experiments&quot;</span><span class="p">)</span>
+
+    <span class="c1"># If the user has already defined a logger for the trainer, use the logger defaults for logging directory</span>
+    <span class="k">if</span> <span class="n">trainer</span><span class="o">.</span><span class="n">logger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">trainer</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">save_dir</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">exp_dir</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">LoggerMisconfigurationError</span><span class="p">(</span>
+                    <span class="s2">&quot;The pytorch lightning trainer that was passed to exp_manager contained a logger, the logger&#39;s &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;save_dir was not None, and exp_dir (</span><span class="si">{</span><span class="n">exp_dir</span><span class="si">}</span><span class="s2">) was not None. If trainer.logger.save_dir &quot;</span>
+                    <span class="s2">&quot;exists, exp_manager will use trainer.logger.save_dir as the logging directory and exp_dir &quot;</span>
+                    <span class="s2">&quot;must be None.&quot;</span>
+                <span class="p">)</span>
+            <span class="n">_exp_dir</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">save_dir</span>
+        <span class="k">if</span> <span class="n">name</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">LoggerMisconfigurationError</span><span class="p">(</span>
+                <span class="s2">&quot;The pytorch lightning trainer that was passed to exp_manager contained a logger, and name: &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> was also passed to exp_manager. If the trainer contains a &quot;</span>
+                <span class="s2">&quot;logger, exp_manager will use trainer.logger.name, and name passed to exp_manager must be None.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">version</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;version_</span><span class="si">{</span><span class="n">trainer</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">version</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="c1"># Use user-defined exp_dir, project_name, exp_name, and versioning options</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="s2">&quot;default&quot;</span>
+        <span class="n">version</span> <span class="o">=</span> <span class="n">version</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">MRIDC_ENV_VARNAME_VERSION</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">version</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">resume_if_exists</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;No version folders would be created under the log folder as &#39;resume_if_exists&#39; is enabled.&quot;</span>
+                <span class="p">)</span>
+                <span class="n">version</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">elif</span> <span class="n">is_global_rank_zero</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">use_datetime_version</span><span class="p">:</span>
+                    <span class="n">version</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">_%H-%M-%S&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">tensorboard_logger</span> <span class="o">=</span> <span class="n">TensorBoardLogger</span><span class="p">(</span><span class="n">save_dir</span><span class="o">=</span><span class="n">_exp_dir</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="n">version</span><span class="p">)</span>
+                    <span class="n">version</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;version_</span><span class="si">{</span><span class="n">tensorboard_logger</span><span class="o">.</span><span class="n">version</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="n">MRIDC_ENV_VARNAME_VERSION</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span> <span class="k">if</span> <span class="n">version</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">version</span>
+
+    <span class="n">log_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">_exp_dir</span><span class="p">))</span> <span class="o">/</span> <span class="n">Path</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">))</span> <span class="o">/</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;&quot;</span> <span class="k">if</span> <span class="n">version</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">version</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">log_dir</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">_exp_dir</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">version</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_git_hash"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.get_git_hash">[docs]</a><span class="k">def</span> <span class="nf">get_git_hash</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper function that tries to get the commit hash if running inside a git folder.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Bool: Whether the git subprocess ran without error.</span>
+<span class="sd">    String: git subprocess output or error message</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">([</span><span class="s2">&quot;git&quot;</span><span class="p">,</span> <span class="s2">&quot;rev-parse&quot;</span><span class="p">,</span> <span class="s2">&quot;HEAD&quot;</span><span class="p">],</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+    <span class="k">except</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">CalledProcessError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="get_git_diff"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.get_git_diff">[docs]</a><span class="k">def</span> <span class="nf">get_git_diff</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper function that tries to get the git diff if running inside a git folder.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Bool: Whether the git subprocess ran without error.</span>
+<span class="sd">    String: git subprocess output or error message</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">([</span><span class="s2">&quot;git&quot;</span><span class="p">,</span> <span class="s2">&quot;diff&quot;</span><span class="p">],</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+    <span class="k">except</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">CalledProcessError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="LoggerList"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.LoggerList">[docs]</a><span class="k">class</span> <span class="nc">LoggerList</span><span class="p">(</span><span class="n">_LoggerCollection</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A thin wrapper on Lightning&#39;s LoggerCollection such that name and version are better aligned with exp_manager&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_logger_iterable</span><span class="p">,</span> <span class="n">mridc_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mridc_version</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">_logger_iterable</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mridc_name</span> <span class="o">=</span> <span class="n">mridc_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mridc_version</span> <span class="o">=</span> <span class="n">mridc_version</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;The name of the experiment.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mridc_name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;The version of the experiment. If the logger was created with a version, this will be the version.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mridc_version</span></div>
+
+
+<div class="viewcode-block" id="configure_loggers"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.configure_loggers">[docs]</a><span class="k">def</span> <span class="nf">configure_loggers</span><span class="p">(</span>
+    <span class="n">trainer</span><span class="p">:</span> <span class="n">Trainer</span><span class="p">,</span>
+    <span class="n">exp_dir</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">version</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">create_tensorboard_logger</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">summary_writer_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">create_wandb_logger</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">wandb_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates TensorboardLogger and/or WandBLogger and attach them to trainer. Raises ValueError if summary_writer_kwargs</span>
+<span class="sd">    or wandb_kwargs are miss configured.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    trainer: The trainer to attach the loggers to.</span>
+<span class="sd">    exp_dir: The experiment directory.</span>
+<span class="sd">    name: The name of the experiment.</span>
+<span class="sd">    version: The version of the experiment.</span>
+<span class="sd">    create_tensorboard_logger: Whether to create a TensorboardLogger.</span>
+<span class="sd">    summary_writer_kwargs: The kwargs to pass to the TensorboardLogger.</span>
+<span class="sd">    create_wandb_logger: Whether to create a Weights &amp; Biases logger.</span>
+<span class="sd">    wandb_kwargs: The kwargs to pass to the Weights &amp; Biases logger.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    LoggerList: A list of loggers.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Potentially create tensorboard logger and/or WandBLogger</span>
+    <span class="n">logger_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">create_tensorboard_logger</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">summary_writer_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">summary_writer_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">elif</span> <span class="s2">&quot;log_dir&quot;</span> <span class="ow">in</span> <span class="n">summary_writer_kwargs</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;You cannot pass `log_dir` as part of `summary_writer_kwargs`. `log_dir` is handled by lightning&#39;s &quot;</span>
+                <span class="s2">&quot;TensorBoardLogger logger.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">tensorboard_logger</span> <span class="o">=</span> <span class="n">TensorBoardLogger</span><span class="p">(</span>
+            <span class="n">save_dir</span><span class="o">=</span><span class="n">exp_dir</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="n">version</span><span class="p">,</span> <span class="o">**</span><span class="n">summary_writer_kwargs</span>
+        <span class="p">)</span>
+        <span class="n">logger_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensorboard_logger</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;TensorboardLogger has been set up&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">create_wandb_logger</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">wandb_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">wandb_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="s2">&quot;name&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">wandb_kwargs</span> <span class="ow">and</span> <span class="s2">&quot;project&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">wandb_kwargs</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;name and project are required for wandb_logger&quot;</span><span class="p">)</span>
+        <span class="n">wandb_logger</span> <span class="o">=</span> <span class="n">WandbLogger</span><span class="p">(</span><span class="n">save_dir</span><span class="o">=</span><span class="n">exp_dir</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">version</span><span class="o">=</span><span class="n">version</span><span class="p">,</span> <span class="o">**</span><span class="n">wandb_kwargs</span><span class="p">)</span>
+
+        <span class="n">logger_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">wandb_logger</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;WandBLogger has been set up&quot;</span><span class="p">)</span>
+
+    <span class="n">logger_list</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">LoggerList</span><span class="p">(</span><span class="n">logger_list</span><span class="p">,</span> <span class="n">mridc_name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">mridc_version</span><span class="o">=</span><span class="n">version</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">logger_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">logger_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">trainer</span><span class="o">.</span><span class="n">_logger_connector</span><span class="o">.</span><span class="n">configure_logger</span><span class="p">(</span><span class="n">logger_list</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MRIDCModelCheckpoint"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.MRIDCModelCheckpoint">[docs]</a><span class="k">class</span> <span class="nc">MRIDCModelCheckpoint</span><span class="p">(</span><span class="n">ModelCheckpoint</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Light wrapper around Lightning&#39;s ModelCheckpoint to force a saved checkpoint on train_end&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">always_save_mridc</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">save_mridc_on_train_end</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">save_best_model</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">postfix</span><span class="o">=</span><span class="s2">&quot;.mridc&quot;</span><span class="p">,</span>
+        <span class="n">n_resume</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">model_parallel_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        always_save_mridc: Whether to save the model even if it is not the best model. Default: False.</span>
+<span class="sd">        save_mridc_on_train_end: Whether to save the model at the end of training. Default: True.</span>
+<span class="sd">        save_best_model: Whether to save the model if it is the best model. Default: False.</span>
+<span class="sd">        postfix: The postfix to add to the model name. Default: &quot;.mridc&quot;.</span>
+<span class="sd">        n_resume: Whether to resume training from a checkpoint. Default: False.</span>
+<span class="sd">        model_parallel_size: The size of the model parallel group. Default: None.</span>
+<span class="sd">        kwargs: The kwargs to pass to ModelCheckpoint.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Parse and store &quot;extended&quot; parameters: save_best model and postfix.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">always_save_mridc</span> <span class="o">=</span> <span class="n">always_save_mridc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_mridc_on_train_end</span> <span class="o">=</span> <span class="n">save_mridc_on_train_end</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_best_model</span> <span class="o">=</span> <span class="n">save_best_model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">previous_model_path</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_model_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_best_model</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_mridc_on_train_end</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="p">(</span>
+                    <span class="s2">&quot;Found save_best_model is True and save_mridc_on_train_end is False. &quot;</span>
+                    <span class="s2">&quot;Set save_mridc_on_train_end to True to automatically save the best model.&quot;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">postfix</span> <span class="o">=</span> <span class="n">postfix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">previous_best_path</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_parallel_size</span> <span class="o">=</span> <span class="n">model_parallel_size</span>
+
+        <span class="c1"># `prefix` is deprecated</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prefix</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;prefix&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="s2">&quot;prefix&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="c1"># Call the parent class constructor with the remaining kwargs.</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_top_k</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">n_resume</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Checking previous runs&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mridc_topk_check_previous_run</span><span class="p">()</span>
+
+<div class="viewcode-block" id="MRIDCModelCheckpoint.mridc_topk_check_previous_run"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.MRIDCModelCheckpoint.mridc_topk_check_previous_run">[docs]</a>    <span class="k">def</span> <span class="nf">mridc_topk_check_previous_run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check if there are previous runs with the same topk value.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_k_models</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kth_best_model_path</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_model_score</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_model_path</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="n">checkpoints</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dirpath</span><span class="p">)</span><span class="o">.</span><span class="n">rglob</span><span class="p">(</span><span class="s2">&quot;*.ckpt&quot;</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">checkpoint</span> <span class="ow">in</span> <span class="n">checkpoints</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;mp_rank&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;tp_rank&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">):</span>
+                <span class="n">checkpoint</span> <span class="o">=</span> <span class="n">mridc</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">model_utils</span><span class="o">.</span><span class="n">uninject_model_parallel_rank</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
+            <span class="n">checkpoint</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">checkpoint</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;-last.ckpt&quot;</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="n">checkpoint</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>  <span class="c1"># Find monitor in str + 1 for &#39;=&#39;</span>
+            <span class="k">if</span> <span class="n">index</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">match</span> <span class="o">:=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;[A-z]&quot;</span><span class="p">,</span> <span class="n">checkpoint</span><span class="p">[</span><span class="n">index</span><span class="p">:]):</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">checkpoint</span><span class="p">[</span><span class="n">index</span> <span class="p">:</span> <span class="n">index</span> <span class="o">+</span> <span class="n">match</span><span class="o">.</span><span class="n">start</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>  <span class="c1"># -1 due to separator hypen</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">best_k_models</span><span class="p">[</span><span class="n">checkpoint</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_k_models</span><span class="p">:</span>
+            <span class="k">return</span>  <span class="c1"># No saved checkpoints yet</span>
+
+        <span class="n">_reverse</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">!=</span> <span class="s2">&quot;min&quot;</span>
+
+        <span class="n">best_k_models</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">best_k_models</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">best_k_models</span><span class="o">.</span><span class="n">get</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="n">_reverse</span><span class="p">)</span>
+
+        <span class="c1"># This section should be ok as rank zero will delete all excess checkpoints, since all other ranks are</span>
+        <span class="c1"># instantiated after rank zero. models_to_delete should be 0 for all other ranks.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_parallel_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">models_to_delete</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">best_k_models</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_parallel_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_top_k</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">models_to_delete</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">best_k_models</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_top_k</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of models to delete: </span><span class="si">{</span><span class="n">models_to_delete</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">models_to_delete</span><span class="p">):</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">best_k_models</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">best_k_models</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_del_model_without_trainer</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Removed checkpoint: </span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">kth_best_model_path</span> <span class="o">=</span> <span class="n">best_k_models</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_model_path</span> <span class="o">=</span> <span class="n">best_k_models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">best_model_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_k_models</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">best_model_path</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="MRIDCModelCheckpoint.on_save_checkpoint"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.MRIDCModelCheckpoint.on_save_checkpoint">[docs]</a>    <span class="k">def</span> <span class="nf">on_save_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">,</span> <span class="n">checkpoint</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Override the default on_save_checkpoint to save the best model if needed.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        trainer: The trainer object.</span>
+<span class="sd">        pl_module: The PyTorch-Lightning module.</span>
+<span class="sd">        checkpoint: The checkpoint object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">on_save_checkpoint</span><span class="p">(</span><span class="n">trainer</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">,</span> <span class="n">checkpoint</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">always_save_mridc</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">output</span>
+        <span class="c1"># Load the best model and then re-save it</span>
+        <span class="n">app_state</span> <span class="o">=</span> <span class="n">AppState</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">app_state</span><span class="o">.</span><span class="n">model_parallel_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">app_state</span><span class="o">.</span><span class="n">model_parallel_size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;always_save_mridc is not implemented for model parallel models.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># since we are creating tarfile artifacts we need to update .mridc path</span>
+        <span class="n">app_state</span><span class="o">.</span><span class="n">model_restore_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dirpath</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prefix</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">postfix</span><span class="p">))</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_best_model</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">best_model_path</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">output</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_model_path</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">previous_best_path</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">output</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">previous_model_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_model_path</span>
+            <span class="n">old_state_dict</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">pl_module</span><span class="o">.</span><span class="n">state_dict</span><span class="p">())</span>
+            <span class="n">checkpoint</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">best_model_path</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s2">&quot;state_dict&quot;</span> <span class="ow">in</span> <span class="n">checkpoint</span><span class="p">:</span>
+                <span class="n">checkpoint</span> <span class="o">=</span> <span class="n">checkpoint</span><span class="p">[</span><span class="s2">&quot;state_dict&quot;</span><span class="p">]</span>
+
+            <span class="c1"># get a new instance of the model</span>
+            <span class="n">pl_module</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">pl_module</span><span class="o">.</span><span class="n">save_to</span><span class="p">(</span><span class="n">save_path</span><span class="o">=</span><span class="n">app_state</span><span class="o">.</span><span class="n">model_restore_path</span><span class="p">)</span>
+            <span class="n">pl_module</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">old_state_dict</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pl_module</span><span class="o">.</span><span class="n">save_to</span><span class="p">(</span><span class="n">save_path</span><span class="o">=</span><span class="n">app_state</span><span class="o">.</span><span class="n">model_restore_path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">output</span></div>
+
+<div class="viewcode-block" id="MRIDCModelCheckpoint.on_train_end"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.MRIDCModelCheckpoint.on_train_end">[docs]</a>    <span class="k">def</span> <span class="nf">on_train_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This is called at the end of training.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        trainer: The trainer object.</span>
+<span class="sd">        pl_module: The PyTorch-Lightning module.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">trainer</span><span class="o">.</span><span class="n">fast_dev_run</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># Call parent on_train_end() to save the -last checkpoint</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">on_train_end</span><span class="p">(</span><span class="n">trainer</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">)</span>
+
+        <span class="c1"># Load the best model and then re-save it</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_best_model</span><span class="p">:</span>
+            <span class="c1"># wait for all processes to finish</span>
+            <span class="n">trainer</span><span class="o">.</span><span class="n">training_type_plugin</span><span class="o">.</span><span class="n">barrier</span><span class="p">(</span><span class="s2">&quot;SaveBestCheckpointConnector.resume_end&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_model_path</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s2"> was told to save the best checkpoint at the end of training, but no saved checkpoints &quot;</span>
+                    <span class="s2">&quot;were found. Saving latest model instead.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">trainer</span><span class="o">.</span><span class="n">_checkpoint_connector</span><span class="o">.</span><span class="n">restore</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">best_model_path</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_mridc_on_train_end</span><span class="p">:</span>
+            <span class="n">pl_module</span><span class="o">.</span><span class="n">save_to</span><span class="p">(</span><span class="n">save_path</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dirpath</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prefix</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">postfix</span><span class="p">))</span></div>
+
+    <span class="k">def</span> <span class="nf">_del_model_without_trainer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Delete a model without a trainer.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        filepath: The path to the model to delete.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">app_state</span> <span class="o">=</span> <span class="n">AppState</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">app_state</span><span class="o">.</span><span class="n">model_parallel_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">app_state</span><span class="o">.</span><span class="n">model_parallel_size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c1"># filepath needs to be updated to include mp_rank</span>
+            <span class="n">filepath</span> <span class="o">=</span> <span class="n">mridc</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">model_utils</span><span class="o">.</span><span class="n">inject_model_parallel_rank</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+        <span class="c1"># each model parallel rank needs to remove its model</span>
+        <span class="k">if</span> <span class="n">is_global_rank_zero</span><span class="p">()</span> <span class="ow">or</span> <span class="p">(</span><span class="n">app_state</span><span class="o">.</span><span class="n">model_parallel_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">app_state</span><span class="o">.</span><span class="n">data_parallel_rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_fs</span><span class="o">.</span><span class="n">rm</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Removed checkpoint: </span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tried to remove checkpoint: </span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2"> but failed.&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="configure_checkpointing"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.configure_checkpointing">[docs]</a><span class="k">def</span> <span class="nf">configure_checkpointing</span><span class="p">(</span><span class="n">trainer</span><span class="p">:</span> <span class="n">Trainer</span><span class="p">,</span> <span class="n">log_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">resume</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="s2">&quot;DictConfig&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Adds ModelCheckpoint to trainer. Raises CheckpointMisconfigurationError if trainer already has a ModelCheckpoint</span>
+<span class="sd">    callback or if trainer.weights_save_path was passed to Trainer.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">callback</span> <span class="ow">in</span> <span class="n">trainer</span><span class="o">.</span><span class="n">callbacks</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">callback</span><span class="p">,</span> <span class="n">ModelCheckpoint</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">CheckpointMisconfigurationError</span><span class="p">(</span>
+                <span class="s2">&quot;The pytorch lightning trainer that was passed to exp_manager contained a ModelCheckpoint &quot;</span>
+                <span class="s2">&quot;and create_checkpoint_callback was set to True. Please either set create_checkpoint_callback &quot;</span>
+                <span class="s2">&quot;to False, or remove ModelCheckpoint from the lightning trainer&quot;</span>
+            <span class="p">)</span>
+    <span class="k">if</span> <span class="n">Path</span><span class="p">(</span><span class="n">trainer</span><span class="o">.</span><span class="n">weights_save_path</span><span class="p">)</span> <span class="o">!=</span> <span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="n">CheckpointMisconfigurationError</span><span class="p">(</span>
+            <span class="s2">&quot;The pytorch lightning was passed weights_save_path. This variable is ignored by exp_manager&quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Create the callback and attach it to trainer</span>
+    <span class="k">if</span> <span class="s2">&quot;filepath&quot;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">filepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;filepath is deprecated. Please switch to dirpath and filename instead&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">dirpath</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">params</span><span class="o">.</span><span class="n">dirpath</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">filepath</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span>
+            <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">filename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">params</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">filepath</span><span class="p">)</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">with</span> <span class="n">open_dict</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+            <span class="k">del</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;filepath&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">dirpath</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">dirpath</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">log_dir</span> <span class="o">/</span> <span class="s2">&quot;checkpoints&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">filename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">--</span><span class="se">{{</span><span class="si">{</span><span class="n">params</span><span class="o">.</span><span class="n">monitor</span><span class="si">}</span><span class="s2">:.4f</span><span class="se">}}</span><span class="s2">-</span><span class="se">{{</span><span class="s2">epoch</span><span class="se">}}</span><span class="s2">&quot;</span>
+    <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">prefix</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">prefix</span> <span class="o">=</span> <span class="n">name</span>
+    <span class="n">MRIDCModelCheckpoint</span><span class="o">.</span><span class="n">CHECKPOINT_NAME_LAST</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">params</span><span class="o">.</span><span class="n">filename</span><span class="si">}</span><span class="s2">-last&quot;</span>
+
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">dirpath</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">prefix</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="s2">&quot;val&quot;</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">monitor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">trainer</span><span class="o">.</span><span class="n">max_epochs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="n">trainer</span><span class="o">.</span><span class="n">max_epochs</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="ow">and</span> <span class="n">trainer</span><span class="o">.</span><span class="n">max_epochs</span> <span class="o">&lt;</span> <span class="n">trainer</span><span class="o">.</span><span class="n">check_val_every_n_epoch</span>
+        <span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;The checkpoint callback was told to monitor a validation value but trainer.max_epochs(&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">trainer</span><span class="o">.</span><span class="n">max_epochs</span><span class="si">}</span><span class="s2">) was less than trainer.check_val_every_n_epoch(&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">trainer</span><span class="o">.</span><span class="n">check_val_every_n_epoch</span><span class="si">}</span><span class="s2">). It is very likely this run will fail with &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;ModelCheckpoint(monitor=&#39;</span><span class="si">{</span><span class="n">params</span><span class="o">.</span><span class="n">monitor</span><span class="si">}</span><span class="s2">&#39;) not found in the returned metrics. Please ensure that &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;validation is run within trainer.max_epochs.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">trainer</span><span class="o">.</span><span class="n">max_steps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;The checkpoint callback was told to monitor a validation value and trainer&#39;s max_steps was set to &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">trainer</span><span class="o">.</span><span class="n">max_steps</span><span class="si">}</span><span class="s2">. Please ensure that max_steps will run for at least &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">trainer</span><span class="o">.</span><span class="n">check_val_every_n_epoch</span><span class="si">}</span><span class="s2"> epochs to ensure that checkpointing will not error out.&quot;</span>
+            <span class="p">)</span>
+
+    <span class="n">checkpoint_callback</span> <span class="o">=</span> <span class="n">MRIDCModelCheckpoint</span><span class="p">(</span><span class="n">n_resume</span><span class="o">=</span><span class="n">resume</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span>
+    <span class="n">checkpoint_callback</span><span class="o">.</span><span class="n">last_model_path</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">_checkpoint_connector</span><span class="o">.</span><span class="n">resume_from_checkpoint_fit_path</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;mp_rank&quot;</span> <span class="ow">in</span> <span class="n">checkpoint_callback</span><span class="o">.</span><span class="n">last_model_path</span> <span class="ow">or</span> <span class="s2">&quot;tp_rank&quot;</span> <span class="ow">in</span> <span class="n">checkpoint_callback</span><span class="o">.</span><span class="n">last_model_path</span><span class="p">:</span>
+        <span class="n">checkpoint_callback</span><span class="o">.</span><span class="n">last_model_path</span> <span class="o">=</span> <span class="n">mridc</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">model_utils</span><span class="o">.</span><span class="n">uninject_model_parallel_rank</span><span class="p">(</span>  <span class="c1"># type: ignore</span>
+            <span class="n">checkpoint_callback</span><span class="o">.</span><span class="n">last_model_path</span>
+        <span class="p">)</span>
+    <span class="n">trainer</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">checkpoint_callback</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="check_slurm"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.check_slurm">[docs]</a><span class="k">def</span> <span class="nf">check_slurm</span><span class="p">(</span><span class="n">trainer</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Checks if the trainer is running on a slurm cluster. If so, it will check if the trainer is running on the master</span>
+<span class="sd">    node. If it is not, it will exit.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    trainer: The trainer to check.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    True if the trainer is running on the master node, False otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">trainer</span><span class="o">.</span><span class="n">accelerator_connector</span><span class="o">.</span><span class="n">is_slurm_managing_tasks</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="StatelessTimer"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.StatelessTimer">[docs]</a><span class="k">class</span> <span class="nc">StatelessTimer</span><span class="p">(</span><span class="n">Timer</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Extension of PTL timers to be per run.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="StatelessTimer.state_dict"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.StatelessTimer.state_dict">[docs]</a>    <span class="k">def</span> <span class="nf">state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>  <span class="c1"># type: ignore</span>
+        <span class="sd">&quot;&quot;&quot;Saves the state of the timer.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{}</span></div>
+
+<div class="viewcode-block" id="StatelessTimer.load_state_dict"><a class="viewcode-back" href="../../../mridc.utils.html#mridc.utils.exp_manager.StatelessTimer.load_state_dict">[docs]</a>    <span class="k">def</span> <span class="nf">load_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Loads the state of the timer.&quot;&quot;&quot;</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Dimitrios Karkalousos.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+</body>
+</html>

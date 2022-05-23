@@ -31,12 +31,16 @@ class Dataset(data.Dataset, Typing, Serialization, ABC):
         The method optionally performs neural type checking and add types to the outputs.
 
         Please note, subclasses of Dataset should not implement `input_types`.
+
         # Usage:
-        dataloader = torch.utils.data.DataLoader(
-            ....,
-            collate_fn=dataset.collate_fn,
-            ....
-        )
+
+        .. code-block::
+
+            dataloader = torch.utils.data.DataLoader(
+                    ....,
+                    collate_fn=dataset.collate_fn,
+                    ....
+            )
 
         Returns
         -------
@@ -70,11 +74,14 @@ class IterableDataset(data.IterableDataset, Typing, Serialization, ABC):
         The method optionally performs neural type checking and add types to the outputs.
 
         # Usage:
-        dataloader = torch.utils.data.DataLoader(
-                ....,
-                collate_fn=dataset.collate_fn,
-                ....
-        )
+
+        .. code-block::
+
+            dataloader = torch.utils.data.DataLoader(
+                    ....,
+                    collate_fn=dataset.collate_fn,
+                    ....
+            )
 
         Returns
         -------

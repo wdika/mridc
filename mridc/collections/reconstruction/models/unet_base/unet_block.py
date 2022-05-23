@@ -138,7 +138,7 @@ class NormUnet(torch.nn.Module):
 
 class Unet(torch.nn.Module):
     """
-    PyTorch implementation of a U-Net model, as presented in [1].
+    PyTorch implementation of a U-Net model, as presented in [1]_.
 
     References
     ----------

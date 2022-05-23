@@ -19,12 +19,15 @@ __all__ = ["PICS"]
 
 class PICS(BaseMRIReconstructionModel, ABC):
     """
-    Parallel-Imaging Compressed Sensing (PICS) reconstruction using the BART [1].
+    Parallel-Imaging Compressed Sensing (PICS) reconstruction using the BART by Uecker, M. et al.
 
     References
     ----------
 
-    .. [1] Uecker, M. et al. (2015) ‘Berkeley Advanced Reconstruction Toolbox’, Proc. Intl. Soc. Mag. Reson. Med., 23.
+    ..
+
+        Uecker, M. et al. (2015) ‘Berkeley Advanced Reconstruction Toolbox’, Proc. Intl. Soc. Mag. Reson. Med., 23.
+
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):

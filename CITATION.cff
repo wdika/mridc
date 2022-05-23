@@ -9,5 +9,5 @@ authors:
     orcid: https://orcid.org/0000-0002-5162-8880
 title: "MRI Data Consistency"
 url: "https://github.com/wdika/mridc"
-version: 0.0.1
-date-released: 2021-29-11
+version: 0.1.0
+date-released: 2022-25-05
