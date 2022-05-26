@@ -395,11 +395,7 @@ class ModelPT(LightningModule, Model):
             self.setup_optimizer_param_groups()
 
         # If config was not explicitly provided, use default
-        if (
-            optim_config is None
-            and self._cfg is not None
-            and hasattr(self._cfg, "optim")
-        ):
+        if optim_config is None and self._cfg is not None and hasattr(self._cfg, "optim"):
             optim_config = self._cfg.optim
 
         # If config is still None, or internal config has no Optim, return without instantiation
@@ -506,7 +502,7 @@ class ModelPT(LightningModule, Model):
                 self._optimizer = optimizer
 
             else:
-                    # Attempt class path resolution
+                # Attempt class path resolution
                 try:
                     optimizer_cls = OmegaConf.create({"_target_": optimizer_cls})
                     optimizer_config = {"lr": lr} if lr is not None else {}
