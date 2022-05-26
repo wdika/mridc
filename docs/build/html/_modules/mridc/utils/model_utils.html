@@ -638,12 +638,12 @@
             <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Lib </span><span class="si">{</span><span class="n">lib_name</span><span class="si">}</span><span class="s2"> version (</span><span class="si">{</span><span class="n">lib_ver</span><span class="si">}</span><span class="s2">) is not </span><span class="si">{</span><span class="n">operator</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> than required version &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">checked_version</span><span class="si">}</span><span class="s2">.</span><span class="se">\n</span><span class="s2">&quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;Please upgrade the lib using either pip or conda to the latest version.&quot;</span>
+                <span class="s2">&quot;Please upgrade the lib using either pip or conda to the latest version.&quot;</span>
             <span class="p">)</span>
             <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="n">msg</span>
         <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;Lib </span><span class="si">{</span><span class="n">lib_name</span><span class="si">}</span><span class="s2"> does not implement __version__ in its init file. &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;Could not check version compatibility.&quot;</span>
+            <span class="s2">&quot;Could not check version compatibility.&quot;</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="n">msg</span>
     <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>

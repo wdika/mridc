@@ -130,7 +130,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">trainer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">trainer</span><span class="p">,</span> <span class="n">Trainer</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;trainer constructor argument must be either None or pytorch_lightning.Trainer. &quot;</span>
+                <span class="s2">&quot;trainer constructor argument must be either None or pytorch_lightning.Trainer. &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;But got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">trainer</span><span class="p">)</span><span class="si">}</span><span class="s2"> instead.&quot;</span>
             <span class="p">)</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
@@ -191,21 +191,21 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="s2">&quot;train_ds&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="o">.</span><span class="n">train_ds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
                 <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;If you intend to do training or fine-tuning, please call the ModelPT.setup_training_data() &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;method and provide a valid configuration file to setup the train data loader.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="s2">&quot;If you intend to do training or fine-tuning, please call the ModelPT.setup_training_data() &quot;</span>
+                    <span class="s2">&quot;method and provide a valid configuration file to setup the train data loader.</span><span class="se">\n</span><span class="s2">&quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;Train config : </span><span class="se">\n</span><span class="si">{</span><span class="n">OmegaConf</span><span class="o">.</span><span class="n">to_yaml</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="o">.</span><span class="n">train_ds</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>  <span class="c1"># type: ignore</span>
                 <span class="p">)</span>
             <span class="k">if</span> <span class="s2">&quot;validation_ds&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="o">.</span><span class="n">validation_ds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
                 <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;If you intend to do validation, please call the ModelPT.setup_validation_data() or &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;ModelPT.setup_multiple_validation_data() method and provide a valid configuration file to &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;setup the validation data loader(s). </span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="s2">&quot;If you intend to do validation, please call the ModelPT.setup_validation_data() or &quot;</span>
+                    <span class="s2">&quot;ModelPT.setup_multiple_validation_data() method and provide a valid configuration file to &quot;</span>
+                    <span class="s2">&quot;setup the validation data loader(s). </span><span class="se">\n</span><span class="s2">&quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;Validation config : </span><span class="se">\n</span><span class="si">{</span><span class="n">OmegaConf</span><span class="o">.</span><span class="n">to_yaml</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="o">.</span><span class="n">validation_ds</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>  <span class="c1"># type: ignore</span>
                 <span class="p">)</span>
             <span class="k">if</span> <span class="s2">&quot;test_ds&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="o">.</span><span class="n">test_ds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
                 <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Please call the ModelPT.setup_test_data() or ModelPT.setup_multiple_test_data() method &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;and provide a valid configuration file to setup the test data loader(s).</span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="s2">&quot;Please call the ModelPT.setup_test_data() or ModelPT.setup_multiple_test_data() method &quot;</span>
+                    <span class="s2">&quot;and provide a valid configuration file to setup the test data loader(s).</span><span class="se">\n</span><span class="s2">&quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;Test config : </span><span class="se">\n</span><span class="si">{</span><span class="n">OmegaConf</span><span class="o">.</span><span class="n">to_yaml</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="o">.</span><span class="n">test_ds</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>  <span class="c1"># type: ignore</span>
                 <span class="p">)</span>
 
@@ -257,7 +257,7 @@
         <span class="k">if</span> <span class="n">config_path</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifacts</span><span class="p">:</span>
             <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;You tried to register an artifact under config key=</span><span class="si">{</span><span class="n">config_path</span><span class="si">}</span><span class="s2"> but an artifact for &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;it has already been registered.&quot;</span>
+                <span class="s2">&quot;it has already been registered.&quot;</span>
             <span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_save_restore_connector</span><span class="o">.</span><span class="n">register_artifact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config_path</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">verify_src_exists</span><span class="p">)</span></div>
@@ -461,10 +461,8 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">setup_optimizer_param_groups</span><span class="p">()</span>
 
         <span class="c1"># If config was not explicitly provided, use default</span>
-        <span class="k">if</span> <span class="n">optim_config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="c1"># See if internal config has &#39;optim&#39; namespace</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="p">,</span> <span class="s2">&quot;optim&quot;</span><span class="p">):</span>
-                <span class="n">optim_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="o">.</span><span class="n">optim</span>
+        <span class="k">if</span> <span class="n">optim_config</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="p">,</span> <span class="s2">&quot;optim&quot;</span><span class="p">):</span>
+            <span class="n">optim_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="o">.</span><span class="n">optim</span>
 
         <span class="c1"># If config is still None, or internal config has no Optim, return without instantiation</span>
         <span class="k">if</span> <span class="n">optim_config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -499,9 +497,7 @@
                 <span class="n">optim_config</span><span class="p">[</span><span class="s2">&quot;sched&quot;</span><span class="p">][</span><span class="s2">&quot;t_limit_train_batches&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">limit_train_batches</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">accelerator</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">optim_config</span><span class="p">[</span><span class="s2">&quot;sched&quot;</span><span class="p">][</span><span class="s2">&quot;t_num_workers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">num_devices</span> <span class="ow">or</span> <span class="mi">1</span>
-                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">accelerator</span> <span class="o">==</span> <span class="s2">&quot;ddp_cpu&quot;</span><span class="p">:</span>
-                    <span class="n">optim_config</span><span class="p">[</span><span class="s2">&quot;sched&quot;</span><span class="p">][</span><span class="s2">&quot;t_num_workers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">num_devices</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">num_nodes</span>
-                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">accelerator</span> <span class="o">==</span> <span class="s2">&quot;ddp&quot;</span><span class="p">:</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">accelerator</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ddp_cpu&quot;</span><span class="p">,</span> <span class="s2">&quot;ddp&quot;</span><span class="p">]:</span>
                     <span class="n">optim_config</span><span class="p">[</span><span class="s2">&quot;sched&quot;</span><span class="p">][</span><span class="s2">&quot;t_num_workers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">num_devices</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">num_nodes</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
@@ -557,46 +553,41 @@
             <span class="n">optimizer_args</span><span class="p">[</span><span class="s2">&quot;lr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">lr</span>
 
             <span class="c1"># Actually instantiate the optimizer</span>
-            <span class="k">if</span> <span class="n">optimizer_cls</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">(</span><span class="n">optimizer_cls</span><span class="p">):</span>
-                    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">optimizer_cls</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_optimizer_param_groups</span><span class="p">,</span> <span class="o">**</span><span class="n">optimizer_args</span><span class="p">)</span>
-                    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Optimizer config = </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">optimizer</span><span class="p">))</span>
-
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer</span> <span class="o">=</span> <span class="n">optimizer</span>
-
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="c1"># Attempt class path resolution</span>
-                    <span class="k">try</span><span class="p">:</span>
-                        <span class="n">optimizer_cls</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">create</span><span class="p">({</span><span class="s2">&quot;_target_&quot;</span><span class="p">:</span> <span class="n">optimizer_cls</span><span class="p">})</span>
-                        <span class="k">if</span> <span class="n">lr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                            <span class="n">optimizer_config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="n">lr</span><span class="p">}</span>
-                        <span class="k">else</span><span class="p">:</span>
-                            <span class="n">optimizer_config</span> <span class="o">=</span> <span class="p">{}</span>
-                        <span class="n">optimizer_config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">optimizer_args</span><span class="p">)</span>
-
-                        <span class="n">optimizer_instance</span> <span class="o">=</span> <span class="n">hydra</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">instantiate</span><span class="p">(</span>
-                            <span class="n">optimizer_cls</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer_param_groups</span><span class="p">,</span> <span class="o">**</span><span class="n">optimizer_config</span>
-                        <span class="p">)</span>  <span class="c1"># type: DictConfig</span>
-
-                        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Optimizer config = </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">optimizer_instance</span><span class="p">))</span>
-
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer</span> <span class="o">=</span> <span class="n">optimizer_instance</span>
-
-                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-                            <span class="s2">&quot;Could not instantiate class path - </span><span class="si">{}</span><span class="s2"> with kwargs </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                                <span class="n">optimizer_cls</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">optimizer_config</span><span class="p">)</span>
-                            <span class="p">)</span>
-                        <span class="p">)</span>
-                        <span class="k">raise</span> <span class="n">e</span>
-
-            <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">optimizer_cls</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">optimizer</span> <span class="o">=</span> <span class="n">mridc</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">optimizers</span><span class="o">.</span><span class="n">get_optimizer</span><span class="p">(</span><span class="n">optimizer_name</span><span class="p">)</span>
                 <span class="n">optimizer</span> <span class="o">=</span> <span class="n">optimizer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_optimizer_param_groups</span><span class="p">,</span> <span class="o">**</span><span class="n">optimizer_args</span><span class="p">)</span>
 
                 <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Optimizer config = </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">optimizer</span><span class="p">))</span>
 
                 <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer</span> <span class="o">=</span> <span class="n">optimizer</span>
+
+            <span class="k">elif</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">(</span><span class="n">optimizer_cls</span><span class="p">):</span>
+                <span class="n">optimizer</span> <span class="o">=</span> <span class="n">optimizer_cls</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_optimizer_param_groups</span><span class="p">,</span> <span class="o">**</span><span class="n">optimizer_args</span><span class="p">)</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Optimizer config = </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">optimizer</span><span class="p">))</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer</span> <span class="o">=</span> <span class="n">optimizer</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Attempt class path resolution</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">optimizer_cls</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">create</span><span class="p">({</span><span class="s2">&quot;_target_&quot;</span><span class="p">:</span> <span class="n">optimizer_cls</span><span class="p">})</span>
+                    <span class="n">optimizer_config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="n">lr</span><span class="p">}</span> <span class="k">if</span> <span class="n">lr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{}</span>
+                    <span class="n">optimizer_config</span> <span class="o">|=</span> <span class="n">optimizer_args</span>
+
+                    <span class="n">optimizer_instance</span> <span class="o">=</span> <span class="n">hydra</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">instantiate</span><span class="p">(</span>
+                        <span class="n">optimizer_cls</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer_param_groups</span><span class="p">,</span> <span class="o">**</span><span class="n">optimizer_config</span>
+                    <span class="p">)</span>  <span class="c1"># type: DictConfig</span>
+
+                    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Optimizer config = </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">optimizer_instance</span><span class="p">))</span>
+
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer</span> <span class="o">=</span> <span class="n">optimizer_instance</span>
+
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Could not instantiate class path - </span><span class="si">{</span><span class="n">optimizer_cls</span><span class="si">}</span><span class="s2"> with kwargs </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">optimizer_config</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+
+                    <span class="k">raise</span> <span class="n">e</span>
 
             <span class="c1"># Try to instantiate scheduler for optimizer</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_scheduler</span> <span class="o">=</span> <span class="n">mridc</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">lr_scheduler</span><span class="o">.</span><span class="n">prepare_lr_scheduler</span><span class="p">(</span>  <span class="c1"># type: ignore</span>
@@ -955,7 +946,7 @@
 
         <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">arg_matches</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Cannot pass more than one model initialization arguments to config!</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;Cannot pass more than one model initialization arguments to config!</span><span class="se">\n</span><span class="s2">&quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;Found : </span><span class="si">{</span><span class="p">[</span><span class="n">args</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">arg_present</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">arg_matches</span><span class="p">)</span> <span class="k">if</span> <span class="n">arg_present</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
 

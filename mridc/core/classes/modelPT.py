@@ -64,7 +64,7 @@ class ModelPT(LightningModule, Model):
         """
         if trainer is not None and not isinstance(trainer, Trainer):
             raise ValueError(
-                f"trainer constructor argument must be either None or pytorch_lightning.Trainer. "
+                "trainer constructor argument must be either None or pytorch_lightning.Trainer. "
                 f"But got {type(trainer)} instead."
             )
         super().__init__()
@@ -125,21 +125,21 @@ class ModelPT(LightningModule, Model):
         else:
             if "train_ds" in self._cfg and self._cfg.train_ds is not None:  # type: ignore
                 logging.warning(
-                    f"If you intend to do training or fine-tuning, please call the ModelPT.setup_training_data() "
-                    f"method and provide a valid configuration file to setup the train data loader.\n"
+                    "If you intend to do training or fine-tuning, please call the ModelPT.setup_training_data() "
+                    "method and provide a valid configuration file to setup the train data loader.\n"
                     f"Train config : \n{OmegaConf.to_yaml(self._cfg.train_ds)}"  # type: ignore
                 )
             if "validation_ds" in self._cfg and self._cfg.validation_ds is not None:  # type: ignore
                 logging.warning(
-                    f"If you intend to do validation, please call the ModelPT.setup_validation_data() or "
-                    f"ModelPT.setup_multiple_validation_data() method and provide a valid configuration file to "
-                    f"setup the validation data loader(s). \n"
+                    "If you intend to do validation, please call the ModelPT.setup_validation_data() or "
+                    "ModelPT.setup_multiple_validation_data() method and provide a valid configuration file to "
+                    "setup the validation data loader(s). \n"
                     f"Validation config : \n{OmegaConf.to_yaml(self._cfg.validation_ds)}"  # type: ignore
                 )
             if "test_ds" in self._cfg and self._cfg.test_ds is not None:  # type: ignore
                 logging.warning(
-                    f"Please call the ModelPT.setup_test_data() or ModelPT.setup_multiple_test_data() method "
-                    f"and provide a valid configuration file to setup the test data loader(s).\n"
+                    "Please call the ModelPT.setup_test_data() or ModelPT.setup_multiple_test_data() method "
+                    "and provide a valid configuration file to setup the test data loader(s).\n"
                     f"Test config : \n{OmegaConf.to_yaml(self._cfg.test_ds)}"  # type: ignore
                 )
 
@@ -191,7 +191,7 @@ class ModelPT(LightningModule, Model):
         if config_path in self.artifacts:
             logging.warning(
                 f"You tried to register an artifact under config key={config_path} but an artifact for "
-                f"it has already been registered."
+                "it has already been registered."
             )
 
         return self._save_restore_connector.register_artifact(self, config_path, src, verify_src_exists)
@@ -395,10 +395,8 @@ class ModelPT(LightningModule, Model):
             self.setup_optimizer_param_groups()
 
         # If config was not explicitly provided, use default
-        if optim_config is None:
-            # See if internal config has 'optim' namespace
-            if self._cfg is not None and hasattr(self._cfg, "optim"):
-                optim_config = self._cfg.optim
+        if optim_config is None and self._cfg is not None and hasattr(self._cfg, "optim"):
+            optim_config = self._cfg.optim
 
         # If config is still None, or internal config has no Optim, return without instantiation
         if optim_config is None:
@@ -433,9 +431,7 @@ class ModelPT(LightningModule, Model):
                 optim_config["sched"]["t_limit_train_batches"] = self._trainer.limit_train_batches
                 if self._trainer.accelerator is None:
                     optim_config["sched"]["t_num_workers"] = self._trainer.num_devices or 1
-                elif self._trainer.accelerator == "ddp_cpu":
-                    optim_config["sched"]["t_num_workers"] = self._trainer.num_devices * self._trainer.num_nodes
-                elif self._trainer.accelerator == "ddp":
+                elif self._trainer.accelerator in ["ddp_cpu", "ddp"]:
                     optim_config["sched"]["t_num_workers"] = self._trainer.num_devices * self._trainer.num_nodes
                 else:
                     logging.warning(
@@ -491,46 +487,41 @@ class ModelPT(LightningModule, Model):
             optimizer_args["lr"] = lr
 
             # Actually instantiate the optimizer
-            if optimizer_cls is not None:
-                if inspect.isclass(optimizer_cls):
-                    optimizer = optimizer_cls(self._optimizer_param_groups, **optimizer_args)
-                    logging.info("Optimizer config = %s", str(optimizer))
-
-                    self._optimizer = optimizer
-
-                else:
-                    # Attempt class path resolution
-                    try:
-                        optimizer_cls = OmegaConf.create({"_target_": optimizer_cls})
-                        if lr is not None:
-                            optimizer_config = {"lr": lr}
-                        else:
-                            optimizer_config = {}
-                        optimizer_config.update(optimizer_args)
-
-                        optimizer_instance = hydra.utils.instantiate(
-                            optimizer_cls, self._optimizer_param_groups, **optimizer_config
-                        )  # type: DictConfig
-
-                        logging.info("Optimizer config = %s", str(optimizer_instance))
-
-                        self._optimizer = optimizer_instance
-
-                    except Exception as e:
-                        logging.error(
-                            "Could not instantiate class path - {} with kwargs {}".format(
-                                optimizer_cls, str(optimizer_config)
-                            )
-                        )
-                        raise e
-
-            else:
+            if optimizer_cls is None:
                 optimizer = mridc.core.optim.optimizers.get_optimizer(optimizer_name)
                 optimizer = optimizer(self._optimizer_param_groups, **optimizer_args)
 
                 logging.info("Optimizer config = %s", str(optimizer))
 
                 self._optimizer = optimizer
+
+            elif inspect.isclass(optimizer_cls):
+                optimizer = optimizer_cls(self._optimizer_param_groups, **optimizer_args)
+                logging.info("Optimizer config = %s", str(optimizer))
+
+                self._optimizer = optimizer
+
+            else:
+                # Attempt class path resolution
+                try:
+                    optimizer_cls = OmegaConf.create({"_target_": optimizer_cls})
+                    optimizer_config = {"lr": lr} if lr is not None else {}
+                    optimizer_config |= optimizer_args
+
+                    optimizer_instance = hydra.utils.instantiate(
+                        optimizer_cls, self._optimizer_param_groups, **optimizer_config
+                    )  # type: DictConfig
+
+                    logging.info("Optimizer config = %s", str(optimizer_instance))
+
+                    self._optimizer = optimizer_instance
+
+                except Exception as e:
+                    logging.error(
+                        f"Could not instantiate class path - {optimizer_cls} with kwargs {str(optimizer_config)}"
+                    )
+
+                    raise e
 
             # Try to instantiate scheduler for optimizer
             self._scheduler = mridc.core.optim.lr_scheduler.prepare_lr_scheduler(  # type: ignore
@@ -889,7 +880,7 @@ class ModelPT(LightningModule, Model):
 
         if sum(arg_matches) > 1:
             raise ValueError(
-                f"Cannot pass more than one model initialization arguments to config!\n"
+                "Cannot pass more than one model initialization arguments to config!\n"
                 f"Found : {[args[idx] for idx, arg_present in enumerate(arg_matches) if arg_present]}"
             )
 

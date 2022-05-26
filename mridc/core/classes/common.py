@@ -653,7 +653,7 @@ class Model(Typing, Serialization, FileIO, ABC):  # type: ignore
         if location_in_the_cloud is None:
             raise FileNotFoundError(
                 f"Model {model_name} was not found. "
-                f"Check cls.list_available_models() for the list of all available models."
+                "Check cls.list_available_models() for the list of all available models."
             )
         filename = location_in_the_cloud.split("/")[-1]
         url = location_in_the_cloud.replace(filename, "")

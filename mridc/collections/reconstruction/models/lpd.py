@@ -74,7 +74,7 @@ class LPDNet(BaseMRIReconstructionModel, ABC):
             )
         else:
             raise NotImplementedError(
-                f"LPDNet is currently implemented for primal_model_architecture == 'CONV' or 'UNet'."
+                "LPDNet is currently implemented for primal_model_architecture == 'CONV' or 'UNet'."
                 f"Got primal_model_architecture == {primal_model_architecture}."
             )
 
@@ -108,7 +108,7 @@ class LPDNet(BaseMRIReconstructionModel, ABC):
             )
         else:
             raise NotImplementedError(
-                f"LPDNet is currently implemented for dual_model_architecture == 'CONV' or 'DIDN' or 'UNet'."
+                "LPDNet is currently implemented for dual_model_architecture == 'CONV' or 'DIDN' or 'UNet'."
                 f"Got dual_model_architecture == {dual_model_architecture}."
             )
 

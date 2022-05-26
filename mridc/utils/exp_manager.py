@@ -306,8 +306,8 @@ def exp_manager(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None)
     mridc_testing = get_envbool(MRIDC_ENV_VARNAME_TESTING, False)
 
     log_file = log_dir / f"mridc_log_globalrank-{global_rank}_localrank-{local_rank}.txt"
-    # Handle logging to file
-    # Logs local rank 0 only
+
+    # Handle logging to file. Logs local rank 0 only
     if local_rank == 0 and cfg.log_local_rank_0_only and not mridc_testing:
         logging.add_file_handler(log_file)
     elif global_rank == 0 and cfg.log_global_rank_0_only and mridc_testing:
@@ -938,7 +938,7 @@ def configure_checkpointing(trainer: Trainer, log_dir: Path, name: str, resume: 
                 f"{trainer.max_epochs}) was less than trainer.check_val_every_n_epoch("
                 f"{trainer.check_val_every_n_epoch}). It is very likely this run will fail with "
                 f"ModelCheckpoint(monitor='{params.monitor}') not found in the returned metrics. Please ensure that "
-                f"validation is run within trainer.max_epochs."
+                "validation is run within trainer.max_epochs."
             )
         elif trainer.max_steps is not None:
             logging.warning(

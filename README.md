@@ -66,7 +66,11 @@ cd mridc
 ./reinstall.sh
 ```
 
-## Datasets
+## Usage
+
+Check the [projects](https://github.com/wdika/mridc/blob/main/projects/README.md) page for more information of how to use **mridc**.
+
+### Datasets
 
 Recommended public datasets to use with this repo:
 

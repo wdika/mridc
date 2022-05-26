@@ -79,7 +79,7 @@ class VSNet(BaseMRIReconstructionModel, ABC):
             )
         else:
             raise NotImplementedError(
-                f"VSNet is currently implemented only with image_model_architecture == 'MWCNN' or 'UNet'."
+                "VSNet is currently implemented only with image_model_architecture == 'MWCNN' or 'UNet'."
                 f"Got {image_model_architecture}."
             )
 
