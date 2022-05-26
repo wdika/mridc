@@ -64,7 +64,7 @@ class ModelPT(LightningModule, Model):
         """
         if trainer is not None and not isinstance(trainer, Trainer):
             raise ValueError(
-                f"trainer constructor argument must be either None or pytorch_lightning.Trainer. "
+                "trainer constructor argument must be either None or pytorch_lightning.Trainer. "
                 f"But got {type(trainer)} instead."
             )
         super().__init__()
@@ -125,21 +125,21 @@ class ModelPT(LightningModule, Model):
         else:
             if "train_ds" in self._cfg and self._cfg.train_ds is not None:  # type: ignore
                 logging.warning(
-                    f"If you intend to do training or fine-tuning, please call the ModelPT.setup_training_data() "
-                    f"method and provide a valid configuration file to setup the train data loader.\n"
+                    "If you intend to do training or fine-tuning, please call the ModelPT.setup_training_data() "
+                    "method and provide a valid configuration file to setup the train data loader.\n"
                     f"Train config : \n{OmegaConf.to_yaml(self._cfg.train_ds)}"  # type: ignore
                 )
             if "validation_ds" in self._cfg and self._cfg.validation_ds is not None:  # type: ignore
                 logging.warning(
-                    f"If you intend to do validation, please call the ModelPT.setup_validation_data() or "
-                    f"ModelPT.setup_multiple_validation_data() method and provide a valid configuration file to "
-                    f"setup the validation data loader(s). \n"
+                    "If you intend to do validation, please call the ModelPT.setup_validation_data() or "
+                    "ModelPT.setup_multiple_validation_data() method and provide a valid configuration file to "
+                    "setup the validation data loader(s). \n"
                     f"Validation config : \n{OmegaConf.to_yaml(self._cfg.validation_ds)}"  # type: ignore
                 )
             if "test_ds" in self._cfg and self._cfg.test_ds is not None:  # type: ignore
                 logging.warning(
-                    f"Please call the ModelPT.setup_test_data() or ModelPT.setup_multiple_test_data() method "
-                    f"and provide a valid configuration file to setup the test data loader(s).\n"
+                    "Please call the ModelPT.setup_test_data() or ModelPT.setup_multiple_test_data() method "
+                    "and provide a valid configuration file to setup the test data loader(s).\n"
                     f"Test config : \n{OmegaConf.to_yaml(self._cfg.test_ds)}"  # type: ignore
                 )
 
@@ -191,7 +191,7 @@ class ModelPT(LightningModule, Model):
         if config_path in self.artifacts:
             logging.warning(
                 f"You tried to register an artifact under config key={config_path} but an artifact for "
-                f"it has already been registered."
+                "it has already been registered."
             )
 
         return self._save_restore_connector.register_artifact(self, config_path, src, verify_src_exists)
@@ -880,7 +880,7 @@ class ModelPT(LightningModule, Model):
 
         if sum(arg_matches) > 1:
             raise ValueError(
-                f"Cannot pass more than one model initialization arguments to config!\n"
+                "Cannot pass more than one model initialization arguments to config!\n"
                 f"Found : {[args[idx] for idx, arg_present in enumerate(arg_matches) if arg_present]}"
             )
 

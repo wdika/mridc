@@ -73,8 +73,12 @@ class Exportable(ABC):
         my_args = locals().copy()
         my_args.pop("self")
 
-        exportables = [m for m in self.modules() if isinstance(m, Exportable)]
-        qual_name = f"{self.__module__}.{self.__class__.__qualname__}"
+        exportables = []
+        for m in self.modules():  # type: ignore
+            if isinstance(m, Exportable):
+                exportables.append(m)
+
+        qual_name = self.__module__ + "." + self.__class__.__qualname__
         format = get_export_format(output)
         output_descr = f"{qual_name} exported to {format}"
 

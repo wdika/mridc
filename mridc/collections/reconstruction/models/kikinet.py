@@ -78,7 +78,7 @@ class KIKINet(BaseMRIReconstructionModel, ABC):
             )
         else:
             raise NotImplementedError(
-                f"KIKINet is currently implemented for kspace_model_architecture == 'CONV' or 'DIDN' or 'UNet'."
+                "KIKINet is currently implemented for kspace_model_architecture == 'CONV' or 'DIDN' or 'UNet'."
                 f"Got kspace_model_architecture == {kspace_model_architecture}."
             )
 
@@ -104,7 +104,7 @@ class KIKINet(BaseMRIReconstructionModel, ABC):
             )
         else:
             raise NotImplementedError(
-                f"KIKINet is currently implemented only with image_model_architecture == 'MWCNN' or 'UNet'."
+                "KIKINet is currently implemented only with image_model_architecture == 'MWCNN' or 'UNet'."
                 f"Got {image_model_architecture}."
             )
 

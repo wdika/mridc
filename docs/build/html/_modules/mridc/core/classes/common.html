@@ -719,7 +719,7 @@
         <span class="k">if</span> <span class="n">location_in_the_cloud</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Model </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> was not found. &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;Check cls.list_available_models() for the list of all available models.&quot;</span>
+                <span class="s2">&quot;Check cls.list_available_models() for the list of all available models.&quot;</span>
             <span class="p">)</span>
         <span class="n">filename</span> <span class="o">=</span> <span class="n">location_in_the_cloud</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
         <span class="n">url</span> <span class="o">=</span> <span class="n">location_in_the_cloud</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>

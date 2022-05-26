@@ -70,7 +70,7 @@ class DUNet(BaseMRIReconstructionModel, ABC):
             )
         else:
             raise NotImplementedError(
-                f"DUNET is currently implemented for reg_model_architecture == 'DIDN' or 'UNet'."
+                "DUNET is currently implemented for reg_model_architecture == 'DIDN' or 'UNet'."
                 f"Got reg_model_architecture == {reg_model_architecture}."
             )
 
