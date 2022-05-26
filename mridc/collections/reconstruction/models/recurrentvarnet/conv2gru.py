@@ -135,7 +135,7 @@ class Conv2dGRU(nn.Module):
             previous_state = torch.zeros(*state_size, dtype=cell_input.dtype).to(cell_input.device)
 
         for idx in range(self.num_layers):
-            if len(conv_skip) > 0:
+            if conv_skip:
                 cell_input = F.relu(
                     self.conv_blocks[idx](torch.cat([*conv_skip[-self.dense_connect :], cell_input], dim=1)),
                     inplace=True,
@@ -155,7 +155,7 @@ class Conv2dGRU(nn.Module):
             cell_input = previous_state[:, :, :, :, idx] * (1 - update) + delta * update
             new_states.append(cell_input)
             cell_input = F.relu(cell_input, inplace=False)
-        if len(conv_skip) > 0:
+        if conv_skip:
             out = self.conv_blocks[self.num_layers](torch.cat([*conv_skip[-self.dense_connect :], cell_input], dim=1))
         else:
             out = self.conv_blocks[self.num_layers](cell_input)

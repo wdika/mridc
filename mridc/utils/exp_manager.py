@@ -306,15 +306,7 @@ def exp_manager(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None)
     mridc_testing = get_envbool(MRIDC_ENV_VARNAME_TESTING, False)
 
     log_file = log_dir / f"mridc_log_globalrank-{global_rank}_localrank-{local_rank}.txt"
-    # Handle logging to file
-    # Logs local rank 0 only
-    if local_rank == 0 and cfg.log_local_rank_0_only and not mridc_testing:
-        logging.add_file_handler(log_file)
-    elif global_rank == 0 and cfg.log_global_rank_0_only and mridc_testing:
-        logging.add_file_handler(log_file)
-    else:
-        logging.add_file_handler(log_file)
-
+    logging.add_file_handler(log_file)
     # For some reason, LearningRateLogger requires trainer to have a logger. Safer to create logger on all ranks
     # not just global rank 0.
     if cfg.create_tensorboard_logger or cfg.create_wandb_logger:

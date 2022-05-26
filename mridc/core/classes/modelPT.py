@@ -395,10 +395,12 @@ class ModelPT(LightningModule, Model):
             self.setup_optimizer_param_groups()
 
         # If config was not explicitly provided, use default
-        if optim_config is None:
-            # See if internal config has 'optim' namespace
-            if self._cfg is not None and hasattr(self._cfg, "optim"):
-                optim_config = self._cfg.optim
+        if (
+            optim_config is None
+            and self._cfg is not None
+            and hasattr(self._cfg, "optim")
+        ):
+            optim_config = self._cfg.optim
 
         # If config is still None, or internal config has no Optim, return without instantiation
         if optim_config is None:
@@ -433,9 +435,7 @@ class ModelPT(LightningModule, Model):
                 optim_config["sched"]["t_limit_train_batches"] = self._trainer.limit_train_batches
                 if self._trainer.accelerator is None:
                     optim_config["sched"]["t_num_workers"] = self._trainer.num_devices or 1
-                elif self._trainer.accelerator == "ddp_cpu":
-                    optim_config["sched"]["t_num_workers"] = self._trainer.num_devices * self._trainer.num_nodes
-                elif self._trainer.accelerator == "ddp":
+                elif self._trainer.accelerator in ["ddp_cpu", "ddp"]:
                     optim_config["sched"]["t_num_workers"] = self._trainer.num_devices * self._trainer.num_nodes
                 else:
                     logging.warning(
@@ -491,46 +491,41 @@ class ModelPT(LightningModule, Model):
             optimizer_args["lr"] = lr
 
             # Actually instantiate the optimizer
-            if optimizer_cls is not None:
-                if inspect.isclass(optimizer_cls):
-                    optimizer = optimizer_cls(self._optimizer_param_groups, **optimizer_args)
-                    logging.info("Optimizer config = %s", str(optimizer))
-
-                    self._optimizer = optimizer
-
-                else:
-                    # Attempt class path resolution
-                    try:
-                        optimizer_cls = OmegaConf.create({"_target_": optimizer_cls})
-                        if lr is not None:
-                            optimizer_config = {"lr": lr}
-                        else:
-                            optimizer_config = {}
-                        optimizer_config.update(optimizer_args)
-
-                        optimizer_instance = hydra.utils.instantiate(
-                            optimizer_cls, self._optimizer_param_groups, **optimizer_config
-                        )  # type: DictConfig
-
-                        logging.info("Optimizer config = %s", str(optimizer_instance))
-
-                        self._optimizer = optimizer_instance
-
-                    except Exception as e:
-                        logging.error(
-                            "Could not instantiate class path - {} with kwargs {}".format(
-                                optimizer_cls, str(optimizer_config)
-                            )
-                        )
-                        raise e
-
-            else:
+            if optimizer_cls is None:
                 optimizer = mridc.core.optim.optimizers.get_optimizer(optimizer_name)
                 optimizer = optimizer(self._optimizer_param_groups, **optimizer_args)
 
                 logging.info("Optimizer config = %s", str(optimizer))
 
                 self._optimizer = optimizer
+
+            elif inspect.isclass(optimizer_cls):
+                optimizer = optimizer_cls(self._optimizer_param_groups, **optimizer_args)
+                logging.info("Optimizer config = %s", str(optimizer))
+
+                self._optimizer = optimizer
+
+            else:
+                    # Attempt class path resolution
+                try:
+                    optimizer_cls = OmegaConf.create({"_target_": optimizer_cls})
+                    optimizer_config = {"lr": lr} if lr is not None else {}
+                    optimizer_config |= optimizer_args
+
+                    optimizer_instance = hydra.utils.instantiate(
+                        optimizer_cls, self._optimizer_param_groups, **optimizer_config
+                    )  # type: DictConfig
+
+                    logging.info("Optimizer config = %s", str(optimizer_instance))
+
+                    self._optimizer = optimizer_instance
+
+                except Exception as e:
+                    logging.error(
+                        f"Could not instantiate class path - {optimizer_cls} with kwargs {str(optimizer_config)}"
+                    )
+
+                    raise e
 
             # Try to instantiate scheduler for optimizer
             self._scheduler = mridc.core.optim.lr_scheduler.prepare_lr_scheduler(  # type: ignore
