@@ -11,9 +11,9 @@ from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
 from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import ifft2c
+from mridc.collections.common.parts.fft import ifft2
 from mridc.collections.common.parts.utils import coil_combination
-from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
+from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel
 from mridc.collections.reconstruction.models.conv.gruconv2d import GRUConv2d
 from mridc.collections.reconstruction.models.convrecnet.crnn_block import RecurrentConvolutionalNetBlock
 from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
@@ -45,7 +45,10 @@ class CRNNet(BaseMRIReconstructionModel, ABC):
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
         self.no_dc = cfg_dict.get("no_dc")
-        self.fft_type = cfg_dict.get("fft_type")
+        self.fft_centered = cfg_dict.get("fft_centered")
+        self.fft_normalization = cfg_dict.get("fft_normalization")
+        self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
         self.num_iterations = cfg_dict.get("num_iterations")
 
         self.crnn = RecurrentConvolutionalNetBlock(
@@ -57,22 +60,14 @@ class CRNNet(BaseMRIReconstructionModel, ABC):
                 batchnorm=cfg_dict.get("batchnorm"),
             ),
             num_iterations=self.num_iterations,
-            fft_type=self.fft_type,
+            fft_centered=self.fft_centered,
+            fft_normalization=self.fft_normalization,
+            spatial_dims=self.spatial_dims,
+            coil_dim=self.coil_dim,
             no_dc=self.no_dc,
         )
 
-        self.output_type = cfg_dict.get("output_type")
-
-        # Initialize the sensitivity network if use_sens_net is True
-        self.use_sens_net = cfg_dict.get("use_sens_net")
-        if self.use_sens_net:
-            self.sens_net = BaseSensitivityModel(
-                cfg_dict.get("sens_chans"),
-                cfg_dict.get("sens_pools"),
-                fft_type=self.fft_type,
-                mask_type=cfg_dict.get("sens_mask_type"),
-                normalize=cfg_dict.get("sens_normalize"),
-            )
+        self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
         # initialize weights if not using pretrained ccnn
         # TODO if not ccnn_cfg_dict.get("pretrained", False)
@@ -113,7 +108,6 @@ class CRNNet(BaseMRIReconstructionModel, ABC):
              If self.accumulate_loss is True, returns a list of all intermediate estimates.
              If False, returns the final estimate.
         """
-        sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         pred = self.crnn(y, sensitivity_maps, mask)
         yield [self.process_intermediate_pred(x, sensitivity_maps, target) for x in pred]
 
@@ -135,8 +129,10 @@ class CRNNet(BaseMRIReconstructionModel, ABC):
         pred: torch.Tensor, shape [batch_size, n_x, n_y, 2]
             Processed prediction.
         """
-        pred = ifft2c(pred, fft_type=self.fft_type)
-        pred = coil_combination(pred, sensitivity_maps, method=self.output_type, dim=1)
+        pred = ifft2(
+            pred, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
+        )
+        pred = coil_combination(pred, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim)
         pred = torch.view_as_complex(pred)
         _, pred = center_crop_to_smallest(target, pred)
         return pred
@@ -168,8 +164,8 @@ class CRNNet(BaseMRIReconstructionModel, ABC):
             def loss_fn(x, y):
                 """Calculate the ssim loss."""
                 return _loss_fn(
-                    x.unsqueeze(dim=1),
-                    torch.abs(y / torch.max(torch.abs(y))).unsqueeze(dim=1),
+                    x.unsqueeze(dim=self.coil_dim),
+                    torch.abs(y / torch.max(torch.abs(y))).unsqueeze(dim=self.coil_dim),
                     data_range=torch.tensor(max_value).unsqueeze(dim=0).to(x.device),
                 )
 

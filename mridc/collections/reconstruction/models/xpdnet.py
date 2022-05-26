@@ -9,7 +9,7 @@ from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
 from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
+from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel
 from mridc.collections.reconstruction.models.conv.conv2d import Conv2d
 from mridc.collections.reconstruction.models.crossdomain.crossdomain import CrossDomainNetwork
 from mridc.collections.reconstruction.models.crossdomain.multicoil import MultiCoil
@@ -151,32 +151,26 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
         else:
             raise NotImplementedError(f"Image model architecture {image_model_architecture} not found for XPDNet.")
 
-        self.fft_type = cfg_dict.get("fft_type")
+        self.fft_normalization = cfg_dict.get("fft_normalization")
+        self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
+        self.num_cascades = cfg_dict.get("num_cascades")
 
         self.xpdnet = CrossDomainNetwork(
-            fft_type=self.fft_type,
             image_model_list=image_model_list,
             kspace_model_list=kspace_model_list,
             domain_sequence="KI" * num_iter,
             image_buffer_size=num_primal,
             kspace_buffer_size=num_dual,
             normalize_image=cfg_dict.get("normalize_image"),
+            fft_centered=self.fft_centered,
+            fft_normalization=self.fft_normalization,
+            spatial_dims=self.spatial_dims,
+            coil_dim=self.coil_dim,
         )
-
-        # Initialize the sensitivity network if use_sens_net is True
-        self.use_sens_net = cfg_dict.get("use_sens_net")
-        if self.use_sens_net:
-            self.sens_net = BaseSensitivityModel(
-                cfg_dict.get("sens_chans"),
-                cfg_dict.get("sens_pools"),
-                fft_type=self.fft_type,
-                mask_type=cfg_dict.get("sens_mask_type"),
-                normalize=cfg_dict.get("sens_normalize"),
-            )
 
         self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
         self.eval_loss_fn = SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
-        self.output_type = cfg_dict.get("output_type")
 
         self.accumulate_estimates = False
 
@@ -211,7 +205,6 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
              If self.accumulate_loss is True, returns a list of all intermediate estimates.
              If False, returns the final estimate.
         """
-        sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         eta = self.xpdnet(y, sensitivity_maps, mask)
         eta = (eta**2).sqrt().sum(-1)
         _, eta = center_crop_to_smallest(target, eta)

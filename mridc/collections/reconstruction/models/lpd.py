@@ -9,7 +9,7 @@ from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
 from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import fft2c, ifft2c
+from mridc.collections.common.parts.fft import fft2, ifft2
 from mridc.collections.common.parts.utils import complex_conj, complex_mul
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
 from mridc.collections.reconstruction.models.conv.conv2d import Conv2d
@@ -74,7 +74,7 @@ class LPDNet(BaseMRIReconstructionModel, ABC):
             )
         else:
             raise NotImplementedError(
-                f"LPDNet is currently implemented for primal_model_architecture == 'CONV' or 'UNet'."
+                "LPDNet is currently implemented for primal_model_architecture == 'CONV' or 'UNet'."
                 f"Got primal_model_architecture == {primal_model_architecture}."
             )
 
@@ -108,7 +108,7 @@ class LPDNet(BaseMRIReconstructionModel, ABC):
             )
         else:
             raise NotImplementedError(
-                f"LPDNet is currently implemented for dual_model_architecture == 'CONV' or 'DIDN' or 'UNet'."
+                "LPDNet is currently implemented for dual_model_architecture == 'CONV' or 'DIDN' or 'UNet'."
                 f"Got dual_model_architecture == {dual_model_architecture}."
             )
 
@@ -119,23 +119,13 @@ class LPDNet(BaseMRIReconstructionModel, ABC):
             [DualNet(self.num_dual, dual_architecture=dual_model) for _ in range(self.num_iter)]
         )
 
-        self.fft_type = cfg_dict.get("fft_type")
-        self._coil_dim = 1
-
-        # Initialize the sensitivity network if use_sens_net is True
-        self.use_sens_net = cfg_dict.get("use_sens_net")
-        if self.use_sens_net:
-            self.sens_net = BaseSensitivityModel(
-                cfg_dict.get("sens_chans"),
-                cfg_dict.get("sens_pools"),
-                fft_type=self.fft_type,
-                mask_type=cfg_dict.get("sens_mask_type"),
-                normalize=cfg_dict.get("sens_normalize"),
-            )
+        self.fft_centered = cfg_dict.get("fft_centered")
+        self.fft_normalization = cfg_dict.get("fft_normalization")
+        self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
 
         self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
         self.eval_loss_fn = SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
-        self.output_type = cfg_dict.get("output_type")
 
         self.accumulate_estimates = False
 
@@ -170,12 +160,15 @@ class LPDNet(BaseMRIReconstructionModel, ABC):
              If self.accumulate_loss is True, returns a list of all intermediate estimates.
              If False, returns the final estimate.
         """
-        sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
-
         input_image = complex_mul(
-            ifft2c(torch.where(mask == 0, torch.tensor([0.0], dtype=y.dtype).to(y.device), y), fft_type=self.fft_type),
+            ifft2(
+                torch.where(mask == 0, torch.tensor([0.0], dtype=y.dtype).to(y.device), y),
+                centered=self.fft_centered,
+                normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            ),
             complex_conj(sensitivity_maps),
-        ).sum(1)
+        ).sum(self.coil_dim)
         dual_buffer = torch.cat([y] * self.num_dual, -1).to(y.device)
         primal_buffer = torch.cat([input_image] * self.num_primal, -1).to(y.device)
 
@@ -185,19 +178,27 @@ class LPDNet(BaseMRIReconstructionModel, ABC):
             f_2 = torch.where(
                 mask == 0,
                 torch.tensor([0.0], dtype=f_2.dtype).to(f_2.device),
-                fft2c(complex_mul(f_2.unsqueeze(1), sensitivity_maps), fft_type=self.fft_type).type(f_2.type()),
+                fft2(
+                    complex_mul(f_2.unsqueeze(self.coil_dim), sensitivity_maps),
+                    centered=self.fft_centered,
+                    normalization=self.fft_normalization,
+                    spatial_dims=self.spatial_dims,
+                ).type(f_2.type()),
             )
             dual_buffer = self.dual_net[idx](dual_buffer, f_2, y)
 
             # Primal
             h_1 = dual_buffer[..., 0:2].clone()
+            h_1 = torch.view_as_real(h_1[..., 0] + 1j * h_1[..., 1])  # needed for python3.9
             h_1 = complex_mul(
-                ifft2c(
+                ifft2(
                     torch.where(mask == 0, torch.tensor([0.0], dtype=h_1.dtype).to(h_1.device), h_1),
-                    fft_type=self.fft_type,
+                    centered=self.fft_centered,
+                    normalization=self.fft_normalization,
+                    spatial_dims=self.spatial_dims,
                 ),
                 complex_conj(sensitivity_maps),
-            ).sum(1)
+            ).sum(self.coil_dim)
             primal_buffer = self.primal_net[idx](primal_buffer, h_1)
 
         output = primal_buffer[..., 0:2]

@@ -32,19 +32,19 @@ class MultiCoil(nn.Module):
 
         self.model = model
         self.coil_to_batch = coil_to_batch
-        self._coil_dim = coil_dim
+        self.coil_dim = coil_dim
 
     def _compute_model_per_coil(self, data: torch.Tensor) -> torch.Tensor:
         """Computes the model per coil."""
         output = []
 
-        for idx in range(data.size(self._coil_dim)):
-            subselected_data = data.select(self._coil_dim, idx)
+        for idx in range(data.size(self.coil_dim)):
+            subselected_data = data.select(self.coil_dim, idx)
             if subselected_data.shape[-1] == 2 and subselected_data.dim() == 4:
                 output.append(self.model(subselected_data.permute(0, 3, 1, 2)))
             else:
-                output.append(self.model(subselected_data.unsqueeze(1)).squeeze(1))
-        output = torch.stack(output, dim=self._coil_dim)
+                output.append(self.model(subselected_data.unsqueeze(self.coil_dim)).squeeze(self.coil_dim))
+        output = torch.stack(output, dim=self.coil_dim)
         return output
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

@@ -776,7 +776,6 @@ def prepare_lr_scheduler(
         scheduler_config = OmegaConf.to_container(scheduler_config, resolve=True)
 
     # Test to see if config follows above schema
-
     add_max_args_flag = True
     interval = "step"
     if scheduler_config is not None:
@@ -787,7 +786,6 @@ def prepare_lr_scheduler(
 
             # Remove extra parameters from scheduler_args nest
             # Assume all other parameters are to be passed into scheduler constructor
-
             if "name" in scheduler_args and scheduler_args["name"] == "ReduceLROnPlateau":
                 add_max_args_flag = False
                 interval = "epoch"
@@ -799,7 +797,6 @@ def prepare_lr_scheduler(
             scheduler_args.pop("t_num_workers", None)
             scheduler_args.pop("monitor", None)
             scheduler_args.pop("reduce_on_plateau", None)
-
     else:
         # Return gracefully in case `sched` was not supplied; inform user
         logging.info("Scheduler not initialized as no `sched` config supplied to setup_optimizer()")
@@ -863,7 +860,6 @@ def prepare_lr_scheduler(
     # Store exact max_steps if it is provided
     if "max_steps" in scheduler_config and scheduler_config["max_steps"] is not None:
         max_steps = scheduler_config["max_steps"]
-
     elif "t_max_epochs" in scheduler_config:
         # Compute effective max_steps if t_max_epochs is provided
         if train_dataloader is None:
@@ -914,7 +910,6 @@ def prepare_lr_scheduler(
             batch_size=batch_size,
             drop_last=drop_last,
         )
-
     else:
         logging.warning(
             "Neither `max_steps` nor `iters_per_batch` were provided to `optim.sched`, "

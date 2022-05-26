@@ -3,80 +3,103 @@ __author__ = "Dimitrios Karkalousos"
 
 # Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
 
-from typing import List, Optional, Union
+from typing import List, Sequence, Union
 
 import numpy as np
 import torch
+from omegaconf import ListConfig
 
-__all__ = ["fft2c", "ifft2c"]
+__all__ = ["fft2", "ifft2"]
 
 
-def fft2c(
+def fft2(
     data: torch.Tensor,
-    fft_type: str = "orthogonal",
-    fft_normalization: str = "ortho",
-    fft_dim: Union[Optional[int], List[int], None] = None,
+    centered: bool = True,
+    normalization: str = "ortho",
+    spatial_dims: Sequence[int] = None,
 ) -> torch.Tensor:
     """
-    Apply centered 2 dimensional Fast Fourier Transform.
+    Apply 2 dimensional Fast Fourier Transform.
 
     Parameters
     ----------
     data: Complex valued input data containing at least 3 dimensions: dimensions -2 & -1 are spatial dimensions. All
     other dimensions are assumed to be batch dimensions.
-    fft_type: Specify fft type. This is important if an orthogonal transformation is needed or not.
-    fft_normalization: "ortho" is the default normalization used by PyTorch. Can be changed to "ortho" or None.
-    fft_dim: dimensions to apply the FFT
+    centered: Whether to center the fft.
+    normalization: "ortho" is the default normalization used by PyTorch. Can be changed to "ortho" or None.
+    spatial_dims: dimensions to apply the FFT
 
     Returns
     -------
     The FFT of the input.
     """
-    if fft_dim is None:
-        fft_dim = [-2, -1]
+    if data.shape[-1] == 2:
+        data = torch.view_as_complex(data)
 
-    if fft_type == "orthogonal":
-        data = ifftshift(data, dim=[-3, -2])
+    if spatial_dims is None:
+        spatial_dims = [-2, -1]
+    elif isinstance(spatial_dims, ListConfig):
+        spatial_dims = list(spatial_dims)
 
-    data = torch.view_as_real(torch.fft.fft2(torch.view_as_complex(data), dim=fft_dim, norm=fft_normalization))
+    if centered:
+        data = ifftshift(data, dim=spatial_dims)
 
-    if fft_type == "orthogonal":
-        data = fftshift(data, dim=[-3, -2])
+    data = torch.fft.fft2(
+        data,
+        dim=spatial_dims,
+        norm=normalization if normalization.lower() != "none" else None,
+    )
+
+    if centered:
+        data = fftshift(data, dim=spatial_dims)
+
+    data = torch.view_as_real(data)
 
     return data
 
 
-def ifft2c(
+def ifft2(
     data: torch.Tensor,
-    fft_type: str = "orthogonal",
-    fft_normalization: str = "ortho",
-    fft_dim: Union[Optional[int], List[int], None] = None,
+    centered: bool = True,
+    normalization: str = "ortho",
+    spatial_dims: Sequence[int] = None,
 ) -> torch.Tensor:
     """
-    Apply centered 2 dimensional Inverse Fast Fourier Transform.
+    Apply 2 dimensional Inverse Fast Fourier Transform.
 
     Parameters
     ----------
     data: Complex valued input data containing at least 3 dimensions: dimensions -2 & -1 are spatial dimensions. All
     other dimensions are assumed to be batch dimensions.
-    fft_type: Specify fft type. This is important if an orthogonal transformation is needed or not.
-    fft_normalization: "ortho" is the default normalization used by PyTorch. Can be changed to "ortho" or None.
-    fft_dim: dimensions to apply the FFT
+    centered: Whether to center the fft.
+    normalization: "ortho" is the default normalization used by PyTorch. Can be changed to "ortho" or None.
+    spatial_dims: dimensions to apply the FFT
 
     Returns
     -------
-    The IFFT of the input.
+    The FFT of the input.
     """
-    if fft_dim is None:
-        fft_dim = [-2, -1]
+    if data.shape[-1] == 2:
+        data = torch.view_as_complex(data)
 
-    if fft_type == "orthogonal":
-        data = ifftshift(data, dim=[-3, -2])
+    if spatial_dims is None:
+        spatial_dims = [-2, -1]
+    elif isinstance(spatial_dims, ListConfig):
+        spatial_dims = list(spatial_dims)
 
-    data = torch.view_as_real(torch.fft.ifft2(torch.view_as_complex(data), dim=fft_dim, norm=fft_normalization))
+    if centered:
+        data = ifftshift(data, dim=spatial_dims)
 
-    if fft_type == "orthogonal":
-        data = fftshift(data, dim=[-3, -2])
+    data = torch.fft.ifft2(
+        data,
+        dim=spatial_dims,
+        norm=normalization if normalization.lower() != "none" else None,
+    )
+
+    if centered:
+        data = fftshift(data, dim=spatial_dims)
+
+    data = torch.view_as_real(data)
 
     return data
 
@@ -105,7 +128,7 @@ def roll_one_dim(x: torch.Tensor, shift: int, dim: int) -> torch.Tensor:
     return torch.cat((right, left), dim=dim)
 
 
-def roll(x: torch.Tensor, shift: List[int], dim: List[int]) -> torch.Tensor:
+def roll(x: torch.Tensor, shift: List[int], dim: Union[List[int], Sequence[int]]) -> torch.Tensor:
     """
     Similar to np.roll but applies to PyTorch Tensors.
 
@@ -122,13 +145,16 @@ def roll(x: torch.Tensor, shift: List[int], dim: List[int]) -> torch.Tensor:
     if len(shift) != len(dim):
         raise ValueError("len(shift) must match len(dim)")
 
+    if isinstance(dim, ListConfig):
+        dim = list(dim)
+
     for (s, d) in zip(shift, dim):
         x = roll_one_dim(x, s, d)
 
     return x
 
 
-def fftshift(x: torch.Tensor, dim: Optional[List[int]] = None) -> torch.Tensor:
+def fftshift(x: torch.Tensor, dim: Union[List[int], Sequence[int]] = None) -> torch.Tensor:
     """
     Similar to np.fft.fftshift but applies to PyTorch Tensors
 
@@ -146,6 +172,8 @@ def fftshift(x: torch.Tensor, dim: Optional[List[int]] = None) -> torch.Tensor:
         dim = [0] * (x.dim())
         for i in range(1, x.dim()):
             dim[i] = i
+    elif isinstance(dim, ListConfig):
+        dim = list(dim)
 
     # Also necessary for torch.jit.script
     shift = [0] * len(dim)
@@ -155,7 +183,7 @@ def fftshift(x: torch.Tensor, dim: Optional[List[int]] = None) -> torch.Tensor:
     return roll(x, shift, dim)
 
 
-def ifftshift(x: torch.Tensor, dim: Optional[List[int]] = None) -> torch.Tensor:
+def ifftshift(x: torch.Tensor, dim: Union[List[int], Sequence[int]] = None) -> torch.Tensor:
     """
     Similar to np.fft.ifftshift but applies to PyTorch Tensors
 
@@ -173,6 +201,8 @@ def ifftshift(x: torch.Tensor, dim: Optional[List[int]] = None) -> torch.Tensor:
         dim = [0] * (x.dim())
         for i in range(1, x.dim()):
             dim[i] = i
+    elif isinstance(dim, ListConfig):
+        dim = list(dim)
 
     # Also necessary for torch.jit.script
     shift = [0] * len(dim)

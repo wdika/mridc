@@ -7,7 +7,7 @@ __author__ = "Dimitrios Karkalousos"
 import copy
 import os
 from dataclasses import dataclass, is_dataclass
-from distutils.version import Version
+from packaging.version import Version
 from enum import Enum
 from pathlib import Path
 from typing import Any, List, Optional, Set, Tuple, Union
@@ -572,12 +572,12 @@ def check_lib_version(lib_name: str, checked_version: str, operator) -> Tuple[Op
             msg = (
                 f"Lib {lib_name} version ({lib_ver}) is not {operator.__name__} than required version "
                 f"{checked_version}.\n"
-                f"Please upgrade the lib using either pip or conda to the latest version."
+                "Please upgrade the lib using either pip or conda to the latest version."
             )
             return False, msg
         msg = (
             f"Lib {lib_name} does not implement __version__ in its init file. "
-            f"Could not check version compatibility."
+            "Could not check version compatibility."
         )
         return False, msg
     except ImportError:

@@ -16,7 +16,7 @@ import hydra
 import torch
 from omegaconf import DictConfig, OmegaConf, open_dict
 from pytorch_lightning import LightningModule, Trainer
-from pytorch_lightning.utilities import rank_zero_only
+from pytorch_lightning.utilities import model_summary, rank_zero_only
 
 from mridc.core.classes.common import Model
 
@@ -64,7 +64,7 @@ class ModelPT(LightningModule, Model):
         """
         if trainer is not None and not isinstance(trainer, Trainer):
             raise ValueError(
-                f"trainer constructor argument must be either None or pytorch_lightning.Trainer. "
+                "trainer constructor argument must be either None or pytorch_lightning.Trainer. "
                 f"But got {type(trainer)} instead."
             )
         super().__init__()
@@ -125,21 +125,21 @@ class ModelPT(LightningModule, Model):
         else:
             if "train_ds" in self._cfg and self._cfg.train_ds is not None:  # type: ignore
                 logging.warning(
-                    f"If you intend to do training or fine-tuning, please call the ModelPT.setup_training_data() "
-                    f"method and provide a valid configuration file to setup the train data loader.\n"
+                    "If you intend to do training or fine-tuning, please call the ModelPT.setup_training_data() "
+                    "method and provide a valid configuration file to setup the train data loader.\n"
                     f"Train config : \n{OmegaConf.to_yaml(self._cfg.train_ds)}"  # type: ignore
                 )
             if "validation_ds" in self._cfg and self._cfg.validation_ds is not None:  # type: ignore
                 logging.warning(
-                    f"If you intend to do validation, please call the ModelPT.setup_validation_data() or "
-                    f"ModelPT.setup_multiple_validation_data() method and provide a valid configuration file to "
-                    f"setup the validation data loader(s). \n"
+                    "If you intend to do validation, please call the ModelPT.setup_validation_data() or "
+                    "ModelPT.setup_multiple_validation_data() method and provide a valid configuration file to "
+                    "setup the validation data loader(s). \n"
                     f"Validation config : \n{OmegaConf.to_yaml(self._cfg.validation_ds)}"  # type: ignore
                 )
             if "test_ds" in self._cfg and self._cfg.test_ds is not None:  # type: ignore
                 logging.warning(
-                    f"Please call the ModelPT.setup_test_data() or ModelPT.setup_multiple_test_data() method "
-                    f"and provide a valid configuration file to setup the test data loader(s).\n"
+                    "Please call the ModelPT.setup_test_data() or ModelPT.setup_multiple_test_data() method "
+                    "and provide a valid configuration file to setup the test data loader(s).\n"
                     f"Test config : \n{OmegaConf.to_yaml(self._cfg.test_ds)}"  # type: ignore
                 )
 
@@ -191,7 +191,7 @@ class ModelPT(LightningModule, Model):
         if config_path in self.artifacts:
             logging.warning(
                 f"You tried to register an artifact under config key={config_path} but an artifact for "
-                f"it has already been registered."
+                "it has already been registered."
             )
 
         return self._save_restore_connector.register_artifact(self, config_path, src, verify_src_exists)
@@ -274,7 +274,11 @@ class ModelPT(LightningModule, Model):
         if save_restore_connector is None:
             save_restore_connector = SaveRestoreConnector()
 
-        restore_path = os.path.abspath(os.path.expanduser(restore_path))
+        if save_restore_connector.model_extracted_dir is None:
+            restore_path = os.path.abspath(os.path.expanduser(restore_path))
+        else:
+            restore_path = os.path.abspath(os.path.expanduser(save_restore_connector.model_extracted_dir))
+
         if not path.exists(restore_path):
             raise FileNotFoundError(f"Can't find {restore_path}")
 
@@ -391,14 +395,12 @@ class ModelPT(LightningModule, Model):
         -------
         An instance of an optimizer.
         """
-        if self._optimizer_param_groups is None:
-            self.setup_optimizer_param_groups()
+        # Setup the optimizer parameter groups (by default use all parameters that are trainable).
+        self.setup_optimizer_param_groups()
 
         # If config was not explicitly provided, use default
-        if optim_config is None:
-            # See if internal config has 'optim' namespace
-            if self._cfg is not None and hasattr(self._cfg, "optim"):
-                optim_config = self._cfg.optim
+        if optim_config is None and self._cfg is not None and hasattr(self._cfg, "optim"):
+            optim_config = self._cfg.optim
 
         # If config is still None, or internal config has no Optim, return without instantiation
         if optim_config is None:
@@ -431,18 +433,7 @@ class ModelPT(LightningModule, Model):
                 optim_config["sched"]["t_max_epochs"] = self._trainer.max_epochs
                 optim_config["sched"]["t_accumulate_grad_batches"] = self._trainer.accumulate_grad_batches
                 optim_config["sched"]["t_limit_train_batches"] = self._trainer.limit_train_batches
-                if self._trainer.accelerator is None:
-                    optim_config["sched"]["t_num_workers"] = self._trainer.num_devices or 1
-                elif self._trainer.accelerator == "ddp_cpu":
-                    optim_config["sched"]["t_num_workers"] = self._trainer.num_devices * self._trainer.num_nodes
-                elif self._trainer.accelerator == "ddp":
-                    optim_config["sched"]["t_num_workers"] = self._trainer.num_devices * self._trainer.num_nodes
-                else:
-                    logging.warning(
-                        f"The lightning trainer received accelerator: {self._trainer.accelerator}. We "
-                        "recommend to use 'ddp' instead."
-                    )
-                    optim_config["sched"]["t_num_workers"] = self._trainer.num_devices * self._trainer.num_nodes
+                optim_config["sched"]["t_num_workers"] = self._trainer.num_devices * self._trainer.num_nodes
             else:
                 optim_config["sched"]["max_steps"] = self._trainer.max_steps
 
@@ -491,51 +482,70 @@ class ModelPT(LightningModule, Model):
             optimizer_args["lr"] = lr
 
             # Actually instantiate the optimizer
-            if optimizer_cls is not None:
-                if inspect.isclass(optimizer_cls):
-                    optimizer = optimizer_cls(self._optimizer_param_groups, **optimizer_args)
-                    logging.info("Optimizer config = %s", str(optimizer))
-
-                    self._optimizer = optimizer
-
-                else:
-                    # Attempt class path resolution
-                    try:
-                        optimizer_cls = OmegaConf.create({"_target_": optimizer_cls})
-                        if lr is not None:
-                            optimizer_config = {"lr": lr}
-                        else:
-                            optimizer_config = {}
-                        optimizer_config.update(optimizer_args)
-
-                        optimizer_instance = hydra.utils.instantiate(
-                            optimizer_cls, self._optimizer_param_groups, **optimizer_config
-                        )  # type: DictConfig
-
-                        logging.info("Optimizer config = %s", str(optimizer_instance))
-
-                        self._optimizer = optimizer_instance
-
-                    except Exception as e:
-                        logging.error(
-                            "Could not instantiate class path - {} with kwargs {}".format(
-                                optimizer_cls, str(optimizer_config)
-                            )
-                        )
-                        raise e
-
-            else:
+            if optimizer_cls is None:
                 optimizer = mridc.core.optim.optimizers.get_optimizer(optimizer_name)
                 optimizer = optimizer(self._optimizer_param_groups, **optimizer_args)
 
                 logging.info("Optimizer config = %s", str(optimizer))
 
-                self._optimizer = optimizer
+                self._optimizer = optimizer  # type: ignore
 
-            # Try to instantiate scheduler for optimizer
-            self._scheduler = mridc.core.optim.lr_scheduler.prepare_lr_scheduler(  # type: ignore
-                optimizer=self._optimizer, scheduler_config=scheduler_config, train_dataloader=self._train_dl
-            )
+            elif inspect.isclass(optimizer_cls):
+                optimizer = optimizer_cls(self._optimizer_param_groups, **optimizer_args)
+                logging.info("Optimizer config = %s", str(optimizer))
+
+                self._optimizer = optimizer  # type: ignore
+
+            else:
+                # Attempt class path resolution
+                try:
+                    optimizer_cls = OmegaConf.create({"_target_": optimizer_cls})
+                    optimizer_config = {"lr": lr} if lr is not None else {}
+                    optimizer_config |= optimizer_args
+
+                    optimizer_instance = hydra.utils.instantiate(
+                        optimizer_cls, self._optimizer_param_groups, **optimizer_config
+                    )  # type: DictConfig
+
+                    logging.info("Optimizer config = %s", str(optimizer_instance))
+
+                    self._optimizer = optimizer_instance
+
+                except Exception as e:
+                    logging.error(
+                        f"Could not instantiate class path - {optimizer_cls} with kwargs {str(optimizer_config)}"
+                    )
+
+                    raise e
+
+            # print(f"scheduler_config = {scheduler_config}")
+            if isinstance(scheduler_config["name"], list):
+                _schedulers = [
+                    mridc.core.optim.lr_scheduler.prepare_lr_scheduler(
+                        optimizer=self._optimizer,
+                        scheduler_config={
+                            "name": scheduler_config["name"][i],
+                            "min_lr": scheduler_config["min_lr"][i],
+                            "last_epoch": scheduler_config["last_epoch"][i],
+                            "warmup_ratio": scheduler_config["warmup_ratio"][i],
+                            "monitor": scheduler_config["monitor"][i],
+                            "t_max_epochs": scheduler_config["t_max_epochs"],
+                            "t_accumulate_grad_batches": scheduler_config["t_accumulate_grad_batches"],
+                            "t_limit_train_batches": scheduler_config["t_limit_train_batches"],
+                            "t_num_workers": scheduler_config["t_num_workers"],
+                        },
+                        train_dataloader=self._train_dl,
+                    )
+                    for i in range(len(scheduler_config["name"]))
+                ]
+
+                self._scheduler = _schedulers
+                self._optimizer = [self._optimizer] * len(scheduler_config["name"])
+            else:
+                # Try to instantiate scheduler for optimizer
+                self._scheduler = mridc.core.optim.lr_scheduler.prepare_lr_scheduler(  # type: ignore
+                    optimizer=self._optimizer, scheduler_config=scheduler_config, train_dataloader=self._train_dl
+                )
 
             # Return the optimizer with/without scheduler
             # This return allows multiple optimizers or schedulers to be created
@@ -565,8 +575,14 @@ class ModelPT(LightningModule, Model):
         """Configure optimizers and schedulers for training."""
         self.setup_optimization()
 
+        if isinstance(self._scheduler, list) and self._scheduler[0] is None:
+            return self._optimizer
+
         if self._scheduler is None:
             return self._optimizer
+
+        if isinstance(self._optimizer, list):
+            return self._optimizer, self._scheduler
 
         return [self._optimizer], [self._scheduler]
 
@@ -889,7 +905,7 @@ class ModelPT(LightningModule, Model):
 
         if sum(arg_matches) > 1:
             raise ValueError(
-                f"Cannot pass more than one model initialization arguments to config!\n"
+                "Cannot pass more than one model initialization arguments to config!\n"
                 f"Found : {[args[idx] for idx, arg_present in enumerate(arg_matches) if arg_present]}"
             )
 
@@ -1114,13 +1130,20 @@ class ModelPT(LightningModule, Model):
 
     def set_world_size(self, trainer: Trainer):
         """Determines the world size from the PyTorch Lightning Trainer and then updates AppState."""
-        # Update AppState with world information from trainer
-        if isinstance(trainer, Trainer):
-            app_state = AppState()
-            if self._trainer.num_devices and self._trainer.num_nodes:  # type: ignore
-                app_state.world_size = self._trainer.num_devices * self._trainer.num_nodes  # type: ignore
-        else:
-            logging.warning("World size can only be set by PyTorch Lightning Trainer.")
+        self.world_size = 1
+
+        if trainer is not None:
+            if isinstance(trainer, Trainer):
+                if trainer.num_devices and trainer.num_nodes:
+                    self.world_size = trainer.num_devices * trainer.num_nodes
+            else:
+                logging.warning("World size can only be set by PyTorch Lightning Trainer.")
+        app_state = AppState()
+        app_state.world_size = self.world_size
+
+    def summarize(self, max_depth: int = 1) -> model_summary.ModelSummary:
+        """Summarize this LightningModule."""
+        return model_summary.summarize(self, max_depth=max_depth)
 
     def _update_dataset_config(self, dataset_name: str, config: Optional[Union[DictConfig, Dict]]):
         """

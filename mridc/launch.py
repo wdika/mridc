@@ -75,9 +75,9 @@ def main(cfg: DictConfig) -> None:
     else:
         raise NotImplementedError(
             f"{model_name} is not implemented in MRIDC. You can use one of the following methods: "
-            f"CASCADENET, CIRIM, CRNNET, DUNET, E2EVN, JOINTICNET, KIKINET, LPDNET, MULTIDOMAINNET, PICS, RVN, UNET, "
-            f"VSNET, XPDNET, or Zero-Filled. /n"
-            f"If you implemented a new model, please consider adding it through a PR on GitHub."
+            "CASCADENET, CIRIM, CRNNET, DUNET, E2EVN, JOINTICNET, KIKINET, LPDNET, MULTIDOMAINNET, PICS, RVN, UNET, "
+            "VSNET, XPDNET, or Zero-Filled. /n"
+            "If you implemented a new model, please consider adding it through a PR on GitHub."
         )
 
     if cfg.get("pretrained", None):

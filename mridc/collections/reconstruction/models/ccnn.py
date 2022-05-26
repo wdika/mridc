@@ -9,9 +9,9 @@ from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
 from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import ifft2c
+from mridc.collections.common.parts.fft import ifft2
 from mridc.collections.common.parts.utils import coil_combination
-from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
+from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel
 from mridc.collections.reconstruction.models.cascadenet.ccnn_block import CascadeNetBlock
 from mridc.collections.reconstruction.models.conv.conv2d import Conv2d
 from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
@@ -42,7 +42,12 @@ class CascadeNet(BaseMRIReconstructionModel, ABC):
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
-        self.fft_type = cfg_dict.get("fft_type")
+        self.coil_combination_method = cfg_dict.get("coil_combination_method")
+
+        self.fft_centered = cfg_dict.get("fft_centered")
+        self.fft_normalization = cfg_dict.get("fft_normalization")
+        self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
 
         # Cascades of CascadeCNN blocks
         self.cascades = torch.nn.ModuleList(
@@ -55,25 +60,17 @@ class CascadeNet(BaseMRIReconstructionModel, ABC):
                         n_convs=cfg_dict.get("n_convs"),
                         batchnorm=cfg_dict.get("batchnorm"),
                     ),
-                    fft_type=self.fft_type,
+                    fft_centered=self.fft_centered,
+                    fft_normalization=self.fft_normalization,
+                    spatial_dims=self.spatial_dims,
+                    coil_dim=self.coil_dim,
                     no_dc=cfg_dict.get("no_dc"),
                 )
                 for _ in range(cfg_dict.get("num_cascades"))
             ]
         )
 
-        self.output_type = cfg_dict.get("output_type")
-
-        # Initialize the sensitivity network if use_sens_net is True
-        self.use_sens_net = cfg_dict.get("use_sens_net")
-        if self.use_sens_net:
-            self.sens_net = BaseSensitivityModel(
-                cfg_dict.get("sens_chans"),
-                cfg_dict.get("sens_pools"),
-                fft_type=self.fft_type,
-                mask_type=cfg_dict.get("sens_mask_type"),
-                normalize=cfg_dict.get("sens_normalize"),
-            )
+        self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
         # initialize weights if not using pretrained ccnn
         # TODO if not cfg_dict.get("pretrained", False)
@@ -114,12 +111,21 @@ class CascadeNet(BaseMRIReconstructionModel, ABC):
              If self.accumulate_loss is True, returns a list of all intermediate estimates.
              If False, returns the final estimate.
         """
-        sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         pred = y.clone()
         for cascade in self.cascades:
             pred = cascade(pred, y, sensitivity_maps, mask)
         pred = torch.view_as_complex(
-            coil_combination(ifft2c(pred, fft_type=self.fft_type), sensitivity_maps, method=self.output_type, dim=1)
+            coil_combination(
+                ifft2(
+                    pred,
+                    centered=self.fft_centered,
+                    normalization=self.fft_normalization,
+                    spatial_dims=self.spatial_dims,
+                ),
+                sensitivity_maps,
+                method=self.coil_combination_method,
+                dim=self.coil_dim,
+            )
         )
         _, pred = center_crop_to_smallest(target, pred)
         return pred
