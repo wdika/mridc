@@ -111,7 +111,7 @@ class SaveRestoreConnector:
                 if self.model_extracted_dir is not None and os.path.isdir(self.model_extracted_dir):
                     # Log that MRIDC will use the provided `model_extracted_dir`
                     logging.info(
-                        f"Restoration will occur within pre-extracted directory : " f"`{self.model_extracted_dir}`."
+                        "Restoration will occur within pre-extracted directory : " f"`{self.model_extracted_dir}`."
                     )
                     # Override `tmpdir` above with the pre-extracted `model_extracted_dir`
                     tmpdir = self.model_extracted_dir
