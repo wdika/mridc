@@ -119,12 +119,26 @@
 <div class="viewcode-block" id="GradBucket"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizer_with_master_params.GradBucket">[docs]</a><span class="k">class</span> <span class="nc">GradBucket</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Persistent buffer for main gradients that remains allocated between training iterations.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">numel</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">numel</span><span class="p">,</span> <span class="n">chunk_size_mb</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">HAVE_APEX</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s2">&quot;Apex was not found. Using model parallel models will error out.&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">numel</span> <span class="o">=</span> <span class="n">numel</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">numel</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">current_device</span><span class="p">(),</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">chunk_size_mb</span> <span class="o">=</span> <span class="n">chunk_size_mb</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">chunk_size_mb</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">chunk_size_bytes</span> <span class="o">=</span> <span class="n">chunk_size_mb</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">chunk_size_numel</span> <span class="o">=</span> <span class="n">chunk_size_bytes</span> <span class="o">//</span> <span class="mi">4</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">num_chunks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">numel</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">chunk_size_numel</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">numel_per_chunk</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">chunk_size_numel</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_chunks</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">numel</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">chunk_size_numel</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">num_chunks</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">numel_per_chunk</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">numel</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">chunk_size_numel</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">start_index_per_chunk</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">numel_per_chunk</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_chunk</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">computed_numel_per_chunk</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_chunks</span>
 
 <div class="viewcode-block" id="GradBucket.zero"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizer_with_master_params.GradBucket.zero">[docs]</a>    <span class="k">def</span> <span class="nf">zero</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Reset the buffer to zero.&quot;&quot;&quot;</span>
@@ -142,7 +156,39 @@
             <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;requested tensor is out of the buffer range.&quot;</span><span class="p">)</span>
         <span class="n">buffer_tensor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">start_index</span><span class="p">:</span><span class="n">end_index</span><span class="p">]</span>
         <span class="n">buffer_tensor</span> <span class="o">=</span> <span class="n">buffer_tensor</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">buffer_tensor</span></div></div>
+
+        <span class="n">grad_chunk_info</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">chunk_size_mb</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">chunk</span> <span class="o">=</span> <span class="n">start_index</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">chunk_size_numel</span>
+            <span class="n">chunk_start_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_index_per_chunk</span><span class="p">[</span><span class="n">chunk</span><span class="p">]</span>
+            <span class="n">chunk_end_index</span> <span class="o">=</span> <span class="n">chunk_start_index</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">numel_per_chunk</span><span class="p">[</span><span class="n">chunk</span><span class="p">]</span>
+            <span class="n">grad_chunk_info</span> <span class="o">=</span> <span class="p">{</span><span class="n">chunk</span><span class="p">:</span> <span class="nb">min</span><span class="p">(</span><span class="n">chunk_end_index</span><span class="p">,</span> <span class="n">end_index</span><span class="p">)</span> <span class="o">-</span> <span class="n">start_index</span><span class="p">}</span>
+            <span class="k">while</span> <span class="n">chunk_end_index</span> <span class="o">&lt;</span> <span class="n">end_index</span><span class="p">:</span>
+                <span class="n">chunk</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">chunk_start_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_index_per_chunk</span><span class="p">[</span><span class="n">chunk</span><span class="p">]</span>
+                <span class="n">chunk_end_index</span> <span class="o">=</span> <span class="n">chunk_start_index</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">numel_per_chunk</span><span class="p">[</span><span class="n">chunk</span><span class="p">]</span>
+                <span class="n">grad_chunk_info</span><span class="p">[</span><span class="n">chunk</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">chunk_end_index</span><span class="p">,</span> <span class="n">end_index</span><span class="p">)</span> <span class="o">-</span> <span class="n">chunk_start_index</span>
+
+        <span class="k">return</span> <span class="n">buffer_tensor</span><span class="p">,</span> <span class="n">grad_chunk_info</span></div>
+
+<div class="viewcode-block" id="GradBucket.update_chunk_info"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizer_with_master_params.GradBucket.update_chunk_info">[docs]</a>    <span class="k">def</span> <span class="nf">update_chunk_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grad_chunk_info</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Update the chunk info with the grad_chunk_info.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">grad_chunk_info</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">computed_numel_per_chunk</span><span class="p">[</span><span class="n">chunk</span><span class="p">]</span> <span class="o">+=</span> <span class="n">grad_chunk_info</span><span class="p">[</span><span class="n">chunk</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="GradBucket.get_allreduce_tensor"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizer_with_master_params.GradBucket.get_allreduce_tensor">[docs]</a>    <span class="k">def</span> <span class="nf">get_allreduce_tensor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get a tensor that can be used for allreduce.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">computed_numel_per_chunk</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_chunk</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">numel_per_chunk</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_chunk</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">chunk_start_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_index_per_chunk</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_chunk</span><span class="p">]</span>
+        <span class="n">chunk_end_index</span> <span class="o">=</span> <span class="n">chunk_start_index</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">numel_per_chunk</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_chunk</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">computed_numel_per_chunk</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_chunk</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_chunk</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_chunk</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_chunks</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_chunk</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">chunk_start_index</span><span class="p">:</span><span class="n">chunk_end_index</span><span class="p">]</span></div></div>
 
 
 <div class="viewcode-block" id="MainParamsOptimizerWrapper"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper">[docs]</a><span class="k">class</span> <span class="nc">MainParamsOptimizerWrapper</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">):</span>
@@ -166,6 +212,7 @@
         <span class="n">fp32_grad_accum</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">contiguous_grad_bucket</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">async_grad_allreduce</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">grad_allreduce_chunk_size_mb</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">optimizer</span><span class="o">.</span><span class="n">param_groups</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">HAVE_APEX</span><span class="p">:</span>
@@ -190,7 +237,14 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_fp32_grad_accum</span> <span class="o">=</span> <span class="n">fp32_grad_accum</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_contiguous_grad_bucket</span> <span class="o">=</span> <span class="n">contiguous_grad_bucket</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_async_grad_allreduce</span> <span class="o">=</span> <span class="n">async_grad_allreduce</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_require_backward_grad_sync</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_async_grad_allreduce</span><span class="p">:</span>
+            <span class="c1"># use @no_sync to disable backward grad sync during gradient accumulation</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_require_backward_grad_sync</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_grad_allreduce_chunk_size_mb</span> <span class="o">=</span> <span class="n">grad_allreduce_chunk_size_mb</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_require_backward_grad_sync</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_grad_allreduce_chunk_size_mb</span> <span class="o">=</span> <span class="mi">0</span>
 
         <span class="c1"># Dummy tensor needed for apex multi-apply tensor.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_dummy_overflow_buf</span> <span class="o">=</span> <span class="kc">None</span>
@@ -209,7 +263,7 @@
                         <span class="n">num_elements</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">num_elements</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="n">param</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">nelement</span><span class="p">()</span>
 
                 <span class="c1"># Allocate gradient memory buffers for each data type</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_main_grad_buffers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">GradBucket</span><span class="p">(</span><span class="n">num_elements</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_main_grad_buffers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">GradBucket</span><span class="p">(</span><span class="n">num_elements</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_grad_allreduce_chunk_size_mb</span><span class="p">)</span>
 
         <span class="c1"># Three groups of parameters:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">float16_groups</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># original float16 parameters</span>
@@ -243,7 +297,9 @@
                         <span class="c1"># Assign the grad buffer offset to main parameters</span>
                         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contiguous_grad_bucket</span><span class="p">:</span>
                             <span class="n">num_elements</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-=</span> <span class="n">param</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">nelement</span><span class="p">()</span>
-                            <span class="n">main_param</span><span class="o">.</span><span class="n">grad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_main_grad_buffers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">num_elements</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                            <span class="n">main_param</span><span class="o">.</span><span class="n">grad</span><span class="p">,</span> <span class="n">grad_chunk_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_main_grad_buffers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                                <span class="n">param</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">num_elements</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                            <span class="p">)</span>
                             <span class="n">param</span><span class="o">.</span><span class="n">main_grad</span> <span class="o">=</span> <span class="n">main_param</span><span class="o">.</span><span class="n">grad</span>
 
                         <span class="c1"># Replace the optimizer params with the new fp32 copy.</span>
@@ -268,7 +324,7 @@
                     <span class="n">param_tmp</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">expand_as</span><span class="p">(</span><span class="n">param</span><span class="p">)</span>
                     <span class="c1"># Get the gradient accumulator function.</span>
                     <span class="n">grad_acc</span> <span class="o">=</span> <span class="n">param_tmp</span><span class="o">.</span><span class="n">grad_fn</span><span class="o">.</span><span class="n">next_functions</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-                    <span class="n">grad_acc</span><span class="o">.</span><span class="n">register_hook</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_make_param_hook</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">main_param</span><span class="p">))</span>
+                    <span class="n">grad_acc</span><span class="o">.</span><span class="n">register_hook</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_make_param_hook</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">main_param</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">grad_chunk_info</span><span class="p">))</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">grad_accs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">grad_acc</span><span class="p">)</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">float16_groups</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">float16_params_this_group</span><span class="p">)</span>
@@ -279,21 +335,31 @@
         <span class="c1"># recast preexisting per-param state tensors</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">state_dict</span><span class="p">())</span>
 
-    <span class="k">def</span> <span class="nf">_make_param_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">main_param</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_make_param_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">main_param</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">grad_chunk_info</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Create the grad accumulation and all-reduce hook for back prop.&quot;&quot;&quot;</span>
 
         <span class="k">def</span> <span class="nf">param_hook</span><span class="p">(</span><span class="o">*</span><span class="n">unused</span><span class="p">):</span>
             <span class="sd">&quot;&quot;&quot;Gradient accumulation and all-reduce.&quot;&quot;&quot;</span>
-            <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">main_param</span><span class="o">.</span><span class="n">grad</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">main_param</span><span class="o">.</span><span class="n">grad</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">main_param</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">add_</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-                <span class="c1"># Deallocate grad memory.</span>
-                <span class="n">param</span><span class="o">.</span><span class="n">grad</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span>
+            <span class="k">if</span> <span class="n">main_param</span><span class="o">.</span><span class="n">grad</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">main_param</span><span class="o">.</span><span class="n">grad</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">main_param</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">add_</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+            <span class="c1"># Deallocate grad memory.</span>
+            <span class="n">param</span><span class="o">.</span><span class="n">grad</span> <span class="o">=</span> <span class="kc">None</span>
 
-                <span class="c1"># Asynchronous gradients allreduce across data_parallel ranks</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_require_backward_grad_sync</span><span class="p">:</span>
+            <span class="c1"># Asynchronous gradients allreduce across data_parallel ranks</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_require_backward_grad_sync</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_grad_allreduce_chunk_size_mb</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_main_grad_buffers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">update_chunk_info</span><span class="p">(</span><span class="n">grad_chunk_info</span><span class="p">)</span>
+                    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                        <span class="n">allreduce_tensor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_main_grad_buffers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">get_allreduce_tensor</span><span class="p">()</span>
+                        <span class="k">if</span> <span class="n">allreduce_tensor</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                            <span class="k">break</span>
+                        <span class="n">allreduce_tensor</span><span class="o">.</span><span class="n">div_</span><span class="p">(</span><span class="n">get_data_parallel_world_size</span><span class="p">())</span>
+                        <span class="n">torch</span><span class="o">.</span><span class="n">distributed</span><span class="o">.</span><span class="n">all_reduce</span><span class="p">(</span><span class="n">allreduce_tensor</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">get_data_parallel_group</span><span class="p">(),</span> <span class="n">async_op</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
                     <span class="n">main_param</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">div_</span><span class="p">(</span><span class="n">get_data_parallel_world_size</span><span class="p">())</span>
                     <span class="n">torch</span><span class="o">.</span><span class="n">distributed</span><span class="o">.</span><span class="n">all_reduce</span><span class="p">(</span>  <span class="c1"># type: ignore</span>
                         <span class="n">main_param</span><span class="o">.</span><span class="n">grad</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">get_data_parallel_group</span><span class="p">(),</span> <span class="n">async_op</span><span class="o">=</span><span class="kc">True</span>
@@ -406,18 +472,18 @@
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_main_grad_buffers</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_main_grad_buffers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">allreduce_buffer</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="MainParamsOptimizerWrapper.grad_sync"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.grad_sync">[docs]</a>    <span class="nd">@contextmanager</span>
-    <span class="k">def</span> <span class="nf">grad_sync</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="MainParamsOptimizerWrapper.no_sync"><a class="viewcode-back" href="../../../../mridc.core.optim.html#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.no_sync">[docs]</a>    <span class="nd">@contextmanager</span>
+    <span class="k">def</span> <span class="nf">no_sync</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;A context manager to disable gradient synchronizations across data-parallel ranks.&quot;&quot;&quot;</span>
         <span class="n">old_require_backward_grad_sync</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_require_backward_grad_sync</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_require_backward_grad_sync</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_require_backward_grad_sync</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">yield</span>
         <span class="k">finally</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_require_backward_grad_sync</span> <span class="o">=</span> <span class="n">old_require_backward_grad_sync</span></div>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">async_master_grads_allreudce</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">async_master_grads_allreduce</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return whether to use async allreduce for master grads.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_async_grad_allreduce</span>
 

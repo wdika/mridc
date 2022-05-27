@@ -16,7 +16,7 @@ import hydra
 import torch
 from omegaconf import DictConfig, OmegaConf, open_dict
 from pytorch_lightning import LightningModule, Trainer
-from pytorch_lightning.utilities import rank_zero_only
+from pytorch_lightning.utilities import model_summary, rank_zero_only
 
 from mridc.core.classes.common import Model
 
@@ -274,7 +274,11 @@ class ModelPT(LightningModule, Model):
         if save_restore_connector is None:
             save_restore_connector = SaveRestoreConnector()
 
-        restore_path = os.path.abspath(os.path.expanduser(restore_path))
+        if save_restore_connector.model_extracted_dir is None:
+            restore_path = os.path.abspath(os.path.expanduser(restore_path))
+        else:
+            restore_path = os.path.abspath(os.path.expanduser(save_restore_connector.model_extracted_dir))
+
         if not path.exists(restore_path):
             raise FileNotFoundError(f"Can't find {restore_path}")
 
@@ -391,8 +395,8 @@ class ModelPT(LightningModule, Model):
         -------
         An instance of an optimizer.
         """
-        if self._optimizer_param_groups is None:
-            self.setup_optimizer_param_groups()
+        # Setup the optimizer parameter groups (by default use all parameters that are trainable).
+        self.setup_optimizer_param_groups()
 
         # If config was not explicitly provided, use default
         if optim_config is None and self._cfg is not None and hasattr(self._cfg, "optim"):
@@ -429,16 +433,7 @@ class ModelPT(LightningModule, Model):
                 optim_config["sched"]["t_max_epochs"] = self._trainer.max_epochs
                 optim_config["sched"]["t_accumulate_grad_batches"] = self._trainer.accumulate_grad_batches
                 optim_config["sched"]["t_limit_train_batches"] = self._trainer.limit_train_batches
-                if self._trainer.accelerator is None:
-                    optim_config["sched"]["t_num_workers"] = self._trainer.num_devices or 1
-                elif self._trainer.accelerator in ["ddp_cpu", "ddp"]:
-                    optim_config["sched"]["t_num_workers"] = self._trainer.num_devices * self._trainer.num_nodes
-                else:
-                    logging.warning(
-                        f"The lightning trainer received accelerator: {self._trainer.accelerator}. We "
-                        "recommend to use 'ddp' instead."
-                    )
-                    optim_config["sched"]["t_num_workers"] = self._trainer.num_devices * self._trainer.num_nodes
+                optim_config["sched"]["t_num_workers"] = self._trainer.num_devices * self._trainer.num_nodes
             else:
                 optim_config["sched"]["max_steps"] = self._trainer.max_steps
 
@@ -493,13 +488,13 @@ class ModelPT(LightningModule, Model):
 
                 logging.info("Optimizer config = %s", str(optimizer))
 
-                self._optimizer = optimizer
+                self._optimizer = optimizer  # type: ignore
 
             elif inspect.isclass(optimizer_cls):
                 optimizer = optimizer_cls(self._optimizer_param_groups, **optimizer_args)
                 logging.info("Optimizer config = %s", str(optimizer))
 
-                self._optimizer = optimizer
+                self._optimizer = optimizer  # type: ignore
 
             else:
                 # Attempt class path resolution
@@ -1105,13 +1100,20 @@ class ModelPT(LightningModule, Model):
 
     def set_world_size(self, trainer: Trainer):
         """Determines the world size from the PyTorch Lightning Trainer and then updates AppState."""
-        # Update AppState with world information from trainer
-        if isinstance(trainer, Trainer):
-            app_state = AppState()
-            if self._trainer.num_devices and self._trainer.num_nodes:  # type: ignore
-                app_state.world_size = self._trainer.num_devices * self._trainer.num_nodes  # type: ignore
-        else:
-            logging.warning("World size can only be set by PyTorch Lightning Trainer.")
+        self.world_size = 1
+
+        if trainer is not None:
+            if isinstance(trainer, Trainer):
+                if trainer.num_devices and trainer.num_nodes:
+                    self.world_size = trainer.num_devices * trainer.num_nodes
+            else:
+                logging.warning("World size can only be set by PyTorch Lightning Trainer.")
+        app_state = AppState()
+        app_state.world_size = self.world_size
+
+    def summarize(self, max_depth: int = 1) -> model_summary.ModelSummary:
+        """Summarize this LightningModule."""
+        return model_summary.summarize(self, max_depth=max_depth)
 
     def _update_dataset_config(self, dataset_name: str, config: Optional[Union[DictConfig, Dict]]):
         """

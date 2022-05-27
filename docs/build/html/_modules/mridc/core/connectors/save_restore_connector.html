@@ -93,6 +93,7 @@
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_model_config_yaml</span> <span class="o">=</span> <span class="s2">&quot;model_config.yaml&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_model_weights_ckpt</span> <span class="o">=</span> <span class="s2">&quot;model_weights.ckpt&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_extracted_dir</span> <span class="o">=</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="SaveRestoreConnector.save_to"><a class="viewcode-back" href="../../../../mridc.core.connectors.html#mridc.core.connectors.save_restore_connector.SaveRestoreConnector.save_to">[docs]</a>    <span class="k">def</span> <span class="nf">save_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">save_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -172,7 +173,19 @@
         <span class="n">app_state</span> <span class="o">=</span> <span class="n">AppState</span><span class="p">()</span>
         <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">TemporaryDirectory</span><span class="p">()</span> <span class="k">as</span> <span class="n">tmpdir</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_unpack_mridc_file</span><span class="p">(</span><span class="n">path2file</span><span class="o">=</span><span class="n">restore_path</span><span class="p">,</span> <span class="n">out_folder</span><span class="o">=</span><span class="n">tmpdir</span><span class="p">)</span>
+                <span class="c1"># Check if self.model_extracted_dir is set, and is a valid path</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_extracted_dir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_extracted_dir</span><span class="p">):</span>
+                    <span class="c1"># Log that MRIDC will use the provided `model_extracted_dir`</span>
+                    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Restoration will occur within pre-extracted directory : &quot;</span> <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_extracted_dir</span><span class="si">}</span><span class="s2">`.&quot;</span>
+                    <span class="p">)</span>
+                    <span class="c1"># Override `tmpdir` above with the pre-extracted `model_extracted_dir`</span>
+                    <span class="n">tmpdir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_extracted_dir</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Extract the nemo file into the temporary directory</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_unpack_mridc_file</span><span class="p">(</span><span class="n">path2file</span><span class="o">=</span><span class="n">restore_path</span><span class="p">,</span> <span class="n">out_folder</span><span class="o">=</span><span class="n">tmpdir</span><span class="p">)</span>
+
+                <span class="c1"># Change current working directory to the temporary directory</span>
                 <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">tmpdir</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">override_config_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">config_yaml</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmpdir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config_yaml</span><span class="p">)</span>
@@ -561,7 +574,15 @@
     <span class="nd">@model_weights_ckpt</span><span class="o">.</span><span class="n">setter</span>
     <span class="k">def</span> <span class="nf">model_weights_ckpt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;This property is used to set the path to the model weights ckpt file.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_model_weights_ckpt</span> <span class="o">=</span> <span class="n">path</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_weights_ckpt</span> <span class="o">=</span> <span class="n">path</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">model_extracted_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_extracted_dir</span>
+
+    <span class="nd">@model_extracted_dir</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">model_extracted_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_extracted_dir</span> <span class="o">=</span> <span class="n">path</span></div>
 </pre></div>
 
            </div>

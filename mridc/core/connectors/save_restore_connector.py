@@ -27,6 +27,7 @@ class SaveRestoreConnector:
     def __init__(self) -> None:
         self._model_config_yaml = "model_config.yaml"
         self._model_weights_ckpt = "model_weights.ckpt"
+        self._model_extracted_dir = None
 
     def save_to(self, model, save_path: str):
         """
@@ -106,7 +107,19 @@ class SaveRestoreConnector:
         app_state = AppState()
         with tempfile.TemporaryDirectory() as tmpdir:
             try:
-                self._unpack_mridc_file(path2file=restore_path, out_folder=tmpdir)
+                # Check if self.model_extracted_dir is set, and is a valid path
+                if self.model_extracted_dir is not None and os.path.isdir(self.model_extracted_dir):
+                    # Log that MRIDC will use the provided `model_extracted_dir`
+                    logging.info(
+                        "Restoration will occur within pre-extracted directory : " f"`{self.model_extracted_dir}`."
+                    )
+                    # Override `tmpdir` above with the pre-extracted `model_extracted_dir`
+                    tmpdir = self.model_extracted_dir
+                else:
+                    # Extract the nemo file into the temporary directory
+                    self._unpack_mridc_file(path2file=restore_path, out_folder=tmpdir)
+
+                # Change current working directory to the temporary directory
                 os.chdir(tmpdir)
                 if override_config_path is None:
                     config_yaml = os.path.join(tmpdir, self.model_config_yaml)
@@ -496,3 +509,11 @@ class SaveRestoreConnector:
     def model_weights_ckpt(self, path: str):
         """This property is used to set the path to the model weights ckpt file."""
         self._model_weights_ckpt = path
+
+    @property
+    def model_extracted_dir(self) -> Optional[str]:
+        return self._model_extracted_dir
+
+    @model_extracted_dir.setter
+    def model_extracted_dir(self, path: None):
+        self._model_extracted_dir = path

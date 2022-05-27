@@ -114,13 +114,32 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="mridc.core.classes.common.FileIO.restore_from">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">restore_from</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">restore_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">override_config_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">map_location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.device</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trainer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">pytorch_lightning.trainer.trainer.Trainer</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_restore_connector</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mridc.core.connectors.html#mridc.core.connectors.save_restore_connector.SaveRestoreConnector" title="mridc.core.connectors.save_restore_connector.SaveRestoreConnector"><span class="pre">mridc.core.connectors.save_restore_connector.SaveRestoreConnector</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/classes/common.html#FileIO.restore_from"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.classes.common.FileIO.restore_from" title="Permalink to this definition"></a></dt>
-<dd><p>Restores module/model with weights</p>
+<dd><p>Restores model instance (weights and configuration) from a .mridc file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>restore_path</strong> (<em>Path to .mridc file from which model should be instantiated.</em>) – str</p></li>
+<li><p><strong>override_config_path</strong> (<em>Path to .yaml file containing the configuration to override the one in the .mridc file.</em>) – str</p></li>
+<li><p><strong>map_location</strong> (<em>Device to map the instantiated model to. By default</em><em> (</em><em>None</em><em>)</em><em>, </em><em>it will select a GPU if available</em><em>,         </em><em>falling back to CPU otherwise.</em>) – torch.device</p></li>
+<li><p><strong>strict</strong> (<em>Passed to load_state_dict. By default True.</em>) – bool</p></li>
+<li><p><strong>return_config</strong> (<em>If True</em><em>, </em><em>returns the underlying config of the restored model as an OmegaConf DictConfig         object without instantiating the model.</em>) – bool</p></li>
+<li><p><strong>trainer</strong> (<em>If provided</em><em>, </em><em>will be used to instantiate the model.</em>) – Trainer</p></li>
+<li><p><strong>save_restore_connector</strong> (<em>An optional SaveRestoreConnector object that defines the implementation of the         restore_from</em><em>(</em><em>) </em><em>method.</em>) – SaveRestoreConnector</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="mridc.core.classes.common.FileIO.save_to">
 <span class="sig-name descname"><span class="pre">save_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">save_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/classes/common.html#FileIO.save_to"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.classes.common.FileIO.save_to" title="Permalink to this definition"></a></dt>
-<dd><p>Saves module/model with weights</p>
+<dd><p>Standardized method to save a tarfile containing the checkpoint, config, and any additional artifacts.
+Implemented via <a class="reference internal" href="mridc.core.connectors.html#mridc.core.connectors.save_restore_connector.SaveRestoreConnector.save_to" title="mridc.core.connectors.save_restore_connector.SaveRestoreConnector.save_to"><code class="xref py py-meth docutils literal notranslate"><span class="pre">mridc.core.connectors.save_restore_connector.SaveRestoreConnector.save_to()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>save_path</strong> (<em>Path to save the checkpoint to.</em>) – str</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -273,7 +292,29 @@ whatever model (or alias) is listed first in the returned list will be instantia
 <dt class="sig sig-object py" id="mridc.core.classes.common.typecheck">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.classes.common.</span></span><span class="sig-name descname"><span class="pre">typecheck</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_types</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#mridc.core.classes.common.typecheck.TypeState" title="mridc.core.classes.common.typecheck.TypeState"><span class="pre">mridc.core.classes.common.typecheck.TypeState</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mridc.core.neural_types.html#mridc.core.neural_types.neural_type.NeuralType" title="mridc.core.neural_types.neural_type.NeuralType"><span class="pre">mridc.core.neural_types.neural_type.NeuralType</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">TypeState.UNINITIALIZED</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_types</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#mridc.core.classes.common.typecheck.TypeState" title="mridc.core.classes.common.typecheck.TypeState"><span class="pre">mridc.core.classes.common.typecheck.TypeState</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mridc.core.neural_types.html#mridc.core.neural_types.neural_type.NeuralType" title="mridc.core.neural_types.neural_type.NeuralType"><span class="pre">mridc.core.neural_types.neural_type.NeuralType</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">TypeState.UNINITIALIZED</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_collections</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/classes/common.html#typecheck"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.classes.common.typecheck" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Decorator to check the type of the input arguments.</p>
+<p>A decorator which performs input-output neural type checks, and attaches neural types to the output of the
+function that it wraps.
+Requires that the class inherit from <cite>mridc.core.Typing</cite> in order to perform type checking, and will raise an
+error if that is not the case.</p>
+<p># Usage (Class level type support)
+.. code-block:: python</p>
+<blockquote>
+<div><p>&#64;typecheck()
+def fn(self, arg1, arg2, …):</p>
+</div></blockquote>
+<p># Usage (Function level type support)
+.. code-block:: python</p>
+<blockquote>
+<div><p>&#64;typecheck(input_types=…, output_types=…)
+def fn(self, arg1, arg2, …):</p>
+</div></blockquote>
+<dl class="simple">
+<dt>Points to be noted:</dt><dd><ol class="arabic simple">
+<li><p>The brackets () in <cite>&#64;typecheck()</cite> are necessary. You will encounter a TypeError: __init__() takes 1         positional argument but X were given without those brackets.</p></li>
+<li><p>The function can take any number of positional arguments during definition. When you call this function,         all arguments must be passed using kwargs only.</p></li>
+</ol>
+</dd>
+</dl>
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.classes.common.typecheck.TypeState">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TypeState</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/classes/common.html#typecheck.TypeState"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.classes.common.typecheck.TypeState" title="Permalink to this definition"></a></dt>
@@ -286,6 +327,12 @@ indicate that types will be overridden.</p>
 <span class="sig-name descname"><span class="pre">UNINITIALIZED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#mridc.core.classes.common.typecheck.TypeState.UNINITIALIZED" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.classes.common.typecheck.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enabled</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adapter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/classes/common.html#typecheck.__call__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.classes.common.typecheck.__call__" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapper method that can be used on any function of a class that implements <code class="xref py py-class docutils literal notranslate"><span class="pre">Typing</span></code>. By         default, it will utilize the <cite>input_types</cite> and <cite>output_types</cite> properties of the class inheriting Typing.         Local function level overrides can be provided by supplying dictionaries as arguments to the decorator.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -833,6 +880,12 @@ self.parameters(). Override this method to add custom param groups.</p>
 <dt class="sig sig-object py" id="mridc.core.classes.modelPT.ModelPT.setup_validation_data">
 <em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">setup_validation_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val_data_config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">omegaconf.dictconfig.DictConfig</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/classes/modelPT.html#ModelPT.setup_validation_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.classes.modelPT.ModelPT.setup_validation_data" title="Permalink to this definition"></a></dt>
 <dd><p>Setups data loader to be used in validation.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.classes.modelPT.ModelPT.summarize">
+<span class="sig-name descname"><span class="pre">summarize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_depth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pytorch_lightning.utilities.model_summary.ModelSummary</span></span></span><a class="reference internal" href="_modules/mridc/core/classes/modelPT.html#ModelPT.summarize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.classes.modelPT.ModelPT.summarize" title="Permalink to this definition"></a></dt>
+<dd><p>Summarize this LightningModule.</p>
 </dd></dl>
 
 <dl class="py method">

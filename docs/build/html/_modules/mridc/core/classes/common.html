@@ -368,8 +368,17 @@
             <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">res</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">out_objects</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">__attach_neural_type</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">out_types_list</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
 
-    <span class="k">def</span> <span class="nf">__check_neural_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Checks if the object is of the correct type, and attaches the correct NeuralType.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__check_neural_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="n">depth</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Checks if the object is of the correct type, and attaches the correct NeuralType.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        obj : Any python object that can be assigned to a value.</span>
+<span class="sd">        metadata : TypecheckMetadata object.</span>
+<span class="sd">        depth : Current depth of the recursion.</span>
+<span class="sd">        name : Optional name used of the source object, when an error is raised.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
             <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">__check_neural_type</span><span class="p">(</span><span class="n">elem</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="n">depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
@@ -408,8 +417,17 @@
                     <span class="sa">f</span><span class="s2">&quot;Input shape found : </span><span class="si">{</span><span class="n">value_shape</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">__attach_neural_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Attach NeuralType to the object.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__attach_neural_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="n">depth</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Attach NeuralType to the object.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        obj : Any python object that can be assigned to a value.</span>
+<span class="sd">        metadata : TypecheckMetadata object.</span>
+<span class="sd">        depth : Current depth of the recursion.</span>
+<span class="sd">        name : Optional name used of the source object, when an error is raised.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
             <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">__attach_neural_type</span><span class="p">(</span><span class="n">elem</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="n">depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
@@ -543,7 +561,15 @@
     <span class="sd">&quot;&quot;&quot;Base class for file IO.&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="FileIO.save_to"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.FileIO.save_to">[docs]</a>    <span class="k">def</span> <span class="nf">save_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">save_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Saves module/model with weights&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Standardized method to save a tarfile containing the checkpoint, config, and any additional artifacts.</span>
+<span class="sd">        Implemented via :meth:`mridc.core.connectors.save_restore_connector.SaveRestoreConnector.save_to`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        save_path: Path to save the checkpoint to.</span>
+<span class="sd">            str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="FileIO.restore_from"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.FileIO.restore_from">[docs]</a>    <span class="nd">@classmethod</span>
@@ -557,7 +583,29 @@
         <span class="n">trainer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Trainer</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">save_restore_connector</span><span class="p">:</span> <span class="n">SaveRestoreConnector</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Restores module/model with weights&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Restores model instance (weights and configuration) from a .mridc file.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        restore_path: Path to .mridc file from which model should be instantiated.</span>
+<span class="sd">            str</span>
+<span class="sd">        override_config_path: Path to .yaml file containing the configuration to override the one in the .mridc file.</span>
+<span class="sd">            str</span>
+<span class="sd">        map_location: Device to map the instantiated model to. By default (None), it will select a GPU if available, \</span>
+<span class="sd">        falling back to CPU otherwise.</span>
+<span class="sd">            torch.device</span>
+<span class="sd">        strict: Passed to load_state_dict. By default True.</span>
+<span class="sd">            bool</span>
+<span class="sd">        return_config: If True, returns the underlying config of the restored model as an OmegaConf DictConfig \</span>
+<span class="sd">        object without instantiating the model.</span>
+<span class="sd">            bool</span>
+<span class="sd">        trainer: If provided, will be used to instantiate the model.</span>
+<span class="sd">            Trainer</span>
+<span class="sd">        save_restore_connector: An optional SaveRestoreConnector object that defines the implementation of the \</span>
+<span class="sd">        restore_from() method.</span>
+<span class="sd">            SaveRestoreConnector</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="FileIO.from_config_file"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.FileIO.from_config_file">[docs]</a>    <span class="nd">@classmethod</span>
@@ -747,7 +795,30 @@
 
 
 <div class="viewcode-block" id="typecheck"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.typecheck">[docs]</a><span class="k">class</span> <span class="nc">typecheck</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Decorator to check the type of the input arguments.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A decorator which performs input-output neural type checks, and attaches neural types to the output of the</span>
+<span class="sd">    function that it wraps.</span>
+<span class="sd">    Requires that the class inherit from `mridc.core.Typing` in order to perform type checking, and will raise an</span>
+<span class="sd">    error if that is not the case.</span>
+
+<span class="sd">    # Usage (Class level type support)</span>
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        @typecheck()</span>
+<span class="sd">        def fn(self, arg1, arg2, ...):</span>
+
+<span class="sd">    # Usage (Function level type support)</span>
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        @typecheck(input_types=..., output_types=...)</span>
+<span class="sd">        def fn(self, arg1, arg2, ...):</span>
+
+<span class="sd">    Points to be noted:</span>
+<span class="sd">        1) The brackets () in `@typecheck()` are necessary. You will encounter a TypeError: __init__() takes 1 \</span>
+<span class="sd">        positional argument but X were given without those brackets.</span>
+<span class="sd">        2) The function can take any number of positional arguments during definition. When you call this function, \</span>
+<span class="sd">        all arguments must be passed using kwargs only.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="typecheck.TypeState"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.typecheck.TypeState">[docs]</a>    <span class="k">class</span> <span class="nc">TypeState</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -764,28 +835,6 @@
         <span class="n">output_types</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TypeState</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">NeuralType</span><span class="p">]]]</span> <span class="o">=</span> <span class="n">TypeState</span><span class="o">.</span><span class="n">UNINITIALIZED</span><span class="p">,</span>
         <span class="n">ignore_collections</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        A decorator which performs input-output neural type checks, and attaches neural types to the output of the</span>
-<span class="sd">        function that it wraps.</span>
-<span class="sd">        Requires that the class inherit from `mridc.core.Typing` in order to perform type checking, and will raise an</span>
-<span class="sd">        error if that is not the case.</span>
-
-<span class="sd">        # Usage (Class level type support)</span>
-<span class="sd">        @typecheck()</span>
-<span class="sd">        def fn(self, arg1, arg2, ...):</span>
-<span class="sd">            ...</span>
-<span class="sd">        # Usage (Function level type support)</span>
-<span class="sd">        @typecheck(input_types=..., output_types=...)</span>
-<span class="sd">        def fn(self, arg1, arg2, ...):</span>
-<span class="sd">            ...</span>
-
-<span class="sd">        Points to be noted:</span>
-<span class="sd">            1) The brackets () in `@typecheck()` are necessary.</span>
-<span class="sd">                You will encounter a TypeError: __init__() takes 1 positional argument but X</span>
-<span class="sd">                were given without those brackets.</span>
-<span class="sd">            2) The function can take any number of positional arguments during definition.</span>
-<span class="sd">                When you call this function, all arguments must be passed using kwargs only.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">input_types</span> <span class="o">=</span> <span class="n">input_types</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_types</span> <span class="o">=</span> <span class="n">output_types</span>
 
@@ -793,8 +842,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">output_override</span> <span class="o">=</span> <span class="n">output_types</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">TypeState</span><span class="o">.</span><span class="n">UNINITIALIZED</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ignore_collections</span> <span class="o">=</span> <span class="n">ignore_collections</span>
 
-    <span class="nd">@wrapt</span><span class="o">.</span><span class="n">decorator</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="n">is_typecheck_enabled</span><span class="p">)</span>
+<div class="viewcode-block" id="typecheck.__call__"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.typecheck.__call__">[docs]</a>    <span class="nd">@wrapt</span><span class="o">.</span><span class="n">decorator</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="n">is_typecheck_enabled</span><span class="p">)</span>
     <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wrapped</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">Typing</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Wrapper method that can be used on any function of a class that implements :class:`~mridc.core.Typing`. By \</span>
+<span class="sd">        default, it will utilize the `input_types` and `output_types` properties of the class inheriting Typing. \</span>
+<span class="sd">        Local function level overrides can be provided by supplying dictionaries as arguments to the decorator.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">instance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Only classes which inherit mridc.core.Typing can use this decorator !&quot;</span><span class="p">)</span>
 
@@ -839,7 +893,7 @@
             <span class="n">output_types</span><span class="o">=</span><span class="n">output_types</span><span class="p">,</span> <span class="n">ignore_collections</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ignore_collections</span><span class="p">,</span> <span class="n">out_objects</span><span class="o">=</span><span class="n">outputs</span>
         <span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">outputs</span>
+        <span class="k">return</span> <span class="n">outputs</span></div>
 
 <div class="viewcode-block" id="typecheck.set_typecheck_enabled"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.common.typecheck.set_typecheck_enabled">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">set_typecheck_enabled</span><span class="p">(</span><span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
