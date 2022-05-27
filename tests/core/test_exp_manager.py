@@ -35,7 +35,7 @@ class MyTestOptimizer(torch.optim.Optimizer):
             with torch.enable_grad():
                 loss = closure()
         for group in self.param_groups:
-            for p in group['params']:
+            for p in group["params"]:
                 if self._step == 0:
                     p.data = 0.1 * torch.ones(p.shape)
                 elif self._step == 1:
@@ -126,16 +126,16 @@ class TestExpManager:
     def test_omegaconf(self):
         """Ensure omegaconf raises an error when an unexcepted argument is passed"""
         with pytest.raises(OmegaConfBaseException):
-            exp_manager(pl.Trainer(accelerator='cpu'), {"unused": 1})
+            exp_manager(pl.Trainer(accelerator="cpu"), {"unused": 1})
 
     @pytest.mark.unit
     def test_mridc_checkpoint_restore_model(self, tmp_path):
         """Ensure that the model is restored correctly when a checkpoint is provided"""
-        test_trainer = pl.Trainer(accelerator='cpu', enable_checkpointing=False, logger=False, max_epochs=4)
+        test_trainer = pl.Trainer(accelerator="cpu", enable_checkpointing=False, logger=False, max_epochs=4)
         model = ExampleModel()
         test_trainer.fit(model)
 
-        test_trainer = pl.Trainer(accelerator='cpu', enable_checkpointing=False, logger=False, max_epochs=5)
+        test_trainer = pl.Trainer(accelerator="cpu", enable_checkpointing=False, logger=False, max_epochs=5)
         model = DoNothingModel()
         model.l1.weight = torch.nn.Parameter(torch.tensor((0.0, 0.0)).unsqueeze(0))
         model.l1.bias = torch.nn.Parameter(torch.tensor(1.0))
