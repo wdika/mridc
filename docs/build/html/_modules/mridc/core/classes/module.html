@@ -119,12 +119,22 @@
 <div class="viewcode-block" id="NeuralModule.as_frozen"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.module.NeuralModule.as_frozen">[docs]</a>    <span class="nd">@contextmanager</span>
     <span class="k">def</span> <span class="nf">as_frozen</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Context manager which temporarily freezes a module, yields control and finally unfreezes the module.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">freeze</span><span class="p">()</span>
+        <span class="n">training_mode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span>
+        <span class="n">grad_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">pname</span><span class="p">:</span> <span class="n">param</span><span class="o">.</span><span class="n">requires_grad</span> <span class="k">for</span> <span class="n">pname</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">named_parameters</span><span class="p">()}</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">freeze</span><span class="p">()</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">yield</span>
         <span class="k">finally</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">unfreeze</span><span class="p">()</span></div></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">unfreeze</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">pname</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">named_parameters</span><span class="p">():</span>
+            <span class="n">param</span><span class="o">.</span><span class="n">requires_grad</span> <span class="o">=</span> <span class="n">grad_map</span><span class="p">[</span><span class="n">pname</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">training_mode</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span></div></div>
 </pre></div>
 
            </div>

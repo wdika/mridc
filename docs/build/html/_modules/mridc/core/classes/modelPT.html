@@ -82,7 +82,7 @@
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">from</span> <span class="nn">omegaconf</span> <span class="kn">import</span> <span class="n">DictConfig</span><span class="p">,</span> <span class="n">OmegaConf</span><span class="p">,</span> <span class="n">open_dict</span>
 <span class="kn">from</span> <span class="nn">pytorch_lightning</span> <span class="kn">import</span> <span class="n">LightningModule</span><span class="p">,</span> <span class="n">Trainer</span>
-<span class="kn">from</span> <span class="nn">pytorch_lightning.utilities</span> <span class="kn">import</span> <span class="n">rank_zero_only</span>
+<span class="kn">from</span> <span class="nn">pytorch_lightning.utilities</span> <span class="kn">import</span> <span class="n">model_summary</span><span class="p">,</span> <span class="n">rank_zero_only</span>
 
 <span class="kn">from</span> <span class="nn">mridc.core.classes.common</span> <span class="kn">import</span> <span class="n">Model</span>
 
@@ -340,7 +340,11 @@
         <span class="k">if</span> <span class="n">save_restore_connector</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">save_restore_connector</span> <span class="o">=</span> <span class="n">SaveRestoreConnector</span><span class="p">()</span>
 
-        <span class="n">restore_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">restore_path</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">save_restore_connector</span><span class="o">.</span><span class="n">model_extracted_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">restore_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">restore_path</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">restore_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">save_restore_connector</span><span class="o">.</span><span class="n">model_extracted_dir</span><span class="p">))</span>
+
         <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">restore_path</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Can&#39;t find </span><span class="si">{</span><span class="n">restore_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
@@ -457,8 +461,8 @@
 <span class="sd">        -------</span>
 <span class="sd">        An instance of an optimizer.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer_param_groups</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">setup_optimizer_param_groups</span><span class="p">()</span>
+        <span class="c1"># Setup the optimizer parameter groups (by default use all parameters that are trainable).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setup_optimizer_param_groups</span><span class="p">()</span>
 
         <span class="c1"># If config was not explicitly provided, use default</span>
         <span class="k">if</span> <span class="n">optim_config</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="p">,</span> <span class="s2">&quot;optim&quot;</span><span class="p">):</span>
@@ -495,16 +499,7 @@
                 <span class="n">optim_config</span><span class="p">[</span><span class="s2">&quot;sched&quot;</span><span class="p">][</span><span class="s2">&quot;t_max_epochs&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">max_epochs</span>
                 <span class="n">optim_config</span><span class="p">[</span><span class="s2">&quot;sched&quot;</span><span class="p">][</span><span class="s2">&quot;t_accumulate_grad_batches&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">accumulate_grad_batches</span>
                 <span class="n">optim_config</span><span class="p">[</span><span class="s2">&quot;sched&quot;</span><span class="p">][</span><span class="s2">&quot;t_limit_train_batches&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">limit_train_batches</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">accelerator</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">optim_config</span><span class="p">[</span><span class="s2">&quot;sched&quot;</span><span class="p">][</span><span class="s2">&quot;t_num_workers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">num_devices</span> <span class="ow">or</span> <span class="mi">1</span>
-                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">accelerator</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ddp_cpu&quot;</span><span class="p">,</span> <span class="s2">&quot;ddp&quot;</span><span class="p">]:</span>
-                    <span class="n">optim_config</span><span class="p">[</span><span class="s2">&quot;sched&quot;</span><span class="p">][</span><span class="s2">&quot;t_num_workers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">num_devices</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">num_nodes</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;The lightning trainer received accelerator: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">accelerator</span><span class="si">}</span><span class="s2">. We &quot;</span>
-                        <span class="s2">&quot;recommend to use &#39;ddp&#39; instead.&quot;</span>
-                    <span class="p">)</span>
-                    <span class="n">optim_config</span><span class="p">[</span><span class="s2">&quot;sched&quot;</span><span class="p">][</span><span class="s2">&quot;t_num_workers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">num_devices</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">num_nodes</span>
+                <span class="n">optim_config</span><span class="p">[</span><span class="s2">&quot;sched&quot;</span><span class="p">][</span><span class="s2">&quot;t_num_workers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">num_devices</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">num_nodes</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">optim_config</span><span class="p">[</span><span class="s2">&quot;sched&quot;</span><span class="p">][</span><span class="s2">&quot;max_steps&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">max_steps</span>
 
@@ -559,13 +554,13 @@
 
                 <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Optimizer config = </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">optimizer</span><span class="p">))</span>
 
-                <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer</span> <span class="o">=</span> <span class="n">optimizer</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer</span> <span class="o">=</span> <span class="n">optimizer</span>  <span class="c1"># type: ignore</span>
 
             <span class="k">elif</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">(</span><span class="n">optimizer_cls</span><span class="p">):</span>
                 <span class="n">optimizer</span> <span class="o">=</span> <span class="n">optimizer_cls</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_optimizer_param_groups</span><span class="p">,</span> <span class="o">**</span><span class="n">optimizer_args</span><span class="p">)</span>
                 <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Optimizer config = </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">optimizer</span><span class="p">))</span>
 
-                <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer</span> <span class="o">=</span> <span class="n">optimizer</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_optimizer</span> <span class="o">=</span> <span class="n">optimizer</span>  <span class="c1"># type: ignore</span>
 
             <span class="k">else</span><span class="p">:</span>
                 <span class="c1"># Attempt class path resolution</span>
@@ -1171,13 +1166,20 @@
 
 <div class="viewcode-block" id="ModelPT.set_world_size"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.modelPT.ModelPT.set_world_size">[docs]</a>    <span class="k">def</span> <span class="nf">set_world_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">:</span> <span class="n">Trainer</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Determines the world size from the PyTorch Lightning Trainer and then updates AppState.&quot;&quot;&quot;</span>
-        <span class="c1"># Update AppState with world information from trainer</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">trainer</span><span class="p">,</span> <span class="n">Trainer</span><span class="p">):</span>
-            <span class="n">app_state</span> <span class="o">=</span> <span class="n">AppState</span><span class="p">()</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">num_devices</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">num_nodes</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
-                <span class="n">app_state</span><span class="o">.</span><span class="n">world_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">num_devices</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trainer</span><span class="o">.</span><span class="n">num_nodes</span>  <span class="c1"># type: ignore</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;World size can only be set by PyTorch Lightning Trainer.&quot;</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">world_size</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">trainer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">trainer</span><span class="p">,</span> <span class="n">Trainer</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">trainer</span><span class="o">.</span><span class="n">num_devices</span> <span class="ow">and</span> <span class="n">trainer</span><span class="o">.</span><span class="n">num_nodes</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">world_size</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">num_devices</span> <span class="o">*</span> <span class="n">trainer</span><span class="o">.</span><span class="n">num_nodes</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;World size can only be set by PyTorch Lightning Trainer.&quot;</span><span class="p">)</span>
+        <span class="n">app_state</span> <span class="o">=</span> <span class="n">AppState</span><span class="p">()</span>
+        <span class="n">app_state</span><span class="o">.</span><span class="n">world_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">world_size</span></div>
+
+<div class="viewcode-block" id="ModelPT.summarize"><a class="viewcode-back" href="../../../../mridc.core.classes.html#mridc.core.classes.modelPT.ModelPT.summarize">[docs]</a>    <span class="k">def</span> <span class="nf">summarize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">model_summary</span><span class="o">.</span><span class="n">ModelSummary</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Summarize this LightningModule.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">model_summary</span><span class="o">.</span><span class="n">summarize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="n">max_depth</span><span class="p">)</span></div>
 
     <span class="k">def</span> <span class="nf">_update_dataset_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">DictConfig</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]]):</span>
         <span class="sd">&quot;&quot;&quot;</span>

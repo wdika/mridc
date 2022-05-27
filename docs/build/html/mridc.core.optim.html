@@ -460,7 +460,7 @@ Networks” (<a class="reference external" href="https://arxiv.org/abs/1905.1128
 <span id="mridc-core-optim-optimizer-with-master-params-module"></span><h2>mridc.core.optim.optimizer_with_master_params module<a class="headerlink" href="#module-mridc.core.optim.optimizer_with_master_params" title="Permalink to this headline"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.GradBucket">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.optim.optimizer_with_master_params.</span></span><span class="sig-name descname"><span class="pre">GradBucket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">numel</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#GradBucket"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.GradBucket" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.optim.optimizer_with_master_params.</span></span><span class="sig-name descname"><span class="pre">GradBucket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">numel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk_size_mb</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#GradBucket"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.GradBucket" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Persistent buffer for main gradients that remains allocated between training iterations.</p>
 <dl class="py method">
@@ -476,6 +476,18 @@ Networks” (<a class="reference external" href="https://arxiv.org/abs/1905.1128
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.GradBucket.get_allreduce_tensor">
+<span class="sig-name descname"><span class="pre">get_allreduce_tensor</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#GradBucket.get_allreduce_tensor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.GradBucket.get_allreduce_tensor" title="Permalink to this definition"></a></dt>
+<dd><p>Get a tensor that can be used for allreduce.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.GradBucket.update_chunk_info">
+<span class="sig-name descname"><span class="pre">update_chunk_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grad_chunk_info</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#GradBucket.update_chunk_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.GradBucket.update_chunk_info" title="Permalink to this definition"></a></dt>
+<dd><p>Update the chunk info with the grad_chunk_info.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.GradBucket.zero">
 <span class="sig-name descname"><span class="pre">zero</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#GradBucket.zero"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.GradBucket.zero" title="Permalink to this definition"></a></dt>
 <dd><p>Reset the buffer to zero.</p>
@@ -485,7 +497,7 @@ Networks” (<a class="reference external" href="https://arxiv.org/abs/1905.1128
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.optim.optimizer_with_master_params.</span></span><span class="sig-name descname"><span class="pre">MainParamsOptimizerWrapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fp32_grad_accum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">contiguous_grad_bucket</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">async_grad_allreduce</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#MainParamsOptimizerWrapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.optim.optimizer_with_master_params.</span></span><span class="sig-name descname"><span class="pre">MainParamsOptimizerWrapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fp32_grad_accum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">contiguous_grad_bucket</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">async_grad_allreduce</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grad_allreduce_chunk_size_mb</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#MainParamsOptimizerWrapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.optimizer.Optimizer</span></code></p>
 <p>Float16 optimizer wrapper for half precision (fp16 and bf16) data types.
 This optimizer wrapper holds main parameters and gradients in fp32 to support
@@ -508,8 +520,8 @@ stable convergence.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.async_master_grads_allreudce">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">async_master_grads_allreudce</span></span><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.async_master_grads_allreudce" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.async_master_grads_allreduce">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">async_master_grads_allreduce</span></span><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.async_master_grads_allreduce" title="Permalink to this definition"></a></dt>
 <dd><p>Return whether to use async allreduce for master grads.</p>
 </dd></dl>
 
@@ -532,15 +544,15 @@ stable convergence.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.grad_sync">
-<span class="sig-name descname"><span class="pre">grad_sync</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#MainParamsOptimizerWrapper.grad_sync"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.grad_sync" title="Permalink to this definition"></a></dt>
-<dd><p>A context manager to disable gradient synchronizations across data-parallel ranks.</p>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.load_state_dict">
 <span class="sig-name descname"><span class="pre">load_state_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#MainParamsOptimizerWrapper.load_state_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.load_state_dict" title="Permalink to this definition"></a></dt>
 <dd><p>Load the state of the optimizer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.no_sync">
+<span class="sig-name descname"><span class="pre">no_sync</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/optim/optimizer_with_master_params.html#MainParamsOptimizerWrapper.no_sync"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper.no_sync" title="Permalink to this definition"></a></dt>
+<dd><p>A context manager to disable gradient synchronizations across data-parallel ranks.</p>
 </dd></dl>
 
 <dl class="py property">
