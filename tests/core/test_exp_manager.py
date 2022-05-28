@@ -126,7 +126,14 @@ class TestExpManager:
     def test_omegaconf(self):
         """Ensure omegaconf raises an error when an unexcepted argument is passed"""
         with pytest.raises(OmegaConfBaseException):
-            exp_manager(pl.Trainer(accelerator="cpu"), {"unused": 1})
+            exp_manager(
+                pl.Trainer(
+                    accelerator="cpu",
+                    max_epochs=1,
+                    devices=1,
+                ),
+                {"unused": 1},
+            )
 
     @pytest.mark.unit
     def test_mridc_checkpoint_restore_model(self, tmp_path):
