@@ -1,11 +1,11 @@
 # coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
-from typing import Any, List, Union
+from typing import Any, List, Optional, Tuple, Union
 
 import torch
 
-from mridc.collections.common.parts.fft import fft2c, ifft2c
+from mridc.collections.common.parts.fft import fft2, ifft2
 from mridc.collections.common.parts.utils import complex_conj, complex_mul
 
 
@@ -51,7 +51,10 @@ class VSNetBlock(torch.nn.Module):
         data_consistency_block: torch.nn.ModuleList,
         weighted_average_block: torch.nn.ModuleList,
         num_cascades: int = 8,
-        fft_type: str = "orthogonal",
+        fft_centered: bool = True,
+        fft_normalization: str = "ortho",
+        spatial_dims: Optional[Tuple[int, int]] = None,
+        coil_dim: int = 1,
     ):
         """
 
@@ -61,7 +64,10 @@ class VSNetBlock(torch.nn.Module):
         data_consistency_block: Model to apply data consistency.
         weighted_average_block: Model to apply weighted average.
         num_cascades: Number of cascades.
-        fft_type: Type of FFT to use.
+        fft_centered: Whether to center the fft.
+        fft_normalization: The normalization of the fft.
+        spatial_dims: The spatial dimensions of the data.
+        coil_dim: The dimension of the coil.
         """
         super().__init__()
 
@@ -69,7 +75,10 @@ class VSNetBlock(torch.nn.Module):
         self.data_consistency_block = data_consistency_block
         self.weighted_average_block = weighted_average_block
         self.num_cascades = num_cascades
-        self.fft_type = fft_type
+        self.fft_centered = fft_centered
+        self.fft_normalization = fft_normalization
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
+        self.coil_dim = coil_dim
 
     def sens_expand(self, x: torch.Tensor, sens_maps: torch.Tensor) -> torch.Tensor:
         """
@@ -84,7 +93,12 @@ class VSNetBlock(torch.nn.Module):
         -------
         SENSE reconstruction expanded to the same size as the input sens_maps.
         """
-        return fft2c(complex_mul(x, sens_maps), fft_type=self.fft_type)
+        return fft2(
+            complex_mul(x, sens_maps),
+            centered=self.fft_centered,
+            normalization=self.fft_normalization,
+            spatial_dims=self.spatial_dims,
+        )
 
     def sens_reduce(self, x: torch.Tensor, sens_maps: torch.Tensor) -> torch.Tensor:
         """
@@ -99,8 +113,8 @@ class VSNetBlock(torch.nn.Module):
         -------
         SENSE coil-combined reconstruction.
         """
-        x = ifft2c(x, fft_type=self.fft_type)
-        return complex_mul(x, complex_conj(sens_maps)).sum(1)
+        x = ifft2(x, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims)
+        return complex_mul(x, complex_conj(sens_maps)).sum(self.coil_dim)
 
     def forward(
         self,

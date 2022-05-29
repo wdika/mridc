@@ -20,16 +20,26 @@ model:
   sens_unet_dropout_probability: 0.0
   sens_unet_padding_size: 11
   sens_unet_normalize: true
-  output_type: SENSE
+  coil_combination_method: SENSE
   train_loss_fn: l1
   eval_loss_fn: l1
-  fft_type: orthogonal
+  fft_centered: True
+  fft_normalization: ortho
+  spatial_dims:
+    - -2
+    - -1
+  coil_dim: 1
 
   train_ds:
     data_path: ???
-    dataset_type: FastMRI
     challenge: multicoil
-    fft_type: orthogonal
+    coil_combination_method: SENSE
+    fft_centered: True
+    fft_normalization: ortho
+    spatial_dims:
+      - -2
+      - -1
+    coil_dim: 1
     mask_args:
       type: gaussian2d
       accelerations:
@@ -52,9 +62,14 @@ model:
 
   validation_ds:
     data_path: ???
-    dataset_type: FastMRI
     challenge: multicoil
-    fft_type: orthogonal_norm_only
+    coil_combination_method: SENSE
+    fft_centered: True
+    fft_normalization: ortho
+    spatial_dims:
+      - -2
+      - -1
+    coil_dim: 1
     mask_args:
       type: gaussian2d
       accelerations:

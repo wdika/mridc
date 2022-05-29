@@ -12,7 +12,7 @@ from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
 from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import ifft2c
+from mridc.collections.common.parts.fft import ifft2
 from mridc.collections.common.parts.rnn_utils import rnn_weights_init
 from mridc.collections.common.parts.utils import coil_combination
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
@@ -52,7 +52,10 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
         self.time_steps = 8 * math.ceil(cfg_dict.get("time_steps") / 8)
 
         self.no_dc = cfg_dict.get("no_dc")
-        self.fft_type = cfg_dict.get("fft_type")
+        self.fft_centered = cfg_dict.get("fft_centered")
+        self.fft_normalization = cfg_dict.get("fft_normalization")
+        self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
         self.num_cascades = cfg_dict.get("num_cascades")
 
         self.cirim = torch.nn.ModuleList(
@@ -71,7 +74,10 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
                     time_steps=self.time_steps,
                     conv_dim=cfg_dict.get("conv_dim"),
                     no_dc=self.no_dc,
-                    fft_type=self.fft_type,
+                    fft_centered=self.fft_centered,
+                    fft_normalization=self.fft_normalization,
+                    spatial_dims=self.spatial_dims,
+                    coil_dim=self.coil_dim,
                 )
                 for _ in range(self.num_cascades)
             ]
@@ -79,19 +85,7 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
 
         # Keep estimation through the cascades if keep_eta is True or re-estimate it if False.
         self.keep_eta = cfg_dict.get("keep_eta")
-        self.output_type = cfg_dict.get("output_type")
-
-        # Initialize the sensitivity network if use_sens_net is True
-        self.use_sens_net = cfg_dict.get("use_sens_net")
-        if self.use_sens_net:
-            self.sens_net = BaseSensitivityModel(
-                cfg_dict.get("sens_chans"),
-                cfg_dict.get("sens_pools"),
-                fft_type=self.fft_type,
-                mask_type=cfg_dict.get("sens_mask_type"),
-                normalize=cfg_dict.get("sens_normalize"),
-                mask_center=cfg_dict.get("sens_mask_center"),
-            )
+        self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
         # initialize weights if not using pretrained cirim
         if not cfg_dict.get("pretrained", False):
@@ -135,7 +129,6 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
              If self.accumulate_loss is True, returns a list of all intermediate estimates.
              If False, returns the final estimate.
         """
-        sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         prediction = y.clone()
         init_pred = None if init_pred is None or init_pred.dim() < 4 else init_pred
         hx = None
@@ -179,8 +172,10 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
         """
         # Take the last time step of the eta
         if not self.no_dc or do_coil_combination:
-            pred = ifft2c(pred, fft_type=self.fft_type)
-            pred = coil_combination(pred, sensitivity_maps, method=self.output_type, dim=1)
+            pred = ifft2(
+                pred, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
+            )
+            pred = coil_combination(pred, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim)
         pred = torch.view_as_complex(pred)
         _, pred = center_crop_to_smallest(target, pred)
         return pred
@@ -211,8 +206,8 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
             def loss_fn(x, y):
                 """Calculate the ssim loss."""
                 return _loss_fn(
-                    x.unsqueeze(dim=1),
-                    torch.abs(y / torch.max(torch.abs(y))).unsqueeze(dim=1),
+                    x.unsqueeze(dim=self.coil_dim),
+                    torch.abs(y / torch.max(torch.abs(y))).unsqueeze(dim=self.coil_dim),
                     data_range=torch.tensor(max_value).unsqueeze(dim=0).to(x.device),
                 )
 

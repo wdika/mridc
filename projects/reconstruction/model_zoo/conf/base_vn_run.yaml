@@ -10,20 +10,30 @@ model:
   padding_size: 11
   normalize: true
   no_dc: false
-  output_type: SENSE
+  coil_combination_method: SENSE
   use_sens_net: false
   sens_chans: 8
   sens_pools: 4
   sens_mask_type: 2D
   train_loss_fn: l1
   eval_loss_fn: l1
-  fft_type: orthogonal
+  fft_centered: True
+  fft_normalization: ortho
+  spatial_dims:
+    - -2
+    - -1
+  coil_dim: 1
 
   test_ds:
     data_path: ???
-    dataset_type: FastMRI
     challenge: multicoil
-    fft_type: orthogonal
+    coil_combination_method: SENSE
+    fft_centered: True
+    fft_normalization: ortho
+    spatial_dims:
+      - -2
+      - -1
+    coil_dim: 1
     mask_args:
       type: gaussian2d
       accelerations:

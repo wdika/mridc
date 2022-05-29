@@ -5,20 +5,20 @@ import os
 from abc import ABC
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Sequence, Tuple
 
 import h5py
 import numpy as np
 import torch
 import wandb
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch import nn
 from torch.utils.data import DataLoader
 from torchmetrics.metric import Metric
 
-from mridc.collections.common.parts.fft import ifft2c
-from mridc.collections.common.parts.utils import rss_complex
+from mridc.collections.common.parts.fft import ifft2
+from mridc.collections.common.parts.utils import rss_complex, sense
 from mridc.collections.reconstruction.data.mri_data import FastMRISliceDataset
 from mridc.collections.reconstruction.data.subsample import create_mask_for_mask_type
 from mridc.collections.reconstruction.metrics.evaluate import mse, nmse, psnr, ssim
@@ -67,6 +67,30 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
 
+        cfg_dict = OmegaConf.to_container(cfg, resolve=True)
+
+        self.coil_combination_method = cfg_dict.get("coil_combination_method")
+
+        self.fft_centered = cfg_dict.get("fft_centered")
+        self.fft_normalization = cfg_dict.get("fft_normalization")
+        self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
+
+        # Initialize the sensitivity network if use_sens_net is True
+        self.use_sens_net = cfg_dict.get("use_sens_net")
+        if self.use_sens_net:
+            self.sens_net = BaseSensitivityModel(
+                cfg_dict.get("sens_chans"),
+                cfg_dict.get("sens_pools"),
+                fft_centered=self.fft_centered,
+                fft_normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+                coil_dim=self.coil_dim,
+                mask_type=cfg_dict.get("sens_mask_type"),
+                normalize=cfg_dict.get("sens_normalize"),
+                mask_center=cfg_dict.get("sens_mask_center"),
+            )
+
         self.MSE = DistributedMetricSum()
         self.NMSE = DistributedMetricSum()
         self.SSIM = DistributedMetricSum()
@@ -106,8 +130,8 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
             def loss_fn(x, y):
                 """Calculate the ssim loss."""
                 return _loss_fn(
-                    x.unsqueeze(dim=1),
-                    torch.abs(y / torch.max(torch.abs(y))).unsqueeze(dim=1),
+                    x.unsqueeze(dim=self.coil_dim),
+                    torch.abs(y / torch.max(torch.abs(y))).unsqueeze(dim=self.coil_dim),
                     data_range=torch.tensor(max_value).unsqueeze(dim=0).to(x.device),
                 )
 
@@ -191,8 +215,23 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         'log': log,
             dict, shape [1]
         """
-        y, sensitivity_maps, mask, init_pred, target, _, _, acc = batch
+        kspace, y, sensitivity_maps, mask, init_pred, target, _, _, acc = batch
         y, mask, init_pred, r = self.process_inputs(y, mask, init_pred)
+
+        if self.use_sens_net:
+            sensitivity_maps = self.sens_net(kspace, mask)
+            if self.coil_combination_method.upper() == "SENSE":
+                target = sense(
+                    ifft2(
+                        kspace,
+                        centered=self.fft_centered,
+                        normalization=self.fft_normalization,
+                        spatial_dims=self.spatial_dims,
+                    ),
+                    sensitivity_maps,
+                    dim=self.coil_dim,
+                )
+
         preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
 
         if self.accumulate_estimates:
@@ -250,8 +289,23 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         'log': log,
             dict, shape [1]
         """
-        y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
-        y, mask, init_pred, _ = self.process_inputs(y, mask, init_pred)
+        kspace, y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
+        y, mask, init_pred, r = self.process_inputs(y, mask, init_pred)
+
+        if self.use_sens_net:
+            sensitivity_maps = self.sens_net(kspace, mask)
+            if self.coil_combination_method.upper() == "SENSE":
+                target = sense(
+                    ifft2(
+                        kspace,
+                        centered=self.fft_centered,
+                        normalization=self.fft_normalization,
+                        spatial_dims=self.spatial_dims,
+                    ),
+                    sensitivity_maps,
+                    dim=self.coil_dim,
+                )
+
         preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
 
         if self.accumulate_estimates:
@@ -334,8 +388,23 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         pred: Predicted data.
             torch.Tensor, shape [batch_size, n_x, n_y, 2]
         """
-        y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
-        y, mask, init_pred, _ = self.process_inputs(y, mask, init_pred)
+        kspace, y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
+        y, mask, init_pred, r = self.process_inputs(y, mask, init_pred)
+
+        if self.use_sens_net:
+            sensitivity_maps = self.sens_net(kspace, mask)
+            if self.coil_combination_method.upper() == "SENSE":
+                target = sense(
+                    ifft2(
+                        kspace,
+                        centered=self.fft_centered,
+                        normalization=self.fft_normalization,
+                        spatial_dims=self.spatial_dims,
+                    ),
+                    sensitivity_maps,
+                    dim=self.coil_dim,
+                )
+
         preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
 
         if self.accumulate_estimates:
@@ -533,9 +602,6 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         dataloader: DataLoader.
             torch.utils.data.DataLoader
         """
-        if cfg.get("dataset_type") != "FastMRI":
-            raise ValueError(f"Unknown dataset type: {cfg.get('dataset_type')}")
-
         mask_args = cfg.get("mask_args")
         mask_type = mask_args.get("type")
         shift_mask = mask_args.get("shift_mask")
@@ -562,6 +628,8 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
             sense_root=cfg.get("sense_data_path"),
             challenge=cfg.get("challenge"),
             transform=MRIDataTransforms(
+                coil_combination_method=cfg.get("coil_combination_method"),
+                dimensionality=cfg.get("dimensionality"),
                 mask_func=mask_func,
                 shift_mask=shift_mask,
                 mask_center_scale=mask_center_scale,
@@ -569,7 +637,10 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                 crop_size=cfg.get("crop_size"),
                 crop_before_masking=cfg.get("crop_before_masking"),
                 kspace_zero_filling_size=cfg.get("kspace_zero_filling_size"),
-                fft_type=cfg.get("fft_type"),
+                fft_centered=cfg.get("fft_centered"),
+                fft_normalization=cfg.get("fft_normalization"),
+                spatial_dims=cfg.get("spatial_dims"),
+                coil_dim=cfg.get("coil_dim"),
                 use_seed=cfg.get("use_seed"),
             ),
             sample_rate=cfg.get("sample_rate"),
@@ -605,7 +676,10 @@ class BaseSensitivityModel(nn.Module, ABC):
         drop_prob: float = 0.0,
         padding_size: int = 15,
         mask_type: str = "2D",  # TODO: make this generalizable
-        fft_type: str = "orthogonal",
+        fft_centered: bool = True,
+        fft_normalization: str = "ortho",
+        spatial_dims: Sequence[int] = None,
+        coil_dim: int = 1,
         normalize: bool = True,
         mask_center: bool = True,
     ):
@@ -628,8 +702,14 @@ class BaseSensitivityModel(nn.Module, ABC):
             int
         mask_type: Type of mask to use.
             str
-        fft_type: Type of FFT to use.
+        fft_centered: Whether to center the FFT.
+            bool
+        fft_normalization: Type of FFT normalization to use.
             str
+        spatial_dims: Spatial dimensions of the data.
+            tuple
+        coil_dim: Coil dimension.
+            int
         normalize: Whether to normalize the input data.
             bool
         mask_center: Whether mask the center of the image.
@@ -638,7 +718,6 @@ class BaseSensitivityModel(nn.Module, ABC):
         super().__init__()
 
         self.mask_type = mask_type
-        self.fft_type = fft_type
 
         self.norm_unet = NormUnet(
             chans,
@@ -651,6 +730,10 @@ class BaseSensitivityModel(nn.Module, ABC):
         )
 
         self.mask_center = mask_center
+        self.fft_centered = fft_centered
+        self.fft_normalization = fft_normalization
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
+        self.coil_dim = coil_dim
         self.normalize = normalize
 
     @staticmethod
@@ -695,7 +778,7 @@ class BaseSensitivityModel(nn.Module, ABC):
         return x.view(batch_size, c, h, w, comp)
 
     @staticmethod
-    def divide_root_sum_of_squares(x: torch.Tensor) -> torch.Tensor:
+    def divide_root_sum_of_squares(x: torch.Tensor, coil_dim: int) -> torch.Tensor:
         """
         Divide the input by the root of the sum of squares of the magnitude of each complex number.
 
@@ -703,13 +786,15 @@ class BaseSensitivityModel(nn.Module, ABC):
         ----------
         x: Tensor to divide.
             torch.Tensor
+        coil_dim: Coil dimension.
+            int
 
         Returns
         -------
         RSS output tensor.
             torch.Tensor
         """
-        return x / rss_complex(x, dim=1).unsqueeze(-1).unsqueeze(1)
+        return x / rss_complex(x, dim=coil_dim).unsqueeze(-1).unsqueeze(coil_dim)
 
     @staticmethod
     def get_pad_and_num_low_freqs(
@@ -777,10 +862,17 @@ class BaseSensitivityModel(nn.Module, ABC):
             masked_kspace = batched_mask_center(masked_kspace, pad, pad + num_low_freqs, mask_type=self.mask_type)
 
         # convert to image space
-        images, batches = self.chans_to_batch_dim(ifft2c(masked_kspace))
+        images, batches = self.chans_to_batch_dim(
+            ifft2(
+                masked_kspace,
+                centered=self.fft_centered,
+                normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            )
+        )
 
         # estimate sensitivities
         images = self.batch_chans_to_chan_dim(self.norm_unet(images), batches)
         if self.normalize:
-            images = self.divide_root_sum_of_squares(images)
+            images = self.divide_root_sum_of_squares(images, self.coil_dim)
         return images

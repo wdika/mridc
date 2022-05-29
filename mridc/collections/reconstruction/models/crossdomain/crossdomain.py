@@ -3,12 +3,12 @@ __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NKI-AI/direct/blob/main/direct/nn/crossdomain/crossdomain.py
 # Copyright (c) DIRECT Contributors
-from typing import Optional, Union
+from typing import Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
 
-from mridc.collections.common.parts.fft import fft2c, ifft2c
+from mridc.collections.common.parts.fft import fft2, ifft2
 from mridc.collections.common.parts.utils import complex_conj, complex_mul
 
 
@@ -23,7 +23,10 @@ class CrossDomainNetwork(nn.Module):
         image_buffer_size: int = 1,
         kspace_buffer_size: int = 1,
         normalize_image: bool = False,
-        fft_type: str = "orthogonal",
+        fft_centered: bool = True,
+        fft_normalization: str = "ortho",
+        spatial_dims: Optional[Tuple[int, int]] = None,
+        coil_dim: int = 1,
         **kwargs,
     ):
         """
@@ -43,14 +46,23 @@ class CrossDomainNetwork(nn.Module):
             int, Default: 1.
         normalize_image: If True, input is normalized.
             bool, Default: False.
-        fft_type: Type of FFT.
-            str, Default: "orthogonal".
+        fft_centered: If True, FFT is centered.
+            bool, Default: True.
+        fft_normalization: FFT normalization.
+            str, Default: "ortho".
+        spatial_dims: Spatial dimensions.
+            Tuple[int, int], Default: None.
+        coil_dim: Coil dimension.
+            int, Default: 1.
         kwargs:Keyword Arguments.
             dict
         """
         super().__init__()
 
-        self.fft_type = fft_type
+        self.fft_centered = fft_centered
+        self.fft_normalization = fft_normalization
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
+        self.coil_dim = coil_dim
 
         domain_sequence = list(domain_sequence.strip())  # type: ignore
         if not set(domain_sequence).issubset({"K", "I"}):
@@ -70,19 +82,15 @@ class CrossDomainNetwork(nn.Module):
         self.image_model_list = image_model_list
         self.image_buffer_size = image_buffer_size
 
-        self._coil_dim = 1
-        self._complex_dim = -1
-        self._spatial_dims = (2, 3)
-
     def kspace_correction(self, block_idx, image_buffer, kspace_buffer, sampling_mask, sensitivity_map, masked_kspace):
         """Performs k-space correction."""
         forward_buffer = [
             self._forward_operator(image.clone(), sampling_mask, sensitivity_map)
-            for image in torch.split(image_buffer, 2, self._complex_dim)
+            for image in torch.split(image_buffer, 2, -1)
         ]
-        forward_buffer = torch.cat(forward_buffer, self._complex_dim)
+        forward_buffer = torch.cat(forward_buffer, -1)
 
-        kspace_buffer = torch.cat([kspace_buffer, forward_buffer, masked_kspace], self._complex_dim)
+        kspace_buffer = torch.cat([kspace_buffer, forward_buffer, masked_kspace], -1)
 
         if self.kspace_model_list is not None:
             kspace_buffer = self.kspace_model_list[block_idx](kspace_buffer.permute(0, 1, 4, 2, 3)).permute(
@@ -97,11 +105,11 @@ class CrossDomainNetwork(nn.Module):
         """Performs image correction."""
         backward_buffer = [
             self._backward_operator(kspace.clone(), sampling_mask, sensitivity_map)
-            for kspace in torch.split(kspace_buffer, 2, self._complex_dim)
+            for kspace in torch.split(kspace_buffer, 2, -1)
         ]
-        backward_buffer = torch.cat(backward_buffer, self._complex_dim)
+        backward_buffer = torch.cat(backward_buffer, -1)
 
-        image_buffer = torch.cat([image_buffer, backward_buffer], self._complex_dim).permute(0, 3, 1, 2)
+        image_buffer = torch.cat([image_buffer, backward_buffer], -1).permute(0, 3, 1, 2)
         image_buffer = self.image_model_list[block_idx](image_buffer).permute(0, 2, 3, 1)
 
         return image_buffer
@@ -111,9 +119,11 @@ class CrossDomainNetwork(nn.Module):
         return torch.where(
             sampling_mask == 0,
             torch.tensor([0.0], dtype=image.dtype).to(image.device),
-            fft2c(
-                complex_mul(image.unsqueeze(1), sensitivity_map),
-                fft_type=self.fft_type,
+            fft2(
+                complex_mul(image.unsqueeze(self.coil_dim), sensitivity_map),
+                centered=self.fft_centered,
+                normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
             ).type(image.type()),
         )
 
@@ -122,10 +132,15 @@ class CrossDomainNetwork(nn.Module):
         kspace = torch.where(sampling_mask == 0, torch.tensor([0.0], dtype=kspace.dtype).to(kspace.device), kspace)
         return (
             complex_mul(
-                ifft2c(kspace.float(), fft_type=self.fft_type),
+                ifft2(
+                    kspace.float(),
+                    centered=self.fft_centered,
+                    normalization=self.fft_normalization,
+                    spatial_dims=self.spatial_dims,
+                ),
                 complex_conj(sensitivity_map),
             )
-            .sum(1)
+            .sum(self.coil_dim)
             .type(kspace.type())
         )
 
@@ -154,10 +169,8 @@ class CrossDomainNetwork(nn.Module):
         """
         input_image = self._backward_operator(masked_kspace, sampling_mask, sensitivity_map)
 
-        image_buffer = torch.cat([input_image] * self.image_buffer_size, self._complex_dim).to(masked_kspace.device)
-        kspace_buffer = torch.cat([masked_kspace] * self.kspace_buffer_size, self._complex_dim).to(
-            masked_kspace.device
-        )
+        image_buffer = torch.cat([input_image] * self.image_buffer_size, -1).to(masked_kspace.device)
+        kspace_buffer = torch.cat([masked_kspace] * self.kspace_buffer_size, -1).to(masked_kspace.device)
 
         kspace_block_idx, image_block_idx = 0, 0
         for block_domain in self.domain_sequence:

@@ -75,7 +75,7 @@
 <span class="kn">from</span> <span class="nn">torch.nn</span> <span class="kn">import</span> <span class="n">L1Loss</span>
 
 <span class="kn">from</span> <span class="nn">mridc.collections.common.losses.ssim</span> <span class="kn">import</span> <span class="n">SSIMLoss</span>
-<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">ifft2c</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">ifft2</span>
 <span class="kn">from</span> <span class="nn">mridc.collections.common.parts.utils</span> <span class="kn">import</span> <span class="n">complex_conj</span><span class="p">,</span> <span class="n">complex_mul</span>
 <span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.models.base</span> <span class="kn">import</span> <span class="n">BaseMRIReconstructionModel</span><span class="p">,</span> <span class="n">BaseSensitivityModel</span>
 <span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.models.didn.didn</span> <span class="kn">import</span> <span class="n">DIDN</span>
@@ -113,7 +113,10 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">cfg</span><span class="o">=</span><span class="n">cfg</span><span class="p">,</span> <span class="n">trainer</span><span class="o">=</span><span class="n">trainer</span><span class="p">)</span>
 
         <span class="n">cfg_dict</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">to_container</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">resolve</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fft_type&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fft_centered&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fft_normalization&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;spatial_dims&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;coil_dim&quot;</span><span class="p">)</span>
 
         <span class="n">reg_model_architecture</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reg_model_architecture&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">reg_model_architecture</span> <span class="o">==</span> <span class="s2">&quot;DIDN&quot;</span><span class="p">:</span>
@@ -143,16 +146,26 @@
         <span class="n">data_consistency_term</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;data_consistency_term&quot;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">data_consistency_term</span> <span class="o">==</span> <span class="s2">&quot;GD&quot;</span><span class="p">:</span>
-            <span class="n">dc_layer</span> <span class="o">=</span> <span class="n">DataGDLayer</span><span class="p">(</span><span class="n">lambda_init</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;data_consistency_lambda_init&quot;</span><span class="p">),</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">)</span>
+            <span class="n">dc_layer</span> <span class="o">=</span> <span class="n">DataGDLayer</span><span class="p">(</span>
+                <span class="n">lambda_init</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;data_consistency_lambda_init&quot;</span><span class="p">),</span>
+                <span class="n">fft_centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                <span class="n">fft_normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="k">elif</span> <span class="n">data_consistency_term</span> <span class="o">==</span> <span class="s2">&quot;PROX&quot;</span><span class="p">:</span>
             <span class="n">dc_layer</span> <span class="o">=</span> <span class="n">DataProxCGLayer</span><span class="p">(</span>
-                <span class="n">lambda_init</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;data_consistency_lambda_init&quot;</span><span class="p">),</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span>
+                <span class="n">lambda_init</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;data_consistency_lambda_init&quot;</span><span class="p">),</span>
+                <span class="n">fft_centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                <span class="n">fft_normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">elif</span> <span class="n">data_consistency_term</span> <span class="o">==</span> <span class="s2">&quot;VS&quot;</span><span class="p">:</span>
             <span class="n">dc_layer</span> <span class="o">=</span> <span class="n">DataVSLayer</span><span class="p">(</span>
                 <span class="n">alpha_init</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;data_consistency_alpha_init&quot;</span><span class="p">),</span>
                 <span class="n">beta_init</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;data_consistency_beta_init&quot;</span><span class="p">),</span>
-                <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">,</span>
+                <span class="n">fft_centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                <span class="n">fft_normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">dc_layer</span> <span class="o">=</span> <span class="n">DataIDLayer</span><span class="p">()</span>
@@ -166,22 +179,8 @@
             <span class="n">reset_cache</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_coil_dim</span> <span class="o">=</span> <span class="mi">1</span>
-
-        <span class="c1"># Initialize the sensitivity network if use_sens_net is True</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">use_sens_net</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;use_sens_net&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_sens_net</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">sens_net</span> <span class="o">=</span> <span class="n">BaseSensitivityModel</span><span class="p">(</span>
-                <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sens_chans&quot;</span><span class="p">),</span>
-                <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sens_pools&quot;</span><span class="p">),</span>
-                <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">,</span>
-                <span class="n">mask_type</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sens_mask_type&quot;</span><span class="p">),</span>
-                <span class="n">normalize</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sens_normalize&quot;</span><span class="p">),</span>
-            <span class="p">)</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">train_loss_fn</span> <span class="o">=</span> <span class="n">SSIMLoss</span><span class="p">()</span> <span class="k">if</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;train_loss_fn&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;ssim&quot;</span> <span class="k">else</span> <span class="n">L1Loss</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">eval_loss_fn</span> <span class="o">=</span> <span class="n">SSIMLoss</span><span class="p">()</span> <span class="k">if</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;eval_loss_fn&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;ssim&quot;</span> <span class="k">else</span> <span class="n">L1Loss</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">output_type</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_type&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">dc_weight</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">accumulate_estimates</span> <span class="o">=</span> <span class="kc">False</span>
@@ -217,10 +216,17 @@
 <span class="sd">             If self.accumulate_loss is True, returns a list of all intermediate estimates.</span>
 <span class="sd">             If False, returns the final estimate.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">sensitivity_maps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sens_net</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_sens_net</span> <span class="k">else</span> <span class="n">sensitivity_maps</span>
-        <span class="n">init_pred</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">complex_mul</span><span class="p">(</span><span class="n">ifft2c</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">),</span> <span class="n">complex_conj</span><span class="p">(</span><span class="n">sensitivity_maps</span><span class="p">)),</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">init_pred</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
+            <span class="n">complex_mul</span><span class="p">(</span>
+                <span class="n">ifft2</span><span class="p">(</span>
+                    <span class="n">y</span><span class="p">,</span> <span class="n">centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span> <span class="n">normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span>
+                <span class="p">),</span>
+                <span class="n">complex_conj</span><span class="p">(</span><span class="n">sensitivity_maps</span><span class="p">),</span>
+            <span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="n">image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">init_pred</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sensitivity_maps</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
-        <span class="n">image</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">complex_mul</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">complex_conj</span><span class="p">(</span><span class="n">sensitivity_maps</span><span class="p">)),</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">complex_mul</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">complex_conj</span><span class="p">(</span><span class="n">sensitivity_maps</span><span class="p">)),</span> <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">)</span>
         <span class="n">image</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">view_as_complex</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
         <span class="n">_</span><span class="p">,</span> <span class="n">image</span> <span class="o">=</span> <span class="n">center_crop_to_smallest</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">image</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">image</span></div></div>

@@ -9,7 +9,7 @@ from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
 from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import ifft2c
+from mridc.collections.common.parts.fft import ifft2
 from mridc.collections.common.parts.utils import coil_combination
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
 from mridc.collections.reconstruction.models.multidomain.multidomain import MultiDomainUnet2d, StandardizationLayer
@@ -26,15 +26,16 @@ class MultiDomainNet(BaseMRIReconstructionModel, ABC):
         # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
 
-        self._coil_dim = 1
-        self._complex_dim = -1
-
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
+
+        self.fft_normalization = cfg_dict.get("fft_normalization")
+        self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
+        self.num_cascades = cfg_dict.get("num_cascades")
+
         standardization = cfg_dict["standardization"]
         if standardization:
-            self.standardization = StandardizationLayer(self._coil_dim, self._complex_dim)
-
-        self.fft_type = cfg_dict.get("fft_type")
+            self.standardization = StandardizationLayer(self.coil_dim, -1)
 
         self.unet = MultiDomainUnet2d(
             in_channels=4 if standardization else 2,  # if standardization, in_channels is 4 due to standardized input
@@ -42,23 +43,16 @@ class MultiDomainNet(BaseMRIReconstructionModel, ABC):
             num_filters=cfg_dict["num_filters"],
             num_pool_layers=cfg_dict["num_pool_layers"],
             dropout_probability=cfg_dict["dropout_probability"],
-            fft_type=self.fft_type,
+            fft_centered=self.fft_centered,
+            fft_normalization=self.fft_normalization,
+            spatial_dims=self.spatial_dims,
+            coil_dim=self.coil_dim,
         )
 
-        # Initialize the sensitivity network if use_sens_net is True
-        self.use_sens_net = cfg_dict.get("use_sens_net")
-        if self.use_sens_net:
-            self.sens_net = BaseSensitivityModel(
-                cfg_dict.get("sens_chans"),
-                cfg_dict.get("sens_pools"),
-                fft_type=self.fft_type,
-                mask_type=cfg_dict.get("sens_mask_type"),
-                normalize=cfg_dict.get("sens_normalize"),
-            )
+        self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
         self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
         self.eval_loss_fn = SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
-        self.output_type = cfg_dict.get("output_type")
 
         self.accumulate_estimates = False
 
@@ -79,10 +73,10 @@ class MultiDomainNet(BaseMRIReconstructionModel, ABC):
             The computed output.
         """
         output = []
-        for idx in range(data.size(self._coil_dim)):
-            subselected_data = data.select(self._coil_dim, idx)
+        for idx in range(data.size(self.coil_dim)):
+            subselected_data = data.select(self.coil_dim, idx)
             output.append(model(subselected_data))
-        output = torch.stack(output, dim=self._coil_dim)
+        output = torch.stack(output, dim=self.coil_dim)
         return output
 
     @typecheck()
@@ -116,14 +110,17 @@ class MultiDomainNet(BaseMRIReconstructionModel, ABC):
              If self.accumulate_loss is True, returns a list of all intermediate estimates.
              If False, returns the final estimate.
         """
-        sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
-        image = ifft2c(y, fft_type=self.fft_type)
+        image = ifft2(
+            y, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
+        )
 
         if hasattr(self, "standardization"):
             image = self.standardization(image, sensitivity_maps)
 
         output_image = self._compute_model_per_coil(self.unet, image.permute(0, 1, 4, 2, 3)).permute(0, 1, 3, 4, 2)
-        output_image = coil_combination(output_image, sensitivity_maps, method=self.output_type, dim=1)
+        output_image = coil_combination(
+            output_image, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim
+        )
         output_image = torch.view_as_complex(output_image)
         _, output_image = center_crop_to_smallest(target, output_image)
         return output_image

@@ -7,15 +7,15 @@ import numpy as np
 import pytest
 import torch
 
-from mridc.collections.common.parts.fft import fft2c, fftshift, ifft2c, ifftshift, roll
+from mridc.collections.common.parts.fft import fft2, fftshift, ifft2, ifftshift, roll
 from mridc.collections.common.parts.utils import complex_abs, tensor_to_complex_np
 from tests.collections.reconstruction.fastmri.conftest import create_input
 
 
 @pytest.mark.parametrize("shape", [[3, 3], [4, 6], [10, 8, 4]])
-def test_orthogonal_fft2(shape):
+def test_centered_fft2(shape):
     """
-    Test orthogonal 2D Fast Fourier Transform.
+    Test centered 2D Fast Fourier Transform.
 
     Args:
         shape: shape of the input
@@ -25,7 +25,7 @@ def test_orthogonal_fft2(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = fft2c(x, fft_type="orthogonal", fft_normalization="ortho").numpy()
+    out_torch = fft2(x, centered=True, normalization="ortho", spatial_dims=[-2, -1]).numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)
@@ -38,9 +38,9 @@ def test_orthogonal_fft2(shape):
 
 
 @pytest.mark.parametrize("shape", [[3, 3], [4, 6], [10, 8, 4]])
-def test_non_orthogonal_fft2(shape):
+def test_non_centered_fft2(shape):
     """
-    Test non-orthogonal 2D Fast Fourier Transform.
+    Test non-centered 2D Fast Fourier Transform.
 
     Args:
         shape: shape of the input
@@ -50,7 +50,7 @@ def test_non_orthogonal_fft2(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = fft2c(x, fft_type="non_orthogonal", fft_normalization="ortho").numpy()
+    out_torch = fft2(x, centered=False, normalization="ortho", spatial_dims=[-2, -1]).numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)
@@ -61,9 +61,9 @@ def test_non_orthogonal_fft2(shape):
 
 
 @pytest.mark.parametrize("shape", [[3, 3], [4, 6], [10, 8, 4]])
-def test_orthogonal_fft2_backward_normalization(shape):
+def test_centered_fft2_backward_normalization(shape):
     """
-    Test orthogonal 2D Fast Fourier Transform with backward normalization.
+    Test centered 2D Fast Fourier Transform with backward normalization.
 
     Args:
         shape: shape of the input
@@ -73,7 +73,7 @@ def test_orthogonal_fft2_backward_normalization(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = fft2c(x, fft_type="orthogonal", fft_normalization="backward").numpy()
+    out_torch = fft2(x, centered=True, normalization="backward", spatial_dims=[-2, -1]).numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)
@@ -86,9 +86,9 @@ def test_orthogonal_fft2_backward_normalization(shape):
 
 
 @pytest.mark.parametrize("shape", [[3, 3], [4, 6], [10, 8, 4]])
-def test_orthogonal_fft2_forward_normalization(shape):
+def test_centered_fft2_forward_normalization(shape):
     """
-    Test orthogonal 2D Fast Fourier Transform with forward normalization.
+    Test centered 2D Fast Fourier Transform with forward normalization.
 
     Args:
         shape: shape of the input
@@ -98,7 +98,7 @@ def test_orthogonal_fft2_forward_normalization(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = fft2c(x, fft_type="orthogonal", fft_normalization="forward").numpy()
+    out_torch = fft2(x, centered=True, normalization="forward", spatial_dims=[-2, -1]).numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)
@@ -111,9 +111,9 @@ def test_orthogonal_fft2_forward_normalization(shape):
 
 
 @pytest.mark.parametrize("shape", [[3, 3], [4, 6], [10, 8, 4]])
-def test_orthogonal_ifft2(shape):
+def test_centered_ifft2(shape):
     """
-    Test orthogonal 2D Inverse Fast Fourier Transform.
+    Test centered 2D Inverse Fast Fourier Transform.
 
     Args:
         shape: shape of the input
@@ -123,7 +123,7 @@ def test_orthogonal_ifft2(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = ifft2c(x, fft_type="orthogonal", fft_normalization="ortho").numpy()
+    out_torch = ifft2(x, centered=True, normalization="ortho", spatial_dims=[-2, -1]).numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)
@@ -136,9 +136,9 @@ def test_orthogonal_ifft2(shape):
 
 
 @pytest.mark.parametrize("shape", [[3, 3], [4, 6], [10, 8, 4]])
-def test_non_orthogonal_ifft2(shape):
+def test_non_centered_ifft2(shape):
     """
-    Test non-orthogonal 2D Inverse Fast Fourier Transform.
+    Test non-centered 2D Inverse Fast Fourier Transform.
 
     Args:
         shape: shape of the input
@@ -148,7 +148,7 @@ def test_non_orthogonal_ifft2(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = ifft2c(x, fft_type="non_orthogonal", fft_normalization="ortho").numpy()
+    out_torch = ifft2(x, centered=False, normalization="ortho", spatial_dims=[-2, -1]).numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)
@@ -159,9 +159,9 @@ def test_non_orthogonal_ifft2(shape):
 
 
 @pytest.mark.parametrize("shape", [[3, 3], [4, 6], [10, 8, 4]])
-def test_orthogonal_ifft2_backward_normalization(shape):
+def test_centered_ifft2_backward_normalization(shape):
     """
-    Test orthogonal 2D Inverse Fast Fourier Transform with backward normalization.
+    Test centered 2D Inverse Fast Fourier Transform with backward normalization.
 
     Args:
         shape: shape of the input
@@ -171,7 +171,7 @@ def test_orthogonal_ifft2_backward_normalization(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = ifft2c(x, fft_type="orthogonal", fft_normalization="backward").numpy()
+    out_torch = ifft2(x, centered=True, normalization="backward", spatial_dims=[-2, -1]).numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)
@@ -184,9 +184,9 @@ def test_orthogonal_ifft2_backward_normalization(shape):
 
 
 @pytest.mark.parametrize("shape", [[3, 3], [4, 6], [10, 8, 4]])
-def test_orthogonal_ifft2_forward_normalization(shape):
+def test_centered_ifft2_forward_normalization(shape):
     """
-    Test orthogonal 2D Inverse Fast Fourier Transform with forward normalization.
+    Test centered 2D Inverse Fast Fourier Transform with forward normalization.
 
     Args:
         shape: shape of the input
@@ -196,7 +196,7 @@ def test_orthogonal_ifft2_forward_normalization(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = ifft2c(x, fft_type="orthogonal", fft_normalization="forward").numpy()
+    out_torch = ifft2(x, centered=True, normalization="forward", spatial_dims=[-2, -1]).numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)

@@ -9,7 +9,7 @@ from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
 from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import ifft2c
+from mridc.collections.common.parts.fft import ifft2
 from mridc.collections.common.parts.utils import coil_combination
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
 from mridc.collections.reconstruction.models.unet_base.unet_block import NormUnet
@@ -39,7 +39,10 @@ class UNet(BaseMRIReconstructionModel, ABC):
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
-        self.fft_type = cfg_dict.get("fft_type")
+        self.fft_centered = cfg_dict.get("fft_centered")
+        self.fft_normalization = cfg_dict.get("fft_normalization")
+        self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
 
         self.unet = NormUnet(
             chans=cfg_dict.get("channels"),
@@ -48,18 +51,7 @@ class UNet(BaseMRIReconstructionModel, ABC):
             normalize=cfg_dict.get("normalize"),
         )
 
-        self.output_type = cfg_dict.get("output_type")
-
-        # Initialize the sensitivity network if use_sens_net is True
-        self.use_sens_net = cfg_dict.get("use_sens_net")
-        if self.use_sens_net:
-            self.sens_net = BaseSensitivityModel(
-                cfg_dict.get("sens_chans"),
-                cfg_dict.get("sens_pools"),
-                fft_type=self.fft_type,
-                mask_type=cfg_dict.get("sens_mask_type"),
-                normalize=cfg_dict.get("sens_normalize"),
-            )
+        self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
         # initialize weights if not using pretrained unet
         # TODO if not cfg_dict.get("pretrained", False):
@@ -100,9 +92,17 @@ class UNet(BaseMRIReconstructionModel, ABC):
              If self.accumulate_loss is True, returns a list of all intermediate estimates.
              If False, returns the final estimate.
         """
-        sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         eta = torch.view_as_complex(
-            coil_combination(ifft2c(y, fft_type=self.fft_type), sensitivity_maps, method=self.output_type, dim=1)
+            coil_combination(
+                ifft2(
+                    y, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
+                ),
+                sensitivity_maps,
+                method=self.coil_combination_method,
+                dim=self.coil_dim,
+            )
         )
         _, eta = center_crop_to_smallest(target, eta)
-        return torch.view_as_complex(self.unet(torch.view_as_real(eta.unsqueeze(1)))).squeeze(1)
+        return torch.view_as_complex(self.unet(torch.view_as_real(eta.unsqueeze(self.coil_dim)))).squeeze(
+            self.coil_dim
+        )

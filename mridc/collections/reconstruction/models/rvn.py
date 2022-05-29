@@ -11,7 +11,7 @@ from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
 from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import fft2c, ifft2c
+from mridc.collections.common.parts.fft import fft2, ifft2
 from mridc.collections.common.parts.rnn_utils import rnn_weights_init
 from mridc.collections.common.parts.utils import coil_combination, complex_conj, complex_mul
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
@@ -83,8 +83,11 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
         else:
             self.initializer = None  # type: ignore
 
-        self.fft_type = cfg_dict.get("fft_type")
-        self.output_type = cfg_dict.get("output_type")
+        self.fft_centered = cfg_dict.get("fft_centered")
+        self.fft_normalization = cfg_dict.get("fft_normalization")
+        self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
+        self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
         self.block_list: torch.nn.Module = torch.nn.ModuleList()
         for _ in range(self.num_steps if self.no_parameter_sharing else 1):
@@ -93,19 +96,11 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
                     in_channels=self.in_channels,
                     hidden_channels=self.recurrent_hidden_channels,
                     num_layers=self.recurrent_num_layers,
-                    fft_type=self.fft_type,
+                    fft_centered=self.fft_centered,
+                    fft_normalization=self.fft_normalization,
+                    spatial_dims=self.spatial_dims,
+                    coil_dim=self.coil_dim,
                 )
-            )
-
-        # Initialize the sensitivity network if use_sens_net is True
-        self.use_sens_net = cfg_dict.get("use_sens_net")
-        if self.use_sens_net:
-            self.sens_net = BaseSensitivityModel(
-                cfg_dict.get("sens_chans"),
-                cfg_dict.get("sens_pools"),
-                fft_type=self.fft_type,
-                mask_type=cfg_dict.get("sens_mask_type"),
-                normalize=cfg_dict.get("sens_normalize"),
             )
 
         std_init_range = 1 / self.recurrent_hidden_channels**0.5
@@ -151,14 +146,22 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
              If self.accumulate_loss is True, returns a list of all intermediate estimates.
              If False, returns the final estimate.
         """
-        sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
-
         previous_state: Optional[torch.Tensor] = None
 
         if self.initializer is not None:
             if self.initializer_initialization == "sense":
                 initializer_input_image = (
-                    complex_mul(ifft2c(y, fft_type=self.fft_type), complex_conj(sensitivity_maps)).sum(1).unsqueeze(1)
+                    complex_mul(
+                        ifft2(
+                            y,
+                            centered=self.fft_centered,
+                            normalization=self.fft_normalization,
+                            spatial_dims=self.spatial_dims,
+                        ),
+                        complex_conj(sensitivity_maps),
+                    )
+                    .sum(self.coil_dim)
+                    .unsqueeze(self.coil_dim)
                 )
             elif self.initializer_initialization == "input_image":
                 if "initial_image" not in kwargs:
@@ -166,12 +169,24 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
                         "`'initial_image` is required as input if initializer_initialization "
                         f"is {self.initializer_initialization}."
                     )
-                initializer_input_image = kwargs["initial_image"].unsqueeze(1)
+                initializer_input_image = kwargs["initial_image"].unsqueeze(self.coil_dim)
             elif self.initializer_initialization == "zero_filled":
-                initializer_input_image = ifft2c(y, fft_type=self.fft_type)
+                initializer_input_image = ifft2(
+                    y,
+                    centered=self.fft_centered,
+                    normalization=self.fft_normalization,
+                    spatial_dims=self.spatial_dims,
+                )
 
             previous_state = self.initializer(
-                fft2c(initializer_input_image, fft_type=self.fft_type).sum(1).permute(0, 3, 1, 2)
+                fft2(
+                    initializer_input_image,
+                    centered=self.fft_centered,
+                    normalization=self.fft_normalization,
+                    spatial_dims=self.spatial_dims,
+                )
+                .sum(1)
+                .permute(0, 3, 1, 2)
             )
 
         kspace_prediction = y.clone()
@@ -186,8 +201,13 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
                 previous_state,
             )
 
-        eta = ifft2c(kspace_prediction, fft_type=self.fft_type)
-        eta = coil_combination(eta, sensitivity_maps, method=self.output_type, dim=1)
+        eta = ifft2(
+            kspace_prediction,
+            centered=self.fft_centered,
+            normalization=self.fft_normalization,
+            spatial_dims=self.spatial_dims,
+        )
+        eta = coil_combination(eta, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim)
         eta = torch.view_as_complex(eta)
         _, eta = center_crop_to_smallest(target, eta)
         return eta

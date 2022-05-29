@@ -74,7 +74,9 @@
 <span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
 <span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
 
-<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">fft2c</span><span class="p">,</span> <span class="n">ifft2c</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">fft2</span><span class="p">,</span> <span class="n">ifft2</span>
 <span class="kn">from</span> <span class="nn">mridc.collections.common.parts.utils</span> <span class="kn">import</span> <span class="n">complex_conj</span><span class="p">,</span> <span class="n">complex_mul</span>
 
 
@@ -83,36 +85,46 @@
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">fft_type</span><span class="p">,</span>
-        <span class="n">in_channels</span><span class="p">,</span>
-        <span class="n">out_channels</span><span class="p">,</span>
+        <span class="n">fft_centered</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">fft_normalization</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ortho&quot;</span><span class="p">,</span>
+        <span class="n">spatial_dims</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">coil_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="n">out_channels</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">image_conv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kspace_conv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">fft_type</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_channels_dim</span> <span class="o">=</span> <span class="mi">1</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_spatial_dims</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span> <span class="o">=</span> <span class="n">fft_centered</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span> <span class="o">=</span> <span class="n">fft_normalization</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">spatial_dims</span> <span class="k">if</span> <span class="n">spatial_dims</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span> <span class="o">=</span> <span class="mi">1</span>
 
 <div class="viewcode-block" id="MultiDomainConv2d.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.multidomain.html#mridc.collections.reconstruction.models.multidomain.multidomain.MultiDomainConv2d.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Forward method for the MultiDomainConv2d class.&quot;&quot;&quot;</span>
         <span class="n">kspace</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">fft2c</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">fft_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_spatial_dims</span><span class="p">)</span>
+            <span class="n">fft2</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span> <span class="n">normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">(),</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
         <span class="p">]</span>
         <span class="n">kspace</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">kspace</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
         <span class="n">kspace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kspace_conv</span><span class="p">(</span><span class="n">kspace</span><span class="p">)</span>
 
         <span class="n">backward</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">ifft2c</span><span class="p">(</span><span class="n">ks</span><span class="o">.</span><span class="n">float</span><span class="p">(),</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">fft_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_spatial_dims</span><span class="p">)</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">type</span><span class="p">())</span>
+            <span class="n">ifft2</span><span class="p">(</span>
+                <span class="n">ks</span><span class="o">.</span><span class="n">float</span><span class="p">(),</span>
+                <span class="n">centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                <span class="n">normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">type</span><span class="p">())</span>
             <span class="k">for</span> <span class="n">ks</span> <span class="ow">in</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">kspace</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">(),</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
         <span class="p">]</span>
         <span class="n">backward</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">backward</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
 
         <span class="n">image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_conv</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
-        <span class="n">image</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">image</span><span class="p">,</span> <span class="n">backward</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_channels_dim</span><span class="p">)</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">image</span><span class="p">,</span> <span class="n">backward</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">image</span></div></div>
 
 
@@ -121,36 +133,45 @@
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">fft_type</span><span class="p">,</span>
-        <span class="n">in_channels</span><span class="p">,</span>
-        <span class="n">out_channels</span><span class="p">,</span>
+        <span class="n">fft_centered</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">fft_normalization</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ortho&quot;</span><span class="p">,</span>
+        <span class="n">spatial_dims</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">coil_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="n">out_channels</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">image_conv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ConvTranspose2d</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kspace_conv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ConvTranspose2d</span><span class="p">(</span><span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">fft_type</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_channels_dim</span> <span class="o">=</span> <span class="mi">1</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_spatial_dims</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span> <span class="o">=</span> <span class="n">fft_centered</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span> <span class="o">=</span> <span class="n">fft_normalization</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">spatial_dims</span> <span class="k">if</span> <span class="n">spatial_dims</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span> <span class="o">=</span> <span class="mi">1</span>
 
 <div class="viewcode-block" id="MultiDomainConvTranspose2d.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.multidomain.html#mridc.collections.reconstruction.models.multidomain.multidomain.MultiDomainConvTranspose2d.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Forward method for the MultiDomainConvTranspose2d class.&quot;&quot;&quot;</span>
         <span class="n">kspace</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">fft2c</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">fft_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_spatial_dims</span><span class="p">)</span>
+            <span class="n">fft2</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span> <span class="n">normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">(),</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
         <span class="p">]</span>
         <span class="n">kspace</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">kspace</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
         <span class="n">kspace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kspace_conv</span><span class="p">(</span><span class="n">kspace</span><span class="p">)</span>
 
         <span class="n">backward</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">ifft2c</span><span class="p">(</span><span class="n">ks</span><span class="o">.</span><span class="n">float</span><span class="p">(),</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">fft_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_spatial_dims</span><span class="p">)</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">type</span><span class="p">())</span>
+            <span class="n">ifft2</span><span class="p">(</span>
+                <span class="n">ks</span><span class="o">.</span><span class="n">float</span><span class="p">(),</span>
+                <span class="n">centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                <span class="n">normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">type</span><span class="p">())</span>
             <span class="k">for</span> <span class="n">ks</span> <span class="ow">in</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">kspace</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">(),</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
         <span class="p">]</span>
         <span class="n">backward</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">backward</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
 
         <span class="n">image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_conv</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">image</span><span class="p">,</span> <span class="n">backward</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_channels_dim</span><span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">image</span><span class="p">,</span> <span class="n">backward</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="MultiDomainConvBlock"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.multidomain.html#mridc.collections.reconstruction.models.multidomain.multidomain.MultiDomainConvBlock">[docs]</a><span class="k">class</span> <span class="nc">MultiDomainConvBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
@@ -159,26 +180,64 @@
 <span class="sd">    normalization, LeakyReLU activation and dropout.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fft_type</span><span class="p">,</span> <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dropout_probability</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">fft_centered</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">fft_normalization</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ortho&quot;</span><span class="p">,</span>
+        <span class="n">spatial_dims</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">coil_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="n">out_channels</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="n">dropout_probability</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
+<span class="sd">        fft_centered : Whether to center the FFT.</span>
+<span class="sd">        fft_normalization : Whether to normalize the FFT.</span>
+<span class="sd">        spatial_dims : The spatial dimensions to apply the FFT to.</span>
+<span class="sd">        coil_dim : The dimension of the coil.</span>
 <span class="sd">        in_channels: Number of input channels.</span>
 <span class="sd">        out_channels: Number of output channels.</span>
 <span class="sd">        dropout_probability: Dropout probability.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span> <span class="o">=</span> <span class="n">fft_centered</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span> <span class="o">=</span> <span class="n">fft_normalization</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">spatial_dims</span> <span class="k">if</span> <span class="n">spatial_dims</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span> <span class="o">=</span> <span class="n">coil_dim</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span> <span class="o">=</span> <span class="n">in_channels</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span> <span class="o">=</span> <span class="n">out_channels</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dropout_probability</span> <span class="o">=</span> <span class="n">dropout_probability</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">layers</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
-            <span class="n">MultiDomainConv2d</span><span class="p">(</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+            <span class="n">MultiDomainConv2d</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">,</span>
+                <span class="n">in_channels</span><span class="p">,</span>
+                <span class="n">out_channels</span><span class="p">,</span>
+                <span class="n">kernel_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                <span class="n">padding</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">),</span>
             <span class="n">nn</span><span class="o">.</span><span class="n">InstanceNorm2d</span><span class="p">(</span><span class="n">out_channels</span><span class="p">),</span>
             <span class="n">nn</span><span class="o">.</span><span class="n">LeakyReLU</span><span class="p">(</span><span class="n">negative_slope</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
             <span class="n">nn</span><span class="o">.</span><span class="n">Dropout2d</span><span class="p">(</span><span class="n">dropout_probability</span><span class="p">),</span>
-            <span class="n">MultiDomainConv2d</span><span class="p">(</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+            <span class="n">MultiDomainConv2d</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">,</span>
+                <span class="n">out_channels</span><span class="p">,</span>
+                <span class="n">out_channels</span><span class="p">,</span>
+                <span class="n">kernel_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                <span class="n">padding</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">),</span>
             <span class="n">nn</span><span class="o">.</span><span class="n">InstanceNorm2d</span><span class="p">(</span><span class="n">out_channels</span><span class="p">),</span>
             <span class="n">nn</span><span class="o">.</span><span class="n">LeakyReLU</span><span class="p">(</span><span class="n">negative_slope</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
             <span class="n">nn</span><span class="o">.</span><span class="n">Dropout2d</span><span class="p">(</span><span class="n">dropout_probability</span><span class="p">),</span>
@@ -201,10 +260,22 @@
 <span class="sd">    normalization and LeakyReLU activation.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fft_type</span><span class="p">,</span> <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">fft_centered</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">fft_normalization</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ortho&quot;</span><span class="p">,</span>
+        <span class="n">spatial_dims</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">coil_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">in_channels</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="n">out_channels</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
+<span class="sd">        fft_centered : Whether to center the FFT.</span>
+<span class="sd">        fft_normalization : Whether to normalize the FFT.</span>
+<span class="sd">        spatial_dims : The spatial dimensions to apply the FFT to.</span>
+<span class="sd">        coil_dim : The dimension of the coil.</span>
 <span class="sd">        in_channels: Number of input channels.</span>
 <span class="sd">        out_channels: Number of output channels.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -212,7 +283,17 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">in_channels</span> <span class="o">=</span> <span class="n">in_channels</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span> <span class="o">=</span> <span class="n">out_channels</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">layers</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
-            <span class="n">MultiDomainConvTranspose2d</span><span class="p">(</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+            <span class="n">MultiDomainConvTranspose2d</span><span class="p">(</span>
+                <span class="n">fft_centered</span><span class="p">,</span>
+                <span class="n">fft_normalization</span><span class="p">,</span>
+                <span class="n">spatial_dims</span><span class="p">,</span>
+                <span class="n">coil_dim</span><span class="p">,</span>
+                <span class="n">in_channels</span><span class="p">,</span>
+                <span class="n">out_channels</span><span class="p">,</span>
+                <span class="n">kernel_size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                <span class="n">stride</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">),</span>
             <span class="n">nn</span><span class="o">.</span><span class="n">InstanceNorm2d</span><span class="p">(</span><span class="n">out_channels</span><span class="p">),</span>
             <span class="n">nn</span><span class="o">.</span><span class="n">LeakyReLU</span><span class="p">(</span><span class="n">negative_slope</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
         <span class="p">)</span>
@@ -278,7 +359,10 @@
         <span class="n">num_filters</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">num_pool_layers</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">dropout_probability</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-        <span class="n">fft_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;orthogonal&quot;</span><span class="p">,</span>
+        <span class="n">fft_centered</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">fft_normalization</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ortho&quot;</span><span class="p">,</span>
+        <span class="n">spatial_dims</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">coil_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
@@ -288,7 +372,10 @@
 <span class="sd">        num_filters: Number of output channels of the first convolutional layer.</span>
 <span class="sd">        num_pool_layers: Number of down-sampling and up-sampling layers (depth).</span>
 <span class="sd">        dropout_probability: Dropout probability.</span>
-<span class="sd">        fft_type: FFT type.</span>
+<span class="sd">        fft_centered: Whether to use centered FFT.</span>
+<span class="sd">        fft_normalization: Whether to use normalization.</span>
+<span class="sd">        spatial_dims: Spatial dimensions of the input data.</span>
+<span class="sd">        coil_dim: Dimension of the coil dimension.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
@@ -297,28 +384,95 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">num_filters</span> <span class="o">=</span> <span class="n">num_filters</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">num_pool_layers</span> <span class="o">=</span> <span class="n">num_pool_layers</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dropout_probability</span> <span class="o">=</span> <span class="n">dropout_probability</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">fft_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span> <span class="o">=</span> <span class="n">fft_centered</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span> <span class="o">=</span> <span class="n">fft_normalization</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">spatial_dims</span> <span class="k">if</span> <span class="n">spatial_dims</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span> <span class="o">=</span> <span class="n">coil_dim</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">down_sample_layers</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">MultiDomainConvBlock</span><span class="p">(</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">in_channels</span><span class="p">,</span> <span class="n">num_filters</span><span class="p">,</span> <span class="n">dropout_probability</span><span class="p">)]</span>
+            <span class="p">[</span>
+                <span class="n">MultiDomainConvBlock</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">,</span>
+                    <span class="n">in_channels</span><span class="p">,</span>
+                    <span class="n">num_filters</span><span class="p">,</span>
+                    <span class="n">dropout_probability</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">]</span>
         <span class="p">)</span>
         <span class="n">ch</span> <span class="o">=</span> <span class="n">num_filters</span>
         <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_pool_layers</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">down_sample_layers</span> <span class="o">+=</span> <span class="p">[</span><span class="n">MultiDomainConvBlock</span><span class="p">(</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">ch</span><span class="p">,</span> <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">dropout_probability</span><span class="p">)]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">down_sample_layers</span> <span class="o">+=</span> <span class="p">[</span>
+                <span class="n">MultiDomainConvBlock</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">,</span>
+                    <span class="n">ch</span><span class="p">,</span>
+                    <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
+                    <span class="n">dropout_probability</span>
+                <span class="p">)</span>
+            <span class="p">]</span>
             <span class="n">ch</span> <span class="o">*=</span> <span class="mi">2</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">conv</span> <span class="o">=</span> <span class="n">MultiDomainConvBlock</span><span class="p">(</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">ch</span><span class="p">,</span> <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">dropout_probability</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv</span> <span class="o">=</span> <span class="n">MultiDomainConvBlock</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">,</span>
+            <span class="n">ch</span><span class="p">,</span>
+            <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="n">dropout_probability</span>
+        <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">up_conv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">up_transpose_conv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_pool_layers</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">up_transpose_conv</span> <span class="o">+=</span> <span class="p">[</span><span class="n">TransposeMultiDomainConvBlock</span><span class="p">(</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">ch</span><span class="p">)]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">up_conv</span> <span class="o">+=</span> <span class="p">[</span><span class="n">MultiDomainConvBlock</span><span class="p">(</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">ch</span><span class="p">,</span> <span class="n">dropout_probability</span><span class="p">)]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">up_transpose_conv</span> <span class="o">+=</span> <span class="p">[</span>
+                <span class="n">TransposeMultiDomainConvBlock</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">,</span>
+                    <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
+                    <span class="n">ch</span>
+                <span class="p">)</span>
+            <span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">up_conv</span> <span class="o">+=</span> <span class="p">[</span>
+                <span class="n">MultiDomainConvBlock</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">,</span>
+                    <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
+                    <span class="n">ch</span><span class="p">,</span>
+                    <span class="n">dropout_probability</span>
+                <span class="p">)</span>
+            <span class="p">]</span>
             <span class="n">ch</span> <span class="o">//=</span> <span class="mi">2</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">up_transpose_conv</span> <span class="o">+=</span> <span class="p">[</span><span class="n">TransposeMultiDomainConvBlock</span><span class="p">(</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">ch</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">up_transpose_conv</span> <span class="o">+=</span> <span class="p">[</span>
+            <span class="n">TransposeMultiDomainConvBlock</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">,</span>
+                <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
+                <span class="n">ch</span>
+            <span class="p">)</span>
+        <span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">up_conv</span> <span class="o">+=</span> <span class="p">[</span>
             <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
-                <span class="n">MultiDomainConvBlock</span><span class="p">(</span><span class="n">fft_type</span><span class="p">,</span> <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">ch</span><span class="p">,</span> <span class="n">dropout_probability</span><span class="p">),</span>
+                <span class="n">MultiDomainConvBlock</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">,</span>
+                    <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
+                    <span class="n">ch</span><span class="p">,</span>
+                    <span class="n">dropout_probability</span>
+                <span class="p">),</span>
                 <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="n">ch</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
             <span class="p">)</span>
         <span class="p">]</span>

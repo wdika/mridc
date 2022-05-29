@@ -9,7 +9,7 @@ from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
 from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import fft2c, ifft2c
+from mridc.collections.common.parts.fft import fft2, ifft2
 from mridc.collections.common.parts.utils import complex_conj, complex_mul
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
 from mridc.collections.reconstruction.models.conv.conv2d import Conv2d
@@ -108,26 +108,16 @@ class KIKINet(BaseMRIReconstructionModel, ABC):
                 f"Got {image_model_architecture}."
             )
 
-        self.fft_type = cfg_dict.get("fft_type")
-        self._coil_dim = 1
+        self.fft_centered = cfg_dict.get("fft_centered")
+        self.fft_normalization = cfg_dict.get("fft_normalization")
+        self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
 
         self.image_model_list = torch.nn.ModuleList([image_model] * self.num_iter)
-        self.kspace_model_list = torch.nn.ModuleList([MultiCoil(kspace_model, self._coil_dim)] * self.num_iter)
-
-        # Initialize the sensitivity network if use_sens_net is True
-        self.use_sens_net = cfg_dict.get("use_sens_net")
-        if self.use_sens_net:
-            self.sens_net = BaseSensitivityModel(
-                cfg_dict.get("sens_chans"),
-                cfg_dict.get("sens_pools"),
-                fft_type=self.fft_type,
-                mask_type=cfg_dict.get("sens_mask_type"),
-                normalize=cfg_dict.get("sens_normalize"),
-            )
+        self.kspace_model_list = torch.nn.ModuleList([MultiCoil(kspace_model, coil_dim=1)] * self.num_iter)
 
         self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
         self.eval_loss_fn = SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
-        self.output_type = cfg_dict.get("output_type")
 
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
         self.accumulate_estimates = False
@@ -163,7 +153,6 @@ class KIKINet(BaseMRIReconstructionModel, ABC):
              If self.accumulate_loss is True, returns a list of all intermediate estimates.
              If False, returns the final estimate.
         """
-        sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         kspace = y.clone()
         zero = torch.zeros(1, 1, 1, 1, 1).to(kspace)
 
@@ -175,20 +164,42 @@ class KIKINet(BaseMRIReconstructionModel, ABC):
                 kspace = kspace.permute(0, 1, 3, 4, 2).to(target)
                 kspace = torch.view_as_real(kspace[..., 0] + 1j * kspace[..., 1])  # this is necessary, but why?
 
-            image = complex_mul(ifft2c(kspace, fft_type=self.fft_type), complex_conj(sensitivity_maps)).sum(1)
-            image = self.image_model_list[idx](image.unsqueeze(1)).squeeze(1)
+            image = complex_mul(
+                ifft2(
+                    kspace,
+                    centered=self.fft_centered,
+                    normalization=self.fft_normalization,
+                    spatial_dims=self.spatial_dims,
+                ),
+                complex_conj(sensitivity_maps),
+            ).sum(self.coil_dim)
+            image = self.image_model_list[idx](image.unsqueeze(self.coil_dim)).squeeze(self.coil_dim)
 
             if not self.no_dc:
-                image = fft2c(complex_mul(image.unsqueeze(1), sensitivity_maps), fft_type=self.fft_type).type(
-                    image.type()
-                )
+                image = fft2(
+                    complex_mul(image.unsqueeze(self.coil_dim), sensitivity_maps),
+                    centered=self.fft_centered,
+                    normalization=self.fft_normalization,
+                    spatial_dims=self.spatial_dims,
+                ).type(image.type())
                 image = kspace - soft_dc - image
-                image = complex_mul(ifft2c(image, fft_type=self.fft_type), complex_conj(sensitivity_maps)).sum(1)
+                image = complex_mul(
+                    ifft2(
+                        image,
+                        centered=self.fft_centered,
+                        normalization=self.fft_normalization,
+                        spatial_dims=self.spatial_dims,
+                    ),
+                    complex_conj(sensitivity_maps),
+                ).sum(self.coil_dim)
 
             if idx < self.num_iter - 1:
-                kspace = fft2c(complex_mul(image.unsqueeze(1), sensitivity_maps), fft_type=self.fft_type).type(
-                    image.type()
-                )
+                kspace = fft2(
+                    complex_mul(image.unsqueeze(self.coil_dim), sensitivity_maps),
+                    centered=self.fft_centered,
+                    normalization=self.fft_normalization,
+                    spatial_dims=self.spatial_dims,
+                ).type(image.type())
 
         image = torch.view_as_complex(image)
         _, image = center_crop_to_smallest(target, image)

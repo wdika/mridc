@@ -72,7 +72,9 @@
 
 <span class="kn">import</span> <span class="nn">torch</span>
 
-<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">fft2c</span><span class="p">,</span> <span class="n">ifft2c</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">fft2</span><span class="p">,</span> <span class="n">ifft2</span>
 <span class="kn">from</span> <span class="nn">mridc.collections.common.parts.utils</span> <span class="kn">import</span> <span class="n">complex_abs</span><span class="p">,</span> <span class="n">complex_conj</span><span class="p">,</span> <span class="n">complex_mul</span>
 
 
@@ -86,13 +88,22 @@
 <div class="viewcode-block" id="DataGDLayer"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataGDLayer">[docs]</a><span class="k">class</span> <span class="nc">DataGDLayer</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;DataLayer computing the gradient on the L2 dataterm.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lambda_init</span><span class="p">,</span> <span class="n">learnable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="s2">&quot;orthogonal&quot;</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">lambda_init</span><span class="p">,</span>
+        <span class="n">learnable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">fft_centered</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">fft_normalization</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ortho&quot;</span><span class="p">,</span>
+        <span class="n">spatial_dims</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        lambda_init: Init value of data term weight lambda.</span>
 <span class="sd">        learnable: If True, the data term weight lambda is learnable.</span>
-<span class="sd">        fft_type: Type of FFT to use.</span>
+<span class="sd">        fft_centered: If True, the FFT is centered.</span>
+<span class="sd">        fft_normalization: If &quot;ortho&quot;, the FFT is normalized.</span>
+<span class="sd">        spatial_dims: If not None, the spatial dimensions of the FFT.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">DataGDLayer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lambda_init</span> <span class="o">=</span> <span class="n">lambda_init</span>
@@ -103,7 +114,9 @@
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data_weight</span><span class="o">.</span><span class="n">requires_grad</span> <span class="o">=</span> <span class="n">learnable</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">fft_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span> <span class="o">=</span> <span class="n">fft_centered</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span> <span class="o">=</span> <span class="n">fft_normalization</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">spatial_dims</span> <span class="k">if</span> <span class="n">spatial_dims</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
 <div class="viewcode-block" id="DataGDLayer.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataGDLayer.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">smaps</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -121,20 +134,46 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">A_x_y</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
-                <span class="n">fft2c</span><span class="p">(</span><span class="n">complex_mul</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">expand_as</span><span class="p">(</span><span class="n">smaps</span><span class="p">),</span> <span class="n">smaps</span><span class="p">),</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">)</span> <span class="o">*</span> <span class="n">mask</span><span class="p">,</span>
+                <span class="n">fft2</span><span class="p">(</span>
+                    <span class="n">complex_mul</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">expand_as</span><span class="p">(</span><span class="n">smaps</span><span class="p">),</span> <span class="n">smaps</span><span class="p">),</span>
+                    <span class="n">centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                    <span class="n">normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                    <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="o">*</span> <span class="n">mask</span><span class="p">,</span>
                 <span class="o">-</span><span class="mi">4</span><span class="p">,</span>
                 <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="o">-</span> <span class="n">y</span>
         <span class="p">)</span>
-        <span class="n">gradD_x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">complex_mul</span><span class="p">(</span><span class="n">ifft2c</span><span class="p">(</span><span class="n">A_x_y</span> <span class="o">*</span> <span class="n">mask</span><span class="p">),</span> <span class="n">complex_conj</span><span class="p">(</span><span class="n">smaps</span><span class="p">)),</span> <span class="n">dim</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">))</span>
+        <span class="n">gradD_x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
+            <span class="n">complex_mul</span><span class="p">(</span>
+                <span class="n">ifft2c</span><span class="p">(</span>
+                    <span class="n">A_x_y</span> <span class="o">*</span> <span class="n">mask</span><span class="p">,</span>
+                    <span class="n">centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                    <span class="n">normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                    <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="n">complex_conj</span><span class="p">(</span><span class="n">smaps</span><span class="p">),</span>
+            <span class="p">),</span>
+            <span class="n">dim</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">),</span>
+        <span class="p">)</span>
         <span class="k">return</span> <span class="n">x</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_weight</span> <span class="o">*</span> <span class="n">gradD_x</span></div></div>
 
 
 <div class="viewcode-block" id="DataProxCGLayer"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataProxCGLayer">[docs]</a><span class="k">class</span> <span class="nc">DataProxCGLayer</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Solving the prox wrt. dataterm using Conjugate Gradient as proposed by Aggarwal et al.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lambda_init</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="nb">iter</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">learnable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="s2">&quot;orthogonal&quot;</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">lambda_init</span><span class="p">,</span>
+        <span class="n">tol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
+        <span class="nb">iter</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+        <span class="n">learnable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">fft_centered</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">fft_normalization</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ortho&quot;</span><span class="p">,</span>
+        <span class="n">spatial_dims</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">DataProxCGLayer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">lambdaa</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
@@ -146,7 +185,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">iter</span> <span class="o">=</span> <span class="nb">iter</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">op</span> <span class="o">=</span> <span class="n">ConjugateGradient</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">fft_type</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span> <span class="o">=</span> <span class="n">fft_centered</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span> <span class="o">=</span> <span class="n">fft_normalization</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">spatial_dims</span> <span class="k">if</span> <span class="n">spatial_dims</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
 <div class="viewcode-block" id="DataProxCGLayer.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataProxCGLayer.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">smaps</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -170,7 +212,9 @@
             <span class="n">mask</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tol</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">iter</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="DataProxCGLayer.set_learnable"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataProxCGLayer.set_learnable">[docs]</a>    <span class="k">def</span> <span class="nf">set_learnable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flag</span><span class="p">):</span>
@@ -219,7 +263,7 @@
         <span class="k">return</span> <span class="n">x</span></div>
 
 <div class="viewcode-block" id="ConjugateGradient.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.ConjugateGradient.forward">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">lambdaa</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">smaps</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">max_iter</span><span class="p">,</span> <span class="n">fft_type</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">lambdaa</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">smaps</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">max_iter</span><span class="p">,</span> <span class="n">fft_centered</span><span class="p">,</span> <span class="n">fft_normalization</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Forward pass of the conjugate gradient solver.</span>
 
@@ -233,7 +277,9 @@
 <span class="sd">        mask: Sampling mask.</span>
 <span class="sd">        tol: Tolerance for the stopping criterion.</span>
 <span class="sd">        max_iter: Maximum number of iterations.</span>
-<span class="sd">        fft_type: FFT type.</span>
+<span class="sd">        fft_centered: Boolean flag for centering the FFT.</span>
+<span class="sd">        fft_normalization: Boolean flag for normalizing the FFT.</span>
+<span class="sd">        spatial_dims: Spatial dimensions.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -241,14 +287,30 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">ctx</span><span class="o">.</span><span class="n">tol</span> <span class="o">=</span> <span class="n">tol</span>
         <span class="n">ctx</span><span class="o">.</span><span class="n">max_iter</span> <span class="o">=</span> <span class="n">max_iter</span>
-        <span class="n">ctx</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">fft_type</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">fft_centered</span> <span class="o">=</span> <span class="n">fft_centered</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">fft_normalization</span> <span class="o">=</span> <span class="n">fft_normalization</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">spatial_dims</span>
 
         <span class="k">def</span> <span class="nf">A</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-            <span class="n">x</span> <span class="o">=</span> <span class="n">fft2c</span><span class="p">(</span><span class="n">complex_mul</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">expand_as</span><span class="p">(</span><span class="n">smaps</span><span class="p">),</span> <span class="n">smaps</span><span class="p">),</span> <span class="n">fft_type</span><span class="o">=</span><span class="n">fft_type</span><span class="p">)</span> <span class="o">*</span> <span class="n">mask</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">fft2</span><span class="p">(</span>
+                    <span class="n">complex_mul</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">expand_as</span><span class="p">(</span><span class="n">smaps</span><span class="p">),</span> <span class="n">smaps</span><span class="p">),</span>
+                    <span class="n">centered</span><span class="o">=</span><span class="n">fft_centered</span><span class="p">,</span>
+                    <span class="n">normalization</span><span class="o">=</span><span class="n">fft_normalization</span><span class="p">,</span>
+                    <span class="n">spatial_dims</span><span class="o">=</span><span class="n">spatial_dims</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="o">*</span> <span class="n">mask</span>
+            <span class="p">)</span>
             <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">4</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="k">def</span> <span class="nf">AT</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">complex_mul</span><span class="p">(</span><span class="n">ifft2c</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">mask</span><span class="p">),</span> <span class="n">complex_conj</span><span class="p">(</span><span class="n">smaps</span><span class="p">)),</span> <span class="n">dim</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
+                <span class="n">complex_mul</span><span class="p">(</span>
+                    <span class="n">ifft2</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">mask</span><span class="p">,</span> <span class="n">centered</span><span class="o">=</span><span class="n">fft_centered</span><span class="p">,</span> <span class="n">normalization</span><span class="o">=</span><span class="n">fft_normalization</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="o">=</span><span class="n">spatial_dims</span><span class="p">),</span>
+                    <span class="n">complex_conj</span><span class="p">(</span><span class="n">smaps</span><span class="p">),</span>
+                <span class="p">),</span>
+                <span class="n">dim</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">),</span>
+            <span class="p">)</span>
 
         <span class="k">def</span> <span class="nf">M</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">lambdaa</span> <span class="o">*</span> <span class="n">AT</span><span class="p">(</span><span class="n">A</span><span class="p">(</span><span class="n">p</span><span class="p">))</span> <span class="o">+</span> <span class="n">p</span>
@@ -275,11 +337,30 @@
         <span class="n">ATy</span><span class="p">,</span> <span class="n">rhs</span><span class="p">,</span> <span class="n">smaps</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">lambdaa</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">saved_tensors</span>
 
         <span class="k">def</span> <span class="nf">A</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-            <span class="n">x</span> <span class="o">=</span> <span class="n">fft2c</span><span class="p">(</span><span class="n">complex_mul</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">expand_as</span><span class="p">(</span><span class="n">smaps</span><span class="p">),</span> <span class="n">smaps</span><span class="p">),</span> <span class="n">fft_type</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">fft_type</span><span class="p">)</span> <span class="o">*</span> <span class="n">mask</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">fft2</span><span class="p">(</span>
+                    <span class="n">complex_mul</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">expand_as</span><span class="p">(</span><span class="n">smaps</span><span class="p">),</span> <span class="n">smaps</span><span class="p">),</span>
+                    <span class="n">centered</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                    <span class="n">normalization</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                    <span class="n">spatial_dims</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="o">*</span> <span class="n">mask</span>
+            <span class="p">)</span>
             <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">4</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="k">def</span> <span class="nf">AT</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">complex_mul</span><span class="p">(</span><span class="n">ifft2c</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">mask</span><span class="p">),</span> <span class="n">complex_conj</span><span class="p">(</span><span class="n">smaps</span><span class="p">)),</span> <span class="n">dim</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
+                <span class="n">complex_mul</span><span class="p">(</span>
+                    <span class="n">ifft2</span><span class="p">(</span>
+                        <span class="n">x</span> <span class="o">*</span> <span class="n">mask</span><span class="p">,</span>
+                        <span class="n">centered</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                        <span class="n">normalization</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                        <span class="n">spatial_dims</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">spatial_dimso</span><span class="p">,</span>
+                    <span class="p">),</span>
+                    <span class="n">complex_conj</span><span class="p">(</span><span class="n">smaps</span><span class="p">),</span>
+                <span class="p">),</span>
+                <span class="n">dim</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">),</span>
+            <span class="p">)</span>
 
         <span class="k">def</span> <span class="nf">M</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">lambdaa</span> <span class="o">*</span> <span class="n">AT</span><span class="p">(</span><span class="n">A</span><span class="p">(</span><span class="n">p</span><span class="p">))</span> <span class="o">+</span> <span class="n">p</span>
@@ -290,7 +371,18 @@
         <span class="n">grad_z</span> <span class="o">=</span> <span class="n">Qe</span>
 
         <span class="n">grad_lambdaa</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">complex_mul</span><span class="p">(</span><span class="n">ifft2c</span><span class="p">(</span><span class="n">Qe</span><span class="p">),</span> <span class="n">complex_conj</span><span class="p">(</span><span class="n">ATy</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">-</span> <span class="n">complex_mul</span><span class="p">(</span><span class="n">ifft2c</span><span class="p">(</span><span class="n">QQe</span><span class="p">),</span> <span class="n">complex_conj</span><span class="p">(</span><span class="n">rhs</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+            <span class="n">complex_mul</span><span class="p">(</span>
+                <span class="n">ifft2</span><span class="p">(</span>
+                    <span class="n">Qe</span><span class="p">,</span> <span class="n">centered</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span> <span class="n">normalization</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">spatial_dims</span>
+                <span class="p">),</span>
+                <span class="n">complex_conj</span><span class="p">(</span><span class="n">ATy</span><span class="p">),</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+            <span class="o">-</span> <span class="n">complex_mul</span><span class="p">(</span>
+                <span class="n">ifft2</span><span class="p">(</span>
+                    <span class="n">QQe</span><span class="p">,</span> <span class="n">centered</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span> <span class="n">normalization</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="o">=</span><span class="n">ctx</span><span class="o">.</span><span class="n">spatial_dims</span>
+                <span class="p">),</span>
+                <span class="n">complex_conj</span><span class="p">(</span><span class="n">rhs</span><span class="p">),</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">grad_z</span><span class="p">,</span> <span class="n">grad_lambdaa</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span></div></div>
@@ -301,14 +393,24 @@
 <span class="sd">    DataLayer using variable splitting formulation</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alpha_init</span><span class="p">,</span> <span class="n">beta_init</span><span class="p">,</span> <span class="n">learnable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="s2">&quot;orthogonal&quot;</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">alpha_init</span><span class="p">,</span>
+        <span class="n">beta_init</span><span class="p">,</span>
+        <span class="n">learnable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">fft_centered</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">fft_normalization</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ortho&quot;</span><span class="p">,</span>
+        <span class="n">spatial_dims</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        alpha_init: Init value of data consistency block (DCB)</span>
 <span class="sd">        beta_init: Init value of weighted averaging block (WAB)</span>
 <span class="sd">        learnable: If True, the parameters of the model are learnable</span>
-<span class="sd">        fft_type: Type of FFT to use. Can be &quot;orthogonal&quot;.</span>
+<span class="sd">        fft_centered: If True, the FFT is centered</span>
+<span class="sd">        fft_normalization: If &quot;ortho&quot;, the FFT is normalized to be orthogonal</span>
+<span class="sd">        spatial_dims: If not None, the spatial dimensions of the FFT</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">DataVSLayer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
@@ -320,7 +422,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">learnable</span> <span class="o">=</span> <span class="n">learnable</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_learnable</span><span class="p">(</span><span class="n">learnable</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">fft_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span> <span class="o">=</span> <span class="n">fft_centered</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span> <span class="o">=</span> <span class="n">fft_normalization</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">spatial_dims</span> <span class="k">if</span> <span class="n">spatial_dims</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
 <div class="viewcode-block" id="DataVSLayer.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataVSLayer.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">smaps</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -338,10 +442,28 @@
 <span class="sd">        Output image.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">A_x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
-            <span class="n">fft2c</span><span class="p">(</span><span class="n">complex_mul</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">expand_as</span><span class="p">(</span><span class="n">smaps</span><span class="p">),</span> <span class="n">smaps</span><span class="p">),</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">),</span> <span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span>
+            <span class="n">fft2</span><span class="p">(</span>
+                <span class="n">complex_mul</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">expand_as</span><span class="p">(</span><span class="n">smaps</span><span class="p">),</span> <span class="n">smaps</span><span class="p">),</span>
+                <span class="n">centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                <span class="n">normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="o">-</span><span class="mi">4</span><span class="p">,</span>
+            <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">k_dc</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">mask</span><span class="p">)</span> <span class="o">*</span> <span class="n">A_x</span> <span class="o">+</span> <span class="n">mask</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">A_x</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">)</span> <span class="o">*</span> <span class="n">y</span><span class="p">)</span>
-        <span class="n">x_dc</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">complex_mul</span><span class="p">(</span><span class="n">ifft2c</span><span class="p">(</span><span class="n">k_dc</span><span class="p">),</span> <span class="n">complex_conj</span><span class="p">(</span><span class="n">smaps</span><span class="p">)),</span> <span class="n">dim</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">))</span>
+        <span class="n">x_dc</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
+            <span class="n">complex_mul</span><span class="p">(</span>
+                <span class="n">ifft2</span><span class="p">(</span>
+                    <span class="n">k_dc</span><span class="p">,</span>
+                    <span class="n">centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                    <span class="n">normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                    <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="n">complex_conj</span><span class="p">(</span><span class="n">smaps</span><span class="p">),</span>
+            <span class="p">),</span>
+            <span class="n">dim</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">),</span>
+        <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="p">)</span> <span class="o">*</span> <span class="n">x_dc</span></div>
 
 <div class="viewcode-block" id="DataVSLayer.set_learnable"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.DataVSLayer.set_learnable">[docs]</a>    <span class="k">def</span> <span class="nf">set_learnable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flag</span><span class="p">):</span>
@@ -362,13 +484,22 @@
 <span class="sd">    Data Consistency layer from DC-CNN, apply for single coil mainly</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lambda_init</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">learnable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="s2">&quot;orthogonal&quot;</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">lambda_init</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">learnable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">fft_centered</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">fft_normalization</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ortho&quot;</span><span class="p">,</span>
+        <span class="n">spatial_dims</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        lambda_init: Init value of data consistency block (DCB)</span>
 <span class="sd">        learnable: If True, the parameters of the model are learnable</span>
-<span class="sd">        fft_type: Type of FFT to use. Can be &quot;orthogonal&quot;.</span>
+<span class="sd">        fft_centered: If True, the FFT is centered</span>
+<span class="sd">        fft_normalization: If &quot;ortho&quot;, the FFT is normalized to be orthogonal</span>
+<span class="sd">        spatial_dims: If not None, the spatial dimensions of the FFT</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">DCLayer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lambda_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
@@ -377,7 +508,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">learnable</span> <span class="o">=</span> <span class="n">learnable</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_learnable</span><span class="p">(</span><span class="n">learnable</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">fft_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span> <span class="o">=</span> <span class="n">fft_centered</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span> <span class="o">=</span> <span class="n">fft_normalization</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">spatial_dims</span> <span class="k">if</span> <span class="n">spatial_dims</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
 <div class="viewcode-block" id="DCLayer.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.DCLayer.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -393,9 +526,11 @@
 <span class="sd">        -------</span>
 <span class="sd">        Output image.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">A_x</span> <span class="o">=</span> <span class="n">fft2c</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">)</span>
+        <span class="n">A_x</span> <span class="o">=</span> <span class="n">fft2</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span> <span class="n">normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">)</span>
         <span class="n">k_dc</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">mask</span><span class="p">)</span> <span class="o">*</span> <span class="n">A_x</span> <span class="o">+</span> <span class="n">mask</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lambda_</span> <span class="o">*</span> <span class="n">A_x</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">lambda_</span><span class="p">)</span> <span class="o">*</span> <span class="n">y</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">ifft2c</span><span class="p">(</span><span class="n">k_dc</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">ifft2</span><span class="p">(</span>
+            <span class="n">k_dc</span><span class="p">,</span> <span class="n">centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span> <span class="n">normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span>
+        <span class="p">)</span></div>
 
 <div class="viewcode-block" id="DCLayer.set_learnable"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.DCLayer.set_learnable">[docs]</a>    <span class="k">def</span> <span class="nf">set_learnable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flag</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>

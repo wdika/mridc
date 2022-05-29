@@ -69,12 +69,12 @@
 
 <span class="c1"># Taken and adapted from: https://github.com/NKI-AI/direct/blob/main/direct/nn/crossdomain/crossdomain.py</span>
 <span class="c1"># Copyright (c) DIRECT Contributors</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
 
-<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">fft2c</span><span class="p">,</span> <span class="n">ifft2c</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">fft2</span><span class="p">,</span> <span class="n">ifft2</span>
 <span class="kn">from</span> <span class="nn">mridc.collections.common.parts.utils</span> <span class="kn">import</span> <span class="n">complex_conj</span><span class="p">,</span> <span class="n">complex_mul</span>
 
 
@@ -89,7 +89,10 @@
         <span class="n">image_buffer_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">kspace_buffer_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">normalize_image</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">fft_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;orthogonal&quot;</span><span class="p">,</span>
+        <span class="n">fft_centered</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">fft_normalization</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ortho&quot;</span><span class="p">,</span>
+        <span class="n">spatial_dims</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">coil_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -109,14 +112,23 @@
 <span class="sd">            int, Default: 1.</span>
 <span class="sd">        normalize_image: If True, input is normalized.</span>
 <span class="sd">            bool, Default: False.</span>
-<span class="sd">        fft_type: Type of FFT.</span>
-<span class="sd">            str, Default: &quot;orthogonal&quot;.</span>
+<span class="sd">        fft_centered: If True, FFT is centered.</span>
+<span class="sd">            bool, Default: True.</span>
+<span class="sd">        fft_normalization: FFT normalization.</span>
+<span class="sd">            str, Default: &quot;ortho&quot;.</span>
+<span class="sd">        spatial_dims: Spatial dimensions.</span>
+<span class="sd">            Tuple[int, int], Default: None.</span>
+<span class="sd">        coil_dim: Coil dimension.</span>
+<span class="sd">            int, Default: 1.</span>
 <span class="sd">        kwargs:Keyword Arguments.</span>
 <span class="sd">            dict</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">fft_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span> <span class="o">=</span> <span class="n">fft_centered</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span> <span class="o">=</span> <span class="n">fft_normalization</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">spatial_dims</span> <span class="k">if</span> <span class="n">spatial_dims</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span> <span class="o">=</span> <span class="n">coil_dim</span>
 
         <span class="n">domain_sequence</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">domain_sequence</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>  <span class="c1"># type: ignore</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="n">domain_sequence</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">({</span><span class="s2">&quot;K&quot;</span><span class="p">,</span> <span class="s2">&quot;I&quot;</span><span class="p">}):</span>
@@ -136,19 +148,15 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">image_model_list</span> <span class="o">=</span> <span class="n">image_model_list</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">image_buffer_size</span> <span class="o">=</span> <span class="n">image_buffer_size</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_coil_dim</span> <span class="o">=</span> <span class="mi">1</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_complex_dim</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_spatial_dims</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
-
 <div class="viewcode-block" id="CrossDomainNetwork.kspace_correction"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.crossdomain.html#mridc.collections.reconstruction.models.crossdomain.crossdomain.CrossDomainNetwork.kspace_correction">[docs]</a>    <span class="k">def</span> <span class="nf">kspace_correction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">block_idx</span><span class="p">,</span> <span class="n">image_buffer</span><span class="p">,</span> <span class="n">kspace_buffer</span><span class="p">,</span> <span class="n">sampling_mask</span><span class="p">,</span> <span class="n">sensitivity_map</span><span class="p">,</span> <span class="n">masked_kspace</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Performs k-space correction.&quot;&quot;&quot;</span>
         <span class="n">forward_buffer</span> <span class="o">=</span> <span class="p">[</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_forward_operator</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">clone</span><span class="p">(),</span> <span class="n">sampling_mask</span><span class="p">,</span> <span class="n">sensitivity_map</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">image_buffer</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_complex_dim</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">image_buffer</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
         <span class="p">]</span>
-        <span class="n">forward_buffer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">forward_buffer</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_complex_dim</span><span class="p">)</span>
+        <span class="n">forward_buffer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">forward_buffer</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 
-        <span class="n">kspace_buffer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">kspace_buffer</span><span class="p">,</span> <span class="n">forward_buffer</span><span class="p">,</span> <span class="n">masked_kspace</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_complex_dim</span><span class="p">)</span>
+        <span class="n">kspace_buffer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">kspace_buffer</span><span class="p">,</span> <span class="n">forward_buffer</span><span class="p">,</span> <span class="n">masked_kspace</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">kspace_model_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">kspace_buffer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kspace_model_list</span><span class="p">[</span><span class="n">block_idx</span><span class="p">](</span><span class="n">kspace_buffer</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span>
@@ -163,11 +171,11 @@
         <span class="sd">&quot;&quot;&quot;Performs image correction.&quot;&quot;&quot;</span>
         <span class="n">backward_buffer</span> <span class="o">=</span> <span class="p">[</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_backward_operator</span><span class="p">(</span><span class="n">kspace</span><span class="o">.</span><span class="n">clone</span><span class="p">(),</span> <span class="n">sampling_mask</span><span class="p">,</span> <span class="n">sensitivity_map</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">kspace</span> <span class="ow">in</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">kspace_buffer</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_complex_dim</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">kspace</span> <span class="ow">in</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">kspace_buffer</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
         <span class="p">]</span>
-        <span class="n">backward_buffer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">backward_buffer</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_complex_dim</span><span class="p">)</span>
+        <span class="n">backward_buffer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">backward_buffer</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 
-        <span class="n">image_buffer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">image_buffer</span><span class="p">,</span> <span class="n">backward_buffer</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_complex_dim</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">image_buffer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">image_buffer</span><span class="p">,</span> <span class="n">backward_buffer</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
         <span class="n">image_buffer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_model_list</span><span class="p">[</span><span class="n">block_idx</span><span class="p">](</span><span class="n">image_buffer</span><span class="p">)</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">image_buffer</span></div>
@@ -177,9 +185,11 @@
         <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
             <span class="n">sampling_mask</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span>
             <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">image</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">device</span><span class="p">),</span>
-            <span class="n">fft2c</span><span class="p">(</span>
-                <span class="n">complex_mul</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">sensitivity_map</span><span class="p">),</span>
-                <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">,</span>
+            <span class="n">fft2</span><span class="p">(</span>
+                <span class="n">complex_mul</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">),</span> <span class="n">sensitivity_map</span><span class="p">),</span>
+                <span class="n">centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                <span class="n">normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
             <span class="p">)</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">type</span><span class="p">()),</span>
         <span class="p">)</span>
 
@@ -188,10 +198,15 @@
         <span class="n">kspace</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">sampling_mask</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="mf">0.0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">kspace</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">kspace</span><span class="o">.</span><span class="n">device</span><span class="p">),</span> <span class="n">kspace</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="n">complex_mul</span><span class="p">(</span>
-                <span class="n">ifft2c</span><span class="p">(</span><span class="n">kspace</span><span class="o">.</span><span class="n">float</span><span class="p">(),</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">),</span>
+                <span class="n">ifft2</span><span class="p">(</span>
+                    <span class="n">kspace</span><span class="o">.</span><span class="n">float</span><span class="p">(),</span>
+                    <span class="n">centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                    <span class="n">normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                    <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+                <span class="p">),</span>
                 <span class="n">complex_conj</span><span class="p">(</span><span class="n">sensitivity_map</span><span class="p">),</span>
             <span class="p">)</span>
-            <span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">)</span>
             <span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">kspace</span><span class="o">.</span><span class="n">type</span><span class="p">())</span>
         <span class="p">)</span>
 
@@ -220,10 +235,8 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">input_image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backward_operator</span><span class="p">(</span><span class="n">masked_kspace</span><span class="p">,</span> <span class="n">sampling_mask</span><span class="p">,</span> <span class="n">sensitivity_map</span><span class="p">)</span>
 
-        <span class="n">image_buffer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">input_image</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_buffer_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_complex_dim</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">masked_kspace</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
-        <span class="n">kspace_buffer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">masked_kspace</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">kspace_buffer_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_complex_dim</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span>
-            <span class="n">masked_kspace</span><span class="o">.</span><span class="n">device</span>
-        <span class="p">)</span>
+        <span class="n">image_buffer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">input_image</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">image_buffer_size</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">masked_kspace</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">kspace_buffer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">masked_kspace</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">kspace_buffer_size</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">masked_kspace</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
 
         <span class="n">kspace_block_idx</span><span class="p">,</span> <span class="n">image_block_idx</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
         <span class="k">for</span> <span class="n">block_domain</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain_sequence</span><span class="p">:</span>
