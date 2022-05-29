@@ -1,11 +1,11 @@
 # coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
-from typing import Any, Tuple, Union
+from typing import Any, Optional, Tuple, Union
 
 import torch
 
-from mridc.collections.common.parts.fft import fft2c, ifft2c
+from mridc.collections.common.parts.fft import fft2, ifft2
 from mridc.collections.common.parts.utils import complex_conj, complex_mul
 from mridc.collections.reconstruction.models.rim.conv_layers import ConvNonlinear, ConvRNNStack
 from mridc.collections.reconstruction.models.rim.rnn_cells import ConvGRUCell, ConvMGUCell, IndRNNCell
@@ -30,7 +30,9 @@ class RIMBlock(torch.nn.Module):
         time_steps: int = 8,
         conv_dim: int = 2,
         no_dc: bool = False,
-        fft_type: str = "orthogonal",
+        fft_centered: bool = True,
+        fft_normalization: str = "ortho",
+        spatial_dims: Optional[Tuple[int, int]] = None,
     ):
         """
         Initialize the RIMBlock.
@@ -50,7 +52,9 @@ class RIMBlock(torch.nn.Module):
         time_steps: Number of time steps in the block.
         conv_dim: Dimension of the convolutional layers.
         no_dc: If True, the DC component is removed from the input.
-        fft_type: Type of FFT.
+        fft_centered: If True, the FFT is centered.
+        fft_normalization: Normalization of the FFT.
+        spatial_dims: Spatial dimensions of the input.
         """
         super(RIMBlock, self).__init__()
 
@@ -111,7 +115,10 @@ class RIMBlock(torch.nn.Module):
         self.final_layer = torch.nn.Sequential(conv_layer)
 
         self.recurrent_filters = recurrent_filters
-        self.fft_type = fft_type
+
+        self.fft_centered = fft_centered
+        self.fft_normalization = fft_normalization
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
 
         self.no_dc = no_dc
 
@@ -163,7 +170,15 @@ class RIMBlock(torch.nn.Module):
                 pred
                 if keep_eta
                 else torch.sum(
-                    complex_mul(ifft2c(pred, fft_type=self.fft_type), complex_conj(sense)),
+                    complex_mul(
+                        ifft2(
+                            pred,
+                            centered=self.fft_centered,
+                            normalization=self.fft_normalization,
+                            spatial_dims=self.spatial_dims,
+                        ),
+                        complex_conj(sense),
+                    ),
                     1,
                 )
             )
@@ -171,7 +186,14 @@ class RIMBlock(torch.nn.Module):
         etas = []
         for _ in range(self.time_steps):
             grad_eta = log_likelihood_gradient(
-                eta, masked_kspace, sense, mask, sigma=sigma, fft_type=self.fft_type
+                eta,
+                masked_kspace,
+                sense,
+                mask,
+                sigma=sigma,
+                fft_centered=self.fft_centered,
+                fft_normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
             ).contiguous()
 
             for h, convrnn in enumerate(self.layers):
@@ -188,7 +210,15 @@ class RIMBlock(torch.nn.Module):
 
         soft_dc = torch.where(mask, pred - masked_kspace, self.zero.to(masked_kspace)) * self.dc_weight
         current_kspace = [
-            masked_kspace - soft_dc - fft2c(complex_mul(e.unsqueeze(1), sense), fft_type=self.fft_type) for e in eta
+            masked_kspace
+            - soft_dc
+            - fft2(
+                complex_mul(e.unsqueeze(1), sense),
+                centered=self.fft_centered,
+                normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            )
+            for e in eta
         ]
 
         return current_kspace, None

@@ -67,11 +67,11 @@
 <span></span><span class="c1"># coding=utf-8</span>
 <span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Dimitrios Karkalousos&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">torch</span>
 
-<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">fft2c</span><span class="p">,</span> <span class="n">ifft2c</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">fft2</span><span class="p">,</span> <span class="n">ifft2</span>
 <span class="kn">from</span> <span class="nn">mridc.collections.common.parts.utils</span> <span class="kn">import</span> <span class="n">complex_conj</span><span class="p">,</span> <span class="n">complex_mul</span>
 
 
@@ -117,7 +117,9 @@
         <span class="n">data_consistency_block</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">,</span>
         <span class="n">weighted_average_block</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">,</span>
         <span class="n">num_cascades</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
-        <span class="n">fft_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;orthogonal&quot;</span><span class="p">,</span>
+        <span class="n">fft_centered</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">fft_normalization</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ortho&quot;</span><span class="p">,</span>
+        <span class="n">spatial_dims</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 
@@ -127,7 +129,9 @@
 <span class="sd">        data_consistency_block: Model to apply data consistency.</span>
 <span class="sd">        weighted_average_block: Model to apply weighted average.</span>
 <span class="sd">        num_cascades: Number of cascades.</span>
-<span class="sd">        fft_type: Type of FFT to use.</span>
+<span class="sd">        fft_centered: Whether to center the fft.</span>
+<span class="sd">        fft_normalization: The normalization of the fft.</span>
+<span class="sd">        spatial_dims: The spatial dimensions of the data.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
@@ -135,7 +139,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">data_consistency_block</span> <span class="o">=</span> <span class="n">data_consistency_block</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">weighted_average_block</span> <span class="o">=</span> <span class="n">weighted_average_block</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">num_cascades</span> <span class="o">=</span> <span class="n">num_cascades</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">fft_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span> <span class="o">=</span> <span class="n">fft_centered</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span> <span class="o">=</span> <span class="n">fft_normalization</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">spatial_dims</span> <span class="k">if</span> <span class="n">spatial_dims</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
 <div class="viewcode-block" id="VSNetBlock.sens_expand"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.variablesplittingnet.html#mridc.collections.reconstruction.models.variablesplittingnet.vsnet_block.VSNetBlock.sens_expand">[docs]</a>    <span class="k">def</span> <span class="nf">sens_expand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">sens_maps</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -150,7 +156,12 @@
 <span class="sd">        -------</span>
 <span class="sd">        SENSE reconstruction expanded to the same size as the input sens_maps.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">fft2c</span><span class="p">(</span><span class="n">complex_mul</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">sens_maps</span><span class="p">),</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">fft2</span><span class="p">(</span>
+            <span class="n">complex_mul</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">sens_maps</span><span class="p">),</span>
+            <span class="n">centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+            <span class="n">normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+            <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+        <span class="p">)</span></div>
 
 <div class="viewcode-block" id="VSNetBlock.sens_reduce"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.variablesplittingnet.html#mridc.collections.reconstruction.models.variablesplittingnet.vsnet_block.VSNetBlock.sens_reduce">[docs]</a>    <span class="k">def</span> <span class="nf">sens_reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">sens_maps</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -165,7 +176,7 @@
 <span class="sd">        -------</span>
 <span class="sd">        SENSE coil-combined reconstruction.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">x</span> <span class="o">=</span> <span class="n">ifft2c</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">ifft2</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span> <span class="n">normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">complex_mul</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">complex_conj</span><span class="p">(</span><span class="n">sens_maps</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="VSNetBlock.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.variablesplittingnet.html#mridc.collections.reconstruction.models.variablesplittingnet.vsnet_block.VSNetBlock.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>

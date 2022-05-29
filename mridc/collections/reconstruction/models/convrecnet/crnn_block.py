@@ -1,11 +1,11 @@
 # coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
-from typing import Any, List, Union
+from typing import Any, List, Optional, Tuple, Union
 
 import torch
 
-from mridc.collections.common.parts.fft import fft2c, ifft2c
+from mridc.collections.common.parts.fft import fft2, ifft2
 from mridc.collections.common.parts.utils import complex_conj, complex_mul
 
 
@@ -36,7 +36,13 @@ class RecurrentConvolutionalNetBlock(torch.nn.Module):
     """
 
     def __init__(
-        self, model: torch.nn.Module, num_iterations: int = 10, fft_type: str = "orthogonal", no_dc: bool = False
+        self,
+        model: torch.nn.Module,
+        num_iterations: int = 10,
+        fft_centered: bool = True,
+        fft_normalization: str = "ortho",
+        spatial_dims: Optional[Tuple[int, int]] = None,
+        no_dc: bool = False,
     ):
         """
         Initialize the model block.
@@ -45,14 +51,18 @@ class RecurrentConvolutionalNetBlock(torch.nn.Module):
         ----------
         model: Model to apply soft data consistency.
         num_iterations: Number of iterations.
-        fft_type: Type of FFT to use.
+        fft_centered: Whether to use centered FFT.
+        fft_normalization: Whether to use normalized FFT.
+        spatial_dims: Spatial dimensions of the input.
         no_dc: Whether to remove the DC component.
         """
         super().__init__()
 
         self.model = model
         self.num_iterations = num_iterations
-        self.fft_type = fft_type
+        self.fft_centered = fft_centered
+        self.fft_normalization = fft_normalization
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
         self.no_dc = no_dc
 
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
@@ -70,7 +80,12 @@ class RecurrentConvolutionalNetBlock(torch.nn.Module):
         -------
         SENSE reconstruction expanded to the same size as the input.
         """
-        return fft2c(complex_mul(x, sens_maps), fft_type=self.fft_type)
+        return fft2(
+            complex_mul(x, sens_maps),
+            centered=self.fft_centered,
+            normalization=self.fft_normalization,
+            spatial_dims=self.spatial_dims,
+        )
 
     def sens_reduce(self, x: torch.Tensor, sens_maps: torch.Tensor) -> torch.Tensor:
         """
@@ -85,7 +100,7 @@ class RecurrentConvolutionalNetBlock(torch.nn.Module):
         -------
         SENSE reconstruction reduced to the same size as the input.
         """
-        x = ifft2c(x, fft_type=self.fft_type)
+        x = ifft2(x, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims)
         return complex_mul(x, complex_conj(sens_maps)).sum(1)
 
     def forward(

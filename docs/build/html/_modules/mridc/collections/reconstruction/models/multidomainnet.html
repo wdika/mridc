@@ -75,7 +75,7 @@
 <span class="kn">from</span> <span class="nn">torch.nn</span> <span class="kn">import</span> <span class="n">L1Loss</span>
 
 <span class="kn">from</span> <span class="nn">mridc.collections.common.losses.ssim</span> <span class="kn">import</span> <span class="n">SSIMLoss</span>
-<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">ifft2c</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">ifft2</span>
 <span class="kn">from</span> <span class="nn">mridc.collections.common.parts.utils</span> <span class="kn">import</span> <span class="n">coil_combination</span>
 <span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.models.base</span> <span class="kn">import</span> <span class="n">BaseMRIReconstructionModel</span><span class="p">,</span> <span class="n">BaseSensitivityModel</span>
 <span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.models.multidomain.multidomain</span> <span class="kn">import</span> <span class="n">MultiDomainUnet2d</span><span class="p">,</span> <span class="n">StandardizationLayer</span>
@@ -100,7 +100,9 @@
         <span class="k">if</span> <span class="n">standardization</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">standardization</span> <span class="o">=</span> <span class="n">StandardizationLayer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_coil_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_complex_dim</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fft_type&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fft_normalization&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;spatial_dims&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_cascades</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;num_cascades&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">unet</span> <span class="o">=</span> <span class="n">MultiDomainUnet2d</span><span class="p">(</span>
             <span class="n">in_channels</span><span class="o">=</span><span class="mi">4</span> <span class="k">if</span> <span class="n">standardization</span> <span class="k">else</span> <span class="mi">2</span><span class="p">,</span>  <span class="c1"># if standardization, in_channels is 4 due to standardized input</span>
@@ -108,7 +110,9 @@
             <span class="n">num_filters</span><span class="o">=</span><span class="n">cfg_dict</span><span class="p">[</span><span class="s2">&quot;num_filters&quot;</span><span class="p">],</span>
             <span class="n">num_pool_layers</span><span class="o">=</span><span class="n">cfg_dict</span><span class="p">[</span><span class="s2">&quot;num_pool_layers&quot;</span><span class="p">],</span>
             <span class="n">dropout_probability</span><span class="o">=</span><span class="n">cfg_dict</span><span class="p">[</span><span class="s2">&quot;dropout_probability&quot;</span><span class="p">],</span>
-            <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">,</span>
+            <span class="n">fft_centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+            <span class="n">fft_normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+            <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">coil_combination_method</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;coil_combination_method&quot;</span><span class="p">)</span>
@@ -172,7 +176,9 @@
 <span class="sd">             If self.accumulate_loss is True, returns a list of all intermediate estimates.</span>
 <span class="sd">             If False, returns the final estimate.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">image</span> <span class="o">=</span> <span class="n">ifft2c</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">)</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">ifft2</span><span class="p">(</span>
+            <span class="n">y</span><span class="p">,</span> <span class="n">centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span> <span class="n">normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span>
+        <span class="p">)</span>
 
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;standardization&quot;</span><span class="p">):</span>
             <span class="n">image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">standardization</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">sensitivity_maps</span><span class="p">)</span>

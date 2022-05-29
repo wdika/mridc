@@ -217,16 +217,20 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Image model architecture </span><span class="si">{</span><span class="n">image_model_architecture</span><span class="si">}</span><span class="s2"> not found for XPDNet.&quot;</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fft_type&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fft_normalization&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;spatial_dims&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_cascades</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;num_cascades&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">xpdnet</span> <span class="o">=</span> <span class="n">CrossDomainNetwork</span><span class="p">(</span>
-            <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">,</span>
             <span class="n">image_model_list</span><span class="o">=</span><span class="n">image_model_list</span><span class="p">,</span>
             <span class="n">kspace_model_list</span><span class="o">=</span><span class="n">kspace_model_list</span><span class="p">,</span>
             <span class="n">domain_sequence</span><span class="o">=</span><span class="s2">&quot;KI&quot;</span> <span class="o">*</span> <span class="n">num_iter</span><span class="p">,</span>
             <span class="n">image_buffer_size</span><span class="o">=</span><span class="n">num_primal</span><span class="p">,</span>
             <span class="n">kspace_buffer_size</span><span class="o">=</span><span class="n">num_dual</span><span class="p">,</span>
             <span class="n">normalize_image</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;normalize_image&quot;</span><span class="p">),</span>
+            <span class="n">fft_centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+            <span class="n">fft_normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+            <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">train_loss_fn</span> <span class="o">=</span> <span class="n">SSIMLoss</span><span class="p">()</span> <span class="k">if</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;train_loss_fn&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;ssim&quot;</span> <span class="k">else</span> <span class="n">L1Loss</span><span class="p">()</span>

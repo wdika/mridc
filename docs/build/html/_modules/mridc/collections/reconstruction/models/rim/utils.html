@@ -69,7 +69,9 @@
 
 <span class="kn">import</span> <span class="nn">torch</span>
 
-<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">fft2c</span><span class="p">,</span> <span class="n">ifft2c</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">fft2</span><span class="p">,</span> <span class="n">ifft2</span>
 
 
 <div class="viewcode-block" id="log_likelihood_gradient"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.utils.log_likelihood_gradient">[docs]</a><span class="k">def</span> <span class="nf">log_likelihood_gradient</span><span class="p">(</span>
@@ -78,7 +80,9 @@
     <span class="n">sense</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
     <span class="n">mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
     <span class="n">sigma</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-    <span class="n">fft_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;orthogonal&quot;</span><span class="p">,</span>
+    <span class="n">fft_centered</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">fft_normalization</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">spatial_dims</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Computes the gradient of the log-likelihood function.</span>
@@ -90,7 +94,9 @@
 <span class="sd">    sense: Sensing matrix.</span>
 <span class="sd">    mask: Sampling mask.</span>
 <span class="sd">    sigma: Noise level.</span>
-<span class="sd">    fft_type: Type of FFT to use.</span>
+<span class="sd">    fft_centered: Whether to center the FFT.</span>
+<span class="sd">    fft_normalization: Whether to normalize the FFT.</span>
+<span class="sd">    spatial_dims: Spatial dimensions of the data.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -102,7 +108,21 @@
     <span class="n">re_se</span> <span class="o">=</span> <span class="n">eta_real</span> <span class="o">*</span> <span class="n">sense_real</span> <span class="o">-</span> <span class="n">eta_imag</span> <span class="o">*</span> <span class="n">sense_imag</span>
     <span class="n">im_se</span> <span class="o">=</span> <span class="n">eta_real</span> <span class="o">*</span> <span class="n">sense_imag</span> <span class="o">+</span> <span class="n">eta_imag</span> <span class="o">*</span> <span class="n">sense_real</span>
 
-    <span class="n">pred</span> <span class="o">=</span> <span class="n">ifft2c</span><span class="p">(</span><span class="n">mask</span> <span class="o">*</span> <span class="p">(</span><span class="n">fft2c</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">re_se</span><span class="p">,</span> <span class="n">im_se</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">fft_type</span><span class="o">=</span><span class="n">fft_type</span><span class="p">)</span> <span class="o">-</span> <span class="n">masked_kspace</span><span class="p">),</span> <span class="n">fft_type</span><span class="o">=</span><span class="n">fft_type</span><span class="p">)</span>
+    <span class="n">pred</span> <span class="o">=</span> <span class="n">ifft2</span><span class="p">(</span>
+        <span class="n">mask</span>
+        <span class="o">*</span> <span class="p">(</span>
+            <span class="n">fft2</span><span class="p">(</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">re_se</span><span class="p">,</span> <span class="n">im_se</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span>
+                <span class="n">centered</span><span class="o">=</span><span class="n">fft_centered</span><span class="p">,</span>
+                <span class="n">normalization</span><span class="o">=</span><span class="n">fft_normalization</span><span class="p">,</span>
+                <span class="n">spatial_dims</span><span class="o">=</span><span class="n">spatial_dims</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="o">-</span> <span class="n">masked_kspace</span>
+        <span class="p">),</span>
+        <span class="n">centered</span><span class="o">=</span><span class="n">fft_centered</span><span class="p">,</span>
+        <span class="n">normalization</span><span class="o">=</span><span class="n">fft_normalization</span><span class="p">,</span>
+        <span class="n">spatial_dims</span><span class="o">=</span><span class="n">spatial_dims</span><span class="p">,</span>
+    <span class="p">)</span>
 
     <span class="n">pred_real</span><span class="p">,</span> <span class="n">pred_imag</span> <span class="o">=</span> <span class="n">pred</span><span class="o">.</span><span class="n">chunk</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 

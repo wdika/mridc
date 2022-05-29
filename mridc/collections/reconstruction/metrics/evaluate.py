@@ -17,7 +17,7 @@ from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 from skimage.morphology import convex_hull_image
 from tqdm import tqdm
 
-from mridc.collections.common.parts.fft import ifft2c
+from mridc.collections.common.parts.fft import ifft2
 from mridc.collections.common.parts.utils import complex_conj, complex_mul, tensor_to_complex_np, to_tensor
 from mridc.collections.reconstruction.parts.utils import center_crop
 
@@ -165,11 +165,9 @@ def evaluate(
                     tensor_to_complex_np(
                         torch.sum(
                             complex_mul(
-                                ifft2c(
+                                ifft2(
                                     to_tensor(kspace),
-                                    fft_type="orthogonal"
-                                    if "fastmri" in str(arguments.sense_path).lower()
-                                    else "other",
+                                    centered=True if "fastmri" in str(arguments.sense_path).lower() else False,
                                 ),
                                 complex_conj(to_tensor(sense)),
                             ),

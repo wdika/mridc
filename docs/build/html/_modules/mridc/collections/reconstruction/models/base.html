@@ -71,7 +71,7 @@
 <span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
 <span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span>
 
 <span class="kn">import</span> <span class="nn">h5py</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -83,7 +83,7 @@
 <span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">DataLoader</span>
 <span class="kn">from</span> <span class="nn">torchmetrics.metric</span> <span class="kn">import</span> <span class="n">Metric</span>
 
-<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">ifft2c</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">ifft2</span>
 <span class="kn">from</span> <span class="nn">mridc.collections.common.parts.utils</span> <span class="kn">import</span> <span class="n">rss_complex</span><span class="p">,</span> <span class="n">sense</span>
 <span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.data.mri_data</span> <span class="kn">import</span> <span class="n">FastMRISliceDataset</span>
 <span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.data.subsample</span> <span class="kn">import</span> <span class="n">create_mask_for_mask_type</span>
@@ -135,15 +135,21 @@
 
         <span class="n">cfg_dict</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">to_container</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">resolve</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-        <span class="c1"># Initialize the sensitivity network if use_sens_net is True</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">coil_combination_method</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="p">[</span><span class="s2">&quot;coil_combination_method&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coil_combination_method</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;coil_combination_method&quot;</span><span class="p">)</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fft_centered&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fft_normalization&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;spatial_dims&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Initialize the sensitivity network if use_sens_net is True</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">use_sens_net</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;use_sens_net&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_sens_net</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">sens_net</span> <span class="o">=</span> <span class="n">BaseSensitivityModel</span><span class="p">(</span>
                 <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sens_chans&quot;</span><span class="p">),</span>
                 <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sens_pools&quot;</span><span class="p">),</span>
-                <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">,</span>
+                <span class="n">fft_centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                <span class="n">fft_normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
                 <span class="n">mask_type</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sens_mask_type&quot;</span><span class="p">),</span>
                 <span class="n">normalize</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sens_normalize&quot;</span><span class="p">),</span>
                 <span class="n">mask_center</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sens_mask_center&quot;</span><span class="p">),</span>
@@ -279,7 +285,16 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_sens_net</span><span class="p">:</span>
             <span class="n">sensitivity_maps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sens_net</span><span class="p">(</span><span class="n">kspace</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">coil_combination_method</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;SENSE&quot;</span><span class="p">:</span>
-                <span class="n">target</span> <span class="o">=</span> <span class="n">sense</span><span class="p">(</span><span class="n">ifft2c</span><span class="p">(</span><span class="n">kspace</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">),</span> <span class="n">sensitivity_maps</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">target</span> <span class="o">=</span> <span class="n">sense</span><span class="p">(</span>
+                    <span class="n">ifft2</span><span class="p">(</span>
+                        <span class="n">kspace</span><span class="p">,</span>
+                        <span class="n">centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                        <span class="n">normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                        <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+                    <span class="p">),</span>
+                    <span class="n">sensitivity_maps</span><span class="p">,</span>
+                    <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="p">)</span>
 
         <span class="n">preds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">sensitivity_maps</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">init_pred</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
 
@@ -344,7 +359,16 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_sens_net</span><span class="p">:</span>
             <span class="n">sensitivity_maps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sens_net</span><span class="p">(</span><span class="n">kspace</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">coil_combination_method</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;SENSE&quot;</span><span class="p">:</span>
-                <span class="n">target</span> <span class="o">=</span> <span class="n">sense</span><span class="p">(</span><span class="n">ifft2c</span><span class="p">(</span><span class="n">kspace</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">),</span> <span class="n">sensitivity_maps</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">target</span> <span class="o">=</span> <span class="n">sense</span><span class="p">(</span>
+                    <span class="n">ifft2</span><span class="p">(</span>
+                        <span class="n">kspace</span><span class="p">,</span>
+                        <span class="n">centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                        <span class="n">normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                        <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+                    <span class="p">),</span>
+                    <span class="n">sensitivity_maps</span><span class="p">,</span>
+                    <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="p">)</span>
 
         <span class="n">preds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">sensitivity_maps</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">init_pred</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
 
@@ -434,7 +458,16 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_sens_net</span><span class="p">:</span>
             <span class="n">sensitivity_maps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sens_net</span><span class="p">(</span><span class="n">kspace</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">coil_combination_method</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;SENSE&quot;</span><span class="p">:</span>
-                <span class="n">target</span> <span class="o">=</span> <span class="n">sense</span><span class="p">(</span><span class="n">ifft2c</span><span class="p">(</span><span class="n">kspace</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">),</span> <span class="n">sensitivity_maps</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">target</span> <span class="o">=</span> <span class="n">sense</span><span class="p">(</span>
+                    <span class="n">ifft2</span><span class="p">(</span>
+                        <span class="n">kspace</span><span class="p">,</span>
+                        <span class="n">centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                        <span class="n">normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                        <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+                    <span class="p">),</span>
+                    <span class="n">sensitivity_maps</span><span class="p">,</span>
+                    <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="p">)</span>
 
         <span class="n">preds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">sensitivity_maps</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">init_pred</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
 
@@ -670,7 +703,9 @@
                 <span class="n">crop_size</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;crop_size&quot;</span><span class="p">),</span>
                 <span class="n">crop_before_masking</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;crop_before_masking&quot;</span><span class="p">),</span>
                 <span class="n">kspace_zero_filling_size</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kspace_zero_filling_size&quot;</span><span class="p">),</span>
-                <span class="n">fft_type</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fft_type&quot;</span><span class="p">),</span>
+                <span class="n">fft_centered</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fft_centered&quot;</span><span class="p">),</span>
+                <span class="n">fft_normalization</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fft_normalization&quot;</span><span class="p">),</span>
+                <span class="n">spatial_dims</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;spatial_dims&quot;</span><span class="p">),</span>
                 <span class="n">use_seed</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;use_seed&quot;</span><span class="p">),</span>
             <span class="p">),</span>
             <span class="n">sample_rate</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sample_rate&quot;</span><span class="p">),</span>
@@ -706,7 +741,9 @@
         <span class="n">drop_prob</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
         <span class="n">padding_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span>
         <span class="n">mask_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;2D&quot;</span><span class="p">,</span>  <span class="c1"># TODO: make this generalizable</span>
-        <span class="n">fft_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;orthogonal&quot;</span><span class="p">,</span>
+        <span class="n">fft_centered</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">fft_normalization</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ortho&quot;</span><span class="p">,</span>
+        <span class="n">spatial_dims</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">normalize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">mask_center</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
@@ -729,8 +766,12 @@
 <span class="sd">            int</span>
 <span class="sd">        mask_type: Type of mask to use.</span>
 <span class="sd">            str</span>
-<span class="sd">        fft_type: Type of FFT to use.</span>
+<span class="sd">        fft_centered: Whether to center the FFT.</span>
+<span class="sd">            bool</span>
+<span class="sd">        fft_normalization: Type of FFT normalization to use.</span>
 <span class="sd">            str</span>
+<span class="sd">        spatial_dims: Spatial dimensions of the data.</span>
+<span class="sd">            tuple</span>
 <span class="sd">        normalize: Whether to normalize the input data.</span>
 <span class="sd">            bool</span>
 <span class="sd">        mask_center: Whether mask the center of the image.</span>
@@ -739,7 +780,6 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">mask_type</span> <span class="o">=</span> <span class="n">mask_type</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">fft_type</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">norm_unet</span> <span class="o">=</span> <span class="n">NormUnet</span><span class="p">(</span>
             <span class="n">chans</span><span class="p">,</span>
@@ -752,6 +792,9 @@
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">mask_center</span> <span class="o">=</span> <span class="n">mask_center</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span> <span class="o">=</span> <span class="n">fft_centered</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span> <span class="o">=</span> <span class="n">fft_normalization</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">spatial_dims</span> <span class="k">if</span> <span class="n">spatial_dims</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">normalize</span> <span class="o">=</span> <span class="n">normalize</span>
 
 <div class="viewcode-block" id="BaseSensitivityModel.chans_to_batch_dim"><a class="viewcode-back" href="../../../../../mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.base.BaseSensitivityModel.chans_to_batch_dim">[docs]</a>    <span class="nd">@staticmethod</span>
@@ -878,7 +921,14 @@
             <span class="n">masked_kspace</span> <span class="o">=</span> <span class="n">batched_mask_center</span><span class="p">(</span><span class="n">masked_kspace</span><span class="p">,</span> <span class="n">pad</span><span class="p">,</span> <span class="n">pad</span> <span class="o">+</span> <span class="n">num_low_freqs</span><span class="p">,</span> <span class="n">mask_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_type</span><span class="p">)</span>
 
         <span class="c1"># convert to image space</span>
-        <span class="n">images</span><span class="p">,</span> <span class="n">batches</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">chans_to_batch_dim</span><span class="p">(</span><span class="n">ifft2c</span><span class="p">(</span><span class="n">masked_kspace</span><span class="p">))</span>
+        <span class="n">images</span><span class="p">,</span> <span class="n">batches</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">chans_to_batch_dim</span><span class="p">(</span>
+            <span class="n">ifft2</span><span class="p">(</span>
+                <span class="n">masked_kspace</span><span class="p">,</span>
+                <span class="n">centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                <span class="n">normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
 
         <span class="c1"># estimate sensitivities</span>
         <span class="n">images</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_chans_to_chan_dim</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_unet</span><span class="p">(</span><span class="n">images</span><span class="p">),</span> <span class="n">batches</span><span class="p">)</span>

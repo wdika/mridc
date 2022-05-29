@@ -8,7 +8,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from mridc.collections.common.parts.fft import fft2c, ifft2c
+from typing import Optional, Sequence, Tuple
+
+from mridc.collections.common.parts.fft import fft2, ifft2
 from mridc.collections.common.parts.utils import complex_conj, complex_mul
 
 
@@ -17,30 +19,39 @@ class MultiDomainConv2d(nn.Module):
 
     def __init__(
         self,
-        fft_type,
-        in_channels,
-        out_channels,
+        fft_centered: bool = True,
+        fft_normalization: str = "ortho",
+        spatial_dims: Sequence[int] = None,
+        in_channels: int = 4,
+        out_channels: int = 4,
         **kwargs,
     ):
         super().__init__()
 
         self.image_conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels // 2, **kwargs)
         self.kspace_conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels // 2, **kwargs)
-        self.fft_type = fft_type
+
+        self.fft_centered = fft_centered
+        self.fft_normalization = fft_normalization
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
         self._channels_dim = 1
-        self._spatial_dims = [1, 2]
 
     def forward(self, image):
         """Forward method for the MultiDomainConv2d class."""
         kspace = [
-            fft2c(im, fft_type=self.fft_type, fft_dim=self._spatial_dims)
+            fft2(im, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims)
             for im in torch.split(image.permute(0, 2, 3, 1).contiguous(), 2, -1)
         ]
         kspace = torch.cat(kspace, -1).permute(0, 3, 1, 2)
         kspace = self.kspace_conv(kspace)
 
         backward = [
-            ifft2c(ks.float(), fft_type=self.fft_type, fft_dim=self._spatial_dims).type(image.type())
+            ifft2(
+                ks.float(),
+                centered=self.fft_centered,
+                normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            ).type(image.type())
             for ks in torch.split(kspace.permute(0, 2, 3, 1).contiguous(), 2, -1)
         ]
         backward = torch.cat(backward, -1).permute(0, 3, 1, 2)
@@ -55,30 +66,38 @@ class MultiDomainConvTranspose2d(nn.Module):
 
     def __init__(
         self,
-        fft_type,
-        in_channels,
-        out_channels,
+        fft_centered: bool = True,
+        fft_normalization: str = "ortho",
+        spatial_dims: Sequence[int] = None,
+        in_channels: int = 4,
+        out_channels: int = 4,
         **kwargs,
     ):
         super().__init__()
 
         self.image_conv = nn.ConvTranspose2d(in_channels=in_channels, out_channels=out_channels // 2, **kwargs)
         self.kspace_conv = nn.ConvTranspose2d(in_channels=in_channels, out_channels=out_channels // 2, **kwargs)
-        self.fft_type = fft_type
+        self.fft_centered = fft_centered
+        self.fft_normalization = fft_normalization
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
         self._channels_dim = 1
-        self._spatial_dims = [1, 2]
 
     def forward(self, image):
         """Forward method for the MultiDomainConvTranspose2d class."""
         kspace = [
-            fft2c(im, fft_type=self.fft_type, fft_dim=self._spatial_dims)
+            fft2(im, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims)
             for im in torch.split(image.permute(0, 2, 3, 1).contiguous(), 2, -1)
         ]
         kspace = torch.cat(kspace, -1).permute(0, 3, 1, 2)
         kspace = self.kspace_conv(kspace)
 
         backward = [
-            ifft2c(ks.float(), fft_type=self.fft_type, fft_dim=self._spatial_dims).type(image.type())
+            ifft2(
+                ks.float(),
+                centered=self.fft_centered,
+                normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            ).type(image.type())
             for ks in torch.split(kspace.permute(0, 2, 3, 1).contiguous(), 2, -1)
         ]
         backward = torch.cat(backward, -1).permute(0, 3, 1, 2)
@@ -93,26 +112,59 @@ class MultiDomainConvBlock(nn.Module):
     normalization, LeakyReLU activation and dropout.
     """
 
-    def __init__(self, fft_type, in_channels: int, out_channels: int, dropout_probability: float):
+    def __init__(
+        self,
+        fft_centered: bool = True,
+        fft_normalization: str = "ortho",
+        spatial_dims: Sequence[int] = None,
+        in_channels: int = 4,
+        out_channels: int = 4,
+        dropout_probability: float = 0.0,
+    ):
         """
         Parameters
         ----------
+        fft_centered : Whether to center the FFT.
+        fft_normalization : Whether to normalize the FFT.
+        spatial_dims : The spatial dimensions to apply the FFT to.
         in_channels: Number of input channels.
         out_channels: Number of output channels.
         dropout_probability: Dropout probability.
         """
         super().__init__()
 
+        self.fft_centered = fft_centered
+        self.fft_normalization = fft_normalization
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
+
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.dropout_probability = dropout_probability
 
         self.layers = nn.Sequential(
-            MultiDomainConv2d(fft_type, in_channels, out_channels, kernel_size=3, padding=1, bias=False),
+            MultiDomainConv2d(
+                self.fft_centered,
+                self.fft_normalization,
+                self.spatial_dims,
+                in_channels,
+                out_channels,
+                kernel_size=3,
+                padding=1,
+                bias=False,
+            ),
             nn.InstanceNorm2d(out_channels),
             nn.LeakyReLU(negative_slope=0.2, inplace=True),
             nn.Dropout2d(dropout_probability),
-            MultiDomainConv2d(fft_type, out_channels, out_channels, kernel_size=3, padding=1, bias=False),
+            MultiDomainConv2d(
+                self.fft_centered,
+                self.fft_normalization,
+                self.spatial_dims,
+                out_channels,
+                out_channels,
+                kernel_size=3,
+                padding=1,
+                bias=False,
+            ),
             nn.InstanceNorm2d(out_channels),
             nn.LeakyReLU(negative_slope=0.2, inplace=True),
             nn.Dropout2d(dropout_probability),
@@ -135,10 +187,20 @@ class TransposeMultiDomainConvBlock(nn.Module):
     normalization and LeakyReLU activation.
     """
 
-    def __init__(self, fft_type, in_channels: int, out_channels: int):
+    def __init__(
+        self,
+        fft_centered: bool = True,
+        fft_normalization: str = "ortho",
+        spatial_dims: Sequence[int] = None,
+        in_channels: int = 4,
+        out_channels: int = 4,
+    ):
         """
         Parameters
         ----------
+        fft_centered : Whether to center the FFT.
+        fft_normalization : Whether to normalize the FFT.
+        spatial_dims : The spatial dimensions to apply the FFT to.
         in_channels: Number of input channels.
         out_channels: Number of output channels.
         """
@@ -146,7 +208,16 @@ class TransposeMultiDomainConvBlock(nn.Module):
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.layers = nn.Sequential(
-            MultiDomainConvTranspose2d(fft_type, in_channels, out_channels, kernel_size=2, stride=2, bias=False),
+            MultiDomainConvTranspose2d(
+                fft_centered,
+                fft_normalization,
+                spatial_dims,
+                in_channels,
+                out_channels,
+                kernel_size=2,
+                stride=2,
+                bias=False,
+            ),
             nn.InstanceNorm2d(out_channels),
             nn.LeakyReLU(negative_slope=0.2, inplace=True),
         )
@@ -212,7 +283,9 @@ class MultiDomainUnet2d(nn.Module):
         num_filters: int,
         num_pool_layers: int,
         dropout_probability: float,
-        fft_type: str = "orthogonal",
+        fft_centered: bool = True,
+        fft_normalization: str = "ortho",
+        spatial_dims: Optional[Tuple[int, int]] = None,
     ):
         """
         Parameters
@@ -222,7 +295,9 @@ class MultiDomainUnet2d(nn.Module):
         num_filters: Number of output channels of the first convolutional layer.
         num_pool_layers: Number of down-sampling and up-sampling layers (depth).
         dropout_probability: Dropout probability.
-        fft_type: FFT type.
+        fft_centered: Whether to use centered FFT.
+        fft_normalization: Whether to use normalization.
+        spatial_dims: Spatial dimensions of the input data.
         """
         super().__init__()
 
@@ -231,28 +306,55 @@ class MultiDomainUnet2d(nn.Module):
         self.num_filters = num_filters
         self.num_pool_layers = num_pool_layers
         self.dropout_probability = dropout_probability
-        self.fft_type = fft_type
+        self.fft_centered = fft_centered
+        self.fft_normalization = fft_normalization
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
 
         self.down_sample_layers = nn.ModuleList(
-            [MultiDomainConvBlock(fft_type, in_channels, num_filters, dropout_probability)]
+            [
+                MultiDomainConvBlock(
+                    self.fft_centered,
+                    self.fft_normalization,
+                    self.spatial_dims,
+                    in_channels,
+                    num_filters,
+                    dropout_probability,
+                )
+            ]
         )
         ch = num_filters
         for _ in range(num_pool_layers - 1):
-            self.down_sample_layers += [MultiDomainConvBlock(fft_type, ch, ch * 2, dropout_probability)]
+            self.down_sample_layers += [
+                MultiDomainConvBlock(
+                    self.fft_centered, self.fft_normalization, self.spatial_dims, ch, ch * 2, dropout_probability
+                )
+            ]
             ch *= 2
-        self.conv = MultiDomainConvBlock(fft_type, ch, ch * 2, dropout_probability)
+        self.conv = MultiDomainConvBlock(
+            self.fft_centered, self.fft_normalization, self.spatial_dims, ch, ch * 2, dropout_probability
+        )
 
         self.up_conv = nn.ModuleList()
         self.up_transpose_conv = nn.ModuleList()
         for _ in range(num_pool_layers - 1):
-            self.up_transpose_conv += [TransposeMultiDomainConvBlock(fft_type, ch * 2, ch)]
-            self.up_conv += [MultiDomainConvBlock(fft_type, ch * 2, ch, dropout_probability)]
+            self.up_transpose_conv += [
+                TransposeMultiDomainConvBlock(self.fft_centered, self.fft_normalization, self.spatial_dims, ch * 2, ch)
+            ]
+            self.up_conv += [
+                MultiDomainConvBlock(
+                    self.fft_centered, self.fft_normalization, self.spatial_dims, ch * 2, ch, dropout_probability
+                )
+            ]
             ch //= 2
 
-        self.up_transpose_conv += [TransposeMultiDomainConvBlock(fft_type, ch * 2, ch)]
+        self.up_transpose_conv += [
+            TransposeMultiDomainConvBlock(self.fft_centered, self.fft_normalization, self.spatial_dims, ch * 2, ch)
+        ]
         self.up_conv += [
             nn.Sequential(
-                MultiDomainConvBlock(fft_type, ch * 2, ch, dropout_probability),
+                MultiDomainConvBlock(
+                    self.fft_centered, self.fft_normalization, self.spatial_dims, ch * 2, ch, dropout_probability
+                ),
                 nn.Conv2d(ch, self.out_channels, kernel_size=1, stride=1),
             )
         ]

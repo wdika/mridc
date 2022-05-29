@@ -9,7 +9,7 @@ from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
 from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import ifft2c
+from mridc.collections.common.parts.fft import ifft2
 from mridc.collections.common.parts.utils import coil_combination
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
 from mridc.collections.reconstruction.models.cascadenet.ccnn_block import CascadeNetBlock
@@ -42,7 +42,11 @@ class CascadeNet(BaseMRIReconstructionModel, ABC):
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
-        self.fft_type = cfg_dict.get("fft_type")
+        self.coil_combination_method = cfg_dict.get("coil_combination_method")
+
+        self.fft_centered = cfg_dict.get("fft_centered")
+        self.fft_normalization = cfg_dict.get("fft_normalization")
+        self.spatial_dims = cfg_dict.get("spatial_dims")
 
         # Cascades of CascadeCNN blocks
         self.cascades = torch.nn.ModuleList(
@@ -55,7 +59,9 @@ class CascadeNet(BaseMRIReconstructionModel, ABC):
                         n_convs=cfg_dict.get("n_convs"),
                         batchnorm=cfg_dict.get("batchnorm"),
                     ),
-                    fft_type=self.fft_type,
+                    fft_centered=self.fft_centered,
+                    fft_normalization=self.fft_normalization,
+                    spatial_dims=self.spatial_dims,
                     no_dc=cfg_dict.get("no_dc"),
                 )
                 for _ in range(cfg_dict.get("num_cascades"))
@@ -108,7 +114,15 @@ class CascadeNet(BaseMRIReconstructionModel, ABC):
             pred = cascade(pred, y, sensitivity_maps, mask)
         pred = torch.view_as_complex(
             coil_combination(
-                ifft2c(pred, fft_type=self.fft_type), sensitivity_maps, method=self.coil_combination_method, dim=1
+                ifft2(
+                    pred,
+                    centered=self.fft_centered,
+                    normalization=self.fft_normalization,
+                    spatial_dims=self.spatial_dims,
+                ),
+                sensitivity_maps,
+                method=self.coil_combination_method,
+                dim=1,
             )
         )
         _, pred = center_crop_to_smallest(target, pred)

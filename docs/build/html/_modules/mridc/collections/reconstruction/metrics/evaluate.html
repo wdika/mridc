@@ -83,7 +83,7 @@
 <span class="kn">from</span> <span class="nn">skimage.morphology</span> <span class="kn">import</span> <span class="n">convex_hull_image</span>
 <span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
 
-<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">ifft2c</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">ifft2</span>
 <span class="kn">from</span> <span class="nn">mridc.collections.common.parts.utils</span> <span class="kn">import</span> <span class="n">complex_conj</span><span class="p">,</span> <span class="n">complex_mul</span><span class="p">,</span> <span class="n">tensor_to_complex_np</span><span class="p">,</span> <span class="n">to_tensor</span>
 <span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.parts.utils</span> <span class="kn">import</span> <span class="n">center_crop</span>
 
@@ -231,11 +231,9 @@
                     <span class="n">tensor_to_complex_np</span><span class="p">(</span>
                         <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
                             <span class="n">complex_mul</span><span class="p">(</span>
-                                <span class="n">ifft2c</span><span class="p">(</span>
+                                <span class="n">ifft2</span><span class="p">(</span>
                                     <span class="n">to_tensor</span><span class="p">(</span><span class="n">kspace</span><span class="p">),</span>
-                                    <span class="n">fft_type</span><span class="o">=</span><span class="s2">&quot;orthogonal&quot;</span>
-                                    <span class="k">if</span> <span class="s2">&quot;fastmri&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">arguments</span><span class="o">.</span><span class="n">sense_path</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-                                    <span class="k">else</span> <span class="s2">&quot;other&quot;</span><span class="p">,</span>
+                                    <span class="n">centered</span><span class="o">=</span><span class="kc">True</span> <span class="k">if</span> <span class="s2">&quot;fastmri&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">arguments</span><span class="o">.</span><span class="n">sense_path</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">else</span> <span class="kc">False</span><span class="p">,</span>
                                 <span class="p">),</span>
                                 <span class="n">complex_conj</span><span class="p">(</span><span class="n">to_tensor</span><span class="p">(</span><span class="n">sense</span><span class="p">)),</span>
                             <span class="p">),</span>

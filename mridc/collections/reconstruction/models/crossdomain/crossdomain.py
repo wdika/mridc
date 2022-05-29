@@ -3,12 +3,12 @@ __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NKI-AI/direct/blob/main/direct/nn/crossdomain/crossdomain.py
 # Copyright (c) DIRECT Contributors
-from typing import Optional, Union
+from typing import Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
 
-from mridc.collections.common.parts.fft import fft2c, ifft2c
+from mridc.collections.common.parts.fft import fft2, ifft2
 from mridc.collections.common.parts.utils import complex_conj, complex_mul
 
 
@@ -23,7 +23,9 @@ class CrossDomainNetwork(nn.Module):
         image_buffer_size: int = 1,
         kspace_buffer_size: int = 1,
         normalize_image: bool = False,
-        fft_type: str = "orthogonal",
+        fft_centered: bool = True,
+        fft_normalization: str = "ortho",
+        spatial_dims: Optional[Tuple[int, int]] = None,
         **kwargs,
     ):
         """
@@ -43,14 +45,21 @@ class CrossDomainNetwork(nn.Module):
             int, Default: 1.
         normalize_image: If True, input is normalized.
             bool, Default: False.
-        fft_type: Type of FFT.
-            str, Default: "orthogonal".
+        fft_centered: If True, FFT is centered.
+            bool, Default: True.
+        fft_normalization: FFT normalization.
+            str, Default: "ortho".
+        spatial_dims: Spatial dimensions.
+            Tuple[int, int], Default: None.
         kwargs:Keyword Arguments.
             dict
         """
         super().__init__()
 
-        self.fft_type = fft_type
+        self.fft_centered = fft_centered
+        self.fft_normalization = fft_normalization
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
+        self._complex_dim = -1
 
         domain_sequence = list(domain_sequence.strip())  # type: ignore
         if not set(domain_sequence).issubset({"K", "I"}):
@@ -69,10 +78,6 @@ class CrossDomainNetwork(nn.Module):
 
         self.image_model_list = image_model_list
         self.image_buffer_size = image_buffer_size
-
-        self._coil_dim = 1
-        self._complex_dim = -1
-        self._spatial_dims = (2, 3)
 
     def kspace_correction(self, block_idx, image_buffer, kspace_buffer, sampling_mask, sensitivity_map, masked_kspace):
         """Performs k-space correction."""
@@ -111,9 +116,11 @@ class CrossDomainNetwork(nn.Module):
         return torch.where(
             sampling_mask == 0,
             torch.tensor([0.0], dtype=image.dtype).to(image.device),
-            fft2c(
+            fft2(
                 complex_mul(image.unsqueeze(1), sensitivity_map),
-                fft_type=self.fft_type,
+                centered=self.fft_centered,
+                normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
             ).type(image.type()),
         )
 
@@ -122,7 +129,12 @@ class CrossDomainNetwork(nn.Module):
         kspace = torch.where(sampling_mask == 0, torch.tensor([0.0], dtype=kspace.dtype).to(kspace.device), kspace)
         return (
             complex_mul(
-                ifft2c(kspace.float(), fft_type=self.fft_type),
+                ifft2(
+                    kspace.float(),
+                    centered=self.fft_centered,
+                    normalization=self.fft_normalization,
+                    spatial_dims=self.spatial_dims,
+                ),
                 complex_conj(sensitivity_map),
             )
             .sum(1)

@@ -9,7 +9,7 @@ from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
 from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import ifft2c
+from mridc.collections.common.parts.fft import ifft2
 from mridc.collections.common.parts.utils import coil_combination
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
 from mridc.collections.reconstruction.models.unet_base.unet_block import NormUnet
@@ -41,7 +41,9 @@ class VarNet(BaseMRIReconstructionModel, ABC):
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
         self.no_dc = cfg_dict.get("no_dc")
-        self.fft_type = cfg_dict.get("fft_type")
+        self.fft_centered = cfg_dict.get("fft_centered")
+        self.fft_normalization = cfg_dict.get("fft_normalization")
+        self.spatial_dims = cfg_dict.get("spatial_dims")
         self.num_cascades = cfg_dict.get("num_cascades")
 
         # Cascades of VN blocks
@@ -54,7 +56,9 @@ class VarNet(BaseMRIReconstructionModel, ABC):
                         padding_size=cfg_dict.get("padding_size"),
                         normalize=cfg_dict.get("normalize"),
                     ),
-                    fft_type=self.fft_type,
+                    fft_centered=self.fft_centered,
+                    fft_normalization=self.fft_normalization,
+                    spatial_dims=self.spatial_dims,
                     no_dc=self.no_dc,
                 )
                 for _ in range(self.num_cascades)
@@ -109,7 +113,12 @@ class VarNet(BaseMRIReconstructionModel, ABC):
             # Forward pass through the cascades
             estimation = cascade(estimation, y, sensitivity_maps, mask)
 
-        estimation = ifft2c(estimation, fft_type=self.fft_type)
+        estimation = ifft2(
+            estimation,
+            centered=self.fft_centered,
+            normalization=self.fft_normalization,
+            spatial_dims=self.spatial_dims,
+        )
         estimation = coil_combination(estimation, sensitivity_maps, method=self.coil_combination_method, dim=1)
         estimation = torch.view_as_complex(estimation)
         _, estimation = center_crop_to_smallest(target, estimation)

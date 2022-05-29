@@ -12,7 +12,7 @@ from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
 from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import ifft2c
+from mridc.collections.common.parts.fft import ifft2
 from mridc.collections.common.parts.rnn_utils import rnn_weights_init
 from mridc.collections.common.parts.utils import coil_combination
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
@@ -52,7 +52,9 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
         self.time_steps = 8 * math.ceil(cfg_dict.get("time_steps") / 8)
 
         self.no_dc = cfg_dict.get("no_dc")
-        self.fft_type = cfg_dict.get("fft_type")
+        self.fft_centered = cfg_dict.get("fft_centered")
+        self.fft_normalization = cfg_dict.get("fft_normalization")
+        self.spatial_dims = cfg_dict.get("spatial_dims")
         self.num_cascades = cfg_dict.get("num_cascades")
 
         self.cirim = torch.nn.ModuleList(
@@ -71,7 +73,9 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
                     time_steps=self.time_steps,
                     conv_dim=cfg_dict.get("conv_dim"),
                     no_dc=self.no_dc,
-                    fft_type=self.fft_type,
+                    fft_centered=self.fft_centered,
+                    fft_normalization=self.fft_normalization,
+                    spatial_dims=self.spatial_dims,
                 )
                 for _ in range(self.num_cascades)
             ]
@@ -166,7 +170,9 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
         """
         # Take the last time step of the eta
         if not self.no_dc or do_coil_combination:
-            pred = ifft2c(pred, fft_type=self.fft_type)
+            pred = ifft2(
+                pred, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
+            )
             pred = coil_combination(pred, sensitivity_maps, method=self.coil_combination_method, dim=1)
         pred = torch.view_as_complex(pred)
         _, pred = center_crop_to_smallest(target, pred)

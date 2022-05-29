@@ -9,7 +9,7 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-from mridc.collections.common.parts.fft import ifft2c
+from mridc.collections.common.parts.fft import ifft2
 from mridc.collections.common.parts.utils import sense
 from mridc.collections.common.parts.utils import check_stacked_complex, coil_combination
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
@@ -38,20 +38,24 @@ class ZF(BaseMRIReconstructionModel, ABC):
         # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
 
-        zf_cfg_dict = OmegaConf.to_container(cfg, resolve=True)
+        cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
-        self.coil_combination_method = zf_cfg_dict.get("coil_combination_method")
-        self.fft_type = zf_cfg_dict.get("fft_type")
+        self.coil_combination_method = cfg_dict.get("coil_combination_method")
+        self.fft_centered = cfg_dict.get("fft_centered")
+        self.fft_normalization = cfg_dict.get("fft_normalization")
+        self.spatial_dims = cfg_dict.get("spatial_dims")
 
         # Initialize the sensitivity network if use_sens_net is True
-        self.use_sens_net = zf_cfg_dict.get("use_sens_net")
+        self.use_sens_net = cfg_dict.get("use_sens_net")
         if self.use_sens_net:
             self.sens_net = BaseSensitivityModel(
-                zf_cfg_dict.get("sens_chans"),
-                zf_cfg_dict.get("sens_pools"),
-                fft_type=self.fft_type,
-                mask_type=zf_cfg_dict.get("sens_mask_type"),
-                normalize=zf_cfg_dict.get("sens_normalize"),
+                cfg_dict.get("sens_chans"),
+                cfg_dict.get("sens_pools"),
+                fft_centered=self.fft_centered,
+                fft_normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+                mask_type=cfg_dict.get("sens_mask_type"),
+                normalize=cfg_dict.get("sens_normalize"),
             )
 
     @staticmethod
@@ -112,7 +116,10 @@ class ZF(BaseMRIReconstructionModel, ABC):
             Predicted data.
         """
         pred = coil_combination(
-            ifft2c(y, fft_type=self.fft_type), sensitivity_maps, method=self.coil_combination_method.upper(), dim=1
+            ifft2(y, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims),
+            sensitivity_maps,
+            method=self.coil_combination_method.upper(),
+            dim=1,
         )
         pred = check_stacked_complex(pred)
         _, pred = center_crop_to_smallest(target, pred)
@@ -144,7 +151,16 @@ class ZF(BaseMRIReconstructionModel, ABC):
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, mask)
             if self.coil_combination_method.upper() == "SENSE":
-                target = sense(ifft2c(kspace, fft_type=self.fft_type), sensitivity_maps, dim=1)
+                target = sense(
+                    ifft2(
+                        kspace,
+                        centered=self.fft_centered,
+                        normalization=self.fft_normalization,
+                        spatial_dims=self.spatial_dims,
+                    ),
+                    sensitivity_maps,
+                    dim=1,
+                )
 
         prediction = self.forward(y, sensitivity_maps, mask, target)
 

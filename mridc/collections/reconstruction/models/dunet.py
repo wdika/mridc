@@ -9,7 +9,7 @@ from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
 from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import ifft2c
+from mridc.collections.common.parts.fft import ifft2
 from mridc.collections.common.parts.utils import complex_conj, complex_mul
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
 from mridc.collections.reconstruction.models.didn.didn import DIDN
@@ -47,7 +47,9 @@ class DUNet(BaseMRIReconstructionModel, ABC):
         super().__init__(cfg=cfg, trainer=trainer)
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
-        self.fft_type = cfg_dict.get("fft_type")
+        self.fft_centered = cfg_dict.get("fft_centered")
+        self.fft_normalization = cfg_dict.get("fft_normalization")
+        self.spatial_dims = cfg_dict.get("spatial_dims")
 
         reg_model_architecture = cfg_dict.get("reg_model_architecture")
         if reg_model_architecture == "DIDN":
@@ -77,16 +79,26 @@ class DUNet(BaseMRIReconstructionModel, ABC):
         data_consistency_term = cfg_dict.get("data_consistency_term")
 
         if data_consistency_term == "GD":
-            dc_layer = DataGDLayer(lambda_init=cfg_dict.get("data_consistency_lambda_init"), fft_type=self.fft_type)
+            dc_layer = DataGDLayer(
+                lambda_init=cfg_dict.get("data_consistency_lambda_init"),
+                fft_centered=self.fft_centered,
+                fft_normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            )
         elif data_consistency_term == "PROX":
             dc_layer = DataProxCGLayer(
-                lambda_init=cfg_dict.get("data_consistency_lambda_init"), fft_type=self.fft_type
+                lambda_init=cfg_dict.get("data_consistency_lambda_init"),
+                fft_centered=self.fft_centered,
+                fft_normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
             )
         elif data_consistency_term == "VS":
             dc_layer = DataVSLayer(
                 alpha_init=cfg_dict.get("data_consistency_alpha_init"),
                 beta_init=cfg_dict.get("data_consistency_beta_init"),
-                fft_type=self.fft_type,
+                fft_centered=self.fft_centered,
+                fft_normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
             )
         else:
             dc_layer = DataIDLayer()
@@ -137,7 +149,15 @@ class DUNet(BaseMRIReconstructionModel, ABC):
              If self.accumulate_loss is True, returns a list of all intermediate estimates.
              If False, returns the final estimate.
         """
-        init_pred = torch.sum(complex_mul(ifft2c(y, fft_type=self.fft_type), complex_conj(sensitivity_maps)), 1)
+        init_pred = torch.sum(
+            complex_mul(
+                ifft2(
+                    y, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
+                ),
+                complex_conj(sensitivity_maps),
+            ),
+            1,
+        )
         image = self.model(init_pred, y, sensitivity_maps, mask)
         image = torch.sum(complex_mul(image, complex_conj(sensitivity_maps)), 1)
         image = torch.view_as_complex(image)

@@ -3,7 +3,9 @@ __author__ = "Dimitrios Karkalousos"
 
 import torch
 
-from mridc.collections.common.parts.fft import fft2c, ifft2c
+from typing import Optional, Sequence, Tuple
+
+from mridc.collections.common.parts.fft import fft2, ifft2
 
 
 def log_likelihood_gradient(
@@ -12,7 +14,9 @@ def log_likelihood_gradient(
     sense: torch.Tensor,
     mask: torch.Tensor,
     sigma: float,
-    fft_type: str = "orthogonal",
+    fft_centered: bool,
+    fft_normalization: str,
+    spatial_dims: Sequence[int],
 ) -> torch.Tensor:
     """
     Computes the gradient of the log-likelihood function.
@@ -24,7 +28,9 @@ def log_likelihood_gradient(
     sense: Sensing matrix.
     mask: Sampling mask.
     sigma: Noise level.
-    fft_type: Type of FFT to use.
+    fft_centered: Whether to center the FFT.
+    fft_normalization: Whether to normalize the FFT.
+    spatial_dims: Spatial dimensions of the data.
 
     Returns
     -------
@@ -36,7 +42,21 @@ def log_likelihood_gradient(
     re_se = eta_real * sense_real - eta_imag * sense_imag
     im_se = eta_real * sense_imag + eta_imag * sense_real
 
-    pred = ifft2c(mask * (fft2c(torch.cat((re_se, im_se), -1), fft_type=fft_type) - masked_kspace), fft_type=fft_type)
+    pred = ifft2(
+        mask
+        * (
+            fft2(
+                torch.cat((re_se, im_se), -1),
+                centered=fft_centered,
+                normalization=fft_normalization,
+                spatial_dims=spatial_dims,
+            )
+            - masked_kspace
+        ),
+        centered=fft_centered,
+        normalization=fft_normalization,
+        spatial_dims=spatial_dims,
+    )
 
     pred_real, pred_imag = pred.chunk(2, -1)
 

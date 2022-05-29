@@ -51,14 +51,22 @@ model:
   train_loss_fn: l1
   eval_loss_fn: l1
   accumulate_estimates: true
-  fft_type: orthogonal
+  fft_centered: True
+  fft_normalization: ortho
+  spatial_dims:
+    - -2
+    - -1
 
   test_ds:
     data_path: ???
     dataset_type: FastMRI
     challenge: multicoil
     coil_combination_method: SENSE
-    fft_type: orthogonal
+    fft_centered: True
+    fft_normalization: ortho
+    spatial_dims:
+      - -2
+      - -1
     mask_args:
       type: gaussian2d
       accelerations:

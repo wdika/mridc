@@ -75,7 +75,7 @@
 <span class="kn">from</span> <span class="nn">torch.nn</span> <span class="kn">import</span> <span class="n">L1Loss</span>
 
 <span class="kn">from</span> <span class="nn">mridc.collections.common.losses.ssim</span> <span class="kn">import</span> <span class="n">SSIMLoss</span>
-<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">ifft2c</span>
+<span class="kn">from</span> <span class="nn">mridc.collections.common.parts.fft</span> <span class="kn">import</span> <span class="n">ifft2</span>
 <span class="kn">from</span> <span class="nn">mridc.collections.common.parts.utils</span> <span class="kn">import</span> <span class="n">coil_combination</span>
 <span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.models.base</span> <span class="kn">import</span> <span class="n">BaseMRIReconstructionModel</span><span class="p">,</span> <span class="n">BaseSensitivityModel</span>
 <span class="kn">from</span> <span class="nn">mridc.collections.reconstruction.models.conv.conv2d</span> <span class="kn">import</span> <span class="n">Conv2d</span>
@@ -114,7 +114,9 @@
         <span class="n">cfg_dict</span> <span class="o">=</span> <span class="n">OmegaConf</span><span class="o">.</span><span class="n">to_container</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">resolve</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="n">num_cascades</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;num_cascades&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fft_type&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fft_normalization&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;spatial_dims&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_cascades</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;num_cascades&quot;</span><span class="p">)</span>
 
         <span class="n">image_model_architecture</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;imspace_model_architecture&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">image_model_architecture</span> <span class="o">==</span> <span class="s2">&quot;CONV&quot;</span><span class="p">:</span>
@@ -158,7 +160,9 @@
             <span class="n">data_consistency_block</span><span class="o">=</span><span class="n">data_consistency_model</span><span class="p">,</span>
             <span class="n">weighted_average_block</span><span class="o">=</span><span class="n">weighted_average_model</span><span class="p">,</span>
             <span class="n">num_cascades</span><span class="o">=</span><span class="n">num_cascades</span><span class="p">,</span>
-            <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">,</span>
+            <span class="n">fft_centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+            <span class="n">fft_normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+            <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">coil_combination_method</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;coil_combination_method&quot;</span><span class="p">)</span>
@@ -203,7 +207,15 @@
         <span class="n">image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">sensitivity_maps</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
         <span class="n">image</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">view_as_complex</span><span class="p">(</span>
             <span class="n">coil_combination</span><span class="p">(</span>
-                <span class="n">ifft2c</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">),</span> <span class="n">sensitivity_maps</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">coil_combination_method</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span>
+                <span class="n">ifft2</span><span class="p">(</span>
+                    <span class="n">image</span><span class="p">,</span>
+                    <span class="n">centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
+                    <span class="n">normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
+                    <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="n">sensitivity_maps</span><span class="p">,</span>
+                <span class="n">method</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">coil_combination_method</span><span class="p">,</span>
+                <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="p">)</span>
         <span class="n">_</span><span class="p">,</span> <span class="n">image</span> <span class="o">=</span> <span class="n">center_crop_to_smallest</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">image</span><span class="p">)</span>

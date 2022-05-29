@@ -11,7 +11,7 @@ from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
 from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import ifft2c
+from mridc.collections.common.parts.fft import ifft2
 from mridc.collections.common.parts.utils import coil_combination
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
 from mridc.collections.reconstruction.models.conv.gruconv2d import GRUConv2d
@@ -45,7 +45,9 @@ class CRNNet(BaseMRIReconstructionModel, ABC):
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
         self.no_dc = cfg_dict.get("no_dc")
-        self.fft_type = cfg_dict.get("fft_type")
+        self.fft_centered = cfg_dict.get("fft_centered")
+        self.fft_normalization = cfg_dict.get("fft_normalization")
+        self.spatial_dims = cfg_dict.get("spatial_dims")
         self.num_iterations = cfg_dict.get("num_iterations")
 
         self.crnn = RecurrentConvolutionalNetBlock(
@@ -57,7 +59,9 @@ class CRNNet(BaseMRIReconstructionModel, ABC):
                 batchnorm=cfg_dict.get("batchnorm"),
             ),
             num_iterations=self.num_iterations,
-            fft_type=self.fft_type,
+            fft_centered=self.fft_centered,
+            fft_normalization=self.fft_normalization,
+            spatial_dims=self.spatial_dims,
             no_dc=self.no_dc,
         )
 
@@ -123,7 +127,9 @@ class CRNNet(BaseMRIReconstructionModel, ABC):
         pred: torch.Tensor, shape [batch_size, n_x, n_y, 2]
             Processed prediction.
         """
-        pred = ifft2c(pred, fft_type=self.fft_type)
+        pred = ifft2(
+            pred, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
+        )
         pred = coil_combination(pred, sensitivity_maps, method=self.coil_combination_method, dim=1)
         pred = torch.view_as_complex(pred)
         _, pred = center_crop_to_smallest(target, pred)

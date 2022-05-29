@@ -5,7 +5,7 @@ import os
 from abc import ABC
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Sequence, Tuple
 
 import h5py
 import numpy as np
@@ -17,7 +17,7 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torchmetrics.metric import Metric
 
-from mridc.collections.common.parts.fft import ifft2c
+from mridc.collections.common.parts.fft import ifft2
 from mridc.collections.common.parts.utils import rss_complex, sense
 from mridc.collections.reconstruction.data.mri_data import FastMRISliceDataset
 from mridc.collections.reconstruction.data.subsample import create_mask_for_mask_type
@@ -69,15 +69,21 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
-        # Initialize the sensitivity network if use_sens_net is True
-        self.coil_combination_method = cfg_dict["coil_combination_method"]
+        self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
+        self.fft_centered = cfg_dict.get("fft_centered")
+        self.fft_normalization = cfg_dict.get("fft_normalization")
+        self.spatial_dims = cfg_dict.get("spatial_dims")
+
+        # Initialize the sensitivity network if use_sens_net is True
         self.use_sens_net = cfg_dict.get("use_sens_net")
         if self.use_sens_net:
             self.sens_net = BaseSensitivityModel(
                 cfg_dict.get("sens_chans"),
                 cfg_dict.get("sens_pools"),
-                fft_type=self.fft_type,
+                fft_centered=self.fft_centered,
+                fft_normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
                 mask_type=cfg_dict.get("sens_mask_type"),
                 normalize=cfg_dict.get("sens_normalize"),
                 mask_center=cfg_dict.get("sens_mask_center"),
@@ -213,7 +219,16 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, mask)
             if self.coil_combination_method.upper() == "SENSE":
-                target = sense(ifft2c(kspace, fft_type=self.fft_type), sensitivity_maps, dim=1)
+                target = sense(
+                    ifft2(
+                        kspace,
+                        centered=self.fft_centered,
+                        normalization=self.fft_normalization,
+                        spatial_dims=self.spatial_dims,
+                    ),
+                    sensitivity_maps,
+                    dim=1,
+                )
 
         preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
 
@@ -278,7 +293,16 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, mask)
             if self.coil_combination_method.upper() == "SENSE":
-                target = sense(ifft2c(kspace, fft_type=self.fft_type), sensitivity_maps, dim=1)
+                target = sense(
+                    ifft2(
+                        kspace,
+                        centered=self.fft_centered,
+                        normalization=self.fft_normalization,
+                        spatial_dims=self.spatial_dims,
+                    ),
+                    sensitivity_maps,
+                    dim=1,
+                )
 
         preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
 
@@ -368,7 +392,16 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, mask)
             if self.coil_combination_method.upper() == "SENSE":
-                target = sense(ifft2c(kspace, fft_type=self.fft_type), sensitivity_maps, dim=1)
+                target = sense(
+                    ifft2(
+                        kspace,
+                        centered=self.fft_centered,
+                        normalization=self.fft_normalization,
+                        spatial_dims=self.spatial_dims,
+                    ),
+                    sensitivity_maps,
+                    dim=1,
+                )
 
         preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
 
@@ -604,7 +637,9 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                 crop_size=cfg.get("crop_size"),
                 crop_before_masking=cfg.get("crop_before_masking"),
                 kspace_zero_filling_size=cfg.get("kspace_zero_filling_size"),
-                fft_type=cfg.get("fft_type"),
+                fft_centered=cfg.get("fft_centered"),
+                fft_normalization=cfg.get("fft_normalization"),
+                spatial_dims=cfg.get("spatial_dims"),
                 use_seed=cfg.get("use_seed"),
             ),
             sample_rate=cfg.get("sample_rate"),
@@ -640,7 +675,9 @@ class BaseSensitivityModel(nn.Module, ABC):
         drop_prob: float = 0.0,
         padding_size: int = 15,
         mask_type: str = "2D",  # TODO: make this generalizable
-        fft_type: str = "orthogonal",
+        fft_centered: bool = True,
+        fft_normalization: str = "ortho",
+        spatial_dims: Sequence[int] = None,
         normalize: bool = True,
         mask_center: bool = True,
     ):
@@ -663,8 +700,12 @@ class BaseSensitivityModel(nn.Module, ABC):
             int
         mask_type: Type of mask to use.
             str
-        fft_type: Type of FFT to use.
+        fft_centered: Whether to center the FFT.
+            bool
+        fft_normalization: Type of FFT normalization to use.
             str
+        spatial_dims: Spatial dimensions of the data.
+            tuple
         normalize: Whether to normalize the input data.
             bool
         mask_center: Whether mask the center of the image.
@@ -673,7 +714,6 @@ class BaseSensitivityModel(nn.Module, ABC):
         super().__init__()
 
         self.mask_type = mask_type
-        self.fft_type = fft_type
 
         self.norm_unet = NormUnet(
             chans,
@@ -686,6 +726,9 @@ class BaseSensitivityModel(nn.Module, ABC):
         )
 
         self.mask_center = mask_center
+        self.fft_centered = fft_centered
+        self.fft_normalization = fft_normalization
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
         self.normalize = normalize
 
     @staticmethod
@@ -812,7 +855,14 @@ class BaseSensitivityModel(nn.Module, ABC):
             masked_kspace = batched_mask_center(masked_kspace, pad, pad + num_low_freqs, mask_type=self.mask_type)
 
         # convert to image space
-        images, batches = self.chans_to_batch_dim(ifft2c(masked_kspace))
+        images, batches = self.chans_to_batch_dim(
+            ifft2(
+                masked_kspace,
+                centered=self.fft_centered,
+                normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            )
+        )
 
         # estimate sensitivities
         images = self.batch_chans_to_chan_dim(self.norm_unet(images), batches)

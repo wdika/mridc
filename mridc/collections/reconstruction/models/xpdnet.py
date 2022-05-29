@@ -151,16 +151,20 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
         else:
             raise NotImplementedError(f"Image model architecture {image_model_architecture} not found for XPDNet.")
 
-        self.fft_type = cfg_dict.get("fft_type")
+        self.fft_normalization = cfg_dict.get("fft_normalization")
+        self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.num_cascades = cfg_dict.get("num_cascades")
 
         self.xpdnet = CrossDomainNetwork(
-            fft_type=self.fft_type,
             image_model_list=image_model_list,
             kspace_model_list=kspace_model_list,
             domain_sequence="KI" * num_iter,
             image_buffer_size=num_primal,
             kspace_buffer_size=num_dual,
             normalize_image=cfg_dict.get("normalize_image"),
+            fft_centered=self.fft_centered,
+            fft_normalization=self.fft_normalization,
+            spatial_dims=self.spatial_dims,
         )
 
         self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()

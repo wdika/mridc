@@ -9,7 +9,7 @@ from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
 from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import ifft2c
+from mridc.collections.common.parts.fft import ifft2
 from mridc.collections.common.parts.utils import coil_combination
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
 from mridc.collections.reconstruction.models.unet_base.unet_block import NormUnet
@@ -39,7 +39,9 @@ class UNet(BaseMRIReconstructionModel, ABC):
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
-        self.fft_type = cfg_dict.get("fft_type")
+        self.fft_centered = cfg_dict.get("fft_centered")
+        self.fft_normalization = cfg_dict.get("fft_normalization")
+        self.spatial_dims = cfg_dict.get("spatial_dims")
 
         self.unet = NormUnet(
             chans=cfg_dict.get("channels"),
@@ -91,7 +93,12 @@ class UNet(BaseMRIReconstructionModel, ABC):
         """
         eta = torch.view_as_complex(
             coil_combination(
-                ifft2c(y, fft_type=self.fft_type), sensitivity_maps, method=self.coil_combination_method, dim=1
+                ifft2(
+                    y, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
+                ),
+                sensitivity_maps,
+                method=self.coil_combination_method,
+                dim=1,
             )
         )
         _, eta = center_crop_to_smallest(target, eta)

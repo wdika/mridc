@@ -9,7 +9,7 @@ from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
 from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import fft2c, ifft2c
+from mridc.collections.common.parts.fft import fft2, ifft2
 from mridc.collections.common.parts.utils import complex_conj, complex_mul
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
 from mridc.collections.reconstruction.models.conv.conv2d import Conv2d
@@ -119,7 +119,9 @@ class LPDNet(BaseMRIReconstructionModel, ABC):
             [DualNet(self.num_dual, dual_architecture=dual_model) for _ in range(self.num_iter)]
         )
 
-        self.fft_type = cfg_dict.get("fft_type")
+        self.fft_centered = cfg_dict.get("fft_centered")
+        self.fft_normalization = cfg_dict.get("fft_normalization")
+        self.spatial_dims = cfg_dict.get("spatial_dims")
 
         self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
         self.eval_loss_fn = SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
@@ -158,7 +160,12 @@ class LPDNet(BaseMRIReconstructionModel, ABC):
              If False, returns the final estimate.
         """
         input_image = complex_mul(
-            ifft2c(torch.where(mask == 0, torch.tensor([0.0], dtype=y.dtype).to(y.device), y), fft_type=self.fft_type),
+            ifft2(
+                torch.where(mask == 0, torch.tensor([0.0], dtype=y.dtype).to(y.device), y),
+                centered=self.fft_centered,
+                normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            ),
             complex_conj(sensitivity_maps),
         ).sum(1)
         dual_buffer = torch.cat([y] * self.num_dual, -1).to(y.device)
@@ -170,16 +177,23 @@ class LPDNet(BaseMRIReconstructionModel, ABC):
             f_2 = torch.where(
                 mask == 0,
                 torch.tensor([0.0], dtype=f_2.dtype).to(f_2.device),
-                fft2c(complex_mul(f_2.unsqueeze(1), sensitivity_maps), fft_type=self.fft_type).type(f_2.type()),
+                fft2(
+                    complex_mul(f_2.unsqueeze(1), sensitivity_maps),
+                    centered=self.fft_centered,
+                    normalization=self.fft_normalization,
+                    spatial_dims=self.spatial_dims,
+                ).type(f_2.type()),
             )
             dual_buffer = self.dual_net[idx](dual_buffer, f_2, y)
 
             # Primal
             h_1 = dual_buffer[..., 0:2].clone()
             h_1 = complex_mul(
-                ifft2c(
+                ifft2(
                     torch.where(mask == 0, torch.tensor([0.0], dtype=h_1.dtype).to(h_1.device), h_1),
-                    fft_type=self.fft_type,
+                    centered=self.fft_centered,
+                    normalization=self.fft_normalization,
+                    spatial_dims=self.spatial_dims,
                 ),
                 complex_conj(sensitivity_maps),
             ).sum(1)
