@@ -20,7 +20,7 @@ model:
   sens_unet_dropout_probability: 0.0
   sens_unet_padding_size: 11
   sens_unet_normalize: true
-  output_type: SENSE
+  coil_combination_method: SENSE
   train_loss_fn: l1
   eval_loss_fn: l1
   fft_type: orthogonal
@@ -29,6 +29,7 @@ model:
     data_path: ???
     dataset_type: FastMRI
     challenge: multicoil
+    coil_combination_method: SENSE
     fft_type: orthogonal
     mask_args:
       type: gaussian2d

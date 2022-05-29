@@ -12,6 +12,8 @@ from pytorch_lightning import Trainer
 
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
 from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
+from mridc.collections.common.parts.fft import ifft2c
+from mridc.collections.common.parts.utils import sense
 from mridc.core.classes.common import typecheck
 
 __all__ = ["PICS"]
@@ -40,6 +42,8 @@ class PICS(BaseMRIReconstructionModel, ABC):
         self.num_iters = cfg_dict.get("num_iters")
         self._device = cfg_dict.get("device")
         self.fft_type = cfg_dict.get("fft_type")
+
+        self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
         # Initialize the sensitivity network if use_sens_net is True
         self.use_sens_net = cfg_dict.get("use_sens_net")
@@ -109,7 +113,6 @@ class PICS(BaseMRIReconstructionModel, ABC):
         pred: torch.Tensor, shape [batch_size, n_x, n_y, 2]
             Predicted data.
         """
-        sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         pred = torch.zeros_like(sensitivity_maps)
         # if "cuda" in str(self._device):
         #     pred = bart.bart(1, f"pics -d0 -g -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
@@ -138,8 +141,13 @@ class PICS(BaseMRIReconstructionModel, ABC):
         pred: Predicted data.
             torch.Tensor, shape [batch_size, n_x, n_y, 2]
         """
-        y, sensitivity_maps, mask, _, target, fname, slice_num, _ = batch
+        kspace, y, sensitivity_maps, mask, _, target, fname, slice_num, _ = batch
         y, mask, _ = self.process_inputs(y, mask)
+
+        if self.use_sens_net:
+            sensitivity_maps = self.sens_net(kspace, mask)
+            if self.coil_combination_method.upper() == "SENSE":
+                target = sense(ifft2c(kspace, fft_type=self.fft_type), sensitivity_maps, dim=1)
 
         y = torch.view_as_complex(y).permute(0, 2, 3, 1).detach().cpu().numpy()
 

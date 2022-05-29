@@ -9,7 +9,7 @@ model:
   imspace_conv_hidden_channels: 64
   imspace_conv_n_convs: 4
   imspace_conv_batchnorm: false
-  output_type: SENSE
+  coil_combination_method: SENSE
   use_sens_net: false
   sens_chans: 8
   sens_pools: 4
@@ -22,6 +22,7 @@ model:
     data_path: ???
     dataset_type: FastMRI
     challenge: multicoil
+    coil_combination_method: SENSE
     fft_type: orthogonal
     mask_args:
       type: gaussian2d

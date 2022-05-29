@@ -11,14 +11,14 @@ import h5py
 import numpy as np
 import torch
 import wandb
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch import nn
 from torch.utils.data import DataLoader
 from torchmetrics.metric import Metric
 
 from mridc.collections.common.parts.fft import ifft2c
-from mridc.collections.common.parts.utils import rss_complex
+from mridc.collections.common.parts.utils import rss_complex, sense
 from mridc.collections.reconstruction.data.mri_data import FastMRISliceDataset
 from mridc.collections.reconstruction.data.subsample import create_mask_for_mask_type
 from mridc.collections.reconstruction.metrics.evaluate import mse, nmse, psnr, ssim
@@ -66,6 +66,22 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
 
         # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
+
+        cfg_dict = OmegaConf.to_container(cfg, resolve=True)
+
+        # Initialize the sensitivity network if use_sens_net is True
+        self.coil_combination_method = cfg_dict["coil_combination_method"]
+
+        self.use_sens_net = cfg_dict.get("use_sens_net")
+        if self.use_sens_net:
+            self.sens_net = BaseSensitivityModel(
+                cfg_dict.get("sens_chans"),
+                cfg_dict.get("sens_pools"),
+                fft_type=self.fft_type,
+                mask_type=cfg_dict.get("sens_mask_type"),
+                normalize=cfg_dict.get("sens_normalize"),
+                mask_center=cfg_dict.get("sens_mask_center"),
+            )
 
         self.MSE = DistributedMetricSum()
         self.NMSE = DistributedMetricSum()
@@ -191,8 +207,14 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         'log': log,
             dict, shape [1]
         """
-        y, sensitivity_maps, mask, init_pred, target, _, _, acc = batch
+        kspace, y, sensitivity_maps, mask, init_pred, target, _, _, acc = batch
         y, mask, init_pred, r = self.process_inputs(y, mask, init_pred)
+
+        if self.use_sens_net:
+            sensitivity_maps = self.sens_net(kspace, mask)
+            if self.coil_combination_method.upper() == "SENSE":
+                target = sense(ifft2c(kspace, fft_type=self.fft_type), sensitivity_maps, dim=1)
+
         preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
 
         if self.accumulate_estimates:
@@ -250,8 +272,14 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         'log': log,
             dict, shape [1]
         """
-        y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
-        y, mask, init_pred, _ = self.process_inputs(y, mask, init_pred)
+        kspace, y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
+        y, mask, init_pred, r = self.process_inputs(y, mask, init_pred)
+
+        if self.use_sens_net:
+            sensitivity_maps = self.sens_net(kspace, mask)
+            if self.coil_combination_method.upper() == "SENSE":
+                target = sense(ifft2c(kspace, fft_type=self.fft_type), sensitivity_maps, dim=1)
+
         preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
 
         if self.accumulate_estimates:
@@ -334,8 +362,14 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         pred: Predicted data.
             torch.Tensor, shape [batch_size, n_x, n_y, 2]
         """
-        y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
-        y, mask, init_pred, _ = self.process_inputs(y, mask, init_pred)
+        kspace, y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
+        y, mask, init_pred, r = self.process_inputs(y, mask, init_pred)
+
+        if self.use_sens_net:
+            sensitivity_maps = self.sens_net(kspace, mask)
+            if self.coil_combination_method.upper() == "SENSE":
+                target = sense(ifft2c(kspace, fft_type=self.fft_type), sensitivity_maps, dim=1)
+
         preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
 
         if self.accumulate_estimates:
@@ -562,6 +596,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
             sense_root=cfg.get("sense_data_path"),
             challenge=cfg.get("challenge"),
             transform=MRIDataTransforms(
+                coil_combination_method=cfg.get("coil_combination_method"),
                 mask_func=mask_func,
                 shift_mask=shift_mask,
                 mask_center_scale=mask_center_scale,

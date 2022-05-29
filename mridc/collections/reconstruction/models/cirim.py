@@ -79,19 +79,7 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
 
         # Keep estimation through the cascades if keep_eta is True or re-estimate it if False.
         self.keep_eta = cfg_dict.get("keep_eta")
-        self.output_type = cfg_dict.get("output_type")
-
-        # Initialize the sensitivity network if use_sens_net is True
-        self.use_sens_net = cfg_dict.get("use_sens_net")
-        if self.use_sens_net:
-            self.sens_net = BaseSensitivityModel(
-                cfg_dict.get("sens_chans"),
-                cfg_dict.get("sens_pools"),
-                fft_type=self.fft_type,
-                mask_type=cfg_dict.get("sens_mask_type"),
-                normalize=cfg_dict.get("sens_normalize"),
-                mask_center=cfg_dict.get("sens_mask_center"),
-            )
+        self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
         # initialize weights if not using pretrained cirim
         if not cfg_dict.get("pretrained", False):
@@ -135,7 +123,6 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
              If self.accumulate_loss is True, returns a list of all intermediate estimates.
              If False, returns the final estimate.
         """
-        sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         prediction = y.clone()
         init_pred = None if init_pred is None or init_pred.dim() < 4 else init_pred
         hx = None
@@ -180,7 +167,7 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
         # Take the last time step of the eta
         if not self.no_dc or do_coil_combination:
             pred = ifft2c(pred, fft_type=self.fft_type)
-            pred = coil_combination(pred, sensitivity_maps, method=self.output_type, dim=1)
+            pred = coil_combination(pred, sensitivity_maps, method=self.coil_combination_method, dim=1)
         pred = torch.view_as_complex(pred)
         _, pred = center_crop_to_smallest(target, pred)
         return pred

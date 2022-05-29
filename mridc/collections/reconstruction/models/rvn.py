@@ -84,7 +84,7 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
             self.initializer = None  # type: ignore
 
         self.fft_type = cfg_dict.get("fft_type")
-        self.output_type = cfg_dict.get("output_type")
+        self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
         self.block_list: torch.nn.Module = torch.nn.ModuleList()
         for _ in range(self.num_steps if self.no_parameter_sharing else 1):
@@ -95,17 +95,6 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
                     num_layers=self.recurrent_num_layers,
                     fft_type=self.fft_type,
                 )
-            )
-
-        # Initialize the sensitivity network if use_sens_net is True
-        self.use_sens_net = cfg_dict.get("use_sens_net")
-        if self.use_sens_net:
-            self.sens_net = BaseSensitivityModel(
-                cfg_dict.get("sens_chans"),
-                cfg_dict.get("sens_pools"),
-                fft_type=self.fft_type,
-                mask_type=cfg_dict.get("sens_mask_type"),
-                normalize=cfg_dict.get("sens_normalize"),
             )
 
         std_init_range = 1 / self.recurrent_hidden_channels**0.5
@@ -151,8 +140,6 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
              If self.accumulate_loss is True, returns a list of all intermediate estimates.
              If False, returns the final estimate.
         """
-        sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
-
         previous_state: Optional[torch.Tensor] = None
 
         if self.initializer is not None:
@@ -187,7 +174,7 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
             )
 
         eta = ifft2c(kspace_prediction, fft_type=self.fft_type)
-        eta = coil_combination(eta, sensitivity_maps, method=self.output_type, dim=1)
+        eta = coil_combination(eta, sensitivity_maps, method=self.coil_combination_method, dim=1)
         eta = torch.view_as_complex(eta)
         _, eta = center_crop_to_smallest(target, eta)
         return eta

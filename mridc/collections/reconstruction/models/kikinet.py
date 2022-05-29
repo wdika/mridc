@@ -114,20 +114,8 @@ class KIKINet(BaseMRIReconstructionModel, ABC):
         self.image_model_list = torch.nn.ModuleList([image_model] * self.num_iter)
         self.kspace_model_list = torch.nn.ModuleList([MultiCoil(kspace_model, self._coil_dim)] * self.num_iter)
 
-        # Initialize the sensitivity network if use_sens_net is True
-        self.use_sens_net = cfg_dict.get("use_sens_net")
-        if self.use_sens_net:
-            self.sens_net = BaseSensitivityModel(
-                cfg_dict.get("sens_chans"),
-                cfg_dict.get("sens_pools"),
-                fft_type=self.fft_type,
-                mask_type=cfg_dict.get("sens_mask_type"),
-                normalize=cfg_dict.get("sens_normalize"),
-            )
-
         self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
         self.eval_loss_fn = SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
-        self.output_type = cfg_dict.get("output_type")
 
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
         self.accumulate_estimates = False
@@ -163,7 +151,6 @@ class KIKINet(BaseMRIReconstructionModel, ABC):
              If self.accumulate_loss is True, returns a list of all intermediate estimates.
              If False, returns the final estimate.
         """
-        sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         kspace = y.clone()
         zero = torch.zeros(1, 1, 1, 1, 1).to(kspace)
 

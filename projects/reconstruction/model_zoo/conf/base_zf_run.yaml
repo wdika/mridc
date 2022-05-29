@@ -4,13 +4,14 @@ mode: test
 
 model:
   model_name: ZF
-  zf_method: SENSE
+  coil_combination_method: SENSE
   fft_type: orthogonal
 
   test_ds:
     data_path: ???
     dataset_type: FastMRI
     challenge: multicoil
+    coil_combination_method: SENSE
     fft_type: orthogonal
     mask_args:
       type: gaussian2d

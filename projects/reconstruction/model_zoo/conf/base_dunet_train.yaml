@@ -12,7 +12,7 @@ model:
   data_consistency_term: PROX
   data_consistency_lambda_init: 0.1
   shared_params: false
-  output_type: SENSE
+  coil_combination_method: SENSE
   use_sens_net: false
   sens_chans: 8
   sens_pools: 4
@@ -25,6 +25,7 @@ model:
     data_path: ???
     dataset_type: FastMRI
     challenge: multicoil
+    coil_combination_method: SENSE
     fft_type: orthogonal
     mask_args:
       type: gaussian2d
@@ -50,6 +51,7 @@ model:
     data_path: ???
     dataset_type: FastMRI
     challenge: multicoil
+    coil_combination_method: SENSE
     fft_type: orthogonal
     mask_args:
       type: gaussian2d

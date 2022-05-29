@@ -163,20 +163,8 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
             normalize_image=cfg_dict.get("normalize_image"),
         )
 
-        # Initialize the sensitivity network if use_sens_net is True
-        self.use_sens_net = cfg_dict.get("use_sens_net")
-        if self.use_sens_net:
-            self.sens_net = BaseSensitivityModel(
-                cfg_dict.get("sens_chans"),
-                cfg_dict.get("sens_pools"),
-                fft_type=self.fft_type,
-                mask_type=cfg_dict.get("sens_mask_type"),
-                normalize=cfg_dict.get("sens_normalize"),
-            )
-
         self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
         self.eval_loss_fn = SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
-        self.output_type = cfg_dict.get("output_type")
 
         self.accumulate_estimates = False
 
@@ -211,7 +199,6 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
              If self.accumulate_loss is True, returns a list of all intermediate estimates.
              If False, returns the final estimate.
         """
-        sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         eta = self.xpdnet(y, sensitivity_maps, mask)
         eta = (eta**2).sqrt().sum(-1)
         _, eta = center_crop_to_smallest(target, eta)

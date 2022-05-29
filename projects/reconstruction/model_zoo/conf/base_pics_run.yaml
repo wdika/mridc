@@ -6,13 +6,14 @@ model:
   model_name: PICS
   reg_wt: 0.005
   num_iters: 60
-  output_type: SENSE
+  coil_combination_method: SENSE
   device: cuda
   use_sens_net: false
 
   test_ds:
     data_path: ???
     dataset_type: FastMRI
+    coil_combination_method: SENSE
     challenge: multicoil
     fft_type: orthogonal
     mask_args:

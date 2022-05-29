@@ -45,20 +45,10 @@ class MultiDomainNet(BaseMRIReconstructionModel, ABC):
             fft_type=self.fft_type,
         )
 
-        # Initialize the sensitivity network if use_sens_net is True
-        self.use_sens_net = cfg_dict.get("use_sens_net")
-        if self.use_sens_net:
-            self.sens_net = BaseSensitivityModel(
-                cfg_dict.get("sens_chans"),
-                cfg_dict.get("sens_pools"),
-                fft_type=self.fft_type,
-                mask_type=cfg_dict.get("sens_mask_type"),
-                normalize=cfg_dict.get("sens_normalize"),
-            )
+        self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
         self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
         self.eval_loss_fn = SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
-        self.output_type = cfg_dict.get("output_type")
 
         self.accumulate_estimates = False
 
@@ -116,14 +106,13 @@ class MultiDomainNet(BaseMRIReconstructionModel, ABC):
              If self.accumulate_loss is True, returns a list of all intermediate estimates.
              If False, returns the final estimate.
         """
-        sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         image = ifft2c(y, fft_type=self.fft_type)
 
         if hasattr(self, "standardization"):
             image = self.standardization(image, sensitivity_maps)
 
         output_image = self._compute_model_per_coil(self.unet, image.permute(0, 1, 4, 2, 3)).permute(0, 1, 3, 4, 2)
-        output_image = coil_combination(output_image, sensitivity_maps, method=self.output_type, dim=1)
+        output_image = coil_combination(output_image, sensitivity_maps, method=self.coil_combination_method, dim=1)
         output_image = torch.view_as_complex(output_image)
         _, output_image = center_crop_to_smallest(target, output_image)
         return output_image

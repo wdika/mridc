@@ -150,7 +150,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">initializer</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: ignore</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fft_type&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">output_type</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_type&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coil_combination_method</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;coil_combination_method&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">block_list</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_steps</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">no_parameter_sharing</span> <span class="k">else</span> <span class="mi">1</span><span class="p">):</span>
@@ -161,17 +161,6 @@
                     <span class="n">num_layers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">recurrent_num_layers</span><span class="p">,</span>
                     <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">,</span>
                 <span class="p">)</span>
-            <span class="p">)</span>
-
-        <span class="c1"># Initialize the sensitivity network if use_sens_net is True</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">use_sens_net</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;use_sens_net&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_sens_net</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">sens_net</span> <span class="o">=</span> <span class="n">BaseSensitivityModel</span><span class="p">(</span>
-                <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sens_chans&quot;</span><span class="p">),</span>
-                <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sens_pools&quot;</span><span class="p">),</span>
-                <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">,</span>
-                <span class="n">mask_type</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sens_mask_type&quot;</span><span class="p">),</span>
-                <span class="n">normalize</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sens_normalize&quot;</span><span class="p">),</span>
             <span class="p">)</span>
 
         <span class="n">std_init_range</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">recurrent_hidden_channels</span><span class="o">**</span><span class="mf">0.5</span>
@@ -217,8 +206,6 @@
 <span class="sd">             If self.accumulate_loss is True, returns a list of all intermediate estimates.</span>
 <span class="sd">             If False, returns the final estimate.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">sensitivity_maps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sens_net</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_sens_net</span> <span class="k">else</span> <span class="n">sensitivity_maps</span>
-
         <span class="n">previous_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">initializer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -253,7 +240,7 @@
             <span class="p">)</span>
 
         <span class="n">eta</span> <span class="o">=</span> <span class="n">ifft2c</span><span class="p">(</span><span class="n">kspace_prediction</span><span class="p">,</span> <span class="n">fft_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_type</span><span class="p">)</span>
-        <span class="n">eta</span> <span class="o">=</span> <span class="n">coil_combination</span><span class="p">(</span><span class="n">eta</span><span class="p">,</span> <span class="n">sensitivity_maps</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_type</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">eta</span> <span class="o">=</span> <span class="n">coil_combination</span><span class="p">(</span><span class="n">eta</span><span class="p">,</span> <span class="n">sensitivity_maps</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">coil_combination_method</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">eta</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">view_as_complex</span><span class="p">(</span><span class="n">eta</span><span class="p">)</span>
         <span class="n">_</span><span class="p">,</span> <span class="n">eta</span> <span class="o">=</span> <span class="n">center_crop_to_smallest</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">eta</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">eta</span></div></div>

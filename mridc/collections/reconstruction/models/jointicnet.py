@@ -84,12 +84,10 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
         self.lr_image = torch.nn.Parameter(torch.ones(self.num_iter))
         self.lr_sens = torch.nn.Parameter(torch.ones(self.num_iter))
 
-        self._coil_dim = 1
-        self._spatial_dims = (2, 3)
+        self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
         self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
         self.eval_loss_fn = SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
-        self.output_type = cfg_dict.get("output_type")
 
         self.accumulate_estimates = False
 
@@ -236,7 +234,7 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
         """
         DC_sens = self.sens_net(y, mask)
         sensitivity_maps = DC_sens.clone()
-        image = complex_mul(ifft2c(y, fft_type=self.fft_type), complex_conj(sensitivity_maps)).sum(self._coil_dim)
+        image = complex_mul(ifft2c(y, fft_type=self.fft_type), complex_conj(sensitivity_maps)).sum(1)
         for idx in range(self.num_iter):
             sensitivity_maps = self.update_C(idx, DC_sens, sensitivity_maps, image, y, mask)
             image = self.update_X(idx, image, sensitivity_maps, y, mask)

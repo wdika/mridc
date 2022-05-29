@@ -120,22 +120,9 @@ class LPDNet(BaseMRIReconstructionModel, ABC):
         )
 
         self.fft_type = cfg_dict.get("fft_type")
-        self._coil_dim = 1
-
-        # Initialize the sensitivity network if use_sens_net is True
-        self.use_sens_net = cfg_dict.get("use_sens_net")
-        if self.use_sens_net:
-            self.sens_net = BaseSensitivityModel(
-                cfg_dict.get("sens_chans"),
-                cfg_dict.get("sens_pools"),
-                fft_type=self.fft_type,
-                mask_type=cfg_dict.get("sens_mask_type"),
-                normalize=cfg_dict.get("sens_normalize"),
-            )
 
         self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
         self.eval_loss_fn = SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
-        self.output_type = cfg_dict.get("output_type")
 
         self.accumulate_estimates = False
 
@@ -170,8 +157,6 @@ class LPDNet(BaseMRIReconstructionModel, ABC):
              If self.accumulate_loss is True, returns a list of all intermediate estimates.
              If False, returns the final estimate.
         """
-        sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
-
         input_image = complex_mul(
             ifft2c(torch.where(mask == 0, torch.tensor([0.0], dtype=y.dtype).to(y.device), y), fft_type=self.fft_type),
             complex_conj(sensitivity_maps),

@@ -17,7 +17,7 @@ model:
   imspace_unet_dropout_probability: 0.0
   imspace_unet_padding_size: 11
   imspace_unet_normalize: true
-  output_type: SENSE
+  coil_combination_method: SENSE
   use_sens_net: false
   sens_chans: 8
   sens_pools: 4
@@ -30,6 +30,7 @@ model:
     data_path: ???
     dataset_type: FastMRI
     challenge: multicoil
+    coil_combination_method: SENSE
     fft_type: orthogonal
     mask_args:
       type: gaussian2d

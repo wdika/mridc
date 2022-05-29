@@ -10,6 +10,7 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
 from mridc.collections.common.parts.fft import ifft2c
+from mridc.collections.common.parts.utils import sense
 from mridc.collections.common.parts.utils import check_stacked_complex, coil_combination
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
 from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
@@ -39,7 +40,7 @@ class ZF(BaseMRIReconstructionModel, ABC):
 
         zf_cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
-        self.zf_method = zf_cfg_dict.get("zf_method")
+        self.coil_combination_method = zf_cfg_dict.get("coil_combination_method")
         self.fft_type = zf_cfg_dict.get("fft_type")
 
         # Initialize the sensitivity network if use_sens_net is True
@@ -110,9 +111,8 @@ class ZF(BaseMRIReconstructionModel, ABC):
         pred: torch.Tensor, shape [batch_size, n_x, n_y, 2]
             Predicted data.
         """
-        sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         pred = coil_combination(
-            ifft2c(y, fft_type=self.fft_type), sensitivity_maps, method=self.zf_method.upper(), dim=1
+            ifft2c(y, fft_type=self.fft_type), sensitivity_maps, method=self.coil_combination_method.upper(), dim=1
         )
         pred = check_stacked_complex(pred)
         _, pred = center_crop_to_smallest(target, pred)
@@ -138,8 +138,14 @@ class ZF(BaseMRIReconstructionModel, ABC):
         pred: Predicted data.
             torch.Tensor, shape [batch_size, n_x, n_y, 2]
         """
-        y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
+        kspace, y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
         y, mask, _ = self.process_inputs(y, mask)
+
+        if self.use_sens_net:
+            sensitivity_maps = self.sens_net(kspace, mask)
+            if self.coil_combination_method.upper() == "SENSE":
+                target = sense(ifft2c(kspace, fft_type=self.fft_type), sensitivity_maps, dim=1)
+
         prediction = self.forward(y, sensitivity_maps, mask, target)
 
         slice_num = int(slice_num)

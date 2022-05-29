@@ -95,22 +95,10 @@ class VSNet(BaseMRIReconstructionModel, ABC):
             fft_type=self.fft_type,
         )
 
-        self._coil_dim = 1
-
-        # Initialize the sensitivity network if use_sens_net is True
-        self.use_sens_net = cfg_dict.get("use_sens_net")
-        if self.use_sens_net:
-            self.sens_net = BaseSensitivityModel(
-                cfg_dict.get("sens_chans"),
-                cfg_dict.get("sens_pools"),
-                fft_type=self.fft_type,
-                mask_type=cfg_dict.get("sens_mask_type"),
-                normalize=cfg_dict.get("sens_normalize"),
-            )
+        self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
         self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
         self.eval_loss_fn = SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
-        self.output_type = cfg_dict.get("output_type")
 
         self.accumulate_estimates = False
 
@@ -148,7 +136,9 @@ class VSNet(BaseMRIReconstructionModel, ABC):
         sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         image = self.model(y, sensitivity_maps, mask)
         image = torch.view_as_complex(
-            coil_combination(ifft2c(image, fft_type=self.fft_type), sensitivity_maps, method=self.output_type, dim=1)
+            coil_combination(
+                ifft2c(image, fft_type=self.fft_type), sensitivity_maps, method=self.coil_combination_method, dim=1
+            )
         )
         _, image = center_crop_to_smallest(target, image)
         return image
