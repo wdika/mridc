@@ -26,6 +26,7 @@ class CrossDomainNetwork(nn.Module):
         fft_centered: bool = True,
         fft_normalization: str = "ortho",
         spatial_dims: Optional[Tuple[int, int]] = None,
+        coil_dim: int = 1,
         **kwargs,
     ):
         """
@@ -51,6 +52,8 @@ class CrossDomainNetwork(nn.Module):
             str, Default: "ortho".
         spatial_dims: Spatial dimensions.
             Tuple[int, int], Default: None.
+        coil_dim: Coil dimension.
+            int, Default: 1.
         kwargs:Keyword Arguments.
             dict
         """
@@ -59,7 +62,7 @@ class CrossDomainNetwork(nn.Module):
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
         self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
-        self._complex_dim = -1
+        self.coil_dim = coil_dim
 
         domain_sequence = list(domain_sequence.strip())  # type: ignore
         if not set(domain_sequence).issubset({"K", "I"}):
@@ -83,11 +86,11 @@ class CrossDomainNetwork(nn.Module):
         """Performs k-space correction."""
         forward_buffer = [
             self._forward_operator(image.clone(), sampling_mask, sensitivity_map)
-            for image in torch.split(image_buffer, 2, self._complex_dim)
+            for image in torch.split(image_buffer, 2, -1)
         ]
-        forward_buffer = torch.cat(forward_buffer, self._complex_dim)
+        forward_buffer = torch.cat(forward_buffer, -1)
 
-        kspace_buffer = torch.cat([kspace_buffer, forward_buffer, masked_kspace], self._complex_dim)
+        kspace_buffer = torch.cat([kspace_buffer, forward_buffer, masked_kspace], -1)
 
         if self.kspace_model_list is not None:
             kspace_buffer = self.kspace_model_list[block_idx](kspace_buffer.permute(0, 1, 4, 2, 3)).permute(
@@ -102,11 +105,11 @@ class CrossDomainNetwork(nn.Module):
         """Performs image correction."""
         backward_buffer = [
             self._backward_operator(kspace.clone(), sampling_mask, sensitivity_map)
-            for kspace in torch.split(kspace_buffer, 2, self._complex_dim)
+            for kspace in torch.split(kspace_buffer, 2, -1)
         ]
-        backward_buffer = torch.cat(backward_buffer, self._complex_dim)
+        backward_buffer = torch.cat(backward_buffer, -1)
 
-        image_buffer = torch.cat([image_buffer, backward_buffer], self._complex_dim).permute(0, 3, 1, 2)
+        image_buffer = torch.cat([image_buffer, backward_buffer], -1).permute(0, 3, 1, 2)
         image_buffer = self.image_model_list[block_idx](image_buffer).permute(0, 2, 3, 1)
 
         return image_buffer
@@ -117,7 +120,7 @@ class CrossDomainNetwork(nn.Module):
             sampling_mask == 0,
             torch.tensor([0.0], dtype=image.dtype).to(image.device),
             fft2(
-                complex_mul(image.unsqueeze(1), sensitivity_map),
+                complex_mul(image.unsqueeze(self.coil_dim), sensitivity_map),
                 centered=self.fft_centered,
                 normalization=self.fft_normalization,
                 spatial_dims=self.spatial_dims,
@@ -137,7 +140,7 @@ class CrossDomainNetwork(nn.Module):
                 ),
                 complex_conj(sensitivity_map),
             )
-            .sum(1)
+            .sum(self.coil_dim)
             .type(kspace.type())
         )
 
@@ -166,10 +169,8 @@ class CrossDomainNetwork(nn.Module):
         """
         input_image = self._backward_operator(masked_kspace, sampling_mask, sensitivity_map)
 
-        image_buffer = torch.cat([input_image] * self.image_buffer_size, self._complex_dim).to(masked_kspace.device)
-        kspace_buffer = torch.cat([masked_kspace] * self.kspace_buffer_size, self._complex_dim).to(
-            masked_kspace.device
-        )
+        image_buffer = torch.cat([input_image] * self.image_buffer_size, -1).to(masked_kspace.device)
+        kspace_buffer = torch.cat([masked_kspace] * self.kspace_buffer_size, -1).to(masked_kspace.device)
 
         kspace_block_idx, image_block_idx = 0, 0
         for block_domain in self.domain_sequence:

@@ -86,6 +86,7 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
         self.fft_centered = cfg_dict.get("fft_centered")
         self.fft_normalization = cfg_dict.get("fft_normalization")
         self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
         self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
         self.block_list: torch.nn.Module = torch.nn.ModuleList()
@@ -98,6 +99,7 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
                     fft_centered=self.fft_centered,
                     fft_normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,
+                    coil_dim=self.coil_dim,
                 )
             )
 
@@ -158,8 +160,8 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
                         ),
                         complex_conj(sensitivity_maps),
                     )
-                    .sum(1)
-                    .unsqueeze(1)
+                    .sum(self.coil_dim)
+                    .unsqueeze(self.coil_dim)
                 )
             elif self.initializer_initialization == "input_image":
                 if "initial_image" not in kwargs:
@@ -167,7 +169,7 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
                         "`'initial_image` is required as input if initializer_initialization "
                         f"is {self.initializer_initialization}."
                     )
-                initializer_input_image = kwargs["initial_image"].unsqueeze(1)
+                initializer_input_image = kwargs["initial_image"].unsqueeze(self.coil_dim)
             elif self.initializer_initialization == "zero_filled":
                 initializer_input_image = ifft2(
                     y,
@@ -205,7 +207,7 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
             normalization=self.fft_normalization,
             spatial_dims=self.spatial_dims,
         )
-        eta = coil_combination(eta, sensitivity_maps, method=self.coil_combination_method, dim=1)
+        eta = coil_combination(eta, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim)
         eta = torch.view_as_complex(eta)
         _, eta = center_crop_to_smallest(target, eta)
         return eta

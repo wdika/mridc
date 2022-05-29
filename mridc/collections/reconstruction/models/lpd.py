@@ -122,6 +122,7 @@ class LPDNet(BaseMRIReconstructionModel, ABC):
         self.fft_centered = cfg_dict.get("fft_centered")
         self.fft_normalization = cfg_dict.get("fft_normalization")
         self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
 
         self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
         self.eval_loss_fn = SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
@@ -167,7 +168,7 @@ class LPDNet(BaseMRIReconstructionModel, ABC):
                 spatial_dims=self.spatial_dims,
             ),
             complex_conj(sensitivity_maps),
-        ).sum(1)
+        ).sum(self.coil_dim)
         dual_buffer = torch.cat([y] * self.num_dual, -1).to(y.device)
         primal_buffer = torch.cat([input_image] * self.num_primal, -1).to(y.device)
 
@@ -178,7 +179,7 @@ class LPDNet(BaseMRIReconstructionModel, ABC):
                 mask == 0,
                 torch.tensor([0.0], dtype=f_2.dtype).to(f_2.device),
                 fft2(
-                    complex_mul(f_2.unsqueeze(1), sensitivity_maps),
+                    complex_mul(f_2.unsqueeze(self.coil_dim), sensitivity_maps),
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,
@@ -196,7 +197,7 @@ class LPDNet(BaseMRIReconstructionModel, ABC):
                     spatial_dims=self.spatial_dims,
                 ),
                 complex_conj(sensitivity_maps),
-            ).sum(1)
+            ).sum(self.coil_dim)
             primal_buffer = self.primal_net[idx](primal_buffer, h_1)
 
         output = primal_buffer[..., 0:2]

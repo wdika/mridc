@@ -153,6 +153,7 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
 
         self.fft_normalization = cfg_dict.get("fft_normalization")
         self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
         self.num_cascades = cfg_dict.get("num_cascades")
 
         self.xpdnet = CrossDomainNetwork(
@@ -165,6 +166,7 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
             fft_centered=self.fft_centered,
             fft_normalization=self.fft_normalization,
             spatial_dims=self.spatial_dims,
+            coil_dim=self.coil_dim,
         )
 
         self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()

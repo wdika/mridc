@@ -31,10 +31,10 @@ model:
   spatial_dims:
     - -2
     - -1
+  coil_dim: 1
 
   test_ds:
     data_path: ???
-    dataset_type: FastMRI
     challenge: multicoil
     coil_combination_method: SENSE
     fft_centered: True
@@ -42,6 +42,7 @@ model:
     spatial_dims:
       - -2
       - -1
+    coil_dim: 1
     mask_args:
       type: gaussian2d
       accelerations:

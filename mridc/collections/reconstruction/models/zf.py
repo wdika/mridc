@@ -44,6 +44,7 @@ class ZF(BaseMRIReconstructionModel, ABC):
         self.fft_centered = cfg_dict.get("fft_centered")
         self.fft_normalization = cfg_dict.get("fft_normalization")
         self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
 
         # Initialize the sensitivity network if use_sens_net is True
         self.use_sens_net = cfg_dict.get("use_sens_net")
@@ -54,6 +55,7 @@ class ZF(BaseMRIReconstructionModel, ABC):
                 fft_centered=self.fft_centered,
                 fft_normalization=self.fft_normalization,
                 spatial_dims=self.spatial_dims,
+                coil_dim=self.coil_dim,
                 mask_type=cfg_dict.get("sens_mask_type"),
                 normalize=cfg_dict.get("sens_normalize"),
             )
@@ -119,7 +121,7 @@ class ZF(BaseMRIReconstructionModel, ABC):
             ifft2(y, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims),
             sensitivity_maps,
             method=self.coil_combination_method.upper(),
-            dim=1,
+            dim=self.coil_dim,
         )
         pred = check_stacked_complex(pred)
         _, pred = center_crop_to_smallest(target, pred)
@@ -159,7 +161,7 @@ class ZF(BaseMRIReconstructionModel, ABC):
                         spatial_dims=self.spatial_dims,
                     ),
                     sensitivity_maps,
-                    dim=1,
+                    dim=self.coil_dim,
                 )
 
         prediction = self.forward(y, sensitivity_maps, mask, target)

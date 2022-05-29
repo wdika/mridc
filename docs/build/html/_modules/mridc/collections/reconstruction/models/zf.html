@@ -110,6 +110,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fft_centered&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fft_normalization&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;spatial_dims&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;coil_dim&quot;</span><span class="p">)</span>
 
         <span class="c1"># Initialize the sensitivity network if use_sens_net is True</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">use_sens_net</span> <span class="o">=</span> <span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;use_sens_net&quot;</span><span class="p">)</span>
@@ -120,6 +121,7 @@
                 <span class="n">fft_centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
                 <span class="n">fft_normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
                 <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
+                <span class="n">coil_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">,</span>
                 <span class="n">mask_type</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sens_mask_type&quot;</span><span class="p">),</span>
                 <span class="n">normalize</span><span class="o">=</span><span class="n">cfg_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sens_normalize&quot;</span><span class="p">),</span>
             <span class="p">)</span>
@@ -185,7 +187,7 @@
             <span class="n">ifft2</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">centered</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span> <span class="n">normalization</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span> <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">),</span>
             <span class="n">sensitivity_maps</span><span class="p">,</span>
             <span class="n">method</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">coil_combination_method</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span>
-            <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">pred</span> <span class="o">=</span> <span class="n">check_stacked_complex</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span>
         <span class="n">_</span><span class="p">,</span> <span class="n">pred</span> <span class="o">=</span> <span class="n">center_crop_to_smallest</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">pred</span><span class="p">)</span>
@@ -225,7 +227,7 @@
                         <span class="n">spatial_dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
                     <span class="p">),</span>
                     <span class="n">sensitivity_maps</span><span class="p">,</span>
-                    <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                    <span class="n">dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">,</span>
                 <span class="p">)</span>
 
         <span class="n">prediction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">sensitivity_maps</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>

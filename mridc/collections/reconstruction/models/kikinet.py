@@ -111,6 +111,7 @@ class KIKINet(BaseMRIReconstructionModel, ABC):
         self.fft_centered = cfg_dict.get("fft_centered")
         self.fft_normalization = cfg_dict.get("fft_normalization")
         self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
 
         self.image_model_list = torch.nn.ModuleList([image_model] * self.num_iter)
         self.kspace_model_list = torch.nn.ModuleList([MultiCoil(kspace_model, coil_dim=1)] * self.num_iter)
@@ -171,12 +172,12 @@ class KIKINet(BaseMRIReconstructionModel, ABC):
                     spatial_dims=self.spatial_dims,
                 ),
                 complex_conj(sensitivity_maps),
-            ).sum(1)
-            image = self.image_model_list[idx](image.unsqueeze(1)).squeeze(1)
+            ).sum(self.coil_dim)
+            image = self.image_model_list[idx](image.unsqueeze(self.coil_dim)).squeeze(self.coil_dim)
 
             if not self.no_dc:
                 image = fft2(
-                    complex_mul(image.unsqueeze(1), sensitivity_maps),
+                    complex_mul(image.unsqueeze(self.coil_dim), sensitivity_maps),
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,
@@ -190,11 +191,11 @@ class KIKINet(BaseMRIReconstructionModel, ABC):
                         spatial_dims=self.spatial_dims,
                     ),
                     complex_conj(sensitivity_maps),
-                ).sum(1)
+                ).sum(self.coil_dim)
 
             if idx < self.num_iter - 1:
                 kspace = fft2(
-                    complex_mul(image.unsqueeze(1), sensitivity_maps),
+                    complex_mul(image.unsqueeze(self.coil_dim), sensitivity_maps),
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,

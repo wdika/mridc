@@ -22,6 +22,7 @@ class MRIDataTransforms:
     def __init__(
         self,
         coil_combination_method: str = "SENSE",
+        dimensionality: int = 2,
         mask_func: Optional[List[MaskFunc]] = None,
         shift_mask: bool = False,
         mask_center_scale: Optional[float] = 0.02,
@@ -34,6 +35,7 @@ class MRIDataTransforms:
         fft_centered: bool = True,
         fft_normalization: str = "ortho",
         spatial_dims: Sequence[int] = None,
+        coil_dim: int = 0,
         use_seed: bool = True,
     ):
         """
@@ -42,6 +44,7 @@ class MRIDataTransforms:
         Parameters
         ----------
         coil_combination_method : The coil combination method to use. Default: 'SENSE'
+        dimensionality : The dimensionality of the data. Default: 2
         mask_func: The function that masks the kspace.
         shift_mask: Whether to shift the mask.
         mask_center_scale: The scale of the center of the mask.
@@ -54,6 +57,7 @@ class MRIDataTransforms:
         fft_centered: Whether to center the fft.
         fft_normalization: The normalization of the fft.
         spatial_dims: The spatial dimensions of the data.
+        coil_dim: The coil dimension of the data.
         use_seed: Whether to use the seed.
         """
         self.coil_combination_method = coil_combination_method
@@ -69,6 +73,7 @@ class MRIDataTransforms:
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
         self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
+        self.coil_dim = coil_dim - 1 if dimensionality == 2 else coil_dim
         self.use_seed = use_seed
 
     def __call__(
@@ -162,7 +167,7 @@ class MRIDataTransforms:
                     normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,
                 ),
-                dim=0,
+                dim=self.coil_dim,
             )
         elif self.coil_combination_method.upper() == "SENSE":
             if sensitivity_map is not None and sensitivity_map.size != 0:
@@ -174,7 +179,7 @@ class MRIDataTransforms:
                         spatial_dims=self.spatial_dims,
                     ),
                     sensitivity_map,
-                    dim=0,
+                    dim=self.coil_dim,
                 )
         elif target is not None and target.size != 0:
             target = to_tensor(target)

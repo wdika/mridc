@@ -44,6 +44,7 @@ class VarNet(BaseMRIReconstructionModel, ABC):
         self.fft_centered = cfg_dict.get("fft_centered")
         self.fft_normalization = cfg_dict.get("fft_normalization")
         self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
         self.num_cascades = cfg_dict.get("num_cascades")
 
         # Cascades of VN blocks
@@ -59,6 +60,7 @@ class VarNet(BaseMRIReconstructionModel, ABC):
                     fft_centered=self.fft_centered,
                     fft_normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,
+                    coil_dim=self.coil_dim,
                     no_dc=self.no_dc,
                 )
                 for _ in range(self.num_cascades)
@@ -119,7 +121,9 @@ class VarNet(BaseMRIReconstructionModel, ABC):
             normalization=self.fft_normalization,
             spatial_dims=self.spatial_dims,
         )
-        estimation = coil_combination(estimation, sensitivity_maps, method=self.coil_combination_method, dim=1)
+        estimation = coil_combination(
+            estimation, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim
+        )
         estimation = torch.view_as_complex(estimation)
         _, estimation = center_crop_to_smallest(target, estimation)
         return estimation

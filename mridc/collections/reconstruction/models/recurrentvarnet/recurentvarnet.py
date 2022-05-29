@@ -130,6 +130,7 @@ class RecurrentVarNetBlock(nn.Module):
         fft_centered: bool = True,
         fft_normalization: str = "ortho",
         spatial_dims: Optional[Tuple[int, int]] = None,
+        coil_dim: int = 1,
     ):
         """
         Inits RecurrentVarNetBlock.
@@ -148,11 +149,14 @@ class RecurrentVarNetBlock(nn.Module):
             str, Default: "ortho".
         spatial_dims: Spatial dimensions of the input.
             Tuple[int, int], Default: None.
+        coil_dim: Number of coils.
+            int, Default: 1.
         """
         super().__init__()
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
         self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
+        self.coil_dim = coil_dim
 
         self.learning_rate = nn.Parameter(torch.tensor([1.0]))  # :math:`\alpha_t`
         self.regularizer = Conv2dGRU(
@@ -169,8 +173,6 @@ class RecurrentVarNetBlock(nn.Module):
         sampling_mask: torch.Tensor,
         sensitivity_map: torch.Tensor,
         hidden_state: Union[None, torch.Tensor],
-        coil_dim: int = 1,
-        complex_dim: int = -1,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Computes forward pass of RecurrentVarNetBlock.
@@ -187,10 +189,6 @@ class RecurrentVarNetBlock(nn.Module):
             torch.Tensor, shape [batch_size, n_coil, height, width, 2]
         hidden_state: ConvGRU hidden state.
             None or torch.Tensor, shape [batch_size, n_l, height, width, hidden_channels]
-        coil_dim: Coil dimension.
-            int, Default: 1.
-        complex_dim: Complex dimension.
-            int, Default: -1.
 
         Returns
         -------
@@ -215,10 +213,10 @@ class RecurrentVarNetBlock(nn.Module):
                         spatial_dims=self.spatial_dims,
                     ),
                     complex_conj(sensitivity_map),
-                ).sum(coil_dim)
-                for kspace in torch.split(current_kspace, 2, complex_dim)
+                ).sum(self.coil_dim)
+                for kspace in torch.split(current_kspace, 2, -1)
             ],
-            dim=complex_dim,
+            dim=-1,
         ).permute(0, 3, 1, 2)
 
         recurrent_term, hidden_state = self.regularizer(recurrent_term, hidden_state)  # :math:`w_t`, :math:`h_{t+1}`
@@ -227,14 +225,14 @@ class RecurrentVarNetBlock(nn.Module):
         recurrent_term = torch.cat(
             [
                 fft2(
-                    complex_mul(image.unsqueeze(coil_dim), sensitivity_map),
+                    complex_mul(image.unsqueeze(self.coil_dim), sensitivity_map),
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,
                 )
-                for image in torch.split(recurrent_term, 2, complex_dim)
+                for image in torch.split(recurrent_term, 2, -1)
             ],
-            dim=complex_dim,
+            dim=-1,
         )
 
         new_kspace = current_kspace - self.learning_rate * kspace_error + recurrent_term

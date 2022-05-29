@@ -42,6 +42,7 @@ class UNet(BaseMRIReconstructionModel, ABC):
         self.fft_centered = cfg_dict.get("fft_centered")
         self.fft_normalization = cfg_dict.get("fft_normalization")
         self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
 
         self.unet = NormUnet(
             chans=cfg_dict.get("channels"),
@@ -98,8 +99,10 @@ class UNet(BaseMRIReconstructionModel, ABC):
                 ),
                 sensitivity_maps,
                 method=self.coil_combination_method,
-                dim=1,
+                dim=self.coil_dim,
             )
         )
         _, eta = center_crop_to_smallest(target, eta)
-        return torch.view_as_complex(self.unet(torch.view_as_real(eta.unsqueeze(1)))).squeeze(1)
+        return torch.view_as_complex(self.unet(torch.view_as_real(eta.unsqueeze(self.coil_dim)))).squeeze(
+            self.coil_dim
+        )

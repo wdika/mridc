@@ -43,6 +43,7 @@ class PICS(BaseMRIReconstructionModel, ABC):
         self._device = cfg_dict.get("device")
         self.fft_normalization = cfg_dict.get("fft_normalization")
         self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
         self.num_cascades = cfg_dict.get("num_cascades")
 
         self.coil_combination_method = cfg_dict.get("coil_combination_method")
@@ -56,6 +57,7 @@ class PICS(BaseMRIReconstructionModel, ABC):
                 fft_centered=self.fft_centered,
                 fft_normalization=self.fft_normalization,
                 spatial_dims=self.spatial_dims,
+                coil_dim=self.coil_dim,
                 mask_type=cfg_dict.get("sens_mask_type"),
                 normalize=cfg_dict.get("sens_normalize"),
             )
@@ -159,7 +161,7 @@ class PICS(BaseMRIReconstructionModel, ABC):
                         spatial_dims=self.spatial_dims,
                     ),
                     sensitivity_maps,
-                    dim=1,
+                    dim=self.coil_dim,
                 )
 
         y = torch.view_as_complex(y).permute(0, 2, 3, 1).detach().cpu().numpy()

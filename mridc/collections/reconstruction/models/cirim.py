@@ -55,6 +55,7 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
         self.fft_centered = cfg_dict.get("fft_centered")
         self.fft_normalization = cfg_dict.get("fft_normalization")
         self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
         self.num_cascades = cfg_dict.get("num_cascades")
 
         self.cirim = torch.nn.ModuleList(
@@ -76,6 +77,7 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
                     fft_centered=self.fft_centered,
                     fft_normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,
+                    coil_dim=self.coil_dim,
                 )
                 for _ in range(self.num_cascades)
             ]
@@ -173,7 +175,7 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
             pred = ifft2(
                 pred, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
             )
-            pred = coil_combination(pred, sensitivity_maps, method=self.coil_combination_method, dim=1)
+            pred = coil_combination(pred, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim)
         pred = torch.view_as_complex(pred)
         _, pred = center_crop_to_smallest(target, pred)
         return pred
@@ -204,8 +206,8 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
             def loss_fn(x, y):
                 """Calculate the ssim loss."""
                 return _loss_fn(
-                    x.unsqueeze(dim=1),
-                    torch.abs(y / torch.max(torch.abs(y))).unsqueeze(dim=1),
+                    x.unsqueeze(dim=self.coil_dim),
+                    torch.abs(y / torch.max(torch.abs(y))).unsqueeze(dim=self.coil_dim),
                     data_range=torch.tensor(max_value).unsqueeze(dim=0).to(x.device),
                 )
 

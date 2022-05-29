@@ -42,6 +42,7 @@ class RecurrentConvolutionalNetBlock(torch.nn.Module):
         fft_centered: bool = True,
         fft_normalization: str = "ortho",
         spatial_dims: Optional[Tuple[int, int]] = None,
+        coil_dim: int = 1,
         no_dc: bool = False,
     ):
         """
@@ -54,6 +55,7 @@ class RecurrentConvolutionalNetBlock(torch.nn.Module):
         fft_centered: Whether to use centered FFT.
         fft_normalization: Whether to use normalized FFT.
         spatial_dims: Spatial dimensions of the input.
+        coil_dim: Dimension of the coil.
         no_dc: Whether to remove the DC component.
         """
         super().__init__()
@@ -63,6 +65,7 @@ class RecurrentConvolutionalNetBlock(torch.nn.Module):
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
         self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
+        self.coil_dim = coil_dim
         self.no_dc = no_dc
 
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
@@ -101,7 +104,7 @@ class RecurrentConvolutionalNetBlock(torch.nn.Module):
         SENSE reconstruction reduced to the same size as the input.
         """
         x = ifft2(x, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims)
-        return complex_mul(x, complex_conj(sens_maps)).sum(1)
+        return complex_mul(x, complex_conj(sens_maps)).sum(self.coil_dim)
 
     def forward(
         self,
@@ -131,7 +134,7 @@ class RecurrentConvolutionalNetBlock(torch.nn.Module):
 
             eta = self.sens_reduce(pred, sens_maps)
             eta = self.model(eta.permute(0, 3, 1, 2)).permute(0, 2, 3, 1) + eta
-            eta = self.sens_expand(eta.unsqueeze(1), sens_maps)
+            eta = self.sens_expand(eta.unsqueeze(self.coil_dim), sens_maps)
 
             if not self.no_dc:
                 # TODO: Check if this is correct

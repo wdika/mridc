@@ -17,6 +17,7 @@ def log_likelihood_gradient(
     fft_centered: bool,
     fft_normalization: str,
     spatial_dims: Sequence[int],
+    coil_dim: int,
 ) -> torch.Tensor:
     """
     Computes the gradient of the log-likelihood function.
@@ -31,6 +32,7 @@ def log_likelihood_gradient(
     fft_centered: Whether to center the FFT.
     fft_normalization: Whether to normalize the FFT.
     spatial_dims: Spatial dimensions of the data.
+    coil_dim: Dimension of the coil.
 
     Returns
     -------
@@ -60,8 +62,8 @@ def log_likelihood_gradient(
 
     pred_real, pred_imag = pred.chunk(2, -1)
 
-    re_out = torch.sum(pred_real * sense_real + pred_imag * sense_imag, 1) / (sigma**2.0)
-    im_out = torch.sum(pred_imag * sense_real - pred_real * sense_imag, 1) / (sigma**2.0)
+    re_out = torch.sum(pred_real * sense_real + pred_imag * sense_imag, coil_dim) / (sigma**2.0)
+    im_out = torch.sum(pred_imag * sense_real - pred_real * sense_imag, coil_dim) / (sigma**2.0)
 
     eta_real = eta_real.squeeze(0)
     eta_imag = eta_imag.squeeze(0)

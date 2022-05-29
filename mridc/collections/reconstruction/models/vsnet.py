@@ -50,6 +50,7 @@ class VSNet(BaseMRIReconstructionModel, ABC):
         num_cascades = cfg_dict.get("num_cascades")
         self.fft_normalization = cfg_dict.get("fft_normalization")
         self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
         self.num_cascades = cfg_dict.get("num_cascades")
 
         image_model_architecture = cfg_dict.get("imspace_model_architecture")
@@ -97,6 +98,7 @@ class VSNet(BaseMRIReconstructionModel, ABC):
             fft_centered=self.fft_centered,
             fft_normalization=self.fft_normalization,
             spatial_dims=self.spatial_dims,
+            coil_dim=self.coil_dim,
         )
 
         self.coil_combination_method = cfg_dict.get("coil_combination_method")
@@ -149,7 +151,7 @@ class VSNet(BaseMRIReconstructionModel, ABC):
                 ),
                 sensitivity_maps,
                 method=self.coil_combination_method,
-                dim=1,
+                dim=self.coil_dim,
             )
         )
         _, image = center_crop_to_smallest(target, image)

@@ -26,17 +26,16 @@ class MultiDomainNet(BaseMRIReconstructionModel, ABC):
         # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
 
-        self._coil_dim = 1
-        self._complex_dim = -1
-
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
-        standardization = cfg_dict["standardization"]
-        if standardization:
-            self.standardization = StandardizationLayer(self._coil_dim, self._complex_dim)
 
         self.fft_normalization = cfg_dict.get("fft_normalization")
         self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
         self.num_cascades = cfg_dict.get("num_cascades")
+
+        standardization = cfg_dict["standardization"]
+        if standardization:
+            self.standardization = StandardizationLayer(self.coil_dim, -1)
 
         self.unet = MultiDomainUnet2d(
             in_channels=4 if standardization else 2,  # if standardization, in_channels is 4 due to standardized input
@@ -47,6 +46,7 @@ class MultiDomainNet(BaseMRIReconstructionModel, ABC):
             fft_centered=self.fft_centered,
             fft_normalization=self.fft_normalization,
             spatial_dims=self.spatial_dims,
+            coil_dim=self.coil_dim,
         )
 
         self.coil_combination_method = cfg_dict.get("coil_combination_method")
@@ -73,10 +73,10 @@ class MultiDomainNet(BaseMRIReconstructionModel, ABC):
             The computed output.
         """
         output = []
-        for idx in range(data.size(self._coil_dim)):
-            subselected_data = data.select(self._coil_dim, idx)
+        for idx in range(data.size(self.coil_dim)):
+            subselected_data = data.select(self.coil_dim, idx)
             output.append(model(subselected_data))
-        output = torch.stack(output, dim=self._coil_dim)
+        output = torch.stack(output, dim=self.coil_dim)
         return output
 
     @typecheck()
@@ -118,7 +118,9 @@ class MultiDomainNet(BaseMRIReconstructionModel, ABC):
             image = self.standardization(image, sensitivity_maps)
 
         output_image = self._compute_model_per_coil(self.unet, image.permute(0, 1, 4, 2, 3)).permute(0, 1, 3, 4, 2)
-        output_image = coil_combination(output_image, sensitivity_maps, method=self.coil_combination_method, dim=1)
+        output_image = coil_combination(
+            output_image, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim
+        )
         output_image = torch.view_as_complex(output_image)
         _, output_image = center_crop_to_smallest(target, output_image)
         return output_image

@@ -50,6 +50,7 @@ class DUNet(BaseMRIReconstructionModel, ABC):
         self.fft_centered = cfg_dict.get("fft_centered")
         self.fft_normalization = cfg_dict.get("fft_normalization")
         self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
 
         reg_model_architecture = cfg_dict.get("reg_model_architecture")
         if reg_model_architecture == "DIDN":
@@ -156,10 +157,10 @@ class DUNet(BaseMRIReconstructionModel, ABC):
                 ),
                 complex_conj(sensitivity_maps),
             ),
-            1,
+            self.coil_dim,
         )
         image = self.model(init_pred, y, sensitivity_maps, mask)
-        image = torch.sum(complex_mul(image, complex_conj(sensitivity_maps)), 1)
+        image = torch.sum(complex_mul(image, complex_conj(sensitivity_maps)), self.coil_dim)
         image = torch.view_as_complex(image)
         _, image = center_crop_to_smallest(target, image)
         return image

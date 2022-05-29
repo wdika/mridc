@@ -23,6 +23,7 @@ class VarNetBlock(torch.nn.Module):
         fft_centered: bool = True,
         fft_normalization: str = "ortho",
         spatial_dims: Optional[Tuple[int, int]] = None,
+        coil_dim: int = 1,
         no_dc: bool = False,
     ):
         """
@@ -34,6 +35,7 @@ class VarNetBlock(torch.nn.Module):
         fft_centered: Whether to center the fft.
         fft_normalization: The normalization of the fft.
         spatial_dims: The spatial dimensions of the data.
+        coil_dim: The dimension of the coil dimension.
         no_dc: Whether to remove the DC component.
         """
         super().__init__()
@@ -42,6 +44,7 @@ class VarNetBlock(torch.nn.Module):
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
         self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
+        self.coil_dim = coil_dim
         self.no_dc = no_dc
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
 
@@ -79,7 +82,7 @@ class VarNetBlock(torch.nn.Module):
         SENSE coil-combined reconstruction.
         """
         x = ifft2(x, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims)
-        return complex_mul(x, complex_conj(sens_maps)).sum(dim=1, keepdim=True)
+        return complex_mul(x, complex_conj(sens_maps)).sum(dim=self.coil_dim, keepdim=True)
 
     def forward(
         self,

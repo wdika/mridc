@@ -122,6 +122,7 @@ def evaluate(
     no_params,
     slice_start,
     slice_end,
+    coil_dim,
 ):
     """
     Evaluates the reconstructions.
@@ -137,6 +138,7 @@ def evaluate(
     no_params: The number of parameters.
     slice_start: The start slice. (optional)
     slice_end: The end slice. (optional)
+    coil_dim: The coil dimension. (optional)
 
     Returns
     -------
@@ -165,13 +167,10 @@ def evaluate(
                     tensor_to_complex_np(
                         torch.sum(
                             complex_mul(
-                                ifft2(
-                                    to_tensor(kspace),
-                                    centered=True if "fastmri" in str(arguments.sense_path).lower() else False,
-                                ),
+                                ifft2(to_tensor(kspace), centered="fastmri" in str(arguments.sense_path).lower()),
                                 complex_conj(to_tensor(sense)),
                             ),
-                            1,
+                            coil_dim,
                         )
                     )
                 )
@@ -179,7 +178,7 @@ def evaluate(
                 recons = recons[reconstruction_key][()]
 
                 if recons.ndim == 4:
-                    recons = recons.squeeze(1)
+                    recons = recons.squeeze(coil_dim)
 
                 if arguments.crop_size is not None:
                     crop_size = arguments.crop_size
@@ -217,8 +216,8 @@ def evaluate(
                 if arguments.type == "mean_std":
                     _metrics.push(target, recons)
                 else:
-                    _target = np.expand_dims(target, 1)
-                    _recons = np.expand_dims(recons, 1)
+                    _target = np.expand_dims(target, coil_dim)
+                    _recons = np.expand_dims(recons, coil_dim)
                     for sl in range(target.shape[0]):
                         _metrics["FNAME"] = tgt_file.name
                         _metrics["SLICE"] = sl
@@ -267,6 +266,7 @@ if __name__ == "__main__":
     parser.add_argument("--type", choices=["mean_std", "all_slices"], default="mean_std", help="Output type.")
     parser.add_argument("--slice_start", type=int, help="Select to skip first slices")
     parser.add_argument("--slice_end", type=int, help="Select to skip last slices")
+    parser.add_argument("--coil_dim", type=int, default=1, help="The coil dimension")
 
     args = parser.parse_args()
 
@@ -296,6 +296,7 @@ if __name__ == "__main__":
         args.no_params,
         args.slice_start,
         args.slice_end,
+        args.coil_dim,
     )
 
     if args.type == "mean_std":

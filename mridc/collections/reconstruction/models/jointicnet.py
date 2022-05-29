@@ -45,6 +45,7 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
         self.fft_centered = cfg_dict.get("fft_centered")
         self.fft_normalization = cfg_dict.get("fft_normalization")
         self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
 
         self.kspace_model = NormUnet(
             cfg_dict.get("kspace_unet_num_filters"),
@@ -73,6 +74,7 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
             fft_centered=self.fft_centered,
             fft_normalization=self.fft_normalization,
             spatial_dims=self.spatial_dims,
+            coil_dim=self.coil_dim,
             mask_type=cfg_dict.get("sens_mask_type"),
             drop_prob=cfg_dict.get("sens_unet_dropout_probability"),
             padding_size=cfg_dict.get("sens_unet_padding_size"),
@@ -134,7 +136,7 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
         sense_term_2 = 2 * self.reg_param_C[idx] * self.lr_sens[idx] * DC_sens
         # A(x_{k}) = M * F * (C * x_{k})
         sense_term_3_A = fft2(
-            complex_mul(image.unsqueeze(1), sensitivity_maps),
+            complex_mul(image.unsqueeze(self.coil_dim), sensitivity_maps),
             centered=self.fft_centered,
             normalization=self.fft_normalization,
             spatial_dims=self.spatial_dims,
@@ -153,7 +155,7 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
             normalization=self.fft_normalization,
             spatial_dims=self.spatial_dims,
         )
-        sense_term_3 = 2 * self.lr_sens[idx] * sense_term_3_backward * complex_conj(image).unsqueeze(1)
+        sense_term_3 = 2 * self.lr_sens[idx] * sense_term_3_backward * complex_conj(image).unsqueeze(self.coil_dim)
         sensitivity_maps = sense_term_1 + sense_term_2 - sense_term_3
         return sensitivity_maps
 
@@ -193,7 +195,7 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
             1 - 2 * self.reg_param_I[idx] * self.lr_image[idx] - 2 * self.reg_param_F[idx] * self.lr_image[idx]
         ) * image
         # D_I(x_{k})
-        image_term_2_DI = self.image_model(image.unsqueeze(1)).squeeze(1).contiguous()
+        image_term_2_DI = self.image_model(image.unsqueeze(self.coil_dim)).squeeze(self.coil_dim).contiguous()
         image_term_2_DF = ifft2(
             self.kspace_model(
                 fft2(
@@ -201,9 +203,9 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,
-                ).unsqueeze(1)
+                ).unsqueeze(self.coil_dim)
             )
-            .squeeze(1)
+            .squeeze(self.coil_dim)
             .contiguous(),
             centered=self.fft_centered,
             normalization=self.fft_normalization,
@@ -217,7 +219,7 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
         )
         # A(x{k}) - b) = M * F * (C * x{k}) - b
         image_term_3_A = fft2(
-            complex_mul(image.unsqueeze(1), sensitivity_maps),
+            complex_mul(image.unsqueeze(self.coil_dim), sensitivity_maps),
             centered=self.fft_centered,
             normalization=self.fft_normalization,
             spatial_dims=self.spatial_dims,
@@ -232,7 +234,7 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
                 spatial_dims=self.spatial_dims,
             ),
             complex_conj(sensitivity_maps),
-        ).sum(1)
+        ).sum(self.coil_dim)
         image_term_3 = 2 * self.lr_image[idx] * image_term_3_Aconj
         image = image_term_1 + image_term_2 - image_term_3
         return image
@@ -273,7 +275,7 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
         image = complex_mul(
             ifft2(y, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims),
             complex_conj(sensitivity_maps),
-        ).sum(1)
+        ).sum(self.coil_dim)
         for idx in range(self.num_iter):
             sensitivity_maps = self.update_C(idx, DC_sens, sensitivity_maps, image, y, mask)
             image = self.update_X(idx, image, sensitivity_maps, y, mask)

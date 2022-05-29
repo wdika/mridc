@@ -33,6 +33,7 @@ class RIMBlock(torch.nn.Module):
         fft_centered: bool = True,
         fft_normalization: str = "ortho",
         spatial_dims: Optional[Tuple[int, int]] = None,
+        coil_dim: int = 1,
     ):
         """
         Initialize the RIMBlock.
@@ -55,6 +56,7 @@ class RIMBlock(torch.nn.Module):
         fft_centered: If True, the FFT is centered.
         fft_normalization: Normalization of the FFT.
         spatial_dims: Spatial dimensions of the input.
+        coil_dim: Coils dimension of the input.
         """
         super(RIMBlock, self).__init__()
 
@@ -119,6 +121,7 @@ class RIMBlock(torch.nn.Module):
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
         self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
+        self.coil_dim = coil_dim
 
         self.no_dc = no_dc
 
@@ -179,7 +182,7 @@ class RIMBlock(torch.nn.Module):
                         ),
                         complex_conj(sense),
                     ),
-                    1,
+                    self.coil_dim,
                 )
             )
 
@@ -194,6 +197,7 @@ class RIMBlock(torch.nn.Module):
                 fft_centered=self.fft_centered,
                 fft_normalization=self.fft_normalization,
                 spatial_dims=self.spatial_dims,
+                coil_dim=self.coil_dim,
             ).contiguous()
 
             for h, convrnn in enumerate(self.layers):
@@ -213,7 +217,7 @@ class RIMBlock(torch.nn.Module):
             masked_kspace
             - soft_dc
             - fft2(
-                complex_mul(e.unsqueeze(1), sense),
+                complex_mul(e.unsqueeze(self.coil_dim), sense),
                 centered=self.fft_centered,
                 normalization=self.fft_normalization,
                 spatial_dims=self.spatial_dims,

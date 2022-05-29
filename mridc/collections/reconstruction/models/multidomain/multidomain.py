@@ -22,6 +22,7 @@ class MultiDomainConv2d(nn.Module):
         fft_centered: bool = True,
         fft_normalization: str = "ortho",
         spatial_dims: Sequence[int] = None,
+        coil_dim: int = 1,
         in_channels: int = 4,
         out_channels: int = 4,
         **kwargs,
@@ -34,7 +35,7 @@ class MultiDomainConv2d(nn.Module):
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
         self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
-        self._channels_dim = 1
+        self.coil_dim = 1
 
     def forward(self, image):
         """Forward method for the MultiDomainConv2d class."""
@@ -57,7 +58,7 @@ class MultiDomainConv2d(nn.Module):
         backward = torch.cat(backward, -1).permute(0, 3, 1, 2)
 
         image = self.image_conv(image)
-        image = torch.cat([image, backward], dim=self._channels_dim)
+        image = torch.cat([image, backward], dim=self.coil_dim)
         return image
 
 
@@ -69,6 +70,7 @@ class MultiDomainConvTranspose2d(nn.Module):
         fft_centered: bool = True,
         fft_normalization: str = "ortho",
         spatial_dims: Sequence[int] = None,
+        coil_dim: int = 1,
         in_channels: int = 4,
         out_channels: int = 4,
         **kwargs,
@@ -80,7 +82,7 @@ class MultiDomainConvTranspose2d(nn.Module):
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
         self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
-        self._channels_dim = 1
+        self.coil_dim = 1
 
     def forward(self, image):
         """Forward method for the MultiDomainConvTranspose2d class."""
@@ -103,7 +105,7 @@ class MultiDomainConvTranspose2d(nn.Module):
         backward = torch.cat(backward, -1).permute(0, 3, 1, 2)
 
         image = self.image_conv(image)
-        return torch.cat([image, backward], dim=self._channels_dim)
+        return torch.cat([image, backward], dim=self.coil_dim)
 
 
 class MultiDomainConvBlock(nn.Module):
@@ -117,6 +119,7 @@ class MultiDomainConvBlock(nn.Module):
         fft_centered: bool = True,
         fft_normalization: str = "ortho",
         spatial_dims: Sequence[int] = None,
+        coil_dim: int = 1,
         in_channels: int = 4,
         out_channels: int = 4,
         dropout_probability: float = 0.0,
@@ -127,6 +130,7 @@ class MultiDomainConvBlock(nn.Module):
         fft_centered : Whether to center the FFT.
         fft_normalization : Whether to normalize the FFT.
         spatial_dims : The spatial dimensions to apply the FFT to.
+        coil_dim : The dimension of the coil.
         in_channels: Number of input channels.
         out_channels: Number of output channels.
         dropout_probability: Dropout probability.
@@ -136,6 +140,7 @@ class MultiDomainConvBlock(nn.Module):
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
         self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
+        self.coil_dim = coil_dim
 
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -146,6 +151,7 @@ class MultiDomainConvBlock(nn.Module):
                 self.fft_centered,
                 self.fft_normalization,
                 self.spatial_dims,
+                self.coil_dim,
                 in_channels,
                 out_channels,
                 kernel_size=3,
@@ -159,6 +165,7 @@ class MultiDomainConvBlock(nn.Module):
                 self.fft_centered,
                 self.fft_normalization,
                 self.spatial_dims,
+                self.coil_dim,
                 out_channels,
                 out_channels,
                 kernel_size=3,
@@ -192,6 +199,7 @@ class TransposeMultiDomainConvBlock(nn.Module):
         fft_centered: bool = True,
         fft_normalization: str = "ortho",
         spatial_dims: Sequence[int] = None,
+        coil_dim: int = 1,
         in_channels: int = 4,
         out_channels: int = 4,
     ):
@@ -201,6 +209,7 @@ class TransposeMultiDomainConvBlock(nn.Module):
         fft_centered : Whether to center the FFT.
         fft_normalization : Whether to normalize the FFT.
         spatial_dims : The spatial dimensions to apply the FFT to.
+        coil_dim : The dimension of the coil.
         in_channels: Number of input channels.
         out_channels: Number of output channels.
         """
@@ -212,6 +221,7 @@ class TransposeMultiDomainConvBlock(nn.Module):
                 fft_centered,
                 fft_normalization,
                 spatial_dims,
+                coil_dim,
                 in_channels,
                 out_channels,
                 kernel_size=2,
@@ -286,6 +296,7 @@ class MultiDomainUnet2d(nn.Module):
         fft_centered: bool = True,
         fft_normalization: str = "ortho",
         spatial_dims: Optional[Tuple[int, int]] = None,
+        coil_dim: int = 1,
     ):
         """
         Parameters
@@ -298,6 +309,7 @@ class MultiDomainUnet2d(nn.Module):
         fft_centered: Whether to use centered FFT.
         fft_normalization: Whether to use normalization.
         spatial_dims: Spatial dimensions of the input data.
+        coil_dim: Dimension of the coil dimension.
         """
         super().__init__()
 
@@ -309,6 +321,7 @@ class MultiDomainUnet2d(nn.Module):
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
         self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
+        self.coil_dim = coil_dim
 
         self.down_sample_layers = nn.ModuleList(
             [
@@ -316,6 +329,7 @@ class MultiDomainUnet2d(nn.Module):
                     self.fft_centered,
                     self.fft_normalization,
                     self.spatial_dims,
+                    self.coil_dim,
                     in_channels,
                     num_filters,
                     dropout_probability,
@@ -326,34 +340,62 @@ class MultiDomainUnet2d(nn.Module):
         for _ in range(num_pool_layers - 1):
             self.down_sample_layers += [
                 MultiDomainConvBlock(
-                    self.fft_centered, self.fft_normalization, self.spatial_dims, ch, ch * 2, dropout_probability
+                    self.fft_centered,
+                    self.fft_normalization,
+                    self.spatial_dims,
+                    self.coil_dim,
+                    ch,
+                    ch * 2,
+                    dropout_probability,
                 )
             ]
             ch *= 2
         self.conv = MultiDomainConvBlock(
-            self.fft_centered, self.fft_normalization, self.spatial_dims, ch, ch * 2, dropout_probability
+            self.fft_centered,
+            self.fft_normalization,
+            self.spatial_dims,
+            self.coil_dim,
+            ch,
+            ch * 2,
+            dropout_probability,
         )
 
         self.up_conv = nn.ModuleList()
         self.up_transpose_conv = nn.ModuleList()
         for _ in range(num_pool_layers - 1):
             self.up_transpose_conv += [
-                TransposeMultiDomainConvBlock(self.fft_centered, self.fft_normalization, self.spatial_dims, ch * 2, ch)
+                TransposeMultiDomainConvBlock(
+                    self.fft_centered, self.fft_normalization, self.spatial_dims, self.coil_dim, ch * 2, ch
+                )
             ]
             self.up_conv += [
                 MultiDomainConvBlock(
-                    self.fft_centered, self.fft_normalization, self.spatial_dims, ch * 2, ch, dropout_probability
+                    self.fft_centered,
+                    self.fft_normalization,
+                    self.spatial_dims,
+                    self.coil_dim,
+                    ch * 2,
+                    ch,
+                    dropout_probability,
                 )
             ]
             ch //= 2
 
         self.up_transpose_conv += [
-            TransposeMultiDomainConvBlock(self.fft_centered, self.fft_normalization, self.spatial_dims, ch * 2, ch)
+            TransposeMultiDomainConvBlock(
+                self.fft_centered, self.fft_normalization, self.spatial_dims, self.coil_dim, ch * 2, ch
+            )
         ]
         self.up_conv += [
             nn.Sequential(
                 MultiDomainConvBlock(
-                    self.fft_centered, self.fft_normalization, self.spatial_dims, ch * 2, ch, dropout_probability
+                    self.fft_centered,
+                    self.fft_normalization,
+                    self.spatial_dims,
+                    self.coil_dim,
+                    ch * 2,
+                    ch,
+                    dropout_probability,
                 ),
                 nn.Conv2d(ch, self.out_channels, kernel_size=1, stride=1),
             )
