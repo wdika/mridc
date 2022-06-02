@@ -939,17 +939,16 @@ class TestOptimizersSchedulers:
     @pytest.mark.unit
     @pytest.mark.run_only_on("CPU")
     def test_max_step_computation(self):
-        """Test that the max_step computation is correct."""
+        """Test max step computation."""
 
         def train(
-            max_epochs, accumulate_grad_batches, limit_train_batches, num_processes, batch_size, dataset_len, drop_last
+            max_epochs, accumulate_grad_batches, limit_train_batches, devices, batch_size, dataset_len, drop_last
         ):
-            """Set up the training environment"""
             trainer = pl.Trainer(
                 max_epochs=max_epochs,
                 strategy="ddp_spawn",
                 accelerator="cpu",
-                num_processes=num_processes,
+                devices=devices,
                 accumulate_grad_batches=accumulate_grad_batches,
                 limit_train_batches=limit_train_batches,
                 enable_checkpointing=False,
@@ -960,7 +959,7 @@ class TestOptimizersSchedulers:
                 max_epochs,
                 accumulate_grad_batches,
                 limit_train_batches,
-                num_processes,
+                devices,
                 dataset_len,
                 batch_size,
                 drop_last,
@@ -974,7 +973,7 @@ class TestOptimizersSchedulers:
             31,
             accumulate_grad_batches=1,
             limit_train_batches=1.0,
-            num_processes=9,
+            devices=9,
             batch_size=60,
             dataset_len=1613,
             drop_last=True,
@@ -982,8 +981,8 @@ class TestOptimizersSchedulers:
         train(
             5,
             accumulate_grad_batches=1,
-            limit_train_batches=0.17382691901706027,
-            num_processes=4,
+            limit_train_batches=1.0,
+            devices=4,
             batch_size=97,
             dataset_len=498,
             drop_last=False,
@@ -991,8 +990,8 @@ class TestOptimizersSchedulers:
         train(
             5,
             accumulate_grad_batches=8,
-            limit_train_batches=0.1663306588594945,
-            num_processes=4,
+            limit_train_batches=1.0,
+            devices=4,
             batch_size=54,
             dataset_len=629,
             drop_last=True,
@@ -1000,8 +999,8 @@ class TestOptimizersSchedulers:
         train(
             5,
             accumulate_grad_batches=1,
-            limit_train_batches=0.2121376533631948,
-            num_processes=1,
+            limit_train_batches=1.0,
+            devices=1,
             batch_size=68,
             dataset_len=488,
             drop_last=False,
@@ -1011,19 +1010,17 @@ class TestOptimizersSchedulers:
             accumulate_grad_batches = random.randint(1, 10)
 
             limit_train_batches_int = random.randint(1, 10)
-            limit_train_batches_float = random.uniform(0, 1)
+            limit_train_batches_float = 1.0
             limit_train_batches = random.choice([limit_train_batches_int, limit_train_batches_float])
             max_epochs = random.randint(4, 20)
-            num_processes = random.randint(1, 5)
-            dataset_len = random.randint(20, num_processes * 500)
-            batch_size = random.randint(
-                math.ceil(5.0 / num_processes), min(np.floor_divide(dataset_len, num_processes), 128)
-            )
+            devices = random.randint(1, 5)
+            dataset_len = random.randint(20, devices * 500)
+            batch_size = random.randint(math.ceil(5.0 / devices), min(dataset_len // devices, 128))
             train(
                 max_epochs,
                 accumulate_grad_batches,
                 limit_train_batches,
-                num_processes,
+                devices,
                 batch_size,
                 dataset_len,
                 drop_last,
