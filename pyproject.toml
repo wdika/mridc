@@ -1,13 +1,6 @@
-# Example configuration for Black, edited for mridc.
-
-# NOTE: you have to use single-quoted strings in TOML for regular expressions.
-# It's the equivalent of r-strings in Python.  Multiline strings are treated as
-# verbose regular expressions by Black.  Use [ ] to denote a significant space
-# character.
-
 [tool.black]
-line-length = 119 # PyCharm line length
-target-version = ['py36', 'py37', 'py38']
+line-length = 119
+target-version = ['py38', 'py39']
 include = '\.pyi?$'
 exclude = '''
 /(
@@ -24,3 +17,20 @@ exclude = '''
   | dist
 )/
 '''
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = py38, py39
+skip_missing_interpreters=true
+[gh-actions]
+python =
+    3.8: py38
+    3.9: py39
+[testenv]
+deps = pytest
+extras = dev
+allowlist_externals = sh
+commands=
+     sh -c "pytest --ignore=projects"
+"""
