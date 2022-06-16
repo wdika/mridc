@@ -28,7 +28,8 @@ def apply_mask(
     shift: bool = False,
     half_scan_percentage: Optional[float] = 0.0,
     center_scale: Optional[float] = 0.02,
-) -> Tuple[Any, Any, Any]:
+    existing_mask: Optional[torch.Tensor] = None,
+) -> Tuple[Any, Any, int]:
     """
     Subsample given k-space by multiplying with a mask.
 
@@ -42,6 +43,7 @@ def apply_mask(
     shift: Toggle to shift mask when subsampling. Applicable on 2D data.
     half_scan_percentage: Percentage of kspace to be dropped.
     center_scale: Scale of the center of the mask. Applicable on Gaussian masks.
+    existing_mask: When given, use this mask instead of generating a new one.
 
     Returns
     -------
@@ -49,7 +51,14 @@ def apply_mask(
     """
     shape = np.array(data.shape)
     shape[:-3] = 1
-    mask, acc = mask_func(shape, seed, half_scan_percentage=half_scan_percentage, scale=center_scale)
+
+    if existing_mask is None:
+        mask, acc = mask_func(shape, seed, half_scan_percentage=half_scan_percentage, scale=center_scale)
+    else:
+        mask = existing_mask
+        acc = mask.size / mask.sum()
+
+    mask = mask.to(data.device)
 
     if padding is not None and padding[0] != 0:
         mask[:, :, : padding[0]] = 0

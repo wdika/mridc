@@ -9,7 +9,6 @@ import sys
 import time
 from copy import deepcopy
 from dataclasses import dataclass
-
 from pathlib import Path
 from shutil import copy, move
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -687,7 +686,10 @@ def configure_loggers(
             wandb_kwargs = {}
         if "name" not in wandb_kwargs and "project" not in wandb_kwargs:
             raise ValueError("name and project are required for wandb_logger")
-        wandb_logger = WandbLogger(save_dir=exp_dir[0], version=version, **wandb_kwargs)
+        # if wandb_kwargs.get("save_dir", None) is None:
+        #     wandb_kwargs["save_dir"] = str(exp_dir[0])
+        #     os.makedirs(wandb_kwargs["save_dir"], exist_ok=True)
+        wandb_logger = WandbLogger(save_dir=str(exp_dir[0]), version=version, **wandb_kwargs)
 
         logger_list.append(wandb_logger)
         logging.info("WandBLogger has been set up")

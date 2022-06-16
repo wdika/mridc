@@ -4,9 +4,9 @@ __author__ = "Dimitrios Karkalousos"
 # Taken and adapted from:
 # https://github.com/khammernik/sigmanet/blob/master/reconstruction/common/mytorch/models/datalayer.py
 
-import torch
-
 from typing import Optional, Tuple
+
+import torch
 
 from mridc.collections.common.parts.fft import fft2, ifft2
 from mridc.collections.common.parts.utils import complex_abs, complex_conj, complex_mul

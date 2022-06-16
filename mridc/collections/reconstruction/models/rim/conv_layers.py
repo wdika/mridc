@@ -62,6 +62,8 @@ class ConvNonlinear(nn.Module):
 
         if nonlinear is not None and nonlinear.upper() == "RELU":
             self.nonlinear = torch.nn.ReLU()
+        elif nonlinear is not None and nonlinear.upper() == "LEAKYRELU":
+            self.nonlinear = torch.nn.LeakyReLU()
         elif nonlinear is None:
             self.nonlinear = lambda x: x
         else:

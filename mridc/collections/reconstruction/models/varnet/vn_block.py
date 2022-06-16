@@ -1,9 +1,9 @@
 # coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
-import torch
-
 from typing import Optional, Tuple
+
+import torch
 
 from mridc.collections.common.parts.fft import fft2, ifft2
 from mridc.collections.common.parts.utils import complex_conj, complex_mul
