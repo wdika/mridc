@@ -38,7 +38,8 @@ def log_likelihood_gradient(
     -------
     Gradient of the log-likelihood function.
     """
-    eta_real, eta_imag = map(lambda x: torch.unsqueeze(x, 0), eta.chunk(2, -1))
+    coil_dim = 1
+    eta_real, eta_imag = map(lambda x: torch.unsqueeze(x, coil_dim), eta.chunk(2, -1))
     sense_real, sense_imag = sense.chunk(2, -1)
 
     re_se = eta_real * sense_real - eta_imag * sense_imag
@@ -65,7 +66,7 @@ def log_likelihood_gradient(
     re_out = torch.sum(pred_real * sense_real + pred_imag * sense_imag, coil_dim) / (sigma**2.0)
     im_out = torch.sum(pred_imag * sense_real - pred_real * sense_imag, coil_dim) / (sigma**2.0)
 
-    eta_real = eta_real.squeeze(0)
-    eta_imag = eta_imag.squeeze(0)
+    eta_real = eta_real.squeeze(coil_dim)
+    eta_imag = eta_imag.squeeze(coil_dim)
 
-    return torch.cat((eta_real, eta_imag, re_out, im_out), 0).unsqueeze(0).squeeze(-1)
+    return torch.cat((eta_real, eta_imag, re_out, im_out), -1).permute(0, 3, 1, 2)

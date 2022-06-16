@@ -34,6 +34,7 @@ class RIMBlock(torch.nn.Module):
         fft_normalization: str = "ortho",
         spatial_dims: Optional[Tuple[int, int]] = None,
         coil_dim: int = 1,
+        dimensionality: int = 2,
     ):
         """
         Initialize the RIMBlock.
@@ -57,6 +58,7 @@ class RIMBlock(torch.nn.Module):
         fft_normalization: Normalization of the FFT.
         spatial_dims: Spatial dimensions of the input.
         coil_dim: Coils dimension of the input.
+        dimensionality: Dimensionality of the input.
         """
         super(RIMBlock, self).__init__()
 
@@ -104,7 +106,7 @@ class RIMBlock(torch.nn.Module):
                 rnn_layer = rnn_type(
                     self.input_size,
                     rnn_features,
-                    conv_dim=2,
+                    conv_dim=conv_dim,
                     kernel_size=rnn_k_size,
                     dilation=rnn_dilation,
                     bias=rnn_bias,
@@ -128,6 +130,8 @@ class RIMBlock(torch.nn.Module):
         if not self.no_dc:
             self.dc_weight = torch.nn.Parameter(torch.ones(1))
             self.zero = torch.zeros(1, 1, 1, 1, 1)
+
+        self.dimensionality = dimensionality
 
     def forward(
         self,
@@ -158,15 +162,48 @@ class RIMBlock(torch.nn.Module):
         -------
         Reconstructed image and hidden states.
         """
+        if self.dimensionality == 3:
+            """
+            - 2D pred.shape = [batch, coils, height, width, 2]
+            - 3D pred.shape = [batch, slices, coils, height, width, 2] -> [batch * slices, coils, height, width, 2]
+            """
+            batch, slices = masked_kspace.shape[0], masked_kspace.shape[1]
+
+            if isinstance(pred, (tuple, list)):
+                pred = pred[-1].detach()
+            else:
+                pred = pred.reshape(
+                    [pred.shape[0] * pred.shape[1], pred.shape[2], pred.shape[3], pred.shape[4], pred.shape[5]]
+                )
+
+            masked_kspace = masked_kspace.reshape(
+                [
+                    masked_kspace.shape[0] * masked_kspace.shape[1],
+                    masked_kspace.shape[2],
+                    masked_kspace.shape[3],
+                    masked_kspace.shape[4],
+                    masked_kspace.shape[5],
+                ]
+            )
+            mask = mask.reshape(
+                [mask.shape[0] * mask.shape[1], mask.shape[2], mask.shape[3], mask.shape[4], mask.shape[5]]
+            )
+            sense = sense.reshape(
+                [sense.shape[0] * sense.shape[1], sense.shape[2], sense.shape[3], sense.shape[4], sense.shape[5]]
+            )
+        else:
+            batch = masked_kspace.shape[0]
+            slices = 1
+
+            if isinstance(pred, list):
+                pred = pred[-1].detach()
+
         if hx is None:
             hx = [
                 masked_kspace.new_zeros((masked_kspace.size(0), f, *masked_kspace.size()[2:-1]))
                 for f in self.recurrent_filters
                 if f != 0
             ]
-
-        if isinstance(pred, list):
-            pred = pred[-1].detach()
 
         if eta is None or eta.ndim < 3:
             eta = (
@@ -200,11 +237,25 @@ class RIMBlock(torch.nn.Module):
                 coil_dim=self.coil_dim,
             ).contiguous()
 
+            if self.dimensionality == 3:
+                grad_eta = grad_eta.view([slices * batch, 4, grad_eta.shape[2], grad_eta.shape[3]]).permute(1, 0, 2, 3)
+
             for h, convrnn in enumerate(self.layers):
                 hx[h] = convrnn(grad_eta, hx[h])
+                if self.dimensionality == 3:
+                    hx[h] = hx[h].squeeze(0)
                 grad_eta = hx[h]
 
-            eta = eta + self.final_layer(grad_eta).permute(0, 2, 3, 1)
+            grad_eta = self.final_layer(grad_eta)
+
+            if self.dimensionality == 2:
+                grad_eta = grad_eta.permute(0, 2, 3, 1)
+            elif self.dimensionality == 3:
+                grad_eta = grad_eta.permute(1, 2, 3, 0)
+                for h in range(len(hx)):
+                    hx[h] = hx[h].permute(1, 0, 2, 3)
+
+            eta = eta + grad_eta
             etas.append(eta)
 
         eta = etas

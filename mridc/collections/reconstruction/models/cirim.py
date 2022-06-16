@@ -78,6 +78,7 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
                     fft_normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,
                     coil_dim=self.coil_dim,
+                    dimensionality=cfg_dict.get("dimensionality"),
                 )
                 for _ in range(self.num_cascades)
             ]

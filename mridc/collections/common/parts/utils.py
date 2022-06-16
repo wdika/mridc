@@ -4,13 +4,14 @@ __author__ = "Dimitrios Karkalousos"
 # Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
 
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Union
 
 import h5py
 import numpy as np
 import torch
 
 __all__ = [
+    "is_none",
     "to_tensor",
     "tensor_to_complex_np",
     "complex_mul",
@@ -24,6 +25,21 @@ __all__ = [
     "save_reconstructions",
     "check_stacked_complex",
 ]
+
+
+def is_none(x: Union[str, int, None]) -> bool:
+    """
+    Check if a string is None.
+
+    Parameters
+    ----------
+    x: The string to check.
+
+    Returns
+    -------
+    True if x is None, False otherwise.
+    """
+    return x is None or str(x).lower() == "none"
 
 
 def to_tensor(data: np.ndarray) -> torch.Tensor:

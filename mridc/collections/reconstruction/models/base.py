@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader
 from torchmetrics.metric import Metric
 
 from mridc.collections.common.parts.fft import ifft2
-from mridc.collections.common.parts.utils import rss_complex, sense
+from mridc.collections.common.parts.utils import is_none, rss_complex, sense
 from mridc.collections.reconstruction.data.mri_data import FastMRISliceDataset
 from mridc.collections.reconstruction.data.subsample import create_mask_for_mask_type
 from mridc.collections.reconstruction.metrics.evaluate import mse, nmse, psnr, ssim
@@ -450,6 +450,11 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         image: Image to log.
             torch.Tensor, shape [batch_size, n_x, n_y, 2]
         """
+        if image.dim() > 3:
+            image = image[0, 0, :, :].unsqueeze(0)
+        elif image.shape[0] != 1:
+            image = image[0].unsqueeze(0)
+
         if "wandb" in self.logger.__module__.lower():
             self.logger.experiment.log({name: wandb.Image(image.numpy())})
         else:
@@ -602,11 +607,15 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         dataloader: DataLoader.
             torch.utils.data.DataLoader
         """
+        mask_root = cfg.get("mask_path")
         mask_args = cfg.get("mask_args")
-        mask_type = mask_args.get("type")
         shift_mask = mask_args.get("shift_mask")
+        mask_type = mask_args.get("type")
 
-        if mask_type is not None and mask_type != "None":
+        mask_func = None  # type: ignore
+        mask_center_scale = 0.02
+
+        if is_none(mask_root) and not is_none(mask_type):
             accelerations = mask_args.get("accelerations")
             center_fractions = mask_args.get("center_fractions")
             mask_center_scale = mask_args.get("scale")
@@ -619,13 +628,11 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                 if len(accelerations) > 2
                 else [create_mask_for_mask_type(mask_type, center_fractions, accelerations)]
             )
-        else:
-            mask_func = None  # type: ignore
-            mask_center_scale = 0.02
 
         dataset = FastMRISliceDataset(
             root=cfg.get("data_path"),
-            sense_root=cfg.get("sense_data_path"),
+            sense_root=cfg.get("sense_path"),
+            mask_root=cfg.get("mask_path"),
             challenge=cfg.get("challenge"),
             transform=MRIDataTransforms(
                 coil_combination_method=cfg.get("coil_combination_method"),
@@ -633,6 +640,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                 mask_func=mask_func,
                 shift_mask=shift_mask,
                 mask_center_scale=mask_center_scale,
+                remask=cfg.get("remask"),
                 normalize_inputs=cfg.get("normalize_inputs"),
                 crop_size=cfg.get("crop_size"),
                 crop_before_masking=cfg.get("crop_before_masking"),
@@ -644,6 +652,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                 use_seed=cfg.get("use_seed"),
             ),
             sample_rate=cfg.get("sample_rate"),
+            consecutive_slices=cfg.get("consecutive_slices"),
         )
         if cfg.shuffle:
             sampler = torch.utils.data.RandomSampler(dataset)
