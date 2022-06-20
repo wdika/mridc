@@ -6,13 +6,22 @@ from mridc.collections.common.parts.fft import fft2, ifft2
 
 def mse_gradient(x, data, fft_centered, fft_normalization, spatial_dims):
     """
-    Calculates the gradient under a linear forward model
+    Calculates the gradient under a linear forward model.
 
-    x: image estimate
-    data: [y,mask], y - zero-filled image reconstruction, mask - sub-sampling mask
-    fft_centered: Whether to center the fft.
-    fft_normalization: "ortho" is the default normalization used by PyTorch. Can be changed to "ortho" or None.
-    spatial_dims: dimensions to apply the FFT
+    Parameters
+    ----------
+    x : torch.Tensor
+        Input data.
+    data : dict
+        Data dictionary containing y:zero-filled kspace and mask: sub-sampling mask
+    fft_centered : bool
+        Whether to center the FFT.
+    fft_normalization : str
+        Type of normalization to use for the FFT.
+    spatial_dims : tuple
+        Spatial dimensions of the input.
+
+    The log-likelihood gradient.
     """
     y, mask = data[0], data[1]
     x = torch.chunk(x, 2, 1)
@@ -25,6 +34,20 @@ def mse_gradient(x, data, fft_centered, fft_normalization, spatial_dims):
 
 
 def determine_conv_class(n_dim, transposed=False):
+    """
+    Determines the class of the convolutional layer.
+
+    Parameters
+    ----------
+    n_dim : int
+        Number of dimensions of the input.
+    transposed : bool
+        Whether to use the transposed convolutional layer.
+
+    Returns
+    -------
+    Class of the convolutional layer.
+    """
     if n_dim == 1:
         return nn.Conv1d if not transposed else nn.ConvTranspose1d
     elif n_dim == 2:
@@ -36,6 +59,20 @@ def determine_conv_class(n_dim, transposed=False):
 
 
 def determine_conv_functional(n_dim, transposed=False):
+    """
+    Determines the class of the convolutional layer.
+
+    Parameters
+    ----------
+    n_dim : int
+        Number of dimensions of the input.
+    transposed : bool
+        Whether to use the transposed convolutional layer.
+
+    Returns
+    -------
+    Class of the convolutional layer.
+    """
     if n_dim == 1:
         if not transposed:
             return nn.functional.conv1d
@@ -56,6 +93,20 @@ def determine_conv_functional(n_dim, transposed=False):
 
 
 def pixel_unshuffle(x, downscale_factor):
+    """
+    Unshuffles the pixels of a tensor.
+
+    Parameters
+    ----------
+    x : torch.Tensor
+        Input tensor.
+    downscale_factor : int
+        Downscale factor.
+
+    Returns
+    -------
+    Unshuffled tensor.
+    """
     b, c, h, w = x.size()
     r = downscale_factor
     out_channel = c * (r**2)
@@ -67,8 +118,24 @@ def pixel_unshuffle(x, downscale_factor):
 
 class PixelUnshuffle(nn.Module):
     def __init__(self, downscale_factor):
+        """
+        Initializes the module.
+
+        Parameters
+        ----------
+        downscale_factor : int
+            Downscale factor.
+        """
         super(PixelUnshuffle, self).__init__()
         self.downscale_factor = downscale_factor
 
     def forward(self, x):
+        """
+        Unshuffles the pixels of a tensor.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input tensor.
+        """
         return pixel_unshuffle(x, self.downscale_factor)

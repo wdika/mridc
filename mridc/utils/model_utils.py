@@ -7,7 +7,7 @@ __author__ = "Dimitrios Karkalousos"
 import copy
 import os
 from dataclasses import dataclass, is_dataclass
-from distutils.version import Version
+from packaging.version import Version
 from enum import Enum
 from pathlib import Path
 from typing import Any, List, Optional, Set, Tuple, Union

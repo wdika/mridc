@@ -14,6 +14,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -87,16 +88,16 @@
            <div itemprop="articleBody">
 
   <section id="mridc-collections-common-metrics-package">
-<h1>mridc.collections.common.metrics package<a class="headerlink" href="#mridc-collections-common-metrics-package" title="Permalink to this headline"></a></h1>
+<h1>mridc.collections.common.metrics package<a class="headerlink" href="#mridc-collections-common-metrics-package" title="Permalink to this heading"></a></h1>
 <section id="submodules">
-<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline"></a></h2>
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
 </section>
 <section id="module-mridc.collections.common.metrics.global_average_loss_metric">
-<span id="mridc-collections-common-metrics-global-average-loss-metric-module"></span><h2>mridc.collections.common.metrics.global_average_loss_metric module<a class="headerlink" href="#module-mridc.collections.common.metrics.global_average_loss_metric" title="Permalink to this headline"></a></h2>
+<span id="mridc-collections-common-metrics-global-average-loss-metric-module"></span><h2>mridc.collections.common.metrics.global_average_loss_metric module<a class="headerlink" href="#module-mridc.collections.common.metrics.global_average_loss_metric" title="Permalink to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.collections.common.metrics.global_average_loss_metric.GlobalAverageLossMetric">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.collections.common.metrics.global_average_loss_metric.</span></span><span class="sig-name descname"><span class="pre">GlobalAverageLossMetric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">compute_on_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dist_sync_on_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">process_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">take_avg_loss</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/common/metrics/global_average_loss_metric.html#GlobalAverageLossMetric"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.common.metrics.global_average_loss_metric.GlobalAverageLossMetric" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torchmetrics.metric.Metric</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Metric</span></code></p>
 <p>This class is for averaging loss across multiple processes if a distributed backend is used. True average is     computed not running average. It does not accumulate gradients so the averaged loss cannot be used for     optimization.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -136,7 +137,7 @@
 
 </section>
 <section id="module-mridc.collections.common.metrics">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-mridc.collections.common.metrics" title="Permalink to this headline"></a></h2>
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-mridc.collections.common.metrics" title="Permalink to this heading"></a></h2>
 </section>
 </section>
 

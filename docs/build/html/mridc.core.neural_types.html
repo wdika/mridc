@@ -14,6 +14,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -86,16 +87,16 @@
            <div itemprop="articleBody">
 
   <section id="mridc-core-neural-types-package">
-<h1>mridc.core.neural_types package<a class="headerlink" href="#mridc-core-neural-types-package" title="Permalink to this headline"></a></h1>
+<h1>mridc.core.neural_types package<a class="headerlink" href="#mridc-core-neural-types-package" title="Permalink to this heading"></a></h1>
 <section id="submodules">
-<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline"></a></h2>
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
 </section>
 <section id="module-mridc.core.neural_types.axes">
-<span id="mridc-core-neural-types-axes-module"></span><h2>mridc.core.neural_types.axes module<a class="headerlink" href="#module-mridc.core.neural_types.axes" title="Permalink to this headline"></a></h2>
+<span id="mridc-core-neural-types-axes-module"></span><h2>mridc.core.neural_types.axes module<a class="headerlink" href="#module-mridc.core.neural_types.axes" title="Permalink to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.axes.AxisKind">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.axes.</span></span><span class="sig-name descname"><span class="pre">AxisKind</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/neural_types/axes.html#AxisKind"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.axes.AxisKind" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.axes.AxisKindAbstract" title="mridc.core.neural_types.axes.AxisKindAbstract"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.axes.AxisKindAbstract</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.axes.AxisKindAbstract" title="mridc.core.neural_types.axes.AxisKindAbstract"><code class="xref py py-class docutils literal notranslate"><span class="pre">AxisKindAbstract</span></code></a></p>
 <p>This Enum represents what does varying axis dimension mean. For example, does this dimension correspond to width,      batch, time, etc. The “Dimension” and “Channel” kinds are the same and used to represent a general axis. “Any”      axis will accept any axis kind fed to it.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mridc.core.neural_types.axes.AxisKind.Any">
@@ -176,7 +177,7 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.axes.AxisKindAbstract">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.axes.</span></span><span class="sig-name descname"><span class="pre">AxisKindAbstract</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/neural_types/axes.html#AxisKindAbstract"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.axes.AxisKindAbstract" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
 <p>This is an abstract Enum to represents what does varying axis dimension mean. In practice, you will almost always
 use AxisKind Enum. This Enum should be inherited by your OWN Enum if you aren’t satisfied with AxisKind. Then your
 own Enum can be used instead of AxisKind.</p>
@@ -184,7 +185,7 @@ own Enum can be used instead of AxisKind.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.axes.AxisType">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.axes.</span></span><span class="sig-name descname"><span class="pre">AxisType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#mridc.core.neural_types.axes.AxisKindAbstract" title="mridc.core.neural_types.axes.AxisKindAbstract"><span class="pre">mridc.core.neural_types.axes.AxisKindAbstract</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/neural_types/axes.html#AxisType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.axes.AxisType" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.axes.</span></span><span class="sig-name descname"><span class="pre">AxisType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#mridc.core.neural_types.axes.AxisKindAbstract" title="mridc.core.neural_types.axes.AxisKindAbstract"><span class="pre">AxisKindAbstract</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/neural_types/axes.html#AxisType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.axes.AxisType" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>This class represents axis semantics and (optionally) it’s dimensionality</p>
 <dl class="field-list simple">
@@ -207,11 +208,11 @@ own Enum can be used instead of AxisKind.</p>
 
 </section>
 <section id="module-mridc.core.neural_types.comparison">
-<span id="mridc-core-neural-types-comparison-module"></span><h2>mridc.core.neural_types.comparison module<a class="headerlink" href="#module-mridc.core.neural_types.comparison" title="Permalink to this headline"></a></h2>
+<span id="mridc-core-neural-types-comparison-module"></span><h2>mridc.core.neural_types.comparison module<a class="headerlink" href="#module-mridc.core.neural_types.comparison" title="Permalink to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.comparison.NeuralTypeComparisonResult">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.comparison.</span></span><span class="sig-name descname"><span class="pre">NeuralTypeComparisonResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/neural_types/comparison.html#NeuralTypeComparisonResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.comparison.NeuralTypeComparisonResult" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
 <p>The result of comparing two neural type objects for compatibility. When comparing A.compare_to(B).</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mridc.core.neural_types.comparison.NeuralTypeComparisonResult.CONTAINER_SIZE_MISMATCH">
@@ -262,25 +263,25 @@ own Enum can be used instead of AxisKind.</p>
 
 </section>
 <section id="module-mridc.core.neural_types.elements">
-<span id="mridc-core-neural-types-elements-module"></span><h2>mridc.core.neural_types.elements module<a class="headerlink" href="#module-mridc.core.neural_types.elements" title="Permalink to this headline"></a></h2>
+<span id="mridc-core-neural-types-elements-module"></span><h2>mridc.core.neural_types.elements module<a class="headerlink" href="#module-mridc.core.neural_types.elements" title="Permalink to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.CategoricalValuesType">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">CategoricalValuesType</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#CategoricalValuesType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.CategoricalValuesType" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.PredictionsType" title="mridc.core.neural_types.elements.PredictionsType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.PredictionsType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.PredictionsType" title="mridc.core.neural_types.elements.PredictionsType"><code class="xref py py-class docutils literal notranslate"><span class="pre">PredictionsType</span></code></a></p>
 <p>Element type to represent labels for categorical classification task</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.ChannelType">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">ChannelType</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#ChannelType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.ChannelType" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.ElementType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementType</span></code></a></p>
 <p>Element to represent convolutional input/output channel.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.ElementType">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">ElementType</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#ElementType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.ElementType" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
 <p>Abstract class defining semantics of the tensor elements. We are relying on Python for inheritance checking</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.ElementType.__repr__">
@@ -296,7 +297,7 @@ own Enum can be used instead of AxisKind.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.ElementType.compare">
-<span class="sig-name descname"><span class="pre">compare</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">second</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#mridc.core.neural_types.comparison.NeuralTypeComparisonResult" title="mridc.core.neural_types.comparison.NeuralTypeComparisonResult"><span class="pre">mridc.core.neural_types.comparison.NeuralTypeComparisonResult</span></a></span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#ElementType.compare"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.ElementType.compare" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">compare</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">second</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#mridc.core.neural_types.comparison.NeuralTypeComparisonResult" title="mridc.core.neural_types.comparison.NeuralTypeComparisonResult"><span class="pre">NeuralTypeComparisonResult</span></a></span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#ElementType.compare"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.ElementType.compare" title="Permalink to this definition"></a></dt>
 <dd><p>Override this method to provide a comparison between two types.</p>
 </dd></dl>
 
@@ -320,84 +321,84 @@ their type_parameters must match.”</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.FloatType">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">FloatType</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#FloatType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.FloatType" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.ElementType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementType</span></code></a></p>
 <p>Element type representing a single float</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.ImageFeatureValue">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">ImageFeatureValue</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#ImageFeatureValue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.ImageFeatureValue" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ImageValue" title="mridc.core.neural_types.elements.ImageValue"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.ImageValue</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ImageValue" title="mridc.core.neural_types.elements.ImageValue"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageValue</span></code></a></p>
 <p>Type representing an element (single value) of a (image) feature maps.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.ImageValue">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">ImageValue</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#ImageValue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.ImageValue" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.ElementType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementType</span></code></a></p>
 <p>Type representing an element/value of a single image channel,</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.Index">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">Index</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#Index"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.Index" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.ElementType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementType</span></code></a></p>
 <p>Type representing an element being an index of the sample.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.IntType">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">IntType</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#IntType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.IntType" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.ElementType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementType</span></code></a></p>
 <p>Element type representing a single integer</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.LabelsType">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">LabelsType</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#LabelsType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.LabelsType" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.ElementType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementType</span></code></a></p>
 <p>Element type to represent labels of something. For example, labels of a dataset.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.Length">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">Length</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#Length"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.Length" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.IntType" title="mridc.core.neural_types.elements.IntType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.IntType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.IntType" title="mridc.core.neural_types.elements.IntType"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntType</span></code></a></p>
 <p>Type representing an element storing a “length” (e.g. length of a list).</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.LengthsType">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">LengthsType</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#LengthsType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.LengthsType" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.ElementType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementType</span></code></a></p>
 <p>Element type representing lengths of something</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.LogDeterminantType">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">LogDeterminantType</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#LogDeterminantType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.LogDeterminantType" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.ElementType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementType</span></code></a></p>
 <p>Element for representing log determinants usually used in flow models</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.LogprobsType">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">LogprobsType</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#LogprobsType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.LogprobsType" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.ElementType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementType</span></code></a></p>
 <p>Element type to represent log-probabilities. For example, outputs of log softmax layers.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.LossType">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">LossType</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#LossType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.LossType" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.ElementType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementType</span></code></a></p>
 <p>Element type to represent outputs of Loss modules</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.MRISignal">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">MRISignal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#MRISignal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.MRISignal" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.ElementType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementType</span></code></a></p>
 <p>Element type to represent encoded representation returned by the mri model</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -415,56 +416,56 @@ their type_parameters must match.”</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.MaskType">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">MaskType</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#MaskType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.MaskType" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.PredictionsType" title="mridc.core.neural_types.elements.PredictionsType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.PredictionsType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.PredictionsType" title="mridc.core.neural_types.elements.PredictionsType"><code class="xref py py-class docutils literal notranslate"><span class="pre">PredictionsType</span></code></a></p>
 <p>Element type to represent a boolean mask</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.NormalDistributionLogVarianceType">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">NormalDistributionLogVarianceType</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#NormalDistributionLogVarianceType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.NormalDistributionLogVarianceType" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.ElementType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementType</span></code></a></p>
 <p>Element to represent the log variance of a normal distribution</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.NormalDistributionMeanType">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">NormalDistributionMeanType</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#NormalDistributionMeanType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.NormalDistributionMeanType" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.ElementType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementType</span></code></a></p>
 <p>Element to represent the mean of a normal distribution</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.NormalDistributionSamplesType">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">NormalDistributionSamplesType</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#NormalDistributionSamplesType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.NormalDistributionSamplesType" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.ProbabilityDistributionSamplesType</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ProbabilityDistributionSamplesType</span></code></p>
 <p>Element to represent tensors that meant to be sampled from a valid normal distribution</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.NormalizedImageValue">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">NormalizedImageValue</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#NormalizedImageValue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.NormalizedImageValue" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ImageValue" title="mridc.core.neural_types.elements.ImageValue"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.ImageValue</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ImageValue" title="mridc.core.neural_types.elements.ImageValue"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageValue</span></code></a></p>
 <p>Type representing an element/value of a single image channel normalized to &lt;0-1&gt; range.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.PredictionsType">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">PredictionsType</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#PredictionsType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.PredictionsType" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.LabelsType" title="mridc.core.neural_types.elements.LabelsType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.LabelsType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.LabelsType" title="mridc.core.neural_types.elements.LabelsType"><code class="xref py py-class docutils literal notranslate"><span class="pre">LabelsType</span></code></a></p>
 <p>Element type to represent some sort of predictions returned by model</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.ProbsType">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">ProbsType</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#ProbsType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.ProbsType" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.ElementType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementType</span></code></a></p>
 <p>Element type to represent probabilities. For example, outputs of softmax layers.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.ReconstructionTarget">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">ReconstructionTarget</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#ReconstructionTarget"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.ReconstructionTarget" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.Target" title="mridc.core.neural_types.elements.Target"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.Target</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.Target" title="mridc.core.neural_types.elements.Target"><code class="xref py py-class docutils literal notranslate"><span class="pre">Target</span></code></a></p>
 <p>Type representing an element being target value in the reconstruction task, i.e. identifier of a desired
 class.</p>
 </dd></dl>
@@ -472,21 +473,21 @@ class.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.RecurrentsType">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">RecurrentsType</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#RecurrentsType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.RecurrentsType" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.ElementType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementType</span></code></a></p>
 <p>Element type to represent recurrent layers</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.RegressionValuesType">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">RegressionValuesType</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#RegressionValuesType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.RegressionValuesType" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.PredictionsType" title="mridc.core.neural_types.elements.PredictionsType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.PredictionsType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.PredictionsType" title="mridc.core.neural_types.elements.PredictionsType"><code class="xref py py-class docutils literal notranslate"><span class="pre">PredictionsType</span></code></a></p>
 <p>Element type to represent labels for regression task</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.SequenceToSequenceAlignmentType">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">SequenceToSequenceAlignmentType</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#SequenceToSequenceAlignmentType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.SequenceToSequenceAlignmentType" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.ElementType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementType</span></code></a></p>
 <p>Class to represent the alignment from seq-to-seq attention outputs. Generally a mapping from encoder time steps
 to decoder time steps.</p>
 </dd></dl>
@@ -494,33 +495,33 @@ to decoder time steps.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.StringLabel">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">StringLabel</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#StringLabel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.StringLabel" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.StringType" title="mridc.core.neural_types.elements.StringType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.StringType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.StringType" title="mridc.core.neural_types.elements.StringType"><code class="xref py py-class docutils literal notranslate"><span class="pre">StringType</span></code></a></p>
 <p>Type representing a label being a string with class name (e.g. the “hamster” class in CIFAR100).</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.StringType">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">StringType</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#StringType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.StringType" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.ElementType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementType</span></code></a></p>
 <p>Element type representing a single string</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.Target">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">Target</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#Target"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.Target" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.ElementType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementType</span></code></a></p>
 <p>Type representing an element being a target value.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.VoidType">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.elements.</span></span><span class="sig-name descname"><span class="pre">VoidType</span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#VoidType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.VoidType" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.elements.ElementType</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementType</span></code></a></p>
 <p>Void-like type which is compatible with everything. It is a good practice to use this type only as necessary.
 For example, when you need template-like functionality.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="mridc.core.neural_types.elements.VoidType.compare">
-<span class="sig-name descname"><span class="pre">compare</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">second</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">abc.ABCMeta</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#mridc.core.neural_types.comparison.NeuralTypeComparisonResult" title="mridc.core.neural_types.comparison.NeuralTypeComparisonResult"><span class="pre">mridc.core.neural_types.comparison.NeuralTypeComparisonResult</span></a></span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#VoidType.compare"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.VoidType.compare" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">compare</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">second</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ABCMeta</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#mridc.core.neural_types.comparison.NeuralTypeComparisonResult" title="mridc.core.neural_types.comparison.NeuralTypeComparisonResult"><span class="pre">NeuralTypeComparisonResult</span></a></span></span><a class="reference internal" href="_modules/mridc/core/neural_types/elements.html#VoidType.compare"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.elements.VoidType.compare" title="Permalink to this definition"></a></dt>
 <dd><p>Void type is compatible with everything.</p>
 </dd></dl>
 
@@ -528,24 +529,24 @@ For example, when you need template-like functionality.</p>
 
 </section>
 <section id="module-mridc.core.neural_types.neural_type">
-<span id="mridc-core-neural-types-neural-type-module"></span><h2>mridc.core.neural_types.neural_type module<a class="headerlink" href="#module-mridc.core.neural_types.neural_type" title="Permalink to this headline"></a></h2>
+<span id="mridc-core-neural-types-neural-type-module"></span><h2>mridc.core.neural_types.neural_type module<a class="headerlink" href="#module-mridc.core.neural_types.neural_type" title="Permalink to this heading"></a></h2>
 <dl class="py exception">
 <dt class="sig sig-object py" id="mridc.core.neural_types.neural_type.NeuralPortNameMismatchError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.neural_type.</span></span><span class="sig-name descname"><span class="pre">NeuralPortNameMismatchError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_port_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/neural_types/neural_type.html#NeuralPortNameMismatchError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.neural_type.NeuralPortNameMismatchError" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.neural_type.NeuralTypeError" title="mridc.core.neural_types.neural_type.NeuralTypeError"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.neural_type.NeuralTypeError</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.neural_type.NeuralTypeError" title="mridc.core.neural_types.neural_type.NeuralTypeError"><code class="xref py py-class docutils literal notranslate"><span class="pre">NeuralTypeError</span></code></a></p>
 <p>Exception raised when neural module is called with incorrect port names.</p>
 </dd></dl>
 
 <dl class="py exception">
 <dt class="sig sig-object py" id="mridc.core.neural_types.neural_type.NeuralPortNmTensorMismatchError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.neural_type.</span></span><span class="sig-name descname"><span class="pre">NeuralPortNmTensorMismatchError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">class_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">second_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type_compatibility</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/neural_types/neural_type.html#NeuralPortNmTensorMismatchError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.neural_type.NeuralPortNmTensorMismatchError" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.neural_type.NeuralTypeError" title="mridc.core.neural_types.neural_type.NeuralTypeError"><code class="xref py py-class docutils literal notranslate"><span class="pre">mridc.core.neural_types.neural_type.NeuralTypeError</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mridc.core.neural_types.neural_type.NeuralTypeError" title="mridc.core.neural_types.neural_type.NeuralTypeError"><code class="xref py py-class docutils literal notranslate"><span class="pre">NeuralTypeError</span></code></a></p>
 <p>Exception raised when a port is fed with a NmTensor of incompatible type.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.core.neural_types.neural_type.NeuralType">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.neural_type.</span></span><span class="sig-name descname"><span class="pre">NeuralType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elements_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><span class="pre">mridc.core.neural_types.elements.ElementType</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">VoidType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optional</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/neural_types/neural_type.html#NeuralType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.neural_type.NeuralType" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.core.neural_types.neural_type.</span></span><span class="sig-name descname"><span class="pre">NeuralType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">elements_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#mridc.core.neural_types.elements.ElementType" title="mridc.core.neural_types.elements.ElementType"><span class="pre">ElementType</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">VoidType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optional</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/neural_types/neural_type.html#NeuralType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.neural_type.NeuralType" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="simple">
 <dt>This is the main class which would represent neural type concept. It is used to represent <em>the types</em> of inputs and</dt><dd><p>outputs.</p>
@@ -578,7 +579,7 @@ computer vision. (‘B’, ‘T’, ‘D’) is frequently used for signal proce
 
 <dl class="py method">
 <dt class="sig sig-object py" id="mridc.core.neural_types.neural_type.NeuralType.compare">
-<span class="sig-name descname"><span class="pre">compare</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">second</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#mridc.core.neural_types.comparison.NeuralTypeComparisonResult" title="mridc.core.neural_types.comparison.NeuralTypeComparisonResult"><span class="pre">mridc.core.neural_types.comparison.NeuralTypeComparisonResult</span></a></span></span><a class="reference internal" href="_modules/mridc/core/neural_types/neural_type.html#NeuralType.compare"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.neural_type.NeuralType.compare" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">compare</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">second</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#mridc.core.neural_types.comparison.NeuralTypeComparisonResult" title="mridc.core.neural_types.comparison.NeuralTypeComparisonResult"><span class="pre">NeuralTypeComparisonResult</span></a></span></span><a class="reference internal" href="_modules/mridc/core/neural_types/neural_type.html#NeuralType.compare"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.neural_types.neural_type.NeuralType.compare" title="Permalink to this definition"></a></dt>
 <dd><p>Performs neural type comparison of self with second. When you chain two modules’ inputs/outputs via __call__
 method, this comparison will be called to ensure neural type compatibility.</p>
 </dd></dl>
@@ -600,7 +601,7 @@ method, this comparison will be called to ensure neural type compatibility.</p>
 
 </section>
 <section id="module-mridc.core.neural_types">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-mridc.core.neural_types" title="Permalink to this headline"></a></h2>
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-mridc.core.neural_types" title="Permalink to this heading"></a></h2>
 </section>
 </section>
 

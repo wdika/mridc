@@ -26,13 +26,7 @@ __all__ = ["SRCIRIM"]
 
 
 class SRCIRIM(BaseMRIReconstructionModel, ABC):
-    """
-    Super-Resolution Cascades of Independently Recurrent Inference Machines implementation as presented in [1]_.
-
-    References
-    ----------
-    .. [1]
-    """
+    """SR Cascades of Independently Recurrent Inference Machines implementation."""
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
         # init superclass

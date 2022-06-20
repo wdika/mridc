@@ -11,7 +11,9 @@ Subpackages
    mridc.collections.reconstruction.models.conv
    mridc.collections.reconstruction.models.convrecnet
    mridc.collections.reconstruction.models.crossdomain
+   mridc.collections.reconstruction.models.cs
    mridc.collections.reconstruction.models.didn
+   mridc.collections.reconstruction.models.invrim_base
    mridc.collections.reconstruction.models.multidomain
    mridc.collections.reconstruction.models.mwcnn
    mridc.collections.reconstruction.models.primaldual
@@ -65,6 +67,14 @@ mridc.collections.reconstruction.models.dunet module
    :undoc-members:
    :show-inheritance:
 
+mridc.collections.reconstruction.models.invrim module
+-----------------------------------------------------
+
+.. automodule:: mridc.collections.reconstruction.models.invrim
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 mridc.collections.reconstruction.models.jointicnet module
 ---------------------------------------------------------
 
@@ -109,6 +119,14 @@ mridc.collections.reconstruction.models.rvn module
 --------------------------------------------------
 
 .. automodule:: mridc.collections.reconstruction.models.rvn
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+mridc.collections.reconstruction.models.srcirim module
+------------------------------------------------------
+
+.. automodule:: mridc.collections.reconstruction.models.srcirim
    :members:
    :undoc-members:
    :show-inheritance:

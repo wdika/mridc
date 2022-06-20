@@ -13,6 +13,7 @@
         <script data-url_root="../../../../../../" id="documentation_options" src="../../../../../../_static/documentation_options.js"></script>
         <script src="../../../../../../_static/jquery.js"></script>
         <script src="../../../../../../_static/underscore.js"></script>
+        <script src="../../../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../../../../_static/doctools.js"></script>
     <script src="../../../../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../../../../genindex.html" />
@@ -173,9 +174,14 @@
 <span class="sd">        bias: Whether to add a bias.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">ConvGRUCell</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">input_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="n">conv_dim</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">,</span> <span class="n">dilation</span><span class="p">,</span> <span class="n">bias</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv_dim</span> <span class="o">=</span> <span class="n">conv_dim</span>
 
 <div class="viewcode-block" id="ConvGRUCell.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.ConvGRUCell.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_input</span><span class="p">,</span> <span class="n">hx</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Forward pass of the ConvGRUCell.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv_dim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">_input</span> <span class="o">=</span> <span class="n">_input</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">hx</span> <span class="o">=</span> <span class="n">hx</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
         <span class="n">ih</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ih</span><span class="p">(</span><span class="n">_input</span><span class="p">)</span><span class="o">.</span><span class="n">chunk</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
         <span class="n">hh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hh</span><span class="p">(</span><span class="n">hx</span><span class="p">)</span><span class="o">.</span><span class="n">chunk</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
@@ -305,9 +311,14 @@
 <span class="sd">        bias: Whether to use a bias.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">ConvMGUCell</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">input_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="n">conv_dim</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">,</span> <span class="n">dilation</span><span class="p">,</span> <span class="n">bias</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv_dim</span> <span class="o">=</span> <span class="n">conv_dim</span>
 
 <div class="viewcode-block" id="ConvMGUCell.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.ConvMGUCell.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_input</span><span class="p">,</span> <span class="n">hx</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Forward the ConvMGUCell.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv_dim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">_input</span> <span class="o">=</span> <span class="n">_input</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">hx</span> <span class="o">=</span> <span class="n">hx</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
         <span class="n">ih</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ih</span><span class="p">(</span><span class="n">_input</span><span class="p">)</span><span class="o">.</span><span class="n">chunk</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">hh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hh</span><span class="p">(</span><span class="n">hx</span><span class="p">)</span><span class="o">.</span><span class="n">chunk</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
@@ -348,7 +359,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">conv_dim</span> <span class="o">=</span> <span class="n">conv_dim</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">conv_class</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">determine_conv_class</span><span class="p">(</span><span class="n">conv_dim</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">ih</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ih</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv_class</span><span class="p">(</span>
             <span class="n">input_size</span><span class="p">,</span>
             <span class="n">hidden_size</span><span class="p">,</span>
             <span class="n">kernel_size</span><span class="p">,</span>
@@ -356,9 +367,15 @@
             <span class="n">dilation</span><span class="o">=</span><span class="n">dilation</span><span class="p">,</span>
             <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">hh</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span>
-            <span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">normal_</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">std</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">hidden_size</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">kernel_size</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span>
-        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv_dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hh</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span>
+                <span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">normal_</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">std</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">hidden_size</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">kernel_size</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv_dim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hh</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span>
+                <span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">normal_</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">std</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">hidden_size</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">kernel_size</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span>
+            <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">()</span>
 
@@ -429,9 +446,15 @@
 <span class="sd">        bias: If ``False``, then the layer does not use bias weights `b_ih` and `b_hh`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">IndRNNCell</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">input_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="n">conv_dim</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">,</span> <span class="n">dilation</span><span class="p">,</span> <span class="n">bias</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv_dim</span> <span class="o">=</span> <span class="n">conv_dim</span>
 
 <div class="viewcode-block" id="IndRNNCell.forward"><a class="viewcode-back" href="../../../../../../mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.IndRNNCell.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_input</span><span class="p">,</span> <span class="n">hx</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Forward propagate the RNN cell.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">conv_dim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="c1"># TODO: Check if this is correct</span>
+            <span class="n">_input</span> <span class="o">=</span> <span class="n">_input</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">hx</span> <span class="o">=</span> <span class="n">hx</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">()(</span><span class="bp">self</span><span class="o">.</span><span class="n">ih</span><span class="p">(</span><span class="n">_input</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">hh</span> <span class="o">*</span> <span class="n">hx</span><span class="p">)</span></div></div>
 </pre></div>
 

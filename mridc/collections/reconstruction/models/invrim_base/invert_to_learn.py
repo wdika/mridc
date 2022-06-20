@@ -10,6 +10,13 @@ def make_layer_memory_free(layer, save_input=False):
     Makes a layer memory free by replacing the forward and reverse functions with a wrapper that saves the
     input and output of the layer. This is useful for layers that are not invertible, but can be made invertible
     by replacing the forward and reverse functions with the same function.
+
+    Parameters
+    ----------
+    layer : torch.nn.Module
+        The layer to make memory free.
+    save_input : bool
+        Whether to save the input of the layer.
     """
     if isinstance(layer, InvertibleLayer):
         layer.memory_free = True
@@ -17,8 +24,32 @@ def make_layer_memory_free(layer, save_input=False):
 
 
 class InvertToLearnFunction(Function):
+    """Abstract class for invertible layers."""
+
     @staticmethod
     def forward(ctx, n_args, layer, forward_fun, reverse_fun, args, kwargs, *tensors):
+        """
+        Forward function for invertible layers.
+
+        Parameters
+        ----------
+        ctx : torch.autograd.function.InvertToLearnFunction
+            Context object for the forward function.
+        n_args : int
+            Number of arguments to the forward function.
+        layer : torch.nn.Module
+            The layer to invert.
+        forward_fun : callable
+            The forward function of the layer.
+        reverse_fun : callable
+            The reverse function of the layer.
+        args : tuple
+            The arguments to the forward function.
+        kwargs : dict
+            The keyword arguments to the forward function.
+        tensors : tuple
+            The tensors to pass to the forward function.
+        """
         x = tensors[0] if n_args == 1 else list(tensors[: 2 * n_args : 2])
         with torch.no_grad():
             y = forward_fun(x, *args, **kwargs)
@@ -47,6 +78,16 @@ class InvertToLearnFunction(Function):
 
     @staticmethod
     def backward(ctx, *out):
+        """
+        Backward function for invertible layers.
+
+        Parameters
+        ----------
+        ctx : torch.autograd.function.InvertToLearnFunction
+            Context object for the forward function.
+        out : tuple
+            The output of the forward function.
+        """
         if len(out) == 2:
             y, grad_outputs = out[1].detach(), out[0]
         else:
@@ -77,10 +118,12 @@ class InvertibleModule(torch.nn.Module, ABC):
 
     @abstractmethod
     def forward(self, x, *args, **kwargs):
+        """Forward function."""
         pass
 
     @abstractmethod
     def reverse(self, y, *args, **kwargs):
+        """Reverse function."""
         pass
 
 
@@ -97,11 +140,16 @@ class InvertibleLayer(InvertibleModule, ABC):
 
     def forward(self, x, *args, **kwargs):
         """
-        Forward operation of the invertible layer
-        :param x: Tensor or list of Tensors. Only gradients for x will be valid in invert to learn.
-        :param args: Additional Inputs
-        :param kwargs: Keyword Arguments
-        :return: Tensor or list of Tensors
+        Forward function.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            The input to the layer.
+        args : tuple
+            The arguments to the forward function.
+        kwargs : dict
+            The keyword arguments to the forward function.
         """
         if self.memory_free:
             if isinstance(x, list):
@@ -130,11 +178,16 @@ class InvertibleLayer(InvertibleModule, ABC):
 
     def reverse(self, y, *args, **kwargs):
         """
-        Reverse operation of the invertible layer
-        :param y: Tensor or list of Tensors. Only gradients for y will be valid in invert to learn.
-        :param args: Additional Inputs
-        :param kwargs: Keyword Arguments
-        :return: Tensor or list of Tensors
+        Reverse function.
+
+        Parameters
+        ----------
+        y : torch.Tensor
+            The output of the forward function.
+        args : tuple
+            The arguments to the reverse function.
+        kwargs : dict
+            The keyword arguments to the reverse function.
         """
         if self.memory_free:
             if isinstance(y, list):
@@ -167,13 +220,25 @@ class InvertibleLayer(InvertibleModule, ABC):
         InvertToLearn.backward. This function will be valid for any invertible function, however computation
         cost might be not optimal. Inheriting classes can overwrite this method to implement more efficient
         gradient computation specific for teh respective layer. See invertible_layer.py for examples.
-        :param forward_fun: The function that was used during the forward operation
-        :param reverse_fun: The inverse of forward_fun
-        :param x: Tensor or list of Tensors, Input of layer
-        :param y: Tensor or list of Tensors, Output of layer
-        :param grad_outputs: Tensor or list of Tensors, gradients passed from higher layers
-        :param parameters: Tensor or list of Tensors, parameters of the layer
-        :return: x, grad_x, grads_param
+
+        Parameters
+        ----------
+        forward_fun : callable
+            The forward function.
+        reverse_fun : callable
+            The inverse of the forward function.
+        x : torch.Tensor
+            The input to the layer.
+        y : torch.Tensor
+            The output of the layer.
+        grad_outputs : torch.Tensor
+            The gradients of the output of the layer.
+        parameters : torch.Tensor
+            The parameters of the layer.
+        args : tuple
+            The arguments to the forward function.
+        kwargs : dict
+            The keyword arguments to the forward function.
         """
         assert not (x is None and y is None)
         if x is None:
@@ -201,21 +266,47 @@ class InvertibleLayer(InvertibleModule, ABC):
 
     @abstractmethod
     def _forward(self, x, data, *args, **kwargs):
+        """Forward function."""
         pass
 
     @abstractmethod
     def _reverse(self, y, data, *args, **kwargs):
+        """Reverse function."""
         pass
 
 
 class IdentityLayer(InvertibleLayer):
     def _forward(self, x, *args, **kwargs):
+        """Forward function."""
         return x
 
     def _reverse(self, y, *args, **kwargs):
+        """Reverse function."""
         return y
 
     def gradfun(self, forward_fun, reverse_fun, x=None, y=None, grad_outputs=None, parameters=None, *args, **kwargs):
+        """
+        Gradient function.
+
+        Parameters
+        ----------
+        forward_fun : callable
+            The forward function.
+        reverse_fun : callable
+            The reverse function.
+        x : torch.Tensor
+            The input to the forward function.
+        y : torch.Tensor
+            The output of the forward function.
+        grad_outputs : torch.Tensor
+            The gradient of the output of the forward function.
+        parameters : list
+            The parameters of the forward function.
+        args : tuple
+            The arguments to the forward function.
+        kwargs : dict
+            The keyword arguments to the forward function.
+        """
         if x is None:
             x = y
         return x, grad_outputs, []
@@ -228,9 +319,6 @@ class MemoryFreeInvertibleModule(InvertibleModule):
     """
 
     def __init__(self, model):
-        """
-        :param model: Model to be wrapped.
-        """
         super().__init__()
         assert isinstance(model, InvertibleModule)
         self.model = model.apply(make_layer_memory_free)
@@ -238,6 +326,18 @@ class MemoryFreeInvertibleModule(InvertibleModule):
         make_layer_memory_free(self.save_layer, save_input=True)
 
     def forward(self, x, *args, **kwargs):
+        """
+        Forward function.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            The input to the layer.
+        args : tuple
+            The arguments to the forward function.
+        kwargs : dict
+            The keyword arguments to the forward function.
+        """
         x = [(x_, x_.detach()) for x_ in x] if isinstance(x, list) else (x, x.detach())
         x = self.model.forward(x, *args, **kwargs)
         x = self.save_layer.forward(x, None)
@@ -245,6 +345,18 @@ class MemoryFreeInvertibleModule(InvertibleModule):
         return x
 
     def reverse(self, y, *args, **kwargs):
+        """
+        Reverse function.
+
+        Parameters
+        ----------
+        y : torch.Tensor
+            The output of the forward function.
+        args : tuple
+            The arguments to the reverse function.
+        kwargs : dict
+            The keyword arguments to the reverse function.
+        """
         y = [(y_, y_.detach()) for y_ in y] if isinstance(y, list) else (y, y.detach())
         y = self.model.reverse(y, *args, **kwargs)
         y = self.save_layer.reverse(y, None)

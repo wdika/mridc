@@ -14,6 +14,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -88,16 +89,16 @@
            <div itemprop="articleBody">
 
   <section id="mridc-collections-reconstruction-models-conv-package">
-<h1>mridc.collections.reconstruction.models.conv package<a class="headerlink" href="#mridc-collections-reconstruction-models-conv-package" title="Permalink to this headline"></a></h1>
+<h1>mridc.collections.reconstruction.models.conv package<a class="headerlink" href="#mridc-collections-reconstruction-models-conv-package" title="Permalink to this heading"></a></h1>
 <section id="submodules">
-<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline"></a></h2>
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
 </section>
 <section id="module-mridc.collections.reconstruction.models.conv.conv2d">
-<span id="mridc-collections-reconstruction-models-conv-conv2d-module"></span><h2>mridc.collections.reconstruction.models.conv.conv2d module<a class="headerlink" href="#module-mridc.collections.reconstruction.models.conv.conv2d" title="Permalink to this headline"></a></h2>
+<span id="mridc-collections-reconstruction-models-conv-conv2d-module"></span><h2>mridc.collections.reconstruction.models.conv.conv2d module<a class="headerlink" href="#module-mridc.collections.reconstruction.models.conv.conv2d" title="Permalink to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.collections.reconstruction.models.conv.conv2d.Conv2d">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.collections.reconstruction.models.conv.conv2d.</span></span><span class="sig-name descname"><span class="pre">Conv2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_convs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PReLU(num_parameters=1)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batchnorm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/conv/conv2d.html#Conv2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.conv.conv2d.Conv2d" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
 <p>Implementation of a simple cascade of 2D convolutions.
 If batchnorm is set to True, batch normalization layer is applied after each convolution.</p>
 <dl class="py method">
@@ -123,11 +124,11 @@ If batchnorm is set to True, batch normalization layer is applied after each con
 
 </section>
 <section id="module-mridc.collections.reconstruction.models.conv.gruconv2d">
-<span id="mridc-collections-reconstruction-models-conv-gruconv2d-module"></span><h2>mridc.collections.reconstruction.models.conv.gruconv2d module<a class="headerlink" href="#module-mridc.collections.reconstruction.models.conv.gruconv2d" title="Permalink to this headline"></a></h2>
+<span id="mridc-collections-reconstruction-models-conv-gruconv2d-module"></span><h2>mridc.collections.reconstruction.models.conv.gruconv2d module<a class="headerlink" href="#module-mridc.collections.reconstruction.models.conv.gruconv2d" title="Permalink to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="mridc.collections.reconstruction.models.conv.gruconv2d.GRUConv2d">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mridc.collections.reconstruction.models.conv.gruconv2d.</span></span><span class="sig-name descname"><span class="pre">GRUConv2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_convs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ReLU'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batchnorm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/conv/gruconv2d.html#GRUConv2d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.conv.gruconv2d.GRUConv2d" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
 <p>Implementation of a GRU followed by a number of 2D convolutions inspired by <a class="footnote-reference brackets" href="#id2" id="id1">1</a>.</p>
 <p class="rubric">References</p>
 <dl class="footnote brackets">
@@ -139,7 +140,7 @@ If batchnorm is set to True, batch normalization layer is applied after each con
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="mridc.collections.reconstruction.models.conv.gruconv2d.GRUConv2d.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/conv/gruconv2d.html#GRUConv2d.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.conv.gruconv2d.GRUConv2d.forward" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/collections/reconstruction/models/conv/gruconv2d.html#GRUConv2d.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.collections.reconstruction.models.conv.gruconv2d.GRUConv2d.forward" title="Permalink to this definition"></a></dt>
 <dd><p>Performs the forward pass of Conv2d.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -163,7 +164,7 @@ If batchnorm is set to True, batch normalization layer is applied after each con
 
 </section>
 <section id="module-mridc.collections.reconstruction.models.conv">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-mridc.collections.reconstruction.models.conv" title="Permalink to this headline"></a></h2>
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-mridc.collections.reconstruction.models.conv" title="Permalink to this heading"></a></h2>
 </section>
 </section>
 

@@ -13,6 +13,7 @@
         <script data-url_root="../../../../../../" id="documentation_options" src="../../../../../../_static/documentation_options.js"></script>
         <script src="../../../../../../_static/jquery.js"></script>
         <script src="../../../../../../_static/underscore.js"></script>
+        <script src="../../../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../../../../_static/doctools.js"></script>
     <script src="../../../../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../../../../genindex.html" />
@@ -412,7 +413,7 @@
                     <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">,</span>
                     <span class="n">ch</span><span class="p">,</span>
                     <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
-                    <span class="n">dropout_probability</span>
+                    <span class="n">dropout_probability</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="p">]</span>
             <span class="n">ch</span> <span class="o">*=</span> <span class="mi">2</span>
@@ -423,7 +424,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">,</span>
             <span class="n">ch</span><span class="p">,</span>
             <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
-            <span class="n">dropout_probability</span>
+            <span class="n">dropout_probability</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">up_conv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">()</span>
@@ -431,12 +432,7 @@
         <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_pool_layers</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">up_transpose_conv</span> <span class="o">+=</span> <span class="p">[</span>
                 <span class="n">TransposeMultiDomainConvBlock</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">,</span>
-                    <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
-                    <span class="n">ch</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">,</span> <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">ch</span>
                 <span class="p">)</span>
             <span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">up_conv</span> <span class="o">+=</span> <span class="p">[</span>
@@ -447,19 +443,14 @@
                     <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">,</span>
                     <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
                     <span class="n">ch</span><span class="p">,</span>
-                    <span class="n">dropout_probability</span>
+                    <span class="n">dropout_probability</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="p">]</span>
             <span class="n">ch</span> <span class="o">//=</span> <span class="mi">2</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">up_transpose_conv</span> <span class="o">+=</span> <span class="p">[</span>
             <span class="n">TransposeMultiDomainConvBlock</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">,</span>
-                <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
-                <span class="n">ch</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fft_centered</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fft_normalization</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spatial_dims</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">,</span> <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">ch</span>
             <span class="p">)</span>
         <span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">up_conv</span> <span class="o">+=</span> <span class="p">[</span>
@@ -471,7 +462,7 @@
                     <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">,</span>
                     <span class="n">ch</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
                     <span class="n">ch</span><span class="p">,</span>
-                    <span class="n">dropout_probability</span>
+                    <span class="n">dropout_probability</span><span class="p">,</span>
                 <span class="p">),</span>
                 <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="n">ch</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_channels</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
             <span class="p">)</span>

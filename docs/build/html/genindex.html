@@ -13,6 +13,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="#" />
@@ -200,6 +201,8 @@
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.dunet.DUNet.allow_zero_length_dataloader_with_multiple_devices">(mridc.collections.reconstruction.models.dunet.DUNet attribute)</a>
 </li>
+        <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.invrim.InvRIM.allow_zero_length_dataloader_with_multiple_devices">(mridc.collections.reconstruction.models.invrim.InvRIM attribute)</a>
+</li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.jointicnet.JointICNet.allow_zero_length_dataloader_with_multiple_devices">(mridc.collections.reconstruction.models.jointicnet.JointICNet attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.kikinet.KIKINet.allow_zero_length_dataloader_with_multiple_devices">(mridc.collections.reconstruction.models.kikinet.KIKINet attribute)</a>
@@ -211,6 +214,8 @@
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.pics.PICS.allow_zero_length_dataloader_with_multiple_devices">(mridc.collections.reconstruction.models.pics.PICS attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.rvn.RecurrentVarNet.allow_zero_length_dataloader_with_multiple_devices">(mridc.collections.reconstruction.models.rvn.RecurrentVarNet attribute)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.srcirim.SRCIRIM.allow_zero_length_dataloader_with_multiple_devices">(mridc.collections.reconstruction.models.srcirim.SRCIRIM attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.unet.UNet.allow_zero_length_dataloader_with_multiple_devices">(mridc.collections.reconstruction.models.unet.UNet attribute)</a>
 </li>
@@ -293,8 +298,12 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="mridc.utils.formaters.html#mridc.utils.formaters.colors.AnsiCursor.BACK">BACK() (mridc.utils.formaters.colors.AnsiCursor static method)</a>
 </li>
-      <li><a href="mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.ConjugateGradient.backward">backward() (mridc.collections.reconstruction.models.sigmanet.dc_layers.ConjugateGradient static method)</a>
+      <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invert_to_learn.InvertToLearnFunction.backward">backward() (mridc.collections.reconstruction.models.invrim_base.invert_to_learn.InvertToLearnFunction static method)</a>
+
+      <ul>
+        <li><a href="mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.ConjugateGradient.backward">(mridc.collections.reconstruction.models.sigmanet.dc_layers.ConjugateGradient static method)</a>
 </li>
+      </ul></li>
       <li><a href="mridc.core.conf.html#mridc.core.conf.schedulers.CyclicLRParams.base_lr">base_lr (mridc.core.conf.schedulers.CyclicLRParams attribute)</a>
 </li>
       <li><a href="mridc.core.conf.html#mridc.core.conf.schedulers.CyclicLRParams.base_momentum">base_momentum (mridc.core.conf.schedulers.CyclicLRParams attribute)</a>
@@ -511,6 +520,8 @@
 </li>
       <li><a href="mridc.core.classes.html#mridc.core.classes.modelPT.ModelPT.configure_optimizers">configure_optimizers() (mridc.core.classes.modelPT.ModelPT method)</a>
 </li>
+      <li><a href="mridc.collections.reconstruction.models.cs.html#mridc.collections.reconstruction.models.cs.cg.conjugate_gradient">conjugate_gradient() (in module mridc.collections.reconstruction.models.cs.cg)</a>
+</li>
       <li><a href="mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.ConjugateGradient">ConjugateGradient (class in mridc.collections.reconstruction.models.sigmanet.dc_layers)</a>
 </li>
       <li><a href="mridc.core.conf.html#mridc.core.conf.schedulers.SquareRootConstantSchedulerParams.constant_ratio">constant_ratio (mridc.core.conf.schedulers.SquareRootConstantSchedulerParams attribute)</a>
@@ -661,11 +672,11 @@
 </li>
       <li><a href="mridc.core.conf.html#mridc.core.conf.trainer.TrainerConfig.detect_anomaly">detect_anomaly (mridc.core.conf.trainer.TrainerConfig attribute)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.conv_layers.ConvNonlinear.determine_conv_class">determine_conv_class() (mridc.collections.reconstruction.models.rim.conv_layers.ConvNonlinear static method)</a>
+      <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.utils.determine_conv_class">determine_conv_class() (in module mridc.collections.reconstruction.models.invrim_base.utils)</a>
 
       <ul>
+        <li><a href="mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.conv_layers.ConvNonlinear.determine_conv_class">(mridc.collections.reconstruction.models.rim.conv_layers.ConvNonlinear static method)</a>
+</li>
         <li><a href="mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.ConvGRUCellBase.determine_conv_class">(mridc.collections.reconstruction.models.rim.rnn_cells.ConvGRUCellBase static method)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.ConvMGUCellBase.determine_conv_class">(mridc.collections.reconstruction.models.rim.rnn_cells.ConvMGUCellBase static method)</a>
@@ -673,6 +684,10 @@
         <li><a href="mridc.collections.reconstruction.models.rim.html#mridc.collections.reconstruction.models.rim.rnn_cells.IndRNNCellBase.determine_conv_class">(mridc.collections.reconstruction.models.rim.rnn_cells.IndRNNCellBase static method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.utils.determine_conv_functional">determine_conv_functional() (in module mridc.collections.reconstruction.models.invrim_base.utils)</a>
+</li>
       <li><a href="mridc.core.conf.html#mridc.core.conf.trainer.TrainerConfig.deterministic">deterministic (mridc.core.conf.trainer.TrainerConfig attribute)</a>
 </li>
       <li><a href="mridc.utils.html#mridc.utils.app_state.AppState.device_id">device_id (mridc.utils.app_state.AppState property)</a>
@@ -886,6 +901,24 @@
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.dunet.DUNet.forward">(mridc.collections.reconstruction.models.dunet.DUNet method)</a>
 </li>
+        <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.invrim.InvRIM.forward">(mridc.collections.reconstruction.models.invrim.InvRIM method)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invert_to_learn.InvertibleLayer.forward">(mridc.collections.reconstruction.models.invrim_base.invert_to_learn.InvertibleLayer method)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invert_to_learn.InvertibleModule.forward">(mridc.collections.reconstruction.models.invrim_base.invert_to_learn.InvertibleModule method)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invert_to_learn.InvertToLearnFunction.forward">(mridc.collections.reconstruction.models.invrim_base.invert_to_learn.InvertToLearnFunction static method)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invert_to_learn.MemoryFreeInvertibleModule.forward">(mridc.collections.reconstruction.models.invrim_base.invert_to_learn.MemoryFreeInvertibleModule method)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invertible_unet.InvertibleUnet.forward">(mridc.collections.reconstruction.models.invrim_base.invertible_unet.InvertibleUnet method)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.irim.IRIM.forward">(mridc.collections.reconstruction.models.invrim_base.irim.IRIM method)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.residual_blocks.ResidualBlockPixelshuffle.forward">(mridc.collections.reconstruction.models.invrim_base.residual_blocks.ResidualBlockPixelshuffle method)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.utils.PixelUnshuffle.forward">(mridc.collections.reconstruction.models.invrim_base.utils.PixelUnshuffle method)</a>
+</li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.jointicnet.JointICNet.forward">(mridc.collections.reconstruction.models.jointicnet.JointICNet method)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.kikinet.KIKINet.forward">(mridc.collections.reconstruction.models.kikinet.KIKINet method)</a>
@@ -958,6 +991,8 @@
 </li>
         <li><a href="mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.forward">(mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork method)</a>
 </li>
+        <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.srcirim.SRCIRIM.forward">(mridc.collections.reconstruction.models.srcirim.SRCIRIM method)</a>
+</li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.unet.UNet.forward">(mridc.collections.reconstruction.models.unet.UNet method)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.unet_base.html#mridc.collections.reconstruction.models.unet_base.unet_block.ConvBlock.forward">(mridc.collections.reconstruction.models.unet_base.unet_block.ConvBlock method)</a>
@@ -1013,6 +1048,8 @@
 </li>
       <li><a href="mridc.core.neural_types.html#mridc.core.neural_types.axes.AxisKind.from_str">from_str() (mridc.core.neural_types.axes.AxisKind static method)</a>
 </li>
+      <li><a href="mridc.collections.reconstruction.models.cs.html#mridc.collections.reconstruction.models.cs.pocs.FullSoftThresholding_wavedec">FullSoftThresholding_wavedec() (in module mridc.collections.reconstruction.models.cs.pocs)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -1059,6 +1096,8 @@
 </li>
       <li><a href="mridc.core.classes.html#mridc.core.classes.common.Model.get_available_model_names">get_available_model_names() (mridc.core.classes.common.Model class method)</a>
 </li>
+      <li><a href="mridc.collections.reconstruction.data.html#mridc.collections.reconstruction.data.mri_data.FastMRISliceDataset.get_consecutive_slices">get_consecutive_slices() (mridc.collections.reconstruction.data.mri_data.FastMRISliceDataset method)</a>
+</li>
       <li><a href="mridc.core.utils.html#mridc.core.utils.neural_type_utils.get_dynamic_axes">get_dynamic_axes() (in module mridc.core.utils.neural_type_utils)</a>
 </li>
       <li><a href="mridc.utils.html#mridc.utils.env_var_parsing.get_env">get_env() (in module mridc.utils.env_var_parsing)</a>
@@ -1089,8 +1128,6 @@
 </li>
       <li><a href="mridc.collections.common.data.html#mridc.collections.common.data.dataset.ConcatDataset.get_iterable">get_iterable() (mridc.collections.common.data.dataset.ConcatDataset method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="mridc.utils.html#mridc.utils.exp_manager.get_log_dir">get_log_dir() (in module mridc.utils.exp_manager)</a>
 </li>
       <li><a href="mridc.core.optim.html#mridc.core.optim.lr_scheduler.NoamAnnealing.get_lr">get_lr() (mridc.core.optim.lr_scheduler.NoamAnnealing method)</a>
@@ -1105,6 +1142,8 @@
         <li><a href="mridc.core.optim.html#mridc.core.optim.lr_scheduler.WarmupPolicy.get_lr">(mridc.core.optim.lr_scheduler.WarmupPolicy method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="mridc.utils.html#mridc.utils.app_state.AppState.get_model_metadata_from_guid">get_model_metadata_from_guid() (mridc.utils.app_state.AppState method)</a>
 </li>
       <li><a href="mridc.core.optim.html#mridc.core.optim.optimizers.get_optimizer">get_optimizer() (in module mridc.core.optim.optimizers)</a>
@@ -1137,8 +1176,22 @@
 </li>
       <li><a href="mridc.core.conf.html#mridc.core.conf.optimizers.NovogradParams.grad_averaging">grad_averaging (mridc.core.conf.optimizers.NovogradParams attribute)</a>
 </li>
+      <li><a href="mridc.collections.reconstruction.models.cs.html#mridc.collections.reconstruction.models.cs.cg.grad_objective_function">grad_objective_function() (in module mridc.collections.reconstruction.models.cs.cg)</a>
+</li>
       <li><a href="mridc.core.optim.html#mridc.core.optim.optimizer_with_master_params.GradBucket">GradBucket (class in mridc.core.optim.optimizer_with_master_params)</a>
 </li>
+      <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invert_to_learn.IdentityLayer.gradfun">gradfun() (mridc.collections.reconstruction.models.invrim_base.invert_to_learn.IdentityLayer method)</a>
+
+      <ul>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invert_to_learn.InvertibleLayer.gradfun">(mridc.collections.reconstruction.models.invrim_base.invert_to_learn.InvertibleLayer method)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invertible_layers.Housholder1x1.gradfun">(mridc.collections.reconstruction.models.invrim_base.invertible_layers.Housholder1x1 method)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invertible_layers.RevNetLayer.gradfun">(mridc.collections.reconstruction.models.invrim_base.invertible_layers.RevNetLayer method)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.irim.InvertibleGradUpdate.gradfun">(mridc.collections.reconstruction.models.invrim_base.irim.InvertibleGradUpdate method)</a>
+</li>
+      </ul></li>
       <li><a href="mridc.core.conf.html#mridc.core.conf.trainer.TrainerConfig.gradient_clip_algorithm">gradient_clip_algorithm (mridc.core.conf.trainer.TrainerConfig attribute)</a>
 </li>
       <li><a href="mridc.core.conf.html#mridc.core.conf.trainer.TrainerConfig.gradient_clip_val">gradient_clip_val (mridc.core.conf.trainer.TrainerConfig attribute)</a>
@@ -1167,9 +1220,11 @@
 </li>
       <li><a href="mridc.core.conf.html#mridc.core.conf.schedulers.WarmupHoldSchedulerParams.hold_ratio">hold_ratio (mridc.core.conf.schedulers.WarmupHoldSchedulerParams attribute)</a>
 </li>
+      <li><a href="mridc.core.conf.html#mridc.core.conf.schedulers.WarmupHoldSchedulerParams.hold_steps">hold_steps (mridc.core.conf.schedulers.WarmupHoldSchedulerParams attribute)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="mridc.core.conf.html#mridc.core.conf.schedulers.WarmupHoldSchedulerParams.hold_steps">hold_steps (mridc.core.conf.schedulers.WarmupHoldSchedulerParams attribute)</a>
+      <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invertible_layers.Housholder1x1">Housholder1x1 (class in mridc.collections.reconstruction.models.invrim_base.invertible_layers)</a>
 </li>
       <li><a href="mridc.core.conf.html#mridc.core.conf.modelPT.MRIDCConfig.hydra">hydra (mridc.core.conf.modelPT.MRIDCConfig attribute)</a>
 </li>
@@ -1183,6 +1238,8 @@
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invert_to_learn.IdentityLayer">IdentityLayer (class in mridc.collections.reconstruction.models.invrim_base.invert_to_learn)</a>
+</li>
       <li><a href="mridc.collections.common.parts.html#mridc.collections.common.parts.fft.ifft2">ifft2() (in module mridc.collections.common.parts.fft)</a>
 </li>
       <li><a href="mridc.collections.reconstruction.models.crossdomain.html#mridc.collections.reconstruction.models.crossdomain.crossdomain.CrossDomainNetwork.image_correction">image_correction() (mridc.collections.reconstruction.models.crossdomain.crossdomain.CrossDomainNetwork method)</a>
@@ -1211,8 +1268,6 @@
 </li>
       <li><a href="mridc.utils.html#mridc.utils.model_utils.inject_model_parallel_rank">inject_model_parallel_rank() (in module mridc.utils.model_utils)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="mridc.core.classes.html#mridc.core.classes.module.NeuralModule.input_example">input_example() (mridc.core.classes.module.NeuralModule static method)</a>
 </li>
       <li><a href="mridc.core.classes.html#mridc.core.classes.export.Exportable.input_module">input_module (mridc.core.classes.export.Exportable property)</a>
@@ -1225,17 +1280,35 @@
         <li><a href="mridc.core.classes.html#mridc.core.classes.common.Typing.input_types">(mridc.core.classes.common.Typing property)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="mridc.core.neural_types.html#mridc.core.neural_types.elements.IntType">IntType (class in mridc.core.neural_types.elements)</a>
 </li>
       <li><a href="mridc.core.optim.html#mridc.core.optim.lr_scheduler.InverseSquareRootAnnealing">InverseSquareRootAnnealing (class in mridc.core.optim.lr_scheduler)</a>
 </li>
       <li><a href="mridc.core.conf.html#mridc.core.conf.schedulers.InverseSquareRootAnnealingParams">InverseSquareRootAnnealingParams (class in mridc.core.conf.schedulers)</a>
 </li>
+      <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.irim.InvertibleGradUpdate">InvertibleGradUpdate (class in mridc.collections.reconstruction.models.invrim_base.irim)</a>
+</li>
+      <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invert_to_learn.InvertibleLayer">InvertibleLayer (class in mridc.collections.reconstruction.models.invrim_base.invert_to_learn)</a>
+</li>
+      <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invert_to_learn.InvertibleModule">InvertibleModule (class in mridc.collections.reconstruction.models.invrim_base.invert_to_learn)</a>
+</li>
+      <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invertible_unet.InvertibleUnet">InvertibleUnet (class in mridc.collections.reconstruction.models.invrim_base.invertible_unet)</a>
+</li>
+      <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invert_to_learn.InvertToLearnFunction">InvertToLearnFunction (class in mridc.collections.reconstruction.models.invrim_base.invert_to_learn)</a>
+</li>
+      <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.invrim.InvRIM">InvRIM (class in mridc.collections.reconstruction.models.invrim)</a>
+</li>
       <li><a href="mridc.core.conf.html#mridc.core.conf.trainer.TrainerConfig.ipus">ipus (mridc.core.conf.trainer.TrainerConfig attribute)</a>
+</li>
+      <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.irim.IRIM">IRIM (class in mridc.collections.reconstruction.models.invrim_base.irim)</a>
 </li>
       <li><a href="mridc.utils.html#mridc.utils.get_rank.is_global_rank_zero">is_global_rank_zero() (in module mridc.utils.get_rank)</a>
 </li>
       <li><a href="mridc.utils.html#mridc.utils.app_state.AppState.is_model_being_restored">is_model_being_restored (mridc.utils.app_state.AppState property)</a>
+</li>
+      <li><a href="mridc.collections.common.parts.html#mridc.collections.common.parts.utils.is_none">is_none() (in module mridc.collections.common.parts.utils)</a>
 </li>
       <li><a href="mridc.core.utils.html#mridc.core.utils.numba_utils.is_numba_compat_strict">is_numba_compat_strict() (in module mridc.core.utils.numba_utils)</a>
 </li>
@@ -1439,6 +1512,10 @@
 </li>
       <li><a href="mridc.core.optim.html#mridc.core.optim.optimizer_with_master_params.MainParamsOptimizerWrapper">MainParamsOptimizerWrapper (class in mridc.core.optim.optimizer_with_master_params)</a>
 </li>
+      <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invert_to_learn.make_layer_memory_free">make_layer_memory_free() (in module mridc.collections.reconstruction.models.invrim_base.invert_to_learn)</a>
+</li>
+      <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invertible_unet.InvertibleUnet.make_layers">make_layers() (mridc.collections.reconstruction.models.invrim_base.invertible_unet.InvertibleUnet method)</a>
+</li>
       <li><a href="mridc.collections.reconstruction.parts.html#mridc.collections.reconstruction.parts.utils.mask_center">mask_center() (in module mridc.collections.reconstruction.parts.utils)</a>
 </li>
       <li><a href="mridc.collections.reconstruction.data.html#mridc.collections.reconstruction.data.subsample.MaskFunc">MaskFunc (class in mridc.collections.reconstruction.data.subsample)</a>
@@ -1468,6 +1545,8 @@
       <li><a href="mridc.utils.html#mridc.utils.model_utils.maybe_update_config_version">maybe_update_config_version() (in module mridc.utils.model_utils)</a>
 </li>
       <li><a href="mridc.collections.reconstruction.metrics.html#mridc.collections.reconstruction.metrics.evaluate.Metrics.means">means() (mridc.collections.reconstruction.metrics.evaluate.Metrics method)</a>
+</li>
+      <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invert_to_learn.MemoryFreeInvertibleModule">MemoryFreeInvertibleModule (class in mridc.collections.reconstruction.models.invrim_base.invert_to_learn)</a>
 </li>
       <li><a href="mridc.collections.reconstruction.metrics.html#mridc.collections.reconstruction.metrics.evaluate.Metrics">Metrics (class in mridc.collections.reconstruction.metrics.evaluate)</a>
 </li>
@@ -1611,11 +1690,33 @@
 </li>
         <li><a href="mridc.collections.reconstruction.models.crossdomain.html#module-mridc.collections.reconstruction.models.crossdomain.multicoil">mridc.collections.reconstruction.models.crossdomain.multicoil</a>
 </li>
+        <li><a href="mridc.collections.reconstruction.models.cs.html#module-mridc.collections.reconstruction.models.cs">mridc.collections.reconstruction.models.cs</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.cs.html#module-mridc.collections.reconstruction.models.cs.cg">mridc.collections.reconstruction.models.cs.cg</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.cs.html#module-mridc.collections.reconstruction.models.cs.pocs">mridc.collections.reconstruction.models.cs.pocs</a>
+</li>
         <li><a href="mridc.collections.reconstruction.models.didn.html#module-mridc.collections.reconstruction.models.didn">mridc.collections.reconstruction.models.didn</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.didn.html#module-mridc.collections.reconstruction.models.didn.didn">mridc.collections.reconstruction.models.didn.didn</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#module-mridc.collections.reconstruction.models.dunet">mridc.collections.reconstruction.models.dunet</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.html#module-mridc.collections.reconstruction.models.invrim">mridc.collections.reconstruction.models.invrim</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#module-mridc.collections.reconstruction.models.invrim_base">mridc.collections.reconstruction.models.invrim_base</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#module-mridc.collections.reconstruction.models.invrim_base.invert_to_learn">mridc.collections.reconstruction.models.invrim_base.invert_to_learn</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#module-mridc.collections.reconstruction.models.invrim_base.invertible_layers">mridc.collections.reconstruction.models.invrim_base.invertible_layers</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#module-mridc.collections.reconstruction.models.invrim_base.invertible_unet">mridc.collections.reconstruction.models.invrim_base.invertible_unet</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#module-mridc.collections.reconstruction.models.invrim_base.irim">mridc.collections.reconstruction.models.invrim_base.irim</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#module-mridc.collections.reconstruction.models.invrim_base.residual_blocks">mridc.collections.reconstruction.models.invrim_base.residual_blocks</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#module-mridc.collections.reconstruction.models.invrim_base.utils">mridc.collections.reconstruction.models.invrim_base.utils</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#module-mridc.collections.reconstruction.models.jointicnet">mridc.collections.reconstruction.models.jointicnet</a>
 </li>
@@ -1662,6 +1763,8 @@
         <li><a href="mridc.collections.reconstruction.models.sigmanet.html#module-mridc.collections.reconstruction.models.sigmanet.dc_layers">mridc.collections.reconstruction.models.sigmanet.dc_layers</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.sigmanet.html#module-mridc.collections.reconstruction.models.sigmanet.sensitivity_net">mridc.collections.reconstruction.models.sigmanet.sensitivity_net</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.html#module-mridc.collections.reconstruction.models.srcirim">mridc.collections.reconstruction.models.srcirim</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#module-mridc.collections.reconstruction.models.unet">mridc.collections.reconstruction.models.unet</a>
 </li>
@@ -2032,8 +2135,6 @@
         <li><a href="mridc.collections.reconstruction.models.html#module-mridc.collections.reconstruction.models.cirim">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     mridc.collections.reconstruction.models.conv
 
@@ -2055,6 +2156,8 @@
         <li><a href="mridc.collections.reconstruction.models.conv.html#module-mridc.collections.reconstruction.models.conv.gruconv2d">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     mridc.collections.reconstruction.models.convrecnet
 
@@ -2098,6 +2201,27 @@
 </li>
       </ul></li>
       <li>
+    mridc.collections.reconstruction.models.cs
+
+      <ul>
+        <li><a href="mridc.collections.reconstruction.models.cs.html#module-mridc.collections.reconstruction.models.cs">module</a>
+</li>
+      </ul></li>
+      <li>
+    mridc.collections.reconstruction.models.cs.cg
+
+      <ul>
+        <li><a href="mridc.collections.reconstruction.models.cs.html#module-mridc.collections.reconstruction.models.cs.cg">module</a>
+</li>
+      </ul></li>
+      <li>
+    mridc.collections.reconstruction.models.cs.pocs
+
+      <ul>
+        <li><a href="mridc.collections.reconstruction.models.cs.html#module-mridc.collections.reconstruction.models.cs.pocs">module</a>
+</li>
+      </ul></li>
+      <li>
     mridc.collections.reconstruction.models.didn
 
       <ul>
@@ -2116,6 +2240,62 @@
 
       <ul>
         <li><a href="mridc.collections.reconstruction.models.html#module-mridc.collections.reconstruction.models.dunet">module</a>
+</li>
+      </ul></li>
+      <li>
+    mridc.collections.reconstruction.models.invrim
+
+      <ul>
+        <li><a href="mridc.collections.reconstruction.models.html#module-mridc.collections.reconstruction.models.invrim">module</a>
+</li>
+      </ul></li>
+      <li>
+    mridc.collections.reconstruction.models.invrim_base
+
+      <ul>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#module-mridc.collections.reconstruction.models.invrim_base">module</a>
+</li>
+      </ul></li>
+      <li>
+    mridc.collections.reconstruction.models.invrim_base.invert_to_learn
+
+      <ul>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#module-mridc.collections.reconstruction.models.invrim_base.invert_to_learn">module</a>
+</li>
+      </ul></li>
+      <li>
+    mridc.collections.reconstruction.models.invrim_base.invertible_layers
+
+      <ul>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#module-mridc.collections.reconstruction.models.invrim_base.invertible_layers">module</a>
+</li>
+      </ul></li>
+      <li>
+    mridc.collections.reconstruction.models.invrim_base.invertible_unet
+
+      <ul>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#module-mridc.collections.reconstruction.models.invrim_base.invertible_unet">module</a>
+</li>
+      </ul></li>
+      <li>
+    mridc.collections.reconstruction.models.invrim_base.irim
+
+      <ul>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#module-mridc.collections.reconstruction.models.invrim_base.irim">module</a>
+</li>
+      </ul></li>
+      <li>
+    mridc.collections.reconstruction.models.invrim_base.residual_blocks
+
+      <ul>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#module-mridc.collections.reconstruction.models.invrim_base.residual_blocks">module</a>
+</li>
+      </ul></li>
+      <li>
+    mridc.collections.reconstruction.models.invrim_base.utils
+
+      <ul>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#module-mridc.collections.reconstruction.models.invrim_base.utils">module</a>
 </li>
       </ul></li>
       <li>
@@ -2277,6 +2457,13 @@
 
       <ul>
         <li><a href="mridc.collections.reconstruction.models.sigmanet.html#module-mridc.collections.reconstruction.models.sigmanet.sensitivity_net">module</a>
+</li>
+      </ul></li>
+      <li>
+    mridc.collections.reconstruction.models.srcirim
+
+      <ul>
+        <li><a href="mridc.collections.reconstruction.models.html#module-mridc.collections.reconstruction.models.srcirim">module</a>
 </li>
       </ul></li>
       <li>
@@ -2806,6 +2993,8 @@
 </li>
       <li><a href="mridc.collections.reconstruction.metrics.html#mridc.collections.reconstruction.metrics.evaluate.mse">mse() (in module mridc.collections.reconstruction.metrics.evaluate)</a>
 </li>
+      <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.utils.mse_gradient">mse_gradient() (in module mridc.collections.reconstruction.models.invrim_base.utils)</a>
+</li>
       <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.ccnn.CascadeNet.mse_vals">mse_vals (mridc.collections.reconstruction.models.ccnn.CascadeNet attribute)</a>
 
       <ul>
@@ -2814,6 +3003,8 @@
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.crnn.CRNNet.mse_vals">(mridc.collections.reconstruction.models.crnn.CRNNet attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.dunet.DUNet.mse_vals">(mridc.collections.reconstruction.models.dunet.DUNet attribute)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.invrim.InvRIM.mse_vals">(mridc.collections.reconstruction.models.invrim.InvRIM attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.jointicnet.JointICNet.mse_vals">(mridc.collections.reconstruction.models.jointicnet.JointICNet attribute)</a>
 </li>
@@ -2826,6 +3017,8 @@
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.pics.PICS.mse_vals">(mridc.collections.reconstruction.models.pics.PICS attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.rvn.RecurrentVarNet.mse_vals">(mridc.collections.reconstruction.models.rvn.RecurrentVarNet attribute)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.srcirim.SRCIRIM.mse_vals">(mridc.collections.reconstruction.models.srcirim.SRCIRIM attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.unet.UNet.mse_vals">(mridc.collections.reconstruction.models.unet.UNet attribute)</a>
 </li>
@@ -2909,6 +3102,8 @@
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.dunet.DUNet.nmse_vals">(mridc.collections.reconstruction.models.dunet.DUNet attribute)</a>
 </li>
+        <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.invrim.InvRIM.nmse_vals">(mridc.collections.reconstruction.models.invrim.InvRIM attribute)</a>
+</li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.jointicnet.JointICNet.nmse_vals">(mridc.collections.reconstruction.models.jointicnet.JointICNet attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.kikinet.KIKINet.nmse_vals">(mridc.collections.reconstruction.models.kikinet.KIKINet attribute)</a>
@@ -2920,6 +3115,8 @@
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.pics.PICS.nmse_vals">(mridc.collections.reconstruction.models.pics.PICS attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.rvn.RecurrentVarNet.nmse_vals">(mridc.collections.reconstruction.models.rvn.RecurrentVarNet attribute)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.srcirim.SRCIRIM.nmse_vals">(mridc.collections.reconstruction.models.srcirim.SRCIRIM attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.unet.UNet.nmse_vals">(mridc.collections.reconstruction.models.unet.UNet attribute)</a>
 </li>
@@ -2990,6 +3187,8 @@
 <h2 id="O">O</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="mridc.collections.reconstruction.models.cs.html#mridc.collections.reconstruction.models.cs.cg.objective_function">objective_function() (in module mridc.collections.reconstruction.models.cs.cg)</a>
+</li>
       <li><a href="mridc.utils.html#mridc.utils.exp_manager.TimingCallback.on_after_backward">on_after_backward() (mridc.utils.exp_manager.TimingCallback method)</a>
 </li>
       <li><a href="mridc.utils.html#mridc.utils.exp_manager.TimingCallback.on_before_backward">on_before_backward() (mridc.utils.exp_manager.TimingCallback method)</a>
@@ -3014,10 +3213,10 @@
 </li>
       <li><a href="mridc.utils.html#mridc.utils.exp_manager.TimingCallback.on_validation_batch_start">on_validation_batch_start() (mridc.utils.exp_manager.TimingCallback method)</a>
 </li>
-      <li><a href="mridc.utils.html#mridc.utils.mridc_logging.LogMode.ONCE">ONCE (mridc.utils.mridc_logging.LogMode attribute)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="mridc.utils.html#mridc.utils.mridc_logging.LogMode.ONCE">ONCE (mridc.utils.mridc_logging.LogMode attribute)</a>
+</li>
       <li><a href="mridc.core.classes.html#mridc.core.classes.export.ExportFormat.ONNX">ONNX (mridc.core.classes.export.ExportFormat attribute)</a>
 
       <ul>
@@ -3098,7 +3297,13 @@
 </li>
       <li><a href="mridc.utils.html#mridc.utils.app_state.AppState.pipeline_model_parallel_split_rank">pipeline_model_parallel_split_rank (mridc.utils.app_state.AppState property)</a>
 </li>
+      <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.utils.pixel_unshuffle">pixel_unshuffle() (in module mridc.collections.reconstruction.models.invrim_base.utils)</a>
+</li>
+      <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.utils.PixelUnshuffle">PixelUnshuffle (class in mridc.collections.reconstruction.models.invrim_base.utils)</a>
+</li>
       <li><a href="mridc.core.conf.html#mridc.core.conf.trainer.TrainerConfig.plugins">plugins (mridc.core.conf.trainer.TrainerConfig attribute)</a>
+</li>
+      <li><a href="mridc.collections.reconstruction.models.cs.html#mridc.collections.reconstruction.models.cs.pocs.POCS">POCS() (in module mridc.collections.reconstruction.models.cs.pocs)</a>
 </li>
       <li><a href="mridc.collections.reconstruction.data.html#mridc.collections.reconstruction.data.subsample.Poisson2DMaskFunc">Poisson2DMaskFunc (class in mridc.collections.reconstruction.data.subsample)</a>
 </li>
@@ -3131,6 +3336,8 @@
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.dunet.DUNet.precision">(mridc.collections.reconstruction.models.dunet.DUNet attribute)</a>
 </li>
+        <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.invrim.InvRIM.precision">(mridc.collections.reconstruction.models.invrim.InvRIM attribute)</a>
+</li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.jointicnet.JointICNet.precision">(mridc.collections.reconstruction.models.jointicnet.JointICNet attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.kikinet.KIKINet.precision">(mridc.collections.reconstruction.models.kikinet.KIKINet attribute)</a>
@@ -3142,6 +3349,8 @@
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.pics.PICS.precision">(mridc.collections.reconstruction.models.pics.PICS attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.rvn.RecurrentVarNet.precision">(mridc.collections.reconstruction.models.rvn.RecurrentVarNet attribute)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.srcirim.SRCIRIM.precision">(mridc.collections.reconstruction.models.srcirim.SRCIRIM attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.unet.UNet.precision">(mridc.collections.reconstruction.models.unet.UNet attribute)</a>
 </li>
@@ -3169,6 +3378,8 @@
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.dunet.DUNet.prepare_data_per_node">(mridc.collections.reconstruction.models.dunet.DUNet attribute)</a>
 </li>
+        <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.invrim.InvRIM.prepare_data_per_node">(mridc.collections.reconstruction.models.invrim.InvRIM attribute)</a>
+</li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.jointicnet.JointICNet.prepare_data_per_node">(mridc.collections.reconstruction.models.jointicnet.JointICNet attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.kikinet.KIKINet.prepare_data_per_node">(mridc.collections.reconstruction.models.kikinet.KIKINet attribute)</a>
@@ -3180,6 +3391,8 @@
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.pics.PICS.prepare_data_per_node">(mridc.collections.reconstruction.models.pics.PICS attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.rvn.RecurrentVarNet.prepare_data_per_node">(mridc.collections.reconstruction.models.rvn.RecurrentVarNet attribute)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.srcirim.SRCIRIM.prepare_data_per_node">(mridc.collections.reconstruction.models.srcirim.SRCIRIM attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.unet.UNet.prepare_data_per_node">(mridc.collections.reconstruction.models.unet.UNet attribute)</a>
 </li>
@@ -3221,6 +3434,8 @@
       <ul>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.crnn.CRNNet.process_intermediate_pred">(mridc.collections.reconstruction.models.crnn.CRNNet method)</a>
 </li>
+        <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.srcirim.SRCIRIM.process_intermediate_pred">(mridc.collections.reconstruction.models.srcirim.SRCIRIM method)</a>
+</li>
       </ul></li>
       <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.base.BaseMRIReconstructionModel.process_loss">process_loss() (mridc.collections.reconstruction.models.base.BaseMRIReconstructionModel method)</a>
 
@@ -3228,6 +3443,8 @@
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.cirim.CIRIM.process_loss">(mridc.collections.reconstruction.models.cirim.CIRIM method)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.crnn.CRNNet.process_loss">(mridc.collections.reconstruction.models.crnn.CRNNet method)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.srcirim.SRCIRIM.process_loss">(mridc.collections.reconstruction.models.srcirim.SRCIRIM method)</a>
 </li>
       </ul></li>
       <li><a href="mridc.core.conf.html#mridc.core.conf.trainer.TrainerConfig.process_position">process_position (mridc.core.conf.trainer.TrainerConfig attribute)</a>
@@ -3247,6 +3464,8 @@
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.dunet.DUNet.psnr_vals">(mridc.collections.reconstruction.models.dunet.DUNet attribute)</a>
 </li>
+        <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.invrim.InvRIM.psnr_vals">(mridc.collections.reconstruction.models.invrim.InvRIM attribute)</a>
+</li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.jointicnet.JointICNet.psnr_vals">(mridc.collections.reconstruction.models.jointicnet.JointICNet attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.kikinet.KIKINet.psnr_vals">(mridc.collections.reconstruction.models.kikinet.KIKINet attribute)</a>
@@ -3258,6 +3477,8 @@
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.pics.PICS.psnr_vals">(mridc.collections.reconstruction.models.pics.PICS attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.rvn.RecurrentVarNet.psnr_vals">(mridc.collections.reconstruction.models.rvn.RecurrentVarNet attribute)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.srcirim.SRCIRIM.psnr_vals">(mridc.collections.reconstruction.models.srcirim.SRCIRIM attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.unet.UNet.psnr_vals">(mridc.collections.reconstruction.models.unet.UNet attribute)</a>
 </li>
@@ -3346,8 +3567,6 @@
 </li>
       <li><a href="mridc.utils.html#mridc.utils.env_var_parsing.RequiredSettingMissingError">RequiredSettingMissingError</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="mridc.utils.formaters.html#mridc.utils.formaters.colors.AnsiBack.RESET">RESET (mridc.utils.formaters.colors.AnsiBack attribute)</a>
 
       <ul>
@@ -3356,6 +3575,8 @@
       </ul></li>
       <li><a href="mridc.utils.html#mridc.utils.timers.NamedTimer.reset">reset() (mridc.utils.timers.NamedTimer method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="mridc.utils.formaters.html#mridc.utils.formaters.colors.AnsiStyle.RESET_ALL">RESET_ALL (mridc.utils.formaters.colors.AnsiStyle attribute)</a>
 </li>
       <li><a href="mridc.utils.html#mridc.utils.app_state.AppState.reset_model_guid_registry">reset_model_guid_registry() (mridc.utils.app_state.AppState method)</a>
@@ -3371,6 +3592,8 @@
 </li>
       </ul></li>
       <li><a href="mridc.utils.html#mridc.utils.mridc_logging.Logger.reset_stream_handler">reset_stream_handler() (mridc.utils.mridc_logging.Logger method)</a>
+</li>
+      <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.residual_blocks.ResidualBlockPixelshuffle">ResidualBlockPixelshuffle (class in mridc.collections.reconstruction.models.invrim_base.residual_blocks)</a>
 </li>
       <li><a href="mridc.utils.html#mridc.utils.model_utils.resolve_cache_dir">resolve_cache_dir() (in module mridc.utils.model_utils)</a>
 </li>
@@ -3397,6 +3620,20 @@
       <li><a href="mridc.utils.html#mridc.utils.exp_manager.ExpManagerConfig.resume_ignore_no_checkpoint">resume_ignore_no_checkpoint (mridc.utils.exp_manager.ExpManagerConfig attribute)</a>
 </li>
       <li><a href="mridc.utils.html#mridc.utils.exp_manager.ExpManagerConfig.resume_past_end">resume_past_end (mridc.utils.exp_manager.ExpManagerConfig attribute)</a>
+</li>
+      <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invert_to_learn.InvertibleLayer.reverse">reverse() (mridc.collections.reconstruction.models.invrim_base.invert_to_learn.InvertibleLayer method)</a>
+
+      <ul>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invert_to_learn.InvertibleModule.reverse">(mridc.collections.reconstruction.models.invrim_base.invert_to_learn.InvertibleModule method)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invert_to_learn.MemoryFreeInvertibleModule.reverse">(mridc.collections.reconstruction.models.invrim_base.invert_to_learn.MemoryFreeInvertibleModule method)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invertible_unet.InvertibleUnet.reverse">(mridc.collections.reconstruction.models.invrim_base.invertible_unet.InvertibleUnet method)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.irim.IRIM.reverse">(mridc.collections.reconstruction.models.invrim_base.irim.IRIM method)</a>
+</li>
+      </ul></li>
+      <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invertible_layers.RevNetLayer">RevNetLayer (class in mridc.collections.reconstruction.models.invrim_base.invertible_layers)</a>
 </li>
       <li><a href="mridc.core.conf.html#mridc.core.conf.optimizers.AdadeltaParams.rho">rho (mridc.core.conf.optimizers.AdadeltaParams attribute)</a>
 </li>
@@ -3556,15 +3793,17 @@
       </ul></li>
       <li><a href="mridc.utils.html#mridc.utils.export_utils.simple_replace">simple_replace() (in module mridc.utils.export_utils)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="mridc.utils.html#mridc.utils.metaclasses.Singleton">Singleton (class in mridc.utils.metaclasses)</a>
 
       <ul>
         <li><a href="mridc.core.neural_types.html#mridc.core.neural_types.axes.AxisKind.Singleton">(mridc.core.neural_types.axes.AxisKind attribute)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="mridc.core.utils.html#mridc.core.utils.numba_utils.skip_numba_cuda_test_if_unsupported">skip_numba_cuda_test_if_unsupported() (in module mridc.core.utils.numba_utils)</a>
+</li>
+      <li><a href="mridc.collections.reconstruction.models.cs.html#mridc.collections.reconstruction.models.cs.pocs.SoftThresholding">SoftThresholding() (in module mridc.collections.reconstruction.models.cs.pocs)</a>
 </li>
       <li><a href="mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.dc_layers.ConjugateGradient.solve">solve() (mridc.collections.reconstruction.models.sigmanet.dc_layers.ConjugateGradient static method)</a>
 </li>
@@ -3580,6 +3819,8 @@
 </li>
       <li><a href="mridc.core.conf.html#mridc.core.conf.schedulers.SquareRootConstantSchedulerParams">SquareRootConstantSchedulerParams (class in mridc.core.conf.schedulers)</a>
 </li>
+      <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.srcirim.SRCIRIM">SRCIRIM (class in mridc.collections.reconstruction.models.srcirim)</a>
+</li>
       <li><a href="mridc.collections.reconstruction.metrics.html#mridc.collections.reconstruction.metrics.evaluate.ssim">ssim() (in module mridc.collections.reconstruction.metrics.evaluate)</a>
 </li>
       <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.ccnn.CascadeNet.ssim_vals">ssim_vals (mridc.collections.reconstruction.models.ccnn.CascadeNet attribute)</a>
@@ -3590,6 +3831,8 @@
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.crnn.CRNNet.ssim_vals">(mridc.collections.reconstruction.models.crnn.CRNNet attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.dunet.DUNet.ssim_vals">(mridc.collections.reconstruction.models.dunet.DUNet attribute)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.invrim.InvRIM.ssim_vals">(mridc.collections.reconstruction.models.invrim.InvRIM attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.jointicnet.JointICNet.ssim_vals">(mridc.collections.reconstruction.models.jointicnet.JointICNet attribute)</a>
 </li>
@@ -3602,6 +3845,8 @@
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.pics.PICS.ssim_vals">(mridc.collections.reconstruction.models.pics.PICS attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.rvn.RecurrentVarNet.ssim_vals">(mridc.collections.reconstruction.models.rvn.RecurrentVarNet attribute)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.srcirim.SRCIRIM.ssim_vals">(mridc.collections.reconstruction.models.srcirim.SRCIRIM attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.unet.UNet.ssim_vals">(mridc.collections.reconstruction.models.unet.UNet attribute)</a>
 </li>
@@ -3777,6 +4022,8 @@
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.dunet.DUNet.trainer">(mridc.collections.reconstruction.models.dunet.DUNet attribute)</a>
 </li>
+        <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.invrim.InvRIM.trainer">(mridc.collections.reconstruction.models.invrim.InvRIM attribute)</a>
+</li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.jointicnet.JointICNet.trainer">(mridc.collections.reconstruction.models.jointicnet.JointICNet attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.kikinet.KIKINet.trainer">(mridc.collections.reconstruction.models.kikinet.KIKINet attribute)</a>
@@ -3788,6 +4035,8 @@
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.pics.PICS.trainer">(mridc.collections.reconstruction.models.pics.PICS attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.rvn.RecurrentVarNet.trainer">(mridc.collections.reconstruction.models.rvn.RecurrentVarNet attribute)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.srcirim.SRCIRIM.trainer">(mridc.collections.reconstruction.models.srcirim.SRCIRIM attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.unet.UNet.trainer">(mridc.collections.reconstruction.models.unet.UNet attribute)</a>
 </li>
@@ -3840,6 +4089,30 @@
         <li><a href="mridc.collections.reconstruction.models.didn.html#mridc.collections.reconstruction.models.didn.didn.Subpixel.training">(mridc.collections.reconstruction.models.didn.didn.Subpixel attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.dunet.DUNet.training">(mridc.collections.reconstruction.models.dunet.DUNet attribute)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.invrim.InvRIM.training">(mridc.collections.reconstruction.models.invrim.InvRIM attribute)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invert_to_learn.IdentityLayer.training">(mridc.collections.reconstruction.models.invrim_base.invert_to_learn.IdentityLayer attribute)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invert_to_learn.InvertibleLayer.training">(mridc.collections.reconstruction.models.invrim_base.invert_to_learn.InvertibleLayer attribute)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invert_to_learn.InvertibleModule.training">(mridc.collections.reconstruction.models.invrim_base.invert_to_learn.InvertibleModule attribute)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invert_to_learn.MemoryFreeInvertibleModule.training">(mridc.collections.reconstruction.models.invrim_base.invert_to_learn.MemoryFreeInvertibleModule attribute)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invertible_layers.Housholder1x1.training">(mridc.collections.reconstruction.models.invrim_base.invertible_layers.Housholder1x1 attribute)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invertible_layers.RevNetLayer.training">(mridc.collections.reconstruction.models.invrim_base.invertible_layers.RevNetLayer attribute)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.invertible_unet.InvertibleUnet.training">(mridc.collections.reconstruction.models.invrim_base.invertible_unet.InvertibleUnet attribute)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.irim.InvertibleGradUpdate.training">(mridc.collections.reconstruction.models.invrim_base.irim.InvertibleGradUpdate attribute)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.irim.IRIM.training">(mridc.collections.reconstruction.models.invrim_base.irim.IRIM attribute)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.residual_blocks.ResidualBlockPixelshuffle.training">(mridc.collections.reconstruction.models.invrim_base.residual_blocks.ResidualBlockPixelshuffle attribute)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.invrim_base.html#mridc.collections.reconstruction.models.invrim_base.utils.PixelUnshuffle.training">(mridc.collections.reconstruction.models.invrim_base.utils.PixelUnshuffle attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.jointicnet.JointICNet.training">(mridc.collections.reconstruction.models.jointicnet.JointICNet attribute)</a>
 </li>
@@ -3918,6 +4191,8 @@
         <li><a href="mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexNormWrapper.training">(mridc.collections.reconstruction.models.sigmanet.sensitivity_net.ComplexNormWrapper attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.sigmanet.html#mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork.training">(mridc.collections.reconstruction.models.sigmanet.sensitivity_net.SensitivityNetwork attribute)</a>
+</li>
+        <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.srcirim.SRCIRIM.training">(mridc.collections.reconstruction.models.srcirim.SRCIRIM attribute)</a>
 </li>
         <li><a href="mridc.collections.reconstruction.models.html#mridc.collections.reconstruction.models.unet.UNet.training">(mridc.collections.reconstruction.models.unet.UNet attribute)</a>
 </li>

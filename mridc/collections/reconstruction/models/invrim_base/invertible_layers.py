@@ -8,6 +8,22 @@ from mridc.collections.reconstruction.models.invrim_base.utils import determine_
 
 class RevNetLayer(InvertibleLayer):
     def __init__(self, n_channels, n_hidden, dilation=1, conv_nd=2, residual_function=ResidualBlockPixelshuffle):
+        """
+        Initialize the layer.
+
+        Parameters
+        ----------
+        n_channels : int
+            Number of channels.
+        n_hidden : int
+            Number of hidden channels.
+        dilation : int
+            Dilation factor.
+        conv_nd : int
+            Number of dimensions of the convolution.
+        residual_function : callable
+            Residual function.
+        """
         super().__init__()
         self.n_channels = n_channels
         self.n_left = self.n_channels // 2
@@ -19,16 +35,64 @@ class RevNetLayer(InvertibleLayer):
         )
 
     def _forward(self, x, *args, **kwargs):
+        """
+        Forward pass of the layer.
+
+        Forward function.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            The input to the layer.
+        args : tuple
+            The arguments to the forward function.
+        kwargs : dict
+            The keyword arguments to the forward function.
+        """
         x_left, x_right = x[:, : self.n_left], x[:, self.n_left : self.n_channels]
         y_right = x_right + self.update_right(x_left)
         return torch.cat((x_left, y_right, x[:, self.n_channels :]), 1)
 
     def _reverse(self, y, *args, **kwargs):
+        """
+        Reverse function.
+
+        Parameters
+        ----------
+        y : torch.Tensor
+            The output of the forward function.
+        args : tuple
+            The arguments to the reverse function.
+        kwargs : dict
+            The keyword arguments to the reverse function.
+        """
         x_left, y_right = y[:, : self.n_left], y[:, self.n_left : self.n_channels]
         x_right = y_right - self.update_right(x_left)
         return torch.cat((x_left, x_right, y[:, self.n_channels :]), 1)
 
     def gradfun(self, forward_fun, reverse_fun, x=None, y=None, grad_outputs=None, parameters=None, *args, **kwargs):
+        """
+        Gradient function.
+
+        Parameters
+        ----------
+        forward_fun : callable
+            The forward function.
+        reverse_fun : callable
+            The reverse function.
+        x : torch.Tensor
+            The input to the forward function.
+        y : torch.Tensor
+            The output of the forward function.
+        grad_outputs : torch.Tensor
+            The gradient of the output of the forward function.
+        parameters : list
+            The parameters of the forward function.
+        args : tuple
+            The arguments to the forward function.
+        kwargs : dict
+            The keyword arguments to the forward function.
+        """
         with torch.enable_grad():
             if x is None and y is not None:
                 y = y.detach().requires_grad_(True)
@@ -48,6 +112,18 @@ class RevNetLayer(InvertibleLayer):
 
 class Housholder1x1(InvertibleLayer):
     def __init__(self, num_inputs, n_projections=3, conv_nd=2):
+        """
+        Initialize the layer.
+
+        Parameters
+        ----------
+        num_inputs : int
+            The number of inputs to the layer.
+        n_projections : int
+            The number of projections to use.
+        conv_nd : int
+            The number of dimensions to use for the convolution.
+        """
         super(Housholder1x1, self).__init__()
         n_projections = min(n_projections, num_inputs)
         self.weights = nn.Parameter(torch.randn((n_projections, num_inputs, 1)))
@@ -56,6 +132,18 @@ class Housholder1x1(InvertibleLayer):
         self.register_buffer("I", torch.eye(num_inputs))
 
     def _forward(self, x, W=None):
+        """
+        Forward function.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            The input to the layer.
+        args : tuple
+            The arguments to the forward function.
+        kwargs : dict
+            The keyword arguments to the forward function.
+        """
         if W is None:
             W = self._get_weight()
         for _ in range(self.conv_nd):
@@ -63,6 +151,18 @@ class Housholder1x1(InvertibleLayer):
         return self.conv(x.to(W), W)
 
     def _reverse(self, y, W=None):
+        """
+        Reverse function.
+
+        Parameters
+        ----------
+        y : torch.Tensor
+            The output of the forward function.
+        args : tuple
+            The arguments to the reverse function.
+        kwargs : dict
+            The keyword arguments to the reverse function.
+        """
         if W is None:
             W = self._get_weight()
         W = W.t()
@@ -71,12 +171,35 @@ class Housholder1x1(InvertibleLayer):
         return self.conv(y, W.to(y))
 
     def _get_weight(self):
+        """Get the weight matrix."""
         V = self.weights
         V_t = self.weights.transpose(1, 2)
         U = self.I - 2 * torch.bmm(V, V_t) / torch.bmm(V_t, V)
         return torch.chain_matmul(*U)
 
     def gradfun(self, forward_fun, reverse_fun, x=None, y=None, grad_outputs=None, parameters=None, *args, **kwargs):
+        """
+        Gradient function.
+
+        Parameters
+        ----------
+        forward_fun : callable
+            The forward function.
+        reverse_fun : callable
+            The reverse function.
+        x : torch.Tensor
+            The input to the forward function.
+        y : torch.Tensor
+            The output of the forward function.
+        grad_outputs : torch.Tensor
+            The gradient of the output of the forward function.
+        parameters : list
+            The parameters of the forward function.
+        args : tuple
+            The arguments to the forward function.
+        kwargs : dict
+            The keyword arguments to the forward function.
+        """
         with torch.enable_grad():
             W = self._get_weight()
             if x is None and y is not None:

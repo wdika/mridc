@@ -25,11 +25,16 @@ __all__ = ["InvRIM"]
 
 class InvRIM(BaseMRIReconstructionModel, ABC):
     """
-    Invertible Recurrent Inference Machines (iRIM), as proposed in [1].
+    Invertible Recurrent Inference Machines (iRIM), as presented in Putzky, P. et al.
 
     References
     ----------
-    .. [1]
+
+    ..
+
+        Putzky, P. et al. (2019) ‘i-RIM applied to the fastMRI challenge’, arXiv.. Available at: \
+        https://arxiv.org/abs/1910.08952
+
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
@@ -95,7 +100,14 @@ class InvRIM(BaseMRIReconstructionModel, ABC):
             )
 
         self.model = MemoryFreeInvertibleModule(
-            IRIM(cell, grad_fun=mse_gradient, fft_type=self.fft_type, n_channels=im_channels)
+            IRIM(
+                cell,
+                grad_fun=mse_gradient,
+                fft_centered=self.fft_centered,
+                fft_normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+                n_channels=im_channels,
+            )
         )
 
         # Initialize the sensitivity network if use_sens_net is True

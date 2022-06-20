@@ -5,6 +5,26 @@ from mridc.collections.reconstruction.models.invrim_base.utils import determine_
 
 class ResidualBlockPixelshuffle(nn.Module):
     def __init__(self, n_input, n_output, n_hidden, kernel_size=3, dilation=1, conv_nd=2, use_glu=True):
+        """
+        Initialize the layer.
+
+        Parameters
+        ----------
+        n_input : int
+            Number of input channels.
+        n_output : int
+            Number of output channels.
+        n_hidden : int
+            Number of hidden channels.
+        kernel_size : int
+            Kernel size.
+        dilation : int
+            Dilation factor.
+        conv_nd : int
+            Number of dimensions of the convolution.
+        use_glu : bool
+            Whether to use GLU.
+        """
         super(ResidualBlockPixelshuffle, self).__init__()
         self.n_output = n_output
         self.conv_nd = conv_nd
@@ -26,6 +46,14 @@ class ResidualBlockPixelshuffle(nn.Module):
         )
 
     def forward(self, x):
+        """
+        Forward pass of the layer.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            The input to the layer.
+        """
         x_size = list(x.size())
         x_size[1] = self.n_output
         x = nn.functional.relu_(self.l1.to(x)(x))

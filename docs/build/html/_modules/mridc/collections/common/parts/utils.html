@@ -13,6 +13,7 @@
         <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
         <script src="../../../../../_static/jquery.js"></script>
         <script src="../../../../../_static/underscore.js"></script>
+        <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../../../_static/doctools.js"></script>
     <script src="../../../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../../../genindex.html" />
@@ -70,13 +71,14 @@
 <span class="c1"># Parts of the code have been taken from https://github.com/facebookresearch/fastMRI</span>
 
 <span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">h5py</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">torch</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;is_none&quot;</span><span class="p">,</span>
     <span class="s2">&quot;to_tensor&quot;</span><span class="p">,</span>
     <span class="s2">&quot;tensor_to_complex_np&quot;</span><span class="p">,</span>
     <span class="s2">&quot;complex_mul&quot;</span><span class="p">,</span>
@@ -90,6 +92,21 @@
     <span class="s2">&quot;save_reconstructions&quot;</span><span class="p">,</span>
     <span class="s2">&quot;check_stacked_complex&quot;</span><span class="p">,</span>
 <span class="p">]</span>
+
+
+<div class="viewcode-block" id="is_none"><a class="viewcode-back" href="../../../../../mridc.collections.common.parts.html#mridc.collections.common.parts.utils.is_none">[docs]</a><span class="k">def</span> <span class="nf">is_none</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check if a string is None.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x: The string to check.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    True if x is None, False otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;none&quot;</span></div>
 
 
 <div class="viewcode-block" id="to_tensor"><a class="viewcode-back" href="../../../../../mridc.collections.common.parts.html#mridc.collections.common.parts.utils.to_tensor">[docs]</a><span class="k">def</span> <span class="nf">to_tensor</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>

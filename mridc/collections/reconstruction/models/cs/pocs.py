@@ -12,17 +12,26 @@ def POCS(y, mask, fft_centered, fft_normalization, spatial_dims, soft_threshold_
     """
     Projection Over a Convex Set algorithm.
 
-    Args:
-        y: input image.
-        mask: binary mask.
-        fft_centered: Whether to center the fft.
-        fft_normalization: "ortho" is the default normalization used by PyTorch. Can be changed to "ortho" or None.
-        spatial_dims: dimensions to apply the FFT
-        soft_threshold_val: soft threshold value.
-        max_iter: maximum number of iterations.
+    Parameters
+    ----------
+    y : torch.Tensor
+        Input data.
+    mask : torch.Tensor
+        Mask of the data.
+    fft_centered : bool
+        Whether to center the FFT.
+    fft_normalization : str
+        Type of FFT normalization.
+    spatial_dims : tuple
+        Spatial dimensions of the data.
+    soft_threshold_val : float
+        Soft threshold value.
+    max_iter : int
+        Maximum number of iterations.
 
-    Returns:
-        l: reconstructed image.
+    Returns
+    -------
+    Reconstructed data.
     """
     soft_threshold_val = torch.nn.Parameter(torch.tensor(soft_threshold_val))
 
@@ -41,7 +50,20 @@ def POCS(y, mask, fft_centered, fft_normalization, spatial_dims, soft_threshold_
 
 
 def SoftThresholding(lines, soft_threshold_val):
-    """Soft thresholding function."""
+    """
+    Soft Thresholding function.
+
+    Parameters
+    ----------
+    lines : torch.Tensor
+        Input data.
+    soft_threshold_val : float
+        Soft threshold value.
+
+    Returns
+    -------
+    Soft thresholded data.
+    """
     zero = torch.zeros_like(lines)
     return torch.where(
         torch.abs(lines) > soft_threshold_val, (torch.abs(lines) - soft_threshold_val) * lines / torch.abs(lines), zero
@@ -49,7 +71,20 @@ def SoftThresholding(lines, soft_threshold_val):
 
 
 def FullSoftThresholding_wavedec(lines, soft_threshold_val):
-    """Full Soft thresholding function."""
+    """
+    Full Soft Thresholding function for wavelet decomposition.
+
+    Parameters
+    ----------
+    lines : list
+        List of wavelet coefficients.
+    soft_threshold_val : float
+        Soft threshold value.
+
+    Returns
+    -------
+    Soft thresholded wavelet coefficients.
+    """
     res = [SoftThresholding(lines[0], soft_threshold_val)]
     res.extend(
         (

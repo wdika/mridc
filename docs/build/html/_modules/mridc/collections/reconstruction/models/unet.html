@@ -13,6 +13,7 @@
         <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
         <script src="../../../../../_static/jquery.js"></script>
         <script src="../../../../../_static/underscore.js"></script>
+        <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../../../_static/doctools.js"></script>
     <script src="../../../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../../../genindex.html" />
@@ -169,7 +170,9 @@
             <span class="p">)</span>
         <span class="p">)</span>
         <span class="n">_</span><span class="p">,</span> <span class="n">eta</span> <span class="o">=</span> <span class="n">center_crop_to_smallest</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">eta</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">view_as_complex</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unet</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">view_as_real</span><span class="p">(</span><span class="n">eta</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">))))</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">view_as_complex</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unet</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">view_as_real</span><span class="p">(</span><span class="n">eta</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span><span class="p">))))</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">coil_dim</span>
+        <span class="p">)</span></div></div>
 </pre></div>
 
            </div>

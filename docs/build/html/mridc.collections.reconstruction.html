@@ -14,6 +14,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -86,9 +87,9 @@
            <div itemprop="articleBody">
 
   <section id="mridc-collections-reconstruction-package">
-<h1>mridc.collections.reconstruction package<a class="headerlink" href="#mridc-collections-reconstruction-package" title="Permalink to this headline"></a></h1>
+<h1>mridc.collections.reconstruction package<a class="headerlink" href="#mridc-collections-reconstruction-package" title="Permalink to this heading"></a></h1>
 <section id="subpackages">
-<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline"></a></h2>
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this heading"></a></h2>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="mridc.collections.reconstruction.data.html">mridc.collections.reconstruction.data package</a><ul>
@@ -132,10 +133,28 @@
 <li class="toctree-l4"><a class="reference internal" href="mridc.collections.reconstruction.models.crossdomain.html#module-mridc.collections.reconstruction.models.crossdomain">Module contents</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.collections.reconstruction.models.cs.html">mridc.collections.reconstruction.models.cs package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="mridc.collections.reconstruction.models.cs.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mridc.collections.reconstruction.models.cs.html#module-mridc.collections.reconstruction.models.cs.cg">mridc.collections.reconstruction.models.cs.cg module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mridc.collections.reconstruction.models.cs.html#module-mridc.collections.reconstruction.models.cs.pocs">mridc.collections.reconstruction.models.cs.pocs module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mridc.collections.reconstruction.models.cs.html#module-mridc.collections.reconstruction.models.cs">Module contents</a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="mridc.collections.reconstruction.models.didn.html">mridc.collections.reconstruction.models.didn package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="mridc.collections.reconstruction.models.didn.html#submodules">Submodules</a></li>
 <li class="toctree-l4"><a class="reference internal" href="mridc.collections.reconstruction.models.didn.html#module-mridc.collections.reconstruction.models.didn.didn">mridc.collections.reconstruction.models.didn.didn module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="mridc.collections.reconstruction.models.didn.html#module-mridc.collections.reconstruction.models.didn">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="mridc.collections.reconstruction.models.invrim_base.html">mridc.collections.reconstruction.models.invrim_base package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="mridc.collections.reconstruction.models.invrim_base.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mridc.collections.reconstruction.models.invrim_base.html#module-mridc.collections.reconstruction.models.invrim_base.invert_to_learn">mridc.collections.reconstruction.models.invrim_base.invert_to_learn module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mridc.collections.reconstruction.models.invrim_base.html#module-mridc.collections.reconstruction.models.invrim_base.invertible_layers">mridc.collections.reconstruction.models.invrim_base.invertible_layers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mridc.collections.reconstruction.models.invrim_base.html#module-mridc.collections.reconstruction.models.invrim_base.invertible_unet">mridc.collections.reconstruction.models.invrim_base.invertible_unet module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mridc.collections.reconstruction.models.invrim_base.html#module-mridc.collections.reconstruction.models.invrim_base.irim">mridc.collections.reconstruction.models.invrim_base.irim module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mridc.collections.reconstruction.models.invrim_base.html#module-mridc.collections.reconstruction.models.invrim_base.residual_blocks">mridc.collections.reconstruction.models.invrim_base.residual_blocks module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mridc.collections.reconstruction.models.invrim_base.html#module-mridc.collections.reconstruction.models.invrim_base.utils">mridc.collections.reconstruction.models.invrim_base.utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mridc.collections.reconstruction.models.invrim_base.html#module-mridc.collections.reconstruction.models.invrim_base">Module contents</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="mridc.collections.reconstruction.models.multidomain.html">mridc.collections.reconstruction.models.multidomain package</a><ul>
@@ -205,12 +224,14 @@
 <li class="toctree-l2"><a class="reference internal" href="mridc.collections.reconstruction.models.html#module-mridc.collections.reconstruction.models.cirim">mridc.collections.reconstruction.models.cirim module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mridc.collections.reconstruction.models.html#module-mridc.collections.reconstruction.models.crnn">mridc.collections.reconstruction.models.crnn module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mridc.collections.reconstruction.models.html#module-mridc.collections.reconstruction.models.dunet">mridc.collections.reconstruction.models.dunet module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mridc.collections.reconstruction.models.html#module-mridc.collections.reconstruction.models.invrim">mridc.collections.reconstruction.models.invrim module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mridc.collections.reconstruction.models.html#module-mridc.collections.reconstruction.models.jointicnet">mridc.collections.reconstruction.models.jointicnet module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mridc.collections.reconstruction.models.html#module-mridc.collections.reconstruction.models.kikinet">mridc.collections.reconstruction.models.kikinet module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mridc.collections.reconstruction.models.html#module-mridc.collections.reconstruction.models.lpd">mridc.collections.reconstruction.models.lpd module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mridc.collections.reconstruction.models.html#module-mridc.collections.reconstruction.models.multidomainnet">mridc.collections.reconstruction.models.multidomainnet module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mridc.collections.reconstruction.models.html#module-mridc.collections.reconstruction.models.pics">mridc.collections.reconstruction.models.pics module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mridc.collections.reconstruction.models.html#module-mridc.collections.reconstruction.models.rvn">mridc.collections.reconstruction.models.rvn module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mridc.collections.reconstruction.models.html#module-mridc.collections.reconstruction.models.srcirim">mridc.collections.reconstruction.models.srcirim module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mridc.collections.reconstruction.models.html#module-mridc.collections.reconstruction.models.unet">mridc.collections.reconstruction.models.unet module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mridc.collections.reconstruction.models.html#module-mridc.collections.reconstruction.models.vn">mridc.collections.reconstruction.models.vn module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mridc.collections.reconstruction.models.html#module-mridc.collections.reconstruction.models.vsnet">mridc.collections.reconstruction.models.vsnet module</a></li>
@@ -230,7 +251,7 @@
 </div>
 </section>
 <section id="module-mridc.collections.reconstruction">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-mridc.collections.reconstruction" title="Permalink to this headline"></a></h2>
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-mridc.collections.reconstruction" title="Permalink to this heading"></a></h2>
 </section>
 </section>
 

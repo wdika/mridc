@@ -4,7 +4,7 @@ __author__ = "Dimitrios Karkalousos"
 from abc import ABC
 from typing import Any, Dict, Tuple, Union
 
-import bart
+# import bart
 import numpy as np
 import torch
 from omegaconf import DictConfig, OmegaConf
@@ -121,12 +121,12 @@ class PICS(BaseMRIReconstructionModel, ABC):
         pred: torch.Tensor, shape [batch_size, n_x, n_y, 2]
             Predicted data.
         """
-        # pred = torch.zeros_like(torch.from_numpy(sensitivity_maps))
-        if "cuda" in str(self._device):
-            pred = bart.bart(1, f"pics -d0 -g -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
-        else:
-            pred = bart.bart(1, f"pics -d0 -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
-        _, pred = center_crop_to_smallest(target, pred)
+        pred = torch.zeros_like(torch.from_numpy(sensitivity_maps))
+        # if "cuda" in str(self._device):
+        #     pred = bart.bart(1, f"pics -d0 -g -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
+        # else:
+        #     pred = bart.bart(1, f"pics -d0 -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
+        # _, pred = center_crop_to_smallest(target, pred)
         return pred
 
     def test_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Tuple[str, int, torch.Tensor]:

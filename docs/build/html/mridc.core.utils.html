@@ -14,6 +14,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -86,15 +87,15 @@
            <div itemprop="articleBody">
 
   <section id="mridc-core-utils-package">
-<h1>mridc.core.utils package<a class="headerlink" href="#mridc-core-utils-package" title="Permalink to this headline"></a></h1>
+<h1>mridc.core.utils package<a class="headerlink" href="#mridc-core-utils-package" title="Permalink to this heading"></a></h1>
 <section id="submodules">
-<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline"></a></h2>
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
 </section>
 <section id="module-mridc.core.utils.neural_type_utils">
-<span id="mridc-core-utils-neural-type-utils-module"></span><h2>mridc.core.utils.neural_type_utils module<a class="headerlink" href="#module-mridc.core.utils.neural_type_utils" title="Permalink to this headline"></a></h2>
+<span id="mridc-core-utils-neural-type-utils-module"></span><h2>mridc.core.utils.neural_type_utils module<a class="headerlink" href="#module-mridc.core.utils.neural_type_utils" title="Permalink to this heading"></a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="mridc.core.utils.neural_type_utils.extract_dynamic_axes">
-<span class="sig-prename descclassname"><span class="pre">mridc.core.utils.neural_type_utils.</span></span><span class="sig-name descname"><span class="pre">extract_dynamic_axes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ntype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mridc.core.neural_types.html#mridc.core.neural_types.neural_type.NeuralType" title="mridc.core.neural_types.neural_type.NeuralType"><span class="pre">mridc.core.neural_types.neural_type.NeuralType</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/utils/neural_type_utils.html#extract_dynamic_axes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.utils.neural_type_utils.extract_dynamic_axes" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">mridc.core.utils.neural_type_utils.</span></span><span class="sig-name descname"><span class="pre">extract_dynamic_axes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ntype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mridc.core.neural_types.html#mridc.core.neural_types.neural_type.NeuralType" title="mridc.core.neural_types.neural_type.NeuralType"><span class="pre">NeuralType</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mridc/core/utils/neural_type_utils.html#extract_dynamic_axes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.utils.neural_type_utils.extract_dynamic_axes" title="Permalink to this definition"></a></dt>
 <dd><p>This method will extract BATCH and TIME dimension ids from each provided input/output name argument.</p>
 <p>For example, if module/model accepts argument named “input_signal” with type corresponding to [Batch, Time, Dim]
 shape, then the returned result should contain “input_signal” -&gt; [0, 1] because Batch and Time are dynamic axes
@@ -148,7 +149,7 @@ as they can change from call to call during inference.</p>
 
 </section>
 <section id="module-mridc.core.utils.numba_utils">
-<span id="mridc-core-utils-numba-utils-module"></span><h2>mridc.core.utils.numba_utils module<a class="headerlink" href="#module-mridc.core.utils.numba_utils" title="Permalink to this headline"></a></h2>
+<span id="mridc-core-utils-numba-utils-module"></span><h2>mridc.core.utils.numba_utils module<a class="headerlink" href="#module-mridc.core.utils.numba_utils" title="Permalink to this heading"></a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="mridc.core.utils.numba_utils.is_numba_compat_strict">
 <span class="sig-prename descclassname"><span class="pre">mridc.core.utils.numba_utils.</span></span><span class="sig-name descname"><span class="pre">is_numba_compat_strict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/mridc/core/utils/numba_utils.html#is_numba_compat_strict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#mridc.core.utils.numba_utils.is_numba_compat_strict" title="Permalink to this definition"></a></dt>
@@ -220,7 +221,7 @@ Numba Cuda may still compile and run without issues in such a case, or it may fa
 
 </section>
 <section id="module-mridc.core.utils">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-mridc.core.utils" title="Permalink to this headline"></a></h2>
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-mridc.core.utils" title="Permalink to this heading"></a></h2>
 </section>
 </section>
 

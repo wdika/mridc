@@ -13,6 +13,7 @@
         <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
         <script src="../../../../../_static/jquery.js"></script>
         <script src="../../../../../_static/underscore.js"></script>
+        <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../../../../../_static/doctools.js"></script>
     <script src="../../../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../../../genindex.html" />
@@ -214,8 +215,9 @@
 
     <span class="k">for</span> <span class="n">tgt_file</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">arguments</span><span class="o">.</span><span class="n">target_path</span><span class="o">.</span><span class="n">iterdir</span><span class="p">()):</span>
         <span class="k">if</span> <span class="n">exists</span><span class="p">(</span><span class="n">arguments</span><span class="o">.</span><span class="n">predictions_path</span> <span class="o">/</span> <span class="n">tgt_file</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
-            <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">tgt_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">target</span><span class="p">,</span> \
-                    <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">arguments</span><span class="o">.</span><span class="n">predictions_path</span> <span class="o">/</span> <span class="n">tgt_file</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">recons</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">tgt_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">target</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span>
+                <span class="n">arguments</span><span class="o">.</span><span class="n">predictions_path</span> <span class="o">/</span> <span class="n">tgt_file</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span>
+            <span class="p">)</span> <span class="k">as</span> <span class="n">recons</span><span class="p">:</span>
                 <span class="n">kspace</span> <span class="o">=</span> <span class="n">target</span><span class="p">[</span><span class="s2">&quot;kspace&quot;</span><span class="p">][()]</span>
 
                 <span class="k">if</span> <span class="n">arguments</span><span class="o">.</span><span class="n">sense_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -232,13 +234,11 @@
                     <span class="n">tensor_to_complex_np</span><span class="p">(</span>
                         <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
                             <span class="n">complex_mul</span><span class="p">(</span>
-                                <span class="n">ifft2</span><span class="p">(</span>
-                                    <span class="n">to_tensor</span><span class="p">(</span><span class="n">kspace</span><span class="p">),</span>
-                                    <span class="n">centered</span><span class="o">=</span><span class="s2">&quot;fastmri&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">arguments</span><span class="o">.</span><span class="n">sense_path</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-                                <span class="p">),</span>
-                                <span class="n">complex_conj</span><span class="p">(</span><span class="n">to_tensor</span><span class="p">(</span><span class="n">sense</span><span class="p">))</span>
+                                <span class="n">ifft2</span><span class="p">(</span><span class="n">to_tensor</span><span class="p">(</span><span class="n">kspace</span><span class="p">),</span> <span class="n">centered</span><span class="o">=</span><span class="s2">&quot;fastmri&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">arguments</span><span class="o">.</span><span class="n">sense_path</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()),</span>
+                                <span class="n">complex_conj</span><span class="p">(</span><span class="n">to_tensor</span><span class="p">(</span><span class="n">sense</span><span class="p">)),</span>
                             <span class="p">),</span>
-                            <span class="n">coil_dim</span><span class="p">)</span>
+                            <span class="n">coil_dim</span><span class="p">,</span>
+                        <span class="p">)</span>
                     <span class="p">)</span>
                 <span class="p">)</span>
 
