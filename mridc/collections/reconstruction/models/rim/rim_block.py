@@ -143,6 +143,7 @@ class RIMBlock(torch.nn.Module):
         hx: torch.Tensor = None,
         sigma: float = 1.0,
         keep_eta: bool = False,
+        phase_shift: torch.Tensor = None,
     ) -> Tuple[Any, Union[list, torch.Tensor, None]]:
         """
         Forward pass of the RIMBlock.
@@ -157,6 +158,7 @@ class RIMBlock(torch.nn.Module):
         hx: Initial guess for the hidden state.
         sigma: Noise level.
         keep_eta: Whether to keep the eta.
+        phase_shift: Phase shift for motion simulation.
 
         Returns
         -------
@@ -235,6 +237,7 @@ class RIMBlock(torch.nn.Module):
                 fft_normalization=self.fft_normalization,
                 spatial_dims=self.spatial_dims,
                 coil_dim=self.coil_dim,
+                phase_shift=phase_shift,
             ).contiguous()
 
             if self.dimensionality == 3:

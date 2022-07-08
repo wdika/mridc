@@ -194,6 +194,8 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                 torch.Tensor, shape [batch_size, n_x, n_y, 2]
             'target': target data,
                 torch.Tensor, shape [batch_size, n_x, n_y, 2]
+            'phase_shift': phase shift for simulated motion,
+                torch.Tensor
             'fname': filename,
                 str, shape [batch_size]
             'slice_idx': slice_idx,
@@ -215,7 +217,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         'log': log,
             dict, shape [1]
         """
-        kspace, y, sensitivity_maps, mask, init_pred, target, _, _, acc = batch
+        kspace, y, sensitivity_maps, mask, init_pred, target, phase_shift, _, _, acc = batch
         y, mask, init_pred, r = self.process_inputs(y, mask, init_pred)
 
         if self.use_sens_net:
@@ -232,7 +234,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                     dim=self.coil_dim,
                 )
 
-        preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
+        preds = self.forward(y, sensitivity_maps, mask, init_pred, target, phase_shift)
 
         if self.accumulate_estimates:
             try:
@@ -268,6 +270,8 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                 torch.Tensor, shape [batch_size, n_x, n_y, 2]
             'target': target data,
                 torch.Tensor, shape [batch_size, n_x, n_y, 2]
+            'phase_shift': phase shift for simulated motion,
+                torch.Tensor
             'fname': filename,
                 str, shape [batch_size]
             'slice_idx': slice_idx,
@@ -289,7 +293,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         'log': log,
             dict, shape [1]
         """
-        kspace, y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
+        kspace, y, sensitivity_maps, mask, init_pred, target, phase_shift, fname, slice_num, _ = batch
         y, mask, init_pred, r = self.process_inputs(y, mask, init_pred)
 
         if self.use_sens_net:
@@ -306,7 +310,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                     dim=self.coil_dim,
                 )
 
-        preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
+        preds = self.forward(y, sensitivity_maps, mask, init_pred, target, phase_shift)
 
         if self.accumulate_estimates:
             try:
@@ -366,6 +370,8 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                 torch.Tensor, shape [batch_size, n_x, n_y, 2]
             'target': target data,
                 torch.Tensor, shape [batch_size, n_x, n_y, 2]
+            'phase_shift': phase shift for simulated motion,
+                torch.Tensor
             'fname': filename,
                 str, shape [batch_size]
             'slice_idx': slice_idx,
@@ -388,7 +394,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         pred: Predicted data.
             torch.Tensor, shape [batch_size, n_x, n_y, 2]
         """
-        kspace, y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
+        kspace, y, sensitivity_maps, mask, init_pred, target, phase_shift, fname, slice_num, _ = batch
         y, mask, init_pred, r = self.process_inputs(y, mask, init_pred)
 
         if self.use_sens_net:
@@ -405,7 +411,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                     dim=self.coil_dim,
                 )
 
-        preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
+        preds = self.forward(y, sensitivity_maps, mask, init_pred, target, phase_shift)
 
         if self.accumulate_estimates:
             try:
@@ -635,6 +641,15 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
             mask_root=cfg.get("mask_path"),
             challenge=cfg.get("challenge"),
             transform=MRIDataTransforms(
+                random_motion=cfg.get("random_motion"),
+                random_motion_type=cfg.get("random_motion_type"),
+                random_motion_angle=cfg.get("random_motion_angle"),
+                random_motion_translation=cfg.get("random_motion_translation"),
+                random_motion_center_percentage=cfg.get("random_motion_center_percentage"),
+                random_motion_motion_percentage=cfg.get("random_motion_motion_percentage"),
+                random_motion_num_segments=cfg.get("random_motion_num_segments"),
+                random_motion_random_num_segments=cfg.get("random_motion_random_num_segments"),
+                random_motion_non_uniform=cfg.get("random_motion_non_uniform"),
                 coil_combination_method=cfg.get("coil_combination_method"),
                 dimensionality=cfg.get("dimensionality"),
                 mask_func=mask_func,
@@ -647,6 +662,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                 kspace_zero_filling_size=cfg.get("kspace_zero_filling_size"),
                 fft_centered=cfg.get("fft_centered"),
                 fft_normalization=cfg.get("fft_normalization"),
+                max_norm=cfg.get("max_norm"),
                 spatial_dims=cfg.get("spatial_dims"),
                 coil_dim=cfg.get("coil_dim"),
                 use_seed=cfg.get("use_seed"),

@@ -1,0 +1,129 @@
+pretrained: true
+checkpoint: /data/projects/recon/other/dkarkalousos/projects/paper/v2/trained_models/gaussian2d_4x_6x_8x_10x/T1/CIRIM_5C_64F_l1_NODC/--val_loss=0.0247-epoch=16.ckpt
+mode: test
+
+model:
+  model_name: CIRIM
+  recurrent_layer: IndRNN
+  conv_filters:
+    - 64
+    - 64
+    - 2
+  conv_kernels:
+    - 5
+    - 3
+    - 3
+  conv_dilations:
+    - 1
+    - 2
+    - 1
+  conv_bias:
+    - true
+    - true
+    - false
+  recurrent_filters:
+    - 64
+    - 64
+    - 0
+  recurrent_kernels:
+    - 1
+    - 1
+    - 0
+  recurrent_dilations:
+    - 1
+    - 1
+    - 0
+  recurrent_bias:
+    - true
+    - true
+    - false
+  depth: 2
+  time_steps: 8
+  conv_dim: 2
+  num_cascades: 5
+  no_dc: true
+  keep_eta: true
+  coil_combination_method: SENSE
+  dimensionality: 2
+  use_sens_net: false
+  sens_chans: 8
+  sens_pools: 4
+  sens_mask_type: 2D
+  train_loss_fn: l1
+  eval_loss_fn: l1
+  accumulate_estimates: true
+  fft_centered: false
+  fft_normalization: backward
+  spatial_dims:
+    - -2
+    - -1
+  coil_dim: 1
+
+  test_ds:
+    data_path: /data/projects/recon/data/public/qdess/v1-release/test_normed
+    challenge: multicoil
+    coil_combination_method: SENSE
+    dimensionality: 2
+    consecutive_slices: 1
+    fft_centered: false
+    fft_normalization: backward
+    spatial_dims:
+      - -2
+      - -1
+    coil_dim: 1
+    random_motion: false
+#    motion_degrees: 0
+#    motion_translation: 5
+#    motion_num_transforms: 1
+#    motion_image_interpolation: linear
+    mask_args:
+      type: poisson2d
+      accelerations:
+      - 6
+      center_fractions:
+      - 0.7
+      scale: 0.02
+      shift_mask: true
+      use_seed: false
+    normalize_inputs: true
+    crop_size:
+      - 416
+      - 144
+    crop_before_masking: true
+    kspace_zero_filling_size: None
+    sample_rate: 1
+    batch_size: 1
+    shuffle: false
+    num_workers: 8
+    drop_last: false
+    pin_memory: false
+
+  optim:
+    name: adam
+    lr: 0.001
+    betas:
+      - 0.9
+      - 0.98
+    weight_decay: 0.0
+    sched:
+      name: InverseSquareRootAnnealing
+      min_lr: 0.0
+      last_epoch: -1
+      warmup_ratio: 0.1
+
+trainer:
+  strategy: ddp
+  gpus: 1
+  num_nodes: 1
+  max_epochs: 20
+  precision: 16
+  enable_checkpointing: false
+  logger: false
+  log_every_n_steps: 50
+  check_val_every_n_epoch: -1
+  max_steps: -1
+
+exp_manager:
+  name: /data/projects/recon/other/dkarkalousos/projects/smk-tea/reconstructions/cirim/
+  create_tensorboard_logger: true
+  files_to_copy: [ ]

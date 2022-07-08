@@ -131,7 +131,7 @@ class FastMRISliceDataset(Dataset):
     def __init__(
         self,
         root: Union[str, Path, os.PathLike],
-        challenge: str = "multicoil",
+        challenge: str = "segmentation",
         transform: Optional[Callable] = None,
         sense_root: Union[str, Path, os.PathLike] = None,
         use_dataset_cache: bool = False,
@@ -165,8 +165,9 @@ class FastMRISliceDataset(Dataset):
         consecutive_slices: An int (>0) that determine the amount of consecutive slices of the file to be loaded at
             the same time. Defaults to 1, loading single slices.
         """
-        if challenge not in ("singlecoil", "multicoil"):
-            raise ValueError('challenge should be either "singlecoil" or "multicoil"')
+        if challenge not in ("singlecoil", "multicoil", "segmentation"):
+            raise ValueError('challenge should be either "singlecoil" or "multicoil" or "segmentation"')
+        self.challenge = challenge
 
         if sample_rate is not None and volume_sample_rate is not None:
             raise ValueError(
@@ -276,7 +277,7 @@ class FastMRISliceDataset(Dataset):
                 enc_size = 0
                 recon_size = (0, 0)
 
-            num_slices = hf["kspace"].shape[0]
+            num_slices = hf["kspace"].shape[0] if "kspace" in hf else hf["reconstruction"].shape[0]
 
         metadata = {
             "padding_left": padding_left,
@@ -300,7 +301,7 @@ class FastMRISliceDataset(Dataset):
         data = data[key]
 
         if self.consecutive_slices == 1:
-            return data[dataslice]
+            return data[dataslice] if data.ndim != 2 else data  # mask is 2D
 
         num_slices = data.shape[0]
         if self.consecutive_slices > num_slices:
@@ -319,78 +320,101 @@ class FastMRISliceDataset(Dataset):
 
     def __getitem__(self, i: int):
         fname, dataslice, metadata = self.examples[i]
-        with h5py.File(fname, "r") as hf:
-            kspace = self.get_consecutive_slices(hf, "kspace", dataslice).astype(np.complex64)
+        if self.challenge == "segmentation":
+            with h5py.File(fname, "r") as hf:
+                data = self.get_consecutive_slices(hf, "reconstruction", dataslice)  # .astype(np.complex64)
+                if data.ndim == 2:
+                    data = np.expand_dims(data, 0)
+                # phase = np.tile(
+                #     np.linspace(-np.pi, np.pi, int(data.shape[-2] / 2))[:, None], (data.shape[-1], 2, data.shape[-3])
+                # ).T
+                # data = data * np.exp(1j*phase)
+                # data = np.stack([data.real, data.imag], 1)
+                # data = np.stack([data, data], 1)
+                # data = data / np.max(np.abs(data))
+                return (
+                    data,
+                    np.zeros_like(data),
+                    fname.name,
+                    dataslice,
+                )
+        else:
+            with h5py.File(fname, "r") as hf:
+                kspace = self.get_consecutive_slices(hf, "kspace", dataslice).astype(np.complex64)
 
-            if "sensitivity_map" in hf:
-                sensitivity_map = self.get_consecutive_slices(hf, "sensitivity_map", dataslice).astype(np.complex64)
-            elif self.sense_root is not None and self.sense_root != "None":
-                with h5py.File(Path(self.sense_root) / Path(str(fname).split("/")[-2]) / fname.name, "r") as sf:
-                    if "sensitivity_map" in sf or "sensitivity_map" in next(iter(sf.keys())):
-                        sensitivity_map = self.get_consecutive_slices(sf, "sensitivity_map", dataslice)
-                    else:
-                        sensitivity_map = self.get_consecutive_slices(sf, "sense", dataslice)
-                    sensitivity_map = sensitivity_map.squeeze().astype(np.complex64)
-            else:
-                sensitivity_map = np.array([])
+                if "sensitivity_map" in hf:
+                    sensitivity_map = self.get_consecutive_slices(hf, "sensitivity_map", dataslice).astype(
+                        np.complex64
+                    )
+                elif self.sense_root is not None and self.sense_root != "None":
+                    with h5py.File(Path(self.sense_root) / Path(str(fname).split("/")[-2]) / fname.name, "r") as sf:
+                        if "sensitivity_map" in sf or "sensitivity_map" in next(iter(sf.keys())):
+                            sensitivity_map = self.get_consecutive_slices(sf, "sensitivity_map", dataslice)
+                        else:
+                            sensitivity_map = self.get_consecutive_slices(sf, "sense", dataslice)
+                        sensitivity_map = sensitivity_map.squeeze().astype(np.complex64)
+                else:
+                    sensitivity_map = np.array([])
 
-            if "mask" in hf:
-                mask = np.asarray(self.get_consecutive_slices(hf, "mask", dataslice))
+                if "mask" in hf:
+                    mask = np.asarray(self.get_consecutive_slices(hf, "mask", dataslice))
 
-                if mask.ndim == 3:
-                    mask = mask[dataslice]
+                    if mask.ndim == 3:
+                        mask = mask[dataslice]
 
-            elif self.mask_root is not None and self.mask_root != "None":
-                mask = [np.load(str(m)) for m in list(Path(self.mask_root).iterdir())]
-            else:
-                mask = None
+                elif self.mask_root is not None and self.mask_root != "None":
+                    mask = [np.load(str(m)) for m in list(Path(self.mask_root).iterdir())]
+                else:
+                    mask = None
 
-            eta = (
-                self.get_consecutive_slices(hf, "eta", dataslice).astype(np.complex64) if "eta" in hf else np.array([])
-            )
-
-            if "reconstruction_sense" in hf:
-                self.recons_key = "reconstruction_sense"
-
-            target = (
-                self.get_consecutive_slices(hf, self.recons_key, dataslice).astype(np.float32)
-                if self.recons_key in hf
-                else None
-            )
-
-            attrs = dict(hf.attrs)
-            attrs |= metadata
-
-        if sensitivity_map.shape != kspace.shape:
-            if sensitivity_map.ndim == 3:
-                sensitivity_map = np.transpose(sensitivity_map, (2, 0, 1))
-            elif sensitivity_map.ndim == 4:
-                sensitivity_map = np.transpose(sensitivity_map, (0, 3, 1, 2))
-            else:
-                raise ValueError(
-                    f"Sensitivity map has invalid dimensions {sensitivity_map.shape} compared to kspace {kspace.shape}"
+                eta = (
+                    self.get_consecutive_slices(hf, "eta", dataslice).astype(np.complex64)
+                    if "eta" in hf
+                    else np.array([])
                 )
 
-        return (
-            (
-                kspace,
-                sensitivity_map,
-                mask,
-                eta,
-                target,
-                attrs,
-                fname.name,
-                dataslice,
+                if "reconstruction_sense" in hf:
+                    self.recons_key = "reconstruction_sense"
+
+                target = (
+                    self.get_consecutive_slices(hf, self.recons_key, dataslice).astype(np.float32)
+                    if self.recons_key in hf
+                    else None
+                )
+
+                attrs = dict(hf.attrs)
+                attrs.update(metadata)
+
+            if sensitivity_map.shape != kspace.shape:
+                if sensitivity_map.ndim == 3:
+                    sensitivity_map = np.transpose(sensitivity_map, (2, 0, 1))
+                elif sensitivity_map.ndim == 4:
+                    sensitivity_map = np.transpose(sensitivity_map, (0, 3, 1, 2))
+                else:
+                    raise ValueError(
+                        f"Sensitivity map has invalid dimensions {sensitivity_map.shape} compared to kspace {kspace.shape}"
+                    )
+
+            return (
+                (
+                    kspace,
+                    sensitivity_map,
+                    mask,
+                    eta,
+                    target,
+                    attrs,
+                    fname.name,
+                    dataslice,
+                )
+                if self.transform is None
+                else self.transform(
+                    kspace,
+                    sensitivity_map,
+                    mask,
+                    eta,
+                    target,
+                    attrs,
+                    fname.name,
+                    dataslice,
+                )
             )
-            if self.transform is None
-            else self.transform(
-                kspace,
-                sensitivity_map,
-                mask,
-                eta,
-                target,
-                attrs,
-                fname.name,
-                dataslice,
-            )
-        )

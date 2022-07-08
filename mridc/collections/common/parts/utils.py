@@ -80,6 +80,13 @@ def tensor_to_complex_np(data: torch.Tensor) -> np.ndarray:
     return data[..., 0] + 1j * data[..., 1]
 
 
+def reshape_fortran(x, shape) -> torch.Tensor:
+    """Reshapes a tensor in Fortran order. Taken from https://stackoverflow.com/a/63964246"""
+    return (
+        x.permute(*reversed(range(len(x.shape)))).reshape(*reversed(shape)).permute(*reversed(range(len(shape))))
+    )
+
+
 def complex_mul(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     """
     Complex multiplication.

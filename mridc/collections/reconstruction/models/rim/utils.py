@@ -3,6 +3,9 @@ __author__ = "Dimitrios Karkalousos"
 
 import torch
 
+from torchvision.transforms import RandomAffine
+from torchvision.transforms.functional import InterpolationMode
+
 from typing import Optional, Sequence, Tuple
 
 from mridc.collections.common.parts.fft import fft2, ifft2
@@ -18,6 +21,7 @@ def log_likelihood_gradient(
     fft_normalization: str,
     spatial_dims: Sequence[int],
     coil_dim: int,
+    phase_shift: torch.Tensor,
 ) -> torch.Tensor:
     """
     Computes the gradient of the log-likelihood function.
@@ -33,29 +37,30 @@ def log_likelihood_gradient(
     fft_normalization: Whether to normalize the FFT.
     spatial_dims: Spatial dimensions of the data.
     coil_dim: Dimension of the coil.
+    phase_shift: Phase shift for motion simulation.
 
     Returns
     -------
     Gradient of the log-likelihood function.
     """
     coil_dim = 1
+
     eta_real, eta_imag = map(lambda x: torch.unsqueeze(x, coil_dim), eta.chunk(2, -1))
     sense_real, sense_imag = sense.chunk(2, -1)
 
     re_se = eta_real * sense_real - eta_imag * sense_imag
     im_se = eta_real * sense_imag + eta_imag * sense_real
+    pred = torch.cat((re_se, im_se), -1)
+
+    pred = fft2(pred, centered=fft_centered, normalization=fft_normalization, spatial_dims=spatial_dims)
+
+    if torch.mean(phase_shift) != 1:
+        pred = torch.view_as_real(
+            torch.multiply(phase_shift, torch.view_as_complex(pred).flatten()).reshape(pred.shape[:-1])
+        )
 
     pred = ifft2(
-        mask
-        * (
-            fft2(
-                torch.cat((re_se, im_se), -1),
-                centered=fft_centered,
-                normalization=fft_normalization,
-                spatial_dims=spatial_dims,
-            )
-            - masked_kspace
-        ),
+        mask * (pred - masked_kspace),
         centered=fft_centered,
         normalization=fft_normalization,
         spatial_dims=spatial_dims,

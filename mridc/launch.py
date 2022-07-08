@@ -20,6 +20,7 @@ from mridc.collections.reconstruction.models.vn import VarNet
 from mridc.collections.reconstruction.models.vsnet import VSNet
 from mridc.collections.reconstruction.models.xpdnet import XPDNet
 from mridc.collections.reconstruction.models.zf import ZF
+
 from mridc.core.conf.hydra_runner import hydra_runner
 from mridc.utils import logging
 from mridc.utils.exp_manager import exp_manager
@@ -83,6 +84,7 @@ def main(cfg: DictConfig) -> None:
     if cfg.get("pretrained", None):
         checkpoint = cfg.get("checkpoint", None)
         logging.info(f"Loading pretrained model from {checkpoint}")
+        # model.load_state_dict(torch.load(checkpoint, map_location=model.device)["state_dict"], strict=False)
         model.load_state_dict(torch.load(checkpoint)["state_dict"])
 
     if cfg.get("mode", None) == "train":

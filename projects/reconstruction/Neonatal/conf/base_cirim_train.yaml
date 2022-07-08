@@ -1,0 +1,182 @@
+pretrained: false
+checkpoint: None
+mode: train
+
+model:
+  model_name: CIRIM
+  recurrent_layer: IndRNN
+  conv_filters:
+    - 96
+    - 96
+    - 2
+  conv_kernels:
+    - 5
+    - 3
+    - 3
+  conv_dilations:
+    - 1
+    - 2
+    - 1
+  conv_bias:
+    - true
+    - true
+    - false
+  recurrent_filters:
+    - 96
+    - 96
+    - 0
+  recurrent_kernels:
+    - 1
+    - 1
+    - 0
+  recurrent_dilations:
+    - 1
+    - 1
+    - 0
+  recurrent_bias:
+    - true
+    - true
+    - false
+  depth: 2
+  time_steps: 8
+  conv_dim: 2
+  num_cascades: 5
+  no_dc: true
+  keep_eta: true
+  coil_combination_method: SENSE
+  dimensionality: 2
+  use_sens_net: false
+  sens_chans: 8
+  sens_pools: 4
+  sens_mask_type: 2D
+  train_loss_fn: l1
+  eval_loss_fn: l1
+  accumulate_estimates: true
+  fft_centered: false
+  fft_normalization: ortho
+  spatial_dims:
+    - -2
+    - -1
+  coil_dim: 1
+
+  train_ds:
+    data_path: /data/projects/recon/data/private/3T_T1_3D_Brains/h5/multicoil_train/
+    challenge: multicoil
+    coil_combination_method: SENSE
+    dimensionality: 2
+    consecutive_slices: 1
+    fft_centered: false
+    fft_normalization: ortho
+    spatial_dims:
+      - -2
+      - -1
+    coil_dim: 1
+    random_motion: true
+    random_motion_type: gaussian
+    random_motion_angle: 60
+    random_motion_translation: 60
+    random_motion_center_percentage: 0.
+    random_motion_motion_percentage:
+      - 100
+      - 100
+    random_motion_num_segments: 24
+    random_motion_random_num_segments: false
+    random_motion_non_uniform: false
+    mask_args:
+      type: poisson2d
+      accelerations:
+      - 14
+      center_fractions:
+      - 0.7
+      scale: 0.02
+      shift_mask: true
+      use_seed: true
+    normalize_inputs: true
+    crop_size: None
+    crop_before_masking: true
+    kspace_zero_filling_size: None
+    sample_rate: 1
+    batch_size: 1
+    shuffle: true
+    num_workers: 8
+    drop_last: false
+    pin_memory: false
+
+  validation_ds:
+    data_path: /data/projects/recon/data/private/3T_T1_3D_Brains/h5/multicoil_val/
+    challenge: multicoil
+    coil_combination_method: SENSE
+    dimensionality: 2
+    consecutive_slices: 1
+    fft_centered: false
+    fft_normalization: ortho
+    spatial_dims:
+      - -2
+      - -1
+    coil_dim: 1
+    random_motion: true
+    random_motion_type: gaussian
+    random_motion_angle: 30
+    random_motion_translation: 30
+    random_motion_center_percentage: 0.
+    random_motion_motion_percentage:
+      - 30
+      - 30
+    random_motion_num_segments: 24
+    random_motion_random_num_segments: false
+    random_motion_non_uniform: false
+    mask_args:
+      type: poisson2d
+      accelerations:
+      - 14
+      center_fractions:
+      - 0.7
+      scale: 0.02
+      shift_mask: true
+      use_seed: false
+    normalize_inputs: true
+    crop_size: None
+    crop_before_masking: true
+    kspace_zero_filling_size: None
+    sample_rate: 1
+    batch_size: 1
+    shuffle: false
+    num_workers: 8
+    drop_last: false
+    pin_memory: false
+
+  optim:
+    name: adam
+    lr: 1e-3
+    betas:
+      - 0.9
+      - 0.98
+    weight_decay: 0.001
+    sched:
+      name: InverseSquareRootAnnealing
+      min_lr: 0.0
+      last_epoch: -1
+      warmup_ratio: 0.1
+
+trainer:
+  strategy: ddp
+  gpus: 1
+  num_nodes: 1
+  max_epochs: 200
+  precision: 16
+  enable_checkpointing: false
+  logger: false
+  log_every_n_steps: 50
+  check_val_every_n_epoch: -1
+  max_steps: -1
+
+exp_manager:
+  exp_dir: /data/projects/recon/other/dkarkalousos/projects/moco/trained_models/cirim_96cf96rf5c8ts/
+  create_tensorboard_logger: false
+  create_wandb_logger: true
+  wandb_logger_kwargs:
+#    log_model: true
+#    name: irim
+#    entity: wdika
+    project: MoCo
+  files_to_copy: [ ]

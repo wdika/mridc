@@ -107,6 +107,7 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
         mask: torch.Tensor,
         init_pred: torch.Tensor,
         target: torch.Tensor,
+        phase_shift: torch.Tensor,
     ) -> Union[Generator, torch.Tensor]:
         """
         Forward pass of the network.
@@ -123,6 +124,8 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
             torch.Tensor, shape [batch_size, n_x, n_y, 2]
         target: Target data to compute the loss.
             torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        'phase_shift': phase shift for simulated motion,
+            torch.Tensor
 
         Returns
         -------
@@ -130,6 +133,8 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
              If self.accumulate_loss is True, returns a list of all intermediate estimates.
              If False, returns the final estimate.
         """
+        # print(f"cirim {isinstance(transformations, dict)}")
+
         prediction = y.clone()
         init_pred = None if init_pred is None or init_pred.dim() < 4 else init_pred
         hx = None
@@ -146,6 +151,7 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
                 hx,
                 sigma,
                 keep_eta=False if i == 0 else self.keep_eta,
+                phase_shift=phase_shift,
             )
             time_steps_etas = [self.process_intermediate_pred(pred, sensitivity_maps, target) for pred in prediction]
             cascades_etas.append(time_steps_etas)

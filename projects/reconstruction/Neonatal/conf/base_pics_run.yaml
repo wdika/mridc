@@ -1,0 +1,68 @@
+pretrained: false
+checkpoint: ???
+mode: test
+
+model:
+  model_name: PICS
+  reg_wt: 0.05
+  num_iters: 60
+  pics_centered: true
+  coil_combination_method: SENSE
+  dimensionality: 2
+  fft_centered: false
+  fft_normalization: backward
+  spatial_dims:
+    - -2
+    - -1
+  coil_dim: 1
+  device: cuda
+  use_sens_net: false
+
+  test_ds:
+    data_path: /data/projects/recon/data/private/neonatal/utrecht/proc/umcu_220222a/GR_262175/h5/
+    challenge: multicoil
+    coil_combination_method: SENSE
+    dimensionality: 2
+    consecutive_slices: 1
+    fft_centered: false
+    fft_normalization: backward
+    spatial_dims:
+      - -2
+      - -1
+    coil_dim: 1
+    mask_args:
+      type: poisson2d
+      accelerations:
+      - 10
+      center_fractions:
+      - 0.7
+      scale: 0.02
+      shift_mask: true
+      use_seed: false
+    normalize_inputs: false
+    crop_size: None
+    crop_before_masking: true
+    kspace_zero_filling_size: None
+    sample_rate: 1
+    batch_size: 1
+    shuffle: false
+    num_workers: 8
+    drop_last: false
+    pin_memory: false
+
+trainer:
+  strategy: ddp
+  gpus: 1
+  num_nodes: 1
+  max_epochs: 20
+  precision: 16
+  enable_checkpointing: false
+  logger: false
+  log_every_n_steps: 50
+  check_val_every_n_epoch: -1
+  max_steps: -1
+
+exp_manager:
+  name: /data/projects/recon/other/dkarkalousos/projects/neonatal/umcu_220222a_GR_262175/reconstructions/poisson2d10x/pics_reg0.05/
+  create_tensorboard_logger: true
+  files_to_copy: [ ]

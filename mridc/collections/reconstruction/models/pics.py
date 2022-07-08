@@ -121,12 +121,12 @@ class PICS(BaseMRIReconstructionModel, ABC):
         pred: torch.Tensor, shape [batch_size, n_x, n_y, 2]
             Predicted data.
         """
-        pred = torch.zeros_like(torch.from_numpy(sensitivity_maps))
-        # if "cuda" in str(self._device):
-        #     pred = bart.bart(1, f"pics -d0 -g -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
-        # else:
-        #     pred = bart.bart(1, f"pics -d0 -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
-        # _, pred = center_crop_to_smallest(target, pred)
+        # pred = torch.zeros_like(torch.from_numpy(sensitivity_maps))
+        if "cuda" in str(self._device):
+            pred = bart.bart(1, f"pics -d0 -g -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
+        else:
+            pred = bart.bart(1, f"pics -d0 -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
+        _, pred = center_crop_to_smallest(target, pred)
         return pred
 
     def test_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Tuple[str, int, torch.Tensor]:
@@ -166,14 +166,14 @@ class PICS(BaseMRIReconstructionModel, ABC):
                     dim=self.coil_dim,
                 )
 
-        if self.pics_centered:
-            y = ifft2(
-                y, spatial_dims=self.spatial_dims, centered=self.fft_centered, normalization=self.fft_normalization
-            )
-            y = torch.view_as_real(torch.fft.fftshift(torch.view_as_complex(y), dim=self.spatial_dims))
-            y = fft2(
-                y, spatial_dims=self.spatial_dims, centered=self.fft_centered, normalization=self.fft_normalization
-            )
+        # if self.pics_centered:
+        #     y = ifft2(
+        #         y, spatial_dims=self.spatial_dims, centered=self.fft_centered, normalization=self.fft_normalization
+        #     )
+        #     y = torch.view_as_real(torch.fft.fftshift(torch.view_as_complex(y), dim=self.spatial_dims))
+        #     y = fft2(
+        #         y, spatial_dims=self.spatial_dims, centered=self.fft_centered, normalization=self.fft_normalization
+        #     )
 
         y = torch.view_as_complex(y).permute(0, 2, 3, 1).detach().cpu().numpy()
 

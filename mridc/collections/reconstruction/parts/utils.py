@@ -58,6 +58,8 @@ def apply_mask(
         mask = existing_mask
         acc = mask.size / mask.sum()
 
+    mask = mask.to(data.device)
+
     if padding is not None and padding[0] != 0:
         mask[:, :, : padding[0]] = 0
         mask[:, :, padding[1] :] = 0  # padding value inclusive on right of zeros
