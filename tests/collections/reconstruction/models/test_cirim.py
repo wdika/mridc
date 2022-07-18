@@ -239,7 +239,14 @@ def test_cirim(shape, cfg, center_fractions, accelerations, dimensionality):
     cirim = CIRIM(cfg)
 
     with torch.no_grad():
-        y = cirim.forward(output, output, mask, None, target=torch.abs(torch.view_as_complex(output)))
+        y = cirim.forward(
+            output,
+            output,
+            mask,
+            None,
+            target=torch.abs(torch.view_as_complex(output)),
+            phase_shift=torch.ones_like(output),
+        )
 
         try:
             y = next(y)

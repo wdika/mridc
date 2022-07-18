@@ -26,16 +26,16 @@ model:
       - -1
     coil_dim: 1
     random_motion: false
-#    motion_degrees: 2
-#    motion_translation: 5
-#    motion_num_transforms: 1
-#    motion_image_interpolation: linear
+    #    motion_degrees: 2
+    #    motion_translation: 5
+    #    motion_num_transforms: 1
+    #    motion_image_interpolation: linear
     mask_args:
       type: poisson2d
       accelerations:
-      - 10
+        - 10
       center_fractions:
-      - 0.7
+        - 0.7
       scale: 0.02
       shift_mask: true
       use_seed: false

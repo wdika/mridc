@@ -29,7 +29,7 @@ def apply_mask(
     half_scan_percentage: Optional[float] = 0.0,
     center_scale: Optional[float] = 0.02,
     existing_mask: Optional[torch.Tensor] = None,
-) -> Tuple[Any, Any, Any]:
+) -> Tuple[Any, Any, int]:
     """
     Subsample given k-space by multiplying with a mask.
 

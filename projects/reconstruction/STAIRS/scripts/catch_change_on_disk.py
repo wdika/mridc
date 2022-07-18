@@ -1,6 +1,6 @@
-import time
-import pathlib
 import logging
+import pathlib
+import time
 
 logging.basicConfig(level=logging.DEBUG)
 

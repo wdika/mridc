@@ -2,13 +2,13 @@
 __author__ = "Dimitrios Karkalousos"
 
 import argparse
-import h5py
-import numpy as np
 import sys
 import time
 from pathlib import Path
+
+import h5py
+import numpy as np
 from tqdm import tqdm
-import matplotlib.pyplot as plt
 
 
 def readcfl(name):

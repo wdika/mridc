@@ -4,7 +4,7 @@ __author__ = "Dimitrios Karkalousos"
 # Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
 
 from pathlib import Path
-from typing import Dict, Union
+from typing import Any, Dict, Union
 
 import h5py
 import numpy as np
@@ -27,7 +27,7 @@ __all__ = [
 ]
 
 
-def is_none(x: Union[str, int, None]) -> bool:
+def is_none(x: Union[Any, None]) -> bool:
     """
     Check if a string is None.
 
@@ -82,9 +82,7 @@ def tensor_to_complex_np(data: torch.Tensor) -> np.ndarray:
 
 def reshape_fortran(x, shape) -> torch.Tensor:
     """Reshapes a tensor in Fortran order. Taken from https://stackoverflow.com/a/63964246"""
-    return (
-        x.permute(*reversed(range(len(x.shape)))).reshape(*reversed(shape)).permute(*reversed(range(len(shape))))
-    )
+    return x.permute(*reversed(range(len(x.shape)))).reshape(*reversed(shape)).permute(*reversed(range(len(shape))))
 
 
 def complex_mul(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:

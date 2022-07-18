@@ -1,10 +1,9 @@
-from cProfile import label
 from cmath import nan
+
+import monai.metrics as MM
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
-import monai.metrics as MM
 
 
 class DiceLoss(nn.Module):

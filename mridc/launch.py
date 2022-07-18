@@ -5,6 +5,7 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import DictConfig, OmegaConf
 
+from mridc.collections.motioncompensation.models.decocirim import DeCoCIRIM
 from mridc.collections.reconstruction.models.ccnn import CascadeNet
 from mridc.collections.reconstruction.models.cirim import CIRIM
 from mridc.collections.reconstruction.models.crnn import CRNNet
@@ -20,7 +21,6 @@ from mridc.collections.reconstruction.models.vn import VarNet
 from mridc.collections.reconstruction.models.vsnet import VSNet
 from mridc.collections.reconstruction.models.xpdnet import XPDNet
 from mridc.collections.reconstruction.models.zf import ZF
-
 from mridc.core.conf.hydra_runner import hydra_runner
 from mridc.utils import logging
 from mridc.utils.exp_manager import exp_manager
@@ -49,6 +49,8 @@ def main(cfg: DictConfig) -> None:
         model = CIRIM(cfg.model, trainer=trainer)
     elif model_name == "CRNNET":
         model = CRNNet(cfg.model, trainer=trainer)
+    elif model_name == "DECOCIRIM":
+        model = DeCoCIRIM(cfg.model, trainer=trainer)
     elif model_name == "DUNET":
         model = DUNet(cfg.model, trainer=trainer)
     elif model_name in ("E2EVN", "VN"):

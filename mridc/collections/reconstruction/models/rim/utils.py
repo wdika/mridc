@@ -1,12 +1,9 @@
 # coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
+from typing import Sequence
+
 import torch
-
-from torchvision.transforms import RandomAffine
-from torchvision.transforms.functional import InterpolationMode
-
-from typing import Optional, Sequence, Tuple
 
 from mridc.collections.common.parts.fft import fft2, ifft2
 
@@ -54,10 +51,10 @@ def log_likelihood_gradient(
 
     pred = fft2(pred, centered=fft_centered, normalization=fft_normalization, spatial_dims=spatial_dims)
 
-    if torch.mean(phase_shift) != 1:
-        pred = torch.view_as_real(
-            torch.multiply(phase_shift, torch.view_as_complex(pred).flatten()).reshape(pred.shape[:-1])
-        )
+    # if torch.mean(phase_shift) != 1:
+    #     pred = torch.view_as_real(
+    #         torch.multiply(phase_shift, torch.view_as_complex(pred).flatten()).reshape(pred.shape[:-1])
+    #     )
 
     pred = ifft2(
         mask * (pred - masked_kspace),

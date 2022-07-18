@@ -9,12 +9,10 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 import numpy as np
 import torch
 
-from mridc.collections.common.parts.random_motion import MotionSimulation
-from torchvision.transforms.functional import InterpolationMode
-
 from mridc.collections.common.parts.fft import fft2, ifft2
-from mridc.collections.common.parts.utils import reshape_fortran, complex_conj, complex_mul, is_none, to_tensor, \
-    rss, sense
+from mridc.collections.common.parts.utils import is_none, reshape_fortran, rss, sense, to_tensor
+from mridc.collections.motioncompensation.parts.deformation import generate_complex_data_with_motion
+from mridc.collections.motioncompensation.parts.simulation import MotionSimulation
 from mridc.collections.reconstruction.data.subsample import MaskFunc
 from mridc.collections.reconstruction.parts.utils import apply_mask, center_crop, complex_center_crop
 
@@ -43,7 +41,14 @@ class MRIDataTransforms:
         random_motion_num_segments: int = 8,
         random_motion_random_num_segments: bool = True,
         random_motion_non_uniform: bool = False,
-        affine_interpolation: str = "nearest",
+        random_motion_states_discrepancy_factor: float = 0.3,
+        simulate_motion: bool = False,
+        simulate_motion_translation: Sequence[float] = [0.0, 0.0],
+        simulate_motion_rotation: Sequence[float] = [0.0, 0.0],
+        simulate_motion_scale: float = 0,
+        simulate_motion_p: float = 0,
+        simulate_motion_theta: float = 0,
+        simulate_motion_sigma: float = 0,
         affine_prewhitening: bool = False,
         coil_combination_method: str = "SENSE",
         dimensionality: int = 2,
@@ -96,6 +101,15 @@ class MRIDataTransforms:
         self.random_motion_num_segments = random_motion_num_segments
         self.random_motion_random_num_segments = random_motion_random_num_segments
         self.random_motion_non_uniform = random_motion_non_uniform
+        self.random_motion_states_discrepancy_factor = random_motion_states_discrepancy_factor
+
+        self.simulate_motion = simulate_motion
+        self.simulate_motion_translation = simulate_motion_translation
+        self.simulate_motion_rotation = simulate_motion_rotation
+        self.simulate_motion_scale = simulate_motion_scale
+        self.simulate_motion_p = simulate_motion_p
+        self.simulate_motion_theta = simulate_motion_theta
+        self.simulate_motion_sigma = simulate_motion_sigma
 
         self.coil_combination_method = coil_combination_method
         self.dimensionality = dimensionality
@@ -192,7 +206,7 @@ class MRIDataTransforms:
             sensitivity_map = to_tensor(sensitivity_map)
 
         if self.apply_prewhitening:
-            kspace = self.prewhitening(kspace)
+            kspace = self.prewhitening(kspace)  # type: ignore
 
         if self.gcc is not None:
             kspace = self.gcc(kspace)
@@ -363,6 +377,116 @@ class MRIDataTransforms:
                 )
             )
 
+        # Simulate motion if random_motion is enabled.
+        if self.random_motion:
+            motion_state_first = MotionSimulation(
+                type=self.random_motion_type,
+                angle=self.random_motion_angle,
+                translation=self.random_motion_translation,
+                center_percentage=self.random_motion_center_percentage,
+                motion_percentage=self.random_motion_motion_percentage,
+                spatial_dims=self.spatial_dims,
+                num_segments=self.random_motion_num_segments,
+                random_num_segments=self.random_motion_random_num_segments,
+                non_uniform=self.random_motion_non_uniform,
+            )
+
+            motion_state_second = MotionSimulation(
+                type=self.random_motion_type,
+                angle=np.round(self.random_motion_angle * self.random_motion_states_discrepancy_factor),
+                translation=np.round(self.random_motion_translation * self.random_motion_states_discrepancy_factor),
+                center_percentage=self.random_motion_center_percentage,
+                motion_percentage=self.random_motion_motion_percentage,
+                spatial_dims=self.spatial_dims,
+                num_segments=self.random_motion_num_segments,
+                random_num_segments=self.random_motion_random_num_segments,
+                non_uniform=self.random_motion_non_uniform,
+            )
+
+            if kspace.dim() == 4:
+                phase_shift_first = motion_state_first.forward(kspace)
+                kspace_r = torch.view_as_real(
+                    torch.multiply(phase_shift_first, torch.view_as_complex(kspace).flatten()).reshape(
+                        kspace.shape[:-1]
+                    )
+                )
+                phase_shift_second = motion_state_second.forward(kspace)
+                kspace_m = torch.view_as_real(
+                    torch.multiply(phase_shift_second, torch.view_as_complex(kspace).flatten()).reshape(
+                        kspace.shape[:-1]
+                    )
+                )
+                deformed_imspace = lambda x: generate_complex_data_with_motion(
+                    x,
+                    translation=[
+                        2 * self.simulate_motion_translation[0] * np.random.rand(1)
+                        - self.simulate_motion_translation[1],
+                        2 * self.simulate_motion_translation[0] * np.random.rand(1)
+                        - self.simulate_motion_translation[1],
+                    ],
+                    rotation=2 * self.simulate_motion_rotation[0] * np.random.rand(1)
+                    - self.simulate_motion_rotation[1],
+                    scale=2 * self.simulate_motion_scale * np.random.rand(1) - self.simulate_motion_scale + 1,
+                    p=self.simulate_motion_p,
+                    theta=self.simulate_motion_theta,
+                    sigma=self.simulate_motion_sigma,
+                )
+                kspace_m = fft2(
+                    deformed_imspace(ifft2(kspace_m, self.fft_centered, self.fft_normalization, self.spatial_dims)),
+                    self.fft_centered,
+                    self.fft_normalization,
+                    self.spatial_dims,
+                )
+                kspace = torch.stack([kspace_r, kspace_m], dim=0)
+            elif kspace.dim() == 5:
+                phase_shift_first = motion_state_first.forward(kspace[0])
+                kspaces = []
+                for slice in range(kspace.shape[0]):
+                    kspaces.append(
+                        torch.view_as_real(
+                            torch.multiply(phase_shift_first, torch.view_as_complex(kspace[slice]).flatten()).reshape(
+                                kspace[slice].shape[:-1]
+                            )
+                        )
+                    )
+                kspace_r = torch.stack(kspaces, dim=0)
+                deformed_imspace = lambda x: generate_complex_data_with_motion(
+                    x,
+                    translation=[
+                        2 * self.simulate_motion_translation[0] * np.random.rand(1)
+                        - self.simulate_motion_translation[1],
+                        2 * self.simulate_motion_translation[0] * np.random.rand(1)
+                        - self.simulate_motion_translation[1],
+                    ],
+                    rotation=2 * self.simulate_motion_rotation[0] * np.random.rand(1)
+                    - self.simulate_motion_rotation[1],
+                    scale=2 * self.simulate_motion_scale * np.random.rand(1) - self.simulate_motion_scale + 1,
+                    p=self.simulate_motion_p,
+                    theta=self.simulate_motion_theta,
+                    sigma=self.simulate_motion_sigma,
+                )
+                phase_shift_second = motion_state_second.forward(kspace[0])
+                kspaces = []
+                for slice in range(kspace.shape[0]):
+                    _kspace_m = torch.view_as_real(
+                        torch.multiply(phase_shift_second, torch.view_as_complex(kspace[slice]).flatten()).reshape(
+                            kspace[slice].shape[:-1]
+                        )
+                    )
+                    _imspace = ifft2(_kspace_m, self.fft_centered, self.fft_normalization, self.spatial_dims)
+                    _kspace_m = fft2(
+                        deformed_imspace(_imspace),
+                        self.fft_centered,
+                        self.fft_normalization,
+                        self.spatial_dims,
+                    )
+                    kspaces.append(_kspace_m)
+                kspace_m = torch.stack(kspaces, dim=0)
+                kspace = torch.stack([kspace_r, kspace_m], dim=0)
+            phase_shift = torch.stack([phase_shift_first, phase_shift_second], dim=0)
+        else:
+            phase_shift = torch.ones_like(kspace)
+
         # Undersample kspace if undersampling is enabled.
         if not is_none(mask) and not is_none(self.mask_func):
             for _mask in mask:
@@ -379,7 +503,7 @@ class MRIDataTransforms:
                 mask = torch.from_numpy(mask).unsqueeze(0).unsqueeze(-1)
 
             if self.shift_mask:
-                mask = torch.fft.fftshift(mask, dim=(self.spatial_dims[0]-1, self.spatial_dims[1]-1))
+                mask = torch.fft.fftshift(mask, dim=(self.spatial_dims[0] - 1, self.spatial_dims[1] - 1))
 
             acc = 1
 
@@ -420,118 +544,146 @@ class MRIDataTransforms:
             masked_kspaces = []
             masks = []
             accs = []
-            for m in self.mask_func:
+            if self.random_motion:
                 if self.dimensionality == 2:
-                    _masked_kspace, _mask, _acc = apply_mask(
-                        kspace,
-                        m,
+                    masked_kspace_motion_state_1, mask_motion_state_1, _ = apply_mask(
+                        kspace[0],
+                        self.mask_func[0],  # type: ignore
                         seed,
                         (acq_start, acq_end),
                         shift=self.shift_mask,
                         half_scan_percentage=self.half_scan_percentage,
                         center_scale=self.mask_center_scale,
                     )
+                    mask_motion_state_1 = mask_motion_state_1.byte()
+                    masked_kspace_motion_state_2, mask_motion_state_2, _acc = apply_mask(
+                        kspace[1],
+                        self.mask_func[-1],  # type: ignore
+                        seed,
+                        (acq_start, acq_end),
+                        shift=self.shift_mask,
+                        half_scan_percentage=self.half_scan_percentage,
+                        center_scale=self.mask_center_scale,
+                    )
+                    mask_motion_state_2 = mask_motion_state_2.byte()
+                    masked_kspace = [torch.stack([masked_kspace_motion_state_1, masked_kspace_motion_state_2], dim=0)]
+                    mask = [torch.stack([mask_motion_state_1, mask_motion_state_2], dim=0)]
+                    acc = [_acc]  # type: ignore
                 elif self.dimensionality == 3:
                     _masked_kspace = []
                     _mask = None
                     for i in range(kspace.shape[0]):
-                        _i_masked_kspace, _i_mask, _i_acc = apply_mask(
-                            kspace[i],
+                        i_masked_kspace_motion_state_1, i_mask_motion_state_1, _ = apply_mask(
+                            kspace[i][0],
+                            self.mask_func[0],  # type: ignore
+                            seed,
+                            (acq_start, acq_end),
+                            shift=self.shift_mask,
+                            half_scan_percentage=self.half_scan_percentage,
+                            center_scale=self.mask_center_scale,
+                        )
+                        mask_motion_state_1 = mask_motion_state_1.byte()
+                        i_masked_kspace_motion_state_2, i_mask_motion_state_2, _i_acc = apply_mask(
+                            kspace[i][1],
+                            self.mask_func[-1],  # type: ignore
+                            seed,
+                            (acq_start, acq_end),
+                            shift=self.shift_mask,
+                            half_scan_percentage=self.half_scan_percentage,
+                            center_scale=self.mask_center_scale,
+                            existing_mask=mask_motion_state_1,
+                        )
+                        mask_motion_state_2 = mask_motion_state_2.byte()
+                        _i_masked_kspace = torch.stack(
+                            [masked_kspace_motion_state_1, masked_kspace_motion_state_2], dim=0
+                        )
+                        _i_mask = torch.stack([mask_motion_state_1, mask_motion_state_2], dim=0)
+                        if self.remask:
+                            _mask = _i_mask
+                        if i == 0:
+                            _acc = _i_acc
+                        _masked_kspace.append(_i_masked_kspace)
+                    masked_kspace = [torch.stack(_masked_kspace, dim=0)]
+                    mask = [_i_mask.unsqueeze(0)]
+                    acc = [_acc]  # type: ignore
+                else:
+                    raise ValueError(f"Unsupported data dimensionality {self.dimensionality}D.")
+            else:
+                for m in self.mask_func:
+                    if self.dimensionality == 2:
+                        _masked_kspace, _mask, _acc = apply_mask(
+                            kspace,
                             m,
                             seed,
                             (acq_start, acq_end),
                             shift=self.shift_mask,
                             half_scan_percentage=self.half_scan_percentage,
                             center_scale=self.mask_center_scale,
-                            existing_mask=_mask,
                         )
-                        if self.remask:
-                            _mask = _i_mask
-                        if i == 0:
-                            _acc = _i_acc
-                        _masked_kspace.append(_i_masked_kspace)
-                    _masked_kspace = torch.stack(_masked_kspace, dim=0)
-                    _mask = _i_mask.unsqueeze(0)
-                else:
-                    raise ValueError(f"Unsupported data dimensionality {self.dimensionality}D.")
-                masked_kspaces.append(_masked_kspace)
-                masks.append(_mask.byte())
-                accs.append(_acc)
-            masked_kspace = masked_kspaces
-            mask = masks
-            acc = accs
-        else:
-            masked_kspace, mask, acc = apply_mask(
-                kspace,
-                self.mask_func[0],  # type: ignore
-                seed,
-                (acq_start, acq_end),
-                shift=self.shift_mask,
-                half_scan_percentage=self.half_scan_percentage,
-                center_scale=self.mask_center_scale,
-            )
-            mask = mask.byte()
-
-        if self.random_motion:
-            motion_func = MotionSimulation(
-                type=self.random_motion_type,
-                angle=self.random_motion_angle,
-                translation=self.random_motion_translation,
-                center_percentage=self.random_motion_center_percentage,
-                motion_percentage=self.random_motion_motion_percentage,
-                spatial_dims=self.spatial_dims,
-                num_segments=self.random_motion_num_segments,
-                random_num_segments=self.random_motion_random_num_segments,
-                non_uniform=self.random_motion_non_uniform,
-            )
-
-            if isinstance(masked_kspace, list):
-                _masked_kspaces = []
-                for y in masked_kspace:
-                    if y.dim() == 4:
-                        phase_shift = motion_func.forward(y)
-                        y = torch.view_as_real(
-                            torch.multiply(
-                                phase_shift, torch.view_as_complex(y).flatten()
-                            ).reshape(y.shape[:-1])
-                        )
-                    elif kspace.dim() == 5:
-                        phase_shift = motion_func.forward(y[0])
-                        _y = []
-                        for slice in range(y.shape[0]):
-                            _y.append(
-                                torch.view_as_real(
-                                    torch.multiply(
-                                        phase_shift, torch.view_as_complex(y[slice]).flatten()
-                                    ).reshape(y[slice].shape[:-1])
-                                )
+                    elif self.dimensionality == 3:
+                        _masked_kspace = []
+                        _mask = None
+                        for i in range(kspace.shape[0]):
+                            _i_masked_kspace, _i_mask, _i_acc = apply_mask(
+                                kspace[i],
+                                m,
+                                seed,
+                                (acq_start, acq_end),
+                                shift=self.shift_mask,
+                                half_scan_percentage=self.half_scan_percentage,
+                                center_scale=self.mask_center_scale,
+                                existing_mask=_mask,
                             )
-                        y = torch.stack(_y, dim=0)
-                    _masked_kspaces.append(y)
-                masked_kspace = _masked_kspaces
+                            if self.remask:
+                                _mask = _i_mask
+                            if i == 0:
+                                _acc = _i_acc
+                            _masked_kspace.append(_i_masked_kspace)
+                        _masked_kspace = torch.stack(_masked_kspace, dim=0)
+                        _mask = _i_mask.unsqueeze(0)
+                    else:
+                        raise ValueError(f"Unsupported data dimensionality {self.dimensionality}D.")
+                    masked_kspaces.append(_masked_kspace)
+                    masks.append(_mask.byte())
+                    accs.append(_acc)
+                masked_kspace = masked_kspaces
+                mask = masks
+                acc = accs  # type: ignore
+        else:
+            if self.random_motion:
+                masked_kspace_motion_state_1, mask_motion_state_1, _ = apply_mask(
+                    kspace[0],
+                    self.mask_func[0],  # type: ignore
+                    seed,
+                    (acq_start, acq_end),
+                    shift=self.shift_mask,
+                    half_scan_percentage=self.half_scan_percentage,
+                    center_scale=self.mask_center_scale,
+                )
+                mask_motion_state_1 = mask_motion_state_1.byte()
+                masked_kspace_motion_state_2, mask_motion_state_2, acc = apply_mask(
+                    kspace[1],
+                    self.mask_func[-1],  # type: ignore
+                    seed,
+                    (acq_start, acq_end),
+                    shift=self.shift_mask,
+                    half_scan_percentage=self.half_scan_percentage,
+                    center_scale=self.mask_center_scale,
+                )
+                mask_motion_state_2 = mask_motion_state_2.byte()
+                masked_kspace = torch.stack([masked_kspace_motion_state_1, masked_kspace_motion_state_2], dim=0)
+                mask = torch.stack([mask_motion_state_1, mask_motion_state_2], dim=0)
             else:
-                if masked_kspace.dim() == 4:
-                    phase_shift = motion_func.forward(masked_kspace)
-                    masked_kspace = torch.view_as_real(
-                        torch.multiply(
-                            phase_shift, torch.view_as_complex(masked_kspace).flatten()
-                        ).reshape(masked_kspace.shape[:-1])
-                    )
-                elif masked_kspace.dim() == 5:
-                    phase_shift = motion_func.forward(masked_kspace[0])
-
-                    masked_kspaces = []
-                    for slice in range(masked_kspace.shape[0]):
-                        masked_kspaces.append(
-                            torch.view_as_real(
-                                torch.multiply(
-                                    phase_shift, torch.view_as_complex(masked_kspace[slice]).flatten()
-                                ).reshape(masked_kspace[slice].shape[:-1])
-                            )
-                        )
-                    masked_kspace = torch.stack(masked_kspaces, dim=0)
-        else:
-            phase_shift = torch.ones_like(masked_kspace)
+                masked_kspace, mask, acc = apply_mask(
+                    kspace,
+                    self.mask_func[0],  # type: ignore
+                    seed,
+                    (acq_start, acq_end),
+                    shift=self.shift_mask,
+                    half_scan_percentage=self.half_scan_percentage,
+                    center_scale=self.mask_center_scale,
+                )
+                mask = mask.byte()
 
         # Cropping after masking.
         if self.crop_size is not None and self.crop_size not in ("", "None") and not self.crop_before_masking:
@@ -594,8 +746,7 @@ class MRIDataTransforms:
                         spatial_dims=self.spatial_dims,
                     )
                 elif self.fft_normalization in ("none", None) and self.max_norm:
-                    imspace = torch.fft.ifftn(torch.view_as_complex(kspace), dim=list(self.spatial_dims),
-                                              norm=None)
+                    imspace = torch.fft.ifftn(torch.view_as_complex(kspace), dim=list(self.spatial_dims), norm=None)
                     imspace = imspace / torch.max(torch.abs(imspace))
                     kspace = torch.view_as_real(torch.fft.fftn(imspace, dim=list(self.spatial_dims), norm=None))
 
@@ -617,13 +768,9 @@ class MRIDataTransforms:
                             spatial_dims=self.spatial_dims,
                         )
                     elif self.fft_normalization in ("none", None) and self.max_norm:
-                        imspace = torch.fft.ifftn(
-                            torch.view_as_complex(y), dim=list(self.spatial_dims), norm=None
-                        )
+                        imspace = torch.fft.ifftn(torch.view_as_complex(y), dim=list(self.spatial_dims), norm=None)
                         imspace = imspace / torch.max(torch.abs(imspace))
-                        y = torch.view_as_real(
-                            torch.fft.fftn(imspace, dim=list(self.spatial_dims), norm=None)
-                        )
+                        y = torch.view_as_real(torch.fft.fftn(imspace, dim=list(self.spatial_dims), norm=None))
                     masked_kspaces.append(y)
                 masked_kspace = masked_kspaces
             elif self.fft_normalization in ("backward", "ortho", "forward"):
@@ -667,11 +814,27 @@ class MRIDataTransforms:
             if sensitivity_map.size != 0:
                 sensitivity_map = sensitivity_map / torch.max(torch.abs(sensitivity_map))
 
-            if (eta.size != 0 and eta.ndim > 2):
+            if eta.size != 0 and eta.ndim > 2:
                 eta = eta / torch.max(torch.abs(eta))
 
             # if self.max_norm:
             target = target / torch.max(torch.abs(target))
+
+        # import matplotlib.pyplot as plt
+        # pred = masked_kspace[0]
+        # pred1 = pred[0, :, :, :, :]
+        # pred2 = pred[1, :, :, :, :]
+        # eta1 = torch.sum(complex_mul(ifft2(pred1, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims), complex_conj(sensitivity_map)), self.coil_dim)
+        # eta2 = torch.sum(complex_mul(ifft2(pred2, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims), complex_conj(sensitivity_map)), self.coil_dim)
+        # eta1 = torch.abs(torch.view_as_complex(eta1)).detach().numpy().squeeze()
+        # eta2 = torch.abs(torch.view_as_complex(eta2)).detach().numpy().squeeze()
+        # plt.subplot(1, 3, 1)
+        # plt.imshow(eta1, cmap='gray')
+        # plt.subplot(1, 3, 2)
+        # plt.imshow(eta2, cmap='gray')
+        # plt.subplot(1, 3, 3)
+        # plt.imshow(eta1-eta2, cmap='gray')
+        # plt.show()
 
         return kspace, masked_kspace, sensitivity_map, mask, eta, target, phase_shift, fname, slice_idx, acc
 

@@ -195,7 +195,7 @@ class RIMBlock(torch.nn.Module):
             )
         else:
             batch = masked_kspace.shape[0]
-            slices = 1
+            slices = masked_kspace.shape[1]
 
             if isinstance(pred, list):
                 pred = pred[-1].detach()

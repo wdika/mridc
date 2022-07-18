@@ -241,7 +241,6 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                 preds = next(preds)
             except StopIteration:
                 pass
-
             train_loss = sum(self.process_loss(target, preds, _loss_fn=self.train_loss_fn))
         else:
             train_loss = self.process_loss(target, preds, _loss_fn=self.train_loss_fn)
@@ -271,7 +270,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
             'target': target data,
                 torch.Tensor, shape [batch_size, n_x, n_y, 2]
             'phase_shift': phase shift for simulated motion,
-                torch.Tensor
+                torch.Tensord
             'fname': filename,
                 str, shape [batch_size]
             'slice_idx': slice_idx,
@@ -650,6 +649,14 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                 random_motion_num_segments=cfg.get("random_motion_num_segments"),
                 random_motion_random_num_segments=cfg.get("random_motion_random_num_segments"),
                 random_motion_non_uniform=cfg.get("random_motion_non_uniform"),
+                random_motion_states_discrepancy_factor=cfg.get("random_motion_states_discrepancy_factor"),
+                simulate_motion=cfg.get("simulate_motion"),
+                simulate_motion_translation=cfg.get("simulate_motion_translation"),
+                simulate_motion_rotation=cfg.get("simulate_motion_rotation"),
+                simulate_motion_scale=cfg.get("simulate_motion_scale"),
+                simulate_motion_p=cfg.get("simulate_motion_p"),
+                simulate_motion_theta=cfg.get("simulate_motion_theta"),
+                simulate_motion_sigma=cfg.get("simulate_motion_sigma"),
                 coil_combination_method=cfg.get("coil_combination_method"),
                 dimensionality=cfg.get("dimensionality"),
                 mask_func=mask_func,

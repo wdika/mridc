@@ -3,11 +3,11 @@ __author__ = "Dimitrios Karkalousos"
 
 # Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
 
-from omegaconf import ListConfig
-from typing import List, Optional, Sequence, Union
+from typing import List, Sequence, Union
 
 import numpy as np
 import torch
+from omegaconf import ListConfig
 
 __all__ = ["fft2", "ifft2"]
 
