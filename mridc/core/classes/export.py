@@ -87,7 +87,7 @@ class Exportable(ABC):
                 input_example = out_example
             all_out.append(out)
             all_descr.append(descr)
-            logging.info("Successfully exported {} to {}".format(model.__class__.__name__, out_name))
+            logging.info(f"Successfully exported {model.__class__.__name__} to {out_name}")
         return (all_out, all_descr)
 
     def _export(
@@ -120,12 +120,8 @@ class Exportable(ABC):
         my_args = locals().copy()
         my_args.pop("self")
 
-        exportables = []
-        for m in self.modules():  # type: ignore
-            if isinstance(m, Exportable):
-                exportables.append(m)
-
-        qual_name = self.__module__ + "." + self.__class__.__qualname__
+        exportables = [m for m in self.modules() if isinstance(m, Exportable)]
+        qual_name = f"{self.__module__}.{self.__class__.__qualname__}"
         format = get_export_format(output)
         output_descr = f"{qual_name} exported to {format}"
 
@@ -246,9 +242,7 @@ class Exportable(ABC):
 
     def get_export_subnet(self, subnet=None):
         """Returns Exportable subnet model/module to export"""
-        if subnet is None or subnet == "self":
-            return self
-        return getattr(self, subnet)
+        return self if subnet is None or subnet == "self" else getattr(self, subnet)
 
     def list_export_subnets(self):
         """
