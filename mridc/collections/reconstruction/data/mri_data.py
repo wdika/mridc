@@ -42,7 +42,9 @@ def et_query(root: str, qlist: Sequence[str], namespace: str = "https://www.ismr
         s += f"//{prefix}:{el}"
 
     value = root.find(s, ns)  # type: ignore
-    return "0" if value is None else str(value.text)
+    if value is None:
+        return "0"
+    return str(value.text)  # type: ignore
 
 
 class FastMRICombinedSliceDataset(torch.utils.data.Dataset):

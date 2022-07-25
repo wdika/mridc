@@ -18,9 +18,8 @@ NVCC.
 Unfortunately, the BART package does not support straight-forward import.
 So, few things are needed to run BART:
 
-- After installation, set the TOOLBOX_PATH and PYTHONPATH environment variables for BART on the
-  projects/reconstruction/export_bart_path.sh .
-- Finally export tha paths included in the following script (running the script won't work):
+-  After installation, set the TOOLBOX_PATH and PYTHONPATH environment variables for BART on projects/reconstruction/export_bart_path.sh .
+-  Finally export tha paths included in the following script (running the script won't work):
 
     ```
     bash ./projects/reconstruction/export_bart_path.sh

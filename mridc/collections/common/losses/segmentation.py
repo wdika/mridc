@@ -1,3 +1,4 @@
+import warnings
 from cmath import nan
 
 import monai.metrics as MM
@@ -22,12 +23,12 @@ class DiceLoss(nn.Module):
         self.smooth_dr = float(smooth_dr)
         self.batch = batch
 
-    def forward(self, input, target):
-        if target.shape != input.shape:
-            raise AssertionError(f"ground truth has different shape ({target.shape}) from input ({input.shape})")
+    def forward(self, _input, target):
+        if target.shape != _input.shape:
+            raise AssertionError(f"ground truth has different shape ({target.shape}) from input ({_input.shape})")
 
-        input = torch.softmax(input, dim=1)
-        n_pred_ch = input.shape[1]
+        _input = torch.softmax(_input, dim=1)
+        n_pred_ch = _input.shape[1]
 
         if not self.include_background:
             if n_pred_ch == 1:
@@ -35,22 +36,22 @@ class DiceLoss(nn.Module):
             else:
                 # if skipping background, removing first channel
                 target = target[:, 1:]
-                input = input[:, 1:]
+                _input = _input[:, 1:]
 
         # reducing only spatial dimensions (not batch nor channels)
-        reduce_axis = torch.arange(2, len(input.shape)).tolist()
+        reduce_axis = torch.arange(2, len(_input.shape)).tolist()
         if self.batch:
             # reducing spatial dimensions and batch
             reduce_axis = [0] + reduce_axis
 
-        intersection = torch.sum(target * input, dim=reduce_axis)
+        intersection = torch.sum(target * _input, dim=reduce_axis)
 
         if self.squared_pred:
             target = torch.pow(target, 2)
-            input = torch.pow(input, 2)
+            _input = torch.pow(_input, 2)
 
         ground_o = torch.sum(target, dim=reduce_axis)
-        pred_o = torch.sum(input, dim=reduce_axis)
+        pred_o = torch.sum(_input, dim=reduce_axis)
 
         denominator = ground_o + pred_o
 
@@ -71,7 +72,8 @@ class ContourLoss(nn.Module):
         loss /= pred.shape[-2] * pred.shape[-1]
         return loss.mean()
 
-    def contour(self, x):
+    @staticmethod
+    def contour(x):
         min_pool = F.max_pool2d(x * -1, kernel_size=(3, 3), stride=1, padding=1) * -1
         max_pool = F.max_pool2d(min_pool, kernel_size=(3, 3), stride=1, padding=1)
         x = F.relu(max_pool - min_pool)

@@ -163,10 +163,8 @@ class RIMBlock(torch.nn.Module):
         Reconstructed image and hidden states.
         """
         if self.dimensionality == 3:
-            """
-            - 2D pred.shape = [batch, coils, height, width, 2]
-            - 3D pred.shape = [batch, slices, coils, height, width, 2] -> [batch * slices, coils, height, width, 2]
-            """
+            # 2D pred.shape = [batch, coils, height, width, 2]
+            # 3D pred.shape = [batch, slices, coils, height, width, 2] -> [batch * slices, coils, height, width, 2]
             batch, slices = masked_kspace.shape[0], masked_kspace.shape[1]
 
             if isinstance(pred, (tuple, list)):
