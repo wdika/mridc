@@ -3,10 +3,11 @@ __author__ = "Dimitrios Karkalousos"
 
 # Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
 
-from typing import List, Optional, Sequence, Union
+from typing import List, Sequence, Union
 
 import numpy as np
 import torch
+from omegaconf import ListConfig
 
 __all__ = ["fft2", "ifft2"]
 
@@ -37,11 +38,17 @@ def fft2(
 
     if spatial_dims is None:
         spatial_dims = [-2, -1]
+    elif isinstance(spatial_dims, ListConfig):
+        spatial_dims = list(spatial_dims)
 
     if centered:
         data = ifftshift(data, dim=spatial_dims)
 
-    data = torch.fft.fft2(data, dim=spatial_dims, norm=normalization)
+    data = torch.fft.fft2(
+        data,
+        dim=spatial_dims,
+        norm=normalization if normalization.lower() != "none" else None,
+    )
 
     if centered:
         data = fftshift(data, dim=spatial_dims)
@@ -77,11 +84,17 @@ def ifft2(
 
     if spatial_dims is None:
         spatial_dims = [-2, -1]
+    elif isinstance(spatial_dims, ListConfig):
+        spatial_dims = list(spatial_dims)
 
     if centered:
         data = ifftshift(data, dim=spatial_dims)
 
-    data = torch.fft.ifft2(data, dim=spatial_dims, norm=normalization)
+    data = torch.fft.ifft2(
+        data,
+        dim=spatial_dims,
+        norm=normalization if normalization.lower() != "none" else None,
+    )
 
     if centered:
         data = fftshift(data, dim=spatial_dims)
@@ -132,6 +145,9 @@ def roll(x: torch.Tensor, shift: List[int], dim: Union[List[int], Sequence[int]]
     if len(shift) != len(dim):
         raise ValueError("len(shift) must match len(dim)")
 
+    if isinstance(dim, ListConfig):
+        dim = list(dim)
+
     for (s, d) in zip(shift, dim):
         x = roll_one_dim(x, s, d)
 
@@ -156,6 +172,8 @@ def fftshift(x: torch.Tensor, dim: Union[List[int], Sequence[int]] = None) -> to
         dim = [0] * (x.dim())
         for i in range(1, x.dim()):
             dim[i] = i
+    elif isinstance(dim, ListConfig):
+        dim = list(dim)
 
     # Also necessary for torch.jit.script
     shift = [0] * len(dim)
@@ -183,6 +201,8 @@ def ifftshift(x: torch.Tensor, dim: Union[List[int], Sequence[int]] = None) -> t
         dim = [0] * (x.dim())
         for i in range(1, x.dim()):
             dim[i] = i
+    elif isinstance(dim, ListConfig):
+        dim = list(dim)
 
     # Also necessary for torch.jit.script
     shift = [0] * len(dim)

@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader
 from torchmetrics.metric import Metric
 
 from mridc.collections.common.parts.fft import ifft2
-from mridc.collections.common.parts.utils import rss_complex, sense
+from mridc.collections.common.parts.utils import is_none, rss_complex, sense
 from mridc.collections.reconstruction.data.mri_data import FastMRISliceDataset
 from mridc.collections.reconstruction.data.subsample import create_mask_for_mask_type
 from mridc.collections.reconstruction.metrics.evaluate import mse, nmse, psnr, ssim
@@ -194,6 +194,8 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                 torch.Tensor, shape [batch_size, n_x, n_y, 2]
             'target': target data,
                 torch.Tensor, shape [batch_size, n_x, n_y, 2]
+            'phase_shift': phase shift for simulated motion,
+                torch.Tensor
             'fname': filename,
                 str, shape [batch_size]
             'slice_idx': slice_idx,
@@ -239,7 +241,6 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                 preds = next(preds)
             except StopIteration:
                 pass
-
             train_loss = sum(self.process_loss(target, preds, _loss_fn=self.train_loss_fn))
         else:
             train_loss = self.process_loss(target, preds, _loss_fn=self.train_loss_fn)
@@ -268,6 +269,8 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                 torch.Tensor, shape [batch_size, n_x, n_y, 2]
             'target': target data,
                 torch.Tensor, shape [batch_size, n_x, n_y, 2]
+            'phase_shift': phase shift for simulated motion,
+                torch.Tensord
             'fname': filename,
                 str, shape [batch_size]
             'slice_idx': slice_idx,
@@ -366,6 +369,8 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                 torch.Tensor, shape [batch_size, n_x, n_y, 2]
             'target': target data,
                 torch.Tensor, shape [batch_size, n_x, n_y, 2]
+            'phase_shift': phase shift for simulated motion,
+                torch.Tensor
             'fname': filename,
                 str, shape [batch_size]
             'slice_idx': slice_idx,
@@ -450,6 +455,11 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         image: Image to log.
             torch.Tensor, shape [batch_size, n_x, n_y, 2]
         """
+        if image.dim() > 3:
+            image = image[0, 0, :, :].unsqueeze(0)
+        elif image.shape[0] != 1:
+            image = image[0].unsqueeze(0)
+
         if "wandb" in self.logger.__module__.lower():
             self.logger.experiment.log({name: wandb.Image(image.numpy())})
         else:
@@ -602,11 +612,15 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         dataloader: DataLoader.
             torch.utils.data.DataLoader
         """
+        mask_root = cfg.get("mask_path")
         mask_args = cfg.get("mask_args")
-        mask_type = mask_args.get("type")
         shift_mask = mask_args.get("shift_mask")
+        mask_type = mask_args.get("type")
 
-        if mask_type is not None and mask_type != "None":
+        mask_func = None  # type: ignore
+        mask_center_scale = 0.02
+
+        if is_none(mask_root) and not is_none(mask_type):
             accelerations = mask_args.get("accelerations")
             center_fractions = mask_args.get("center_fractions")
             mask_center_scale = mask_args.get("scale")
@@ -616,16 +630,14 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                     create_mask_for_mask_type(mask_type, [cf] * 2, [acc] * 2)
                     for acc, cf in zip(accelerations, center_fractions)
                 ]
-                if len(accelerations) > 2
+                if len(accelerations) >= 2
                 else [create_mask_for_mask_type(mask_type, center_fractions, accelerations)]
             )
-        else:
-            mask_func = None  # type: ignore
-            mask_center_scale = 0.02
 
         dataset = FastMRISliceDataset(
             root=cfg.get("data_path"),
-            sense_root=cfg.get("sense_data_path"),
+            sense_root=cfg.get("sense_path"),
+            mask_root=cfg.get("mask_path"),
             challenge=cfg.get("challenge"),
             transform=MRIDataTransforms(
                 coil_combination_method=cfg.get("coil_combination_method"),
@@ -633,17 +645,20 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                 mask_func=mask_func,
                 shift_mask=shift_mask,
                 mask_center_scale=mask_center_scale,
+                remask=cfg.get("remask"),
                 normalize_inputs=cfg.get("normalize_inputs"),
                 crop_size=cfg.get("crop_size"),
                 crop_before_masking=cfg.get("crop_before_masking"),
                 kspace_zero_filling_size=cfg.get("kspace_zero_filling_size"),
                 fft_centered=cfg.get("fft_centered"),
                 fft_normalization=cfg.get("fft_normalization"),
+                max_norm=cfg.get("max_norm"),
                 spatial_dims=cfg.get("spatial_dims"),
                 coil_dim=cfg.get("coil_dim"),
                 use_seed=cfg.get("use_seed"),
             ),
             sample_rate=cfg.get("sample_rate"),
+            consecutive_slices=cfg.get("consecutive_slices"),
         )
         if cfg.shuffle:
             sampler = torch.utils.data.RandomSampler(dataset)

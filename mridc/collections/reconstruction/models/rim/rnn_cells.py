@@ -107,9 +107,14 @@ class ConvGRUCell(ConvGRUCellBase):
         bias: Whether to add a bias.
         """
         super(ConvGRUCell, self).__init__(input_size, hidden_size, conv_dim, kernel_size, dilation, bias)
+        self.conv_dim = conv_dim
 
     def forward(self, _input, hx):
         """Forward pass of the ConvGRUCell."""
+        if self.conv_dim == 3:
+            _input = _input.unsqueeze(0)
+            hx = hx.permute(1, 0, 2, 3).unsqueeze(0)
+
         ih = self.ih(_input).chunk(3, 1)
         hh = self.hh(hx).chunk(3, 1)
 
@@ -239,9 +244,14 @@ class ConvMGUCell(ConvMGUCellBase):
         bias: Whether to use a bias.
         """
         super(ConvMGUCell, self).__init__(input_size, hidden_size, conv_dim, kernel_size, dilation, bias)
+        self.conv_dim = conv_dim
 
     def forward(self, _input, hx):
         """Forward the ConvMGUCell."""
+        if self.conv_dim == 3:
+            _input = _input.unsqueeze(0)
+            hx = hx.permute(1, 0, 2, 3).unsqueeze(0)
+
         ih = self.ih(_input).chunk(2, dim=1)
         hh = self.hh(hx).chunk(2, dim=1)
 
@@ -282,7 +292,7 @@ class IndRNNCellBase(nn.Module):
         self.conv_dim = conv_dim
         self.conv_class = self.determine_conv_class(conv_dim)
 
-        self.ih = nn.Conv2d(
+        self.ih = self.conv_class(
             input_size,
             hidden_size,
             kernel_size,
@@ -290,9 +300,15 @@ class IndRNNCellBase(nn.Module):
             dilation=dilation,
             bias=bias,
         )
-        self.hh = nn.Parameter(
-            nn.init.normal_(torch.empty(1, hidden_size, 1, 1), std=1.0 / (hidden_size * (1 + kernel_size**2)))
-        )
+
+        if self.conv_dim == 2:
+            self.hh = nn.Parameter(
+                nn.init.normal_(torch.empty(1, hidden_size, 1, 1), std=1.0 / (hidden_size * (1 + kernel_size**2)))
+            )
+        elif self.conv_dim == 3:
+            self.hh = nn.Parameter(
+                nn.init.normal_(torch.empty(1, hidden_size, 1, 1, 1), std=1.0 / (hidden_size * (1 + kernel_size**2)))
+            )
 
         self.reset_parameters()
 
@@ -363,7 +379,13 @@ class IndRNNCell(IndRNNCellBase):
         bias: If ``False``, then the layer does not use bias weights `b_ih` and `b_hh`.
         """
         super(IndRNNCell, self).__init__(input_size, hidden_size, conv_dim, kernel_size, dilation, bias)
+        self.conv_dim = conv_dim
 
     def forward(self, _input, hx):
         """Forward propagate the RNN cell."""
+        if self.conv_dim == 3:
+            # TODO: Check if this is correct
+            _input = _input.unsqueeze(0)
+            hx = hx.permute(1, 0, 2, 3).unsqueeze(0)
+
         return nn.ReLU()(self.ih(_input) + self.hh * hx)

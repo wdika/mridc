@@ -11,7 +11,7 @@ from torch.nn import L1Loss
 from mridc.collections.common.losses.ssim import SSIMLoss
 from mridc.collections.common.parts.fft import ifft2
 from mridc.collections.common.parts.utils import complex_conj, complex_mul
-from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
+from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel
 from mridc.collections.reconstruction.models.didn.didn import DIDN
 from mridc.collections.reconstruction.models.sigmanet.dc_layers import (
     DataGDLayer,

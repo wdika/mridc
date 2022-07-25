@@ -15,7 +15,7 @@ from mridc.collections.common.losses.ssim import SSIMLoss
 from mridc.collections.common.parts.fft import ifft2
 from mridc.collections.common.parts.rnn_utils import rnn_weights_init
 from mridc.collections.common.parts.utils import coil_combination
-from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
+from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel
 from mridc.collections.reconstruction.models.rim.rim_block import RIMBlock
 from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
 from mridc.core.classes.common import typecheck
@@ -78,6 +78,7 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
                     fft_normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,
                     coil_dim=self.coil_dim,
+                    dimensionality=cfg_dict.get("dimensionality"),
                 )
                 for _ in range(self.num_cascades)
             ]

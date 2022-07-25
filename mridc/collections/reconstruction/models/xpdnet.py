@@ -9,7 +9,7 @@ from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
 from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
+from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel
 from mridc.collections.reconstruction.models.conv.conv2d import Conv2d
 from mridc.collections.reconstruction.models.crossdomain.crossdomain import CrossDomainNetwork
 from mridc.collections.reconstruction.models.crossdomain.multicoil import MultiCoil

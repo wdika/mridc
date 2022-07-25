@@ -4,11 +4,11 @@ __author__ = "Dimitrios Karkalousos"
 # Taken and adapted from:https://github.com/NKI-AI/direct/blob/main/direct/nn/multidomainnet/multidomain.py
 # Copyright (c) DIRECT Contributors
 
+from typing import Optional, Sequence, Tuple
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-from typing import Optional, Sequence, Tuple
 
 from mridc.collections.common.parts.fft import fft2, ifft2
 from mridc.collections.common.parts.utils import complex_conj, complex_mul

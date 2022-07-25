@@ -9,7 +9,6 @@ import sys
 import time
 from copy import deepcopy
 from dataclasses import dataclass
-
 from pathlib import Path
 from shutil import copy, move
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -307,14 +306,7 @@ def exp_manager(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None)
 
     log_file = log_dir / f"mridc_log_globalrank-{global_rank}_localrank-{local_rank}.txt"
 
-    # Handle logging to file. Logs local rank 0 only
-    if local_rank == 0 and cfg.log_local_rank_0_only and not mridc_testing:
-        logging.add_file_handler(log_file)
-    elif global_rank == 0 and cfg.log_global_rank_0_only and mridc_testing:
-        logging.add_file_handler(log_file)
-    else:
-        logging.add_file_handler(log_file)
-
+    logging.add_file_handler(log_file)
     # For some reason, LearningRateLogger requires trainer to have a logger. Safer to create logger on all ranks
     # not just global rank 0.
     if cfg.create_tensorboard_logger or cfg.create_wandb_logger:
@@ -600,7 +592,7 @@ def get_git_hash():
     try:
         return True, subprocess.check_output(["git", "rev-parse", "HEAD"], stderr=subprocess.STDOUT).decode()
     except subprocess.CalledProcessError as err:
-        return False, "{}\n".format(err.output.decode("utf-8"))
+        return False, f'{err.output.decode("utf-8")}\n'
 
 
 def get_git_diff():
@@ -615,7 +607,7 @@ def get_git_diff():
     try:
         return subprocess.check_output(["git", "diff"], stderr=subprocess.STDOUT).decode()
     except subprocess.CalledProcessError as err:
-        return "{}\n".format(err.output.decode("utf-8"))
+        return f'{err.output.decode("utf-8")}\n'
 
 
 class LoggerList(_LoggerCollection):
@@ -687,7 +679,10 @@ def configure_loggers(
             wandb_kwargs = {}
         if "name" not in wandb_kwargs and "project" not in wandb_kwargs:
             raise ValueError("name and project are required for wandb_logger")
-        wandb_logger = WandbLogger(save_dir=exp_dir[0], version=version, **wandb_kwargs)
+        # if wandb_kwargs.get("save_dir", None) is None:
+        #     wandb_kwargs["save_dir"] = str(exp_dir[0])
+        #     os.makedirs(wandb_kwargs["save_dir"], exist_ok=True)
+        wandb_logger = WandbLogger(save_dir=str(exp_dir[0]), version=version, **wandb_kwargs)
 
         logger_list.append(wandb_logger)
         logging.info("WandBLogger has been set up")

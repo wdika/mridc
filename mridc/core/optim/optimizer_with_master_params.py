@@ -147,6 +147,7 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
         fp32_grad_accum=False,
         contiguous_grad_bucket=False,
         async_grad_allreduce=False,
+        grad_div_ar_fusion=True,
         grad_allreduce_chunk_size_mb=0,
     ):
         super().__init__(optimizer.param_groups)
@@ -172,13 +173,16 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
         self._fp32_grad_accum = fp32_grad_accum
         self._contiguous_grad_bucket = contiguous_grad_bucket
         self._async_grad_allreduce = async_grad_allreduce
+        self._grad_divisor = 1 / get_data_parallel_world_size()
 
         if self._async_grad_allreduce:
             # use @no_sync to disable backward grad sync during gradient accumulation
             self._require_backward_grad_sync = True
+            self._grad_div_ar_fusion = grad_div_ar_fusion
             self._grad_allreduce_chunk_size_mb = grad_allreduce_chunk_size_mb
         else:
             self._require_backward_grad_sync = False
+            self._grad_div_ar_fusion = False
             self._grad_allreduce_chunk_size_mb = 0
 
         # Dummy tensor needed for apex multi-apply tensor.
@@ -292,13 +296,35 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
                         allreduce_tensor = self._main_grad_buffers[i].get_allreduce_tensor()
                         if allreduce_tensor is None:
                             break
-                        allreduce_tensor.div_(get_data_parallel_world_size())
-                        torch.distributed.all_reduce(allreduce_tensor, group=get_data_parallel_group(), async_op=True)
+                        if self._grad_div_ar_fusion:
+                            torch.distributed.all_reduce(
+                                allreduce_tensor,
+                                group=get_data_parallel_group(),
+                                async_op=True,
+                                op=torch.distributed.make_nccl_premul_sum(self._grad_divisor),
+                            )
+                        else:
+                            allreduce_tensor.div_(get_data_parallel_world_size())
+                            torch.distributed.all_reduce(
+                                allreduce_tensor,
+                                group=get_data_parallel_group(),
+                                async_op=True,
+                            )
                 else:
-                    main_param.grad.div_(get_data_parallel_world_size())
-                    torch.distributed.all_reduce(  # type: ignore
-                        main_param.grad, group=get_data_parallel_group(), async_op=True
-                    )
+                    if self._grad_div_ar_fusion:
+                        torch.distributed.all_reduce(
+                            main_param.grad,
+                            group=get_data_parallel_group(),
+                            async_op=True,
+                            op=torch.distributed.make_nccl_premul_sum(self._grad_divisor),
+                        )
+                    else:
+                        main_param.grad.div_(get_data_parallel_world_size())
+                        torch.distributed.all_reduce(
+                            main_param.grad,
+                            group=get_data_parallel_group(),
+                            async_op=True,
+                        )
 
         return param_hook
 
