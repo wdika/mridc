@@ -29,7 +29,7 @@ COPY . .
 
 # start building the final container
 FROM mridc-deps as mridc
-ARG MRIDC_VERSION=0.1.0
+ARG MRIDC_VERSION=0.1.1
 
 # Check that MRIDC_VERSION is set. Build will fail without this. Expose MRIDC and base container
 # version information as runtime environment variable for introspection purposes
