@@ -530,12 +530,8 @@ class ModelPT(LightningModule, Model):
                             "warmup_ratio": scheduler_config["warmup_ratio"][i],
                             "monitor": scheduler_config["monitor"][i],
                             "t_max_epochs": scheduler_config["t_max_epochs"],
-                            "t_accumulate_grad_batches": scheduler_config[
-                                "t_accumulate_grad_batches"
-                            ],
-                            "t_limit_train_batches": scheduler_config[
-                                "t_limit_train_batches"
-                            ],
+                            "t_accumulate_grad_batches": scheduler_config["t_accumulate_grad_batches"],
+                            "t_limit_train_batches": scheduler_config["t_limit_train_batches"],
                             "t_num_workers": scheduler_config["t_num_workers"],
                         },
                         train_dataloader=self._train_dl,

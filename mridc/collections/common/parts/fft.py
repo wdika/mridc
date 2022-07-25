@@ -50,7 +50,6 @@ def fft2(
         norm=normalization if normalization.lower() != "none" else None,
     )
 
-
     if centered:
         data = fftshift(data, dim=spatial_dims)
 
@@ -96,7 +95,6 @@ def ifft2(
         dim=spatial_dims,
         norm=normalization if normalization.lower() != "none" else None,
     )
-
 
     if centered:
         data = fftshift(data, dim=spatial_dims)
