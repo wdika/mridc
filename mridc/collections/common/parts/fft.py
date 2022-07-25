@@ -44,7 +44,12 @@ def fft2(
     if centered:
         data = ifftshift(data, dim=spatial_dims)
 
-    data = torch.fft.fft2(data, dim=spatial_dims, norm=normalization if str(normalization).lower() != "none" else None)
+    data = torch.fft.fft2(
+        data,
+        dim=spatial_dims,
+        norm=normalization if normalization.lower() != "none" else None,
+    )
+
 
     if centered:
         data = fftshift(data, dim=spatial_dims)
@@ -87,8 +92,11 @@ def ifft2(
         data = ifftshift(data, dim=spatial_dims)
 
     data = torch.fft.ifft2(
-        data, dim=spatial_dims, norm=normalization if str(normalization).lower() != "none" else None
+        data,
+        dim=spatial_dims,
+        norm=normalization if normalization.lower() != "none" else None,
     )
+
 
     if centered:
         data = fftshift(data, dim=spatial_dims)

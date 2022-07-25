@@ -520,25 +520,29 @@ class ModelPT(LightningModule, Model):
 
             # print(f"scheduler_config = {scheduler_config}")
             if isinstance(scheduler_config["name"], list):
-                _schedulers = []
-                for i in range(len(scheduler_config["name"])):
-                    _schedulers.append(
-                        mridc.core.optim.lr_scheduler.prepare_lr_scheduler(
-                            optimizer=self._optimizer,
-                            scheduler_config={
-                                "name": scheduler_config["name"][i],
-                                "min_lr": scheduler_config["min_lr"][i],
-                                "last_epoch": scheduler_config["last_epoch"][i],
-                                "warmup_ratio": scheduler_config["warmup_ratio"][i],
-                                "monitor": scheduler_config["monitor"][i],
-                                "t_max_epochs": scheduler_config["t_max_epochs"],
-                                "t_accumulate_grad_batches": scheduler_config["t_accumulate_grad_batches"],
-                                "t_limit_train_batches": scheduler_config["t_limit_train_batches"],
-                                "t_num_workers": scheduler_config["t_num_workers"],
-                            },
-                            train_dataloader=self._train_dl,
-                        )
+                _schedulers = [
+                    mridc.core.optim.lr_scheduler.prepare_lr_scheduler(
+                        optimizer=self._optimizer,
+                        scheduler_config={
+                            "name": scheduler_config["name"][i],
+                            "min_lr": scheduler_config["min_lr"][i],
+                            "last_epoch": scheduler_config["last_epoch"][i],
+                            "warmup_ratio": scheduler_config["warmup_ratio"][i],
+                            "monitor": scheduler_config["monitor"][i],
+                            "t_max_epochs": scheduler_config["t_max_epochs"],
+                            "t_accumulate_grad_batches": scheduler_config[
+                                "t_accumulate_grad_batches"
+                            ],
+                            "t_limit_train_batches": scheduler_config[
+                                "t_limit_train_batches"
+                            ],
+                            "t_num_workers": scheduler_config["t_num_workers"],
+                        },
+                        train_dataloader=self._train_dl,
                     )
+                    for i in range(len(scheduler_config["name"]))
+                ]
+
                 self._scheduler = _schedulers
                 self._optimizer = [self._optimizer] * len(scheduler_config["name"])
             else:
@@ -575,9 +579,8 @@ class ModelPT(LightningModule, Model):
         """Configure optimizers and schedulers for training."""
         self.setup_optimization()
 
-        if isinstance(self._scheduler, list):
-            if self._scheduler[0] is None:
-                return self._optimizer
+        if isinstance(self._scheduler, list) and self._scheduler[0] is None:
+            return self._optimizer
 
         if self._scheduler is None:
             return self._optimizer
