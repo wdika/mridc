@@ -4,10 +4,13 @@ authors:
   - family-names: Karkalousos
     given-names: Dimitrios
     orcid: https://orcid.org/0000-0001-5983-0322
+ - family-names: Zhang
+    given-names: Chaoping
+    orcid: https://orcid.org/0000-0002-6004-983X
   - family-names: Caan
     given-names: Matthan
     orcid: https://orcid.org/0000-0002-5162-8880
 title: "MRI Data Consistency"
 url: "https://github.com/wdika/mridc"
-version: 0.1.1
-date-released: 2022-25-05
+version: 0.2.0
+date-released: 2022-12-09

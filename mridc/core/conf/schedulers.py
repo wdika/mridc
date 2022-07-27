@@ -82,6 +82,16 @@ class NoamAnnealingParams(WarmupSchedulerParams):
 
 
 @dataclass
+class NoamHoldAnnealingParams(WarmupHoldSchedulerParams):
+    """
+    Polynomial Hold Decay Annealing parameter config.
+    It is not derived from Config as it is not a MRIDC object (and in particular it doesn't need a name).
+    """
+
+    decay_rate: float = 0.5
+
+
+@dataclass
 class WarmupAnnealingParams(WarmupSchedulerParams):
     """Warmup Annealing parameter config"""
 
@@ -205,6 +215,7 @@ AVAILABLE_SCHEDULER_PARAMS = {
     "SquareRootConstantSchedulerParams": SquareRootConstantSchedulerParams,
     "CosineAnnealingParams": CosineAnnealingParams,
     "NoamAnnealingParams": NoamAnnealingParams,
+    "NoamHoldAnnealingParams": NoamHoldAnnealingParams,
     "WarmupAnnealingParams": WarmupAnnealingParams,
     "PolynomialDecayAnnealingParams": PolynomialDecayAnnealingParams,
     "PolynomialHoldDecayAnnealingParams": PolynomialHoldDecayAnnealingParams,

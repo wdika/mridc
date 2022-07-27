@@ -2,6 +2,9 @@
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/utils/get_rank.py
+
+import torch
+
 from mridc.utils.env_var_parsing import get_envint
 
 
@@ -22,3 +25,8 @@ def is_global_rank_zero():
     node_rank = get_envint("NODE_RANK", get_envint("GROUP_RANK", 0))
     local_rank = get_envint("LOCAL_RANK", 0)
     return node_rank == 0 and local_rank == 0
+
+
+def get_rank():
+    """Helper function that returns torch.distributed.get_rank() if DDP has been initialized otherwise returns 0."""
+    return 0 if is_global_rank_zero() else torch.distributed.get_rank()

@@ -38,8 +38,10 @@ class SSIMLoss(nn.Module):
         -------
         SSIM loss.
         """
-        if not isinstance(self.w, torch.Tensor):
+        if not isinstance(self.w, torch.Tensor):  # type: ignore
             raise AssertionError
+
+        self.w = self.w.to(X)  # type: ignore
 
         data_range = data_range[:, None, None, None]
         C1 = (self.k1 * data_range) ** 2

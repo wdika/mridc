@@ -1,8 +1,6 @@
 # encoding: utf-8
 __author__ = "Dimitrios Karkalousos"
 
-# Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
-
 from math import sqrt
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
@@ -10,7 +8,13 @@ import numpy as np
 import torch
 
 from mridc.collections.common.parts.fft import fft2, ifft2
-from mridc.collections.common.parts.utils import is_none, reshape_fortran, rss, sense, to_tensor
+from mridc.collections.common.parts.utils import (
+    is_none,
+    reshape_fortran,
+    rss,
+    sense,
+    to_tensor,
+)
 from mridc.collections.reconstruction.data.subsample import MaskFunc
 from mridc.collections.reconstruction.parts.utils import apply_mask, center_crop, complex_center_crop
 
@@ -54,23 +58,58 @@ class MRIDataTransforms:
 
         Parameters
         ----------
-        coil_combination_method : The coil combination method to use. Default: 'SENSE'
-        dimensionality : The dimensionality of the data. Default: 2
-        mask_func: The function that masks the kspace.
-        shift_mask: Whether to shift the mask.
-        mask_center_scale: The scale of the center of the mask.
-        half_scan_percentage: The percentage of the scan to be used.
-        remask: Whether to only generate 1 mask per set of consecutive slices of 3D data.
-        crop_size: The size of the crop.
-        kspace_crop: Whether to crop the kspace.
-        crop_before_masking: Whether to crop before masking.
-        kspace_zero_filling_size: The size of padding in kspace -> zero filling.
-        normalize_inputs: Whether to normalize the inputs.
-        fft_centered: Whether to center the fft.
-        fft_normalization: The normalization of the fft.
-        spatial_dims: The spatial dimensions of the data.
-        coil_dim: The coil dimension of the data.
-        use_seed: Whether to use the seed.
+        apply_prewhitening : bool
+            Whether to apply prewhitening.
+        prewhitening_scale_factor : float
+            The scale factor for the prewhitening.
+        prewhitening_patch_start : int
+            The start index for the prewhitening patch.
+        prewhitening_patch_length : int
+            The length of the prewhitening patch.
+        apply_gcc : bool
+            Whether to apply GCC.
+        gcc_virtual_coils : int
+            The number of virtual coils.
+        gcc_calib_lines : int
+            The number of calibration lines.
+        gcc_align_data : bool
+            Whether to align the data.
+        coil_combination_method : str
+            The coil combination method.
+        dimensionality : int
+            The dimensionality of the data.
+        mask_func : Optional[List[MaskFunc]]
+            The mask functions.
+        shift_mask : bool
+            Whether to shift the mask.
+        mask_center_scale : Optional[float]
+            The scale for the mask center.
+        half_scan_percentage : float
+            The percentage of the scan to use.
+        remask : bool
+            Whether to remask the data.
+        crop_size : Optional[Tuple[int, int]]
+            The crop size.
+        kspace_crop : bool
+            Whether to crop the kspace.
+        crop_before_masking : bool
+            Whether to crop before masking.
+        kspace_zero_filling_size : Optional[Tuple]
+            The zero filling size.
+        normalize_inputs : bool
+            Whether to normalize the inputs.
+        fft_centered : bool
+            Whether to center the FFT.
+        fft_normalization : str
+            The FFT normalization.
+        max_norm : bool
+            Whether to apply max norm.
+        spatial_dims : Sequence[int]
+            The spatial dimensions.
+        coil_dim : int
+            The coil dimension.
+        use_seed : bool
+            Whether to use a seed.
         """
         self.coil_combination_method = coil_combination_method
         self.dimensionality = dimensionality
@@ -337,7 +376,7 @@ class MRIDataTransforms:
                 )
             )
 
-        if not is_none(mask) and not is_none(self.mask_func):
+        if not is_none(mask):  # and not is_none(self.mask_func):
             for _mask in mask:
                 if list(_mask.shape) == [kspace.shape[-3], kspace.shape[-2]]:
                     mask = torch.from_numpy(_mask).unsqueeze(0).unsqueeze(-1)
@@ -354,8 +393,12 @@ class MRIDataTransforms:
             if self.shift_mask:
                 mask = torch.fft.fftshift(mask, dim=(self.spatial_dims[0] - 1, self.spatial_dims[1] - 1))
 
-            acc = 1
+            if self.crop_size is not None and self.crop_size not in ("", "None") and self.crop_before_masking:
+                mask = complex_center_crop(mask, self.crop_size)
+
             masked_kspace = kspace * mask + 0.0  # the + 0.0 removes the sign of the zeros
+
+            acc = 1
         elif is_none(self.mask_func):
             masked_kspace = kspace.clone()
             acc = torch.tensor([1])
@@ -570,14 +613,14 @@ class MRIDataTransforms:
                 imspace = imspace / torch.max(torch.abs(imspace))
                 kspace = torch.view_as_real(torch.fft.fftn(imspace, dim=list(self.spatial_dims), norm=None))
 
-            if sensitivity_map.size != 0:
-                sensitivity_map = sensitivity_map / torch.max(torch.abs(sensitivity_map))
+            if self.max_norm:
+                if sensitivity_map.size != 0:
+                    sensitivity_map = sensitivity_map / torch.max(torch.abs(sensitivity_map))
 
-            if eta.size != 0 and eta.ndim > 2:
-                eta = eta / torch.max(torch.abs(eta))
+                if eta.size != 0 and eta.ndim > 2:
+                    eta = eta / torch.max(torch.abs(eta))
 
-            # if self.max_norm:
-            target = target / torch.max(torch.abs(target))
+                target = target / torch.max(torch.abs(target))
 
         return kspace, masked_kspace, sensitivity_map, mask, eta, target, fname, slice_idx, acc
 

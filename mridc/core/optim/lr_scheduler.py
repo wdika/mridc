@@ -422,6 +422,15 @@ def _poly_decay(initial_lr, step, decay_steps, power, min_lr, cycle):
     return lr
 
 
+def _noam_hold_annealing(initial_lr, step, warmup_steps, hold_steps, decay_rate, min_lr):
+    """Anneal learning rate by noam hold."""
+    # hold_steps = total number of steps to hold the LR, not the warmup + hold steps.
+    T_warmup_decay = max(1, warmup_steps**decay_rate)
+    T_hold_decay = max(1, (step - hold_steps) ** decay_rate)
+    lr = (initial_lr * T_warmup_decay) / T_hold_decay
+    return max(lr, min_lr)
+
+
 class SquareAnnealing(WarmupPolicy):
     """Anneal learning rate by square."""
 
@@ -561,11 +570,80 @@ class NoamAnnealing(_LRScheduler):
 
     def _noam_annealing(self, initial_lr, step):
         """Noam learning rate annealing."""
-        mult = self._normalize * min(step ** (-0.5), step * (self.warmup_steps ** (-1.5)))
+        mult = (
+            self._normalize * min(step ** (-0.5), step * (self.warmup_steps ** (-1.5)))
+            if self.warmup_steps > 0
+            else self._normalize * step ** (-0.5)
+        )
         out_lr = initial_lr * mult
         if step > self.warmup_steps:
             out_lr = max(out_lr, self.min_lr)
         return out_lr
+
+
+class NoamHoldAnnealing(WarmupHoldPolicy):
+    def __init__(self, optimizer, *, max_steps, decay_rate=0.5, min_lr=0.0, last_epoch=-1, **kwargs):
+        """
+        Implementation of the Noam Hold Annealing policy from the SqueezeFormer paper.
+
+        Unlike NoamAnnealing, the peak learning rate can be explicitly set for this scheduler.
+        The schedule first performs linear warmup, then holds the peak LR, then decays with some schedule for
+        the remainder of the steps. Therefore the min-lr is still dependent on the hyper parameters selected.
+
+        It's schedule is determined by three factors-
+
+        Warmup Steps: Initial stage, where linear warmup occurs uptil the peak LR is reached. Unlike NoamAnnealing,
+            the peak LR is explicitly stated here instead of a scaling factor.
+
+        Hold Steps: Intermediate stage, where the peak LR is maintained for some number of steps. In this region,
+            the high peak LR allows the model to converge faster if training is stable. However the high LR
+            may also cause instability during training. Should usually be a significant fraction of training
+            steps (around 30-40% of the entire training steps).
+
+        Decay Steps: Final stage, where the LR rapidly decays with some scaling rate (set by decay rate).
+            To attain Noam decay, use 0.5, for Squeezeformer recommended decay, use 1.0. The fast decay after
+            prolonged high LR during hold phase allows for rapid convergence.
+
+        References:
+            - [Squeezeformer: An Efficient Transformer for Automatic Speech Recognition](https://arxiv.org/abs/2206.00888)
+
+        Parameters
+        ----------
+        optimizer : torch.optim.Optimizer
+            Optimizer to use for the scheduler.
+        max_steps : int
+            Total number of training steps.
+        decay_rate : float
+            Decay rate for the final stage of the schedule. Should be between 0 and 1.
+        min_lr : float
+            Minimum learning rate to use for the schedule. Should be between 0 and 1.
+        last_epoch : int
+            Last epoch to start the schedule from. Should be between 0 and max_steps.
+        """
+        self.decay_rate = decay_rate
+        super().__init__(optimizer=optimizer, max_steps=max_steps, last_epoch=last_epoch, min_lr=min_lr, **kwargs)
+
+    def _get_lr(self, step):
+        """Get the learning rate for the given step."""
+        if self.warmup_steps is None or self.warmup_steps == 0:
+            raise ValueError("Noam scheduler cannot be used without warmup steps")
+
+        if self.hold_steps > 0:
+            hold_steps = self.hold_steps - self.warmup_steps
+        else:
+            hold_steps = 0
+
+        return [
+            _noam_hold_annealing(
+                initial_lr,
+                step=step,
+                warmup_steps=self.warmup_steps,
+                hold_steps=hold_steps,
+                decay_rate=self.decay_rate,
+                min_lr=self.min_lr,
+            )
+            for initial_lr in self.base_lrs
+        ]
 
 
 class WarmupAnnealing(WarmupPolicy):
@@ -922,6 +1000,9 @@ def prepare_lr_scheduler(
     if add_max_args_flag and scheduler_config.get("name", "") != "ExponentialLR":
         scheduler_args["max_steps"] = max_steps
 
+    if scheduler_config.get("name", "") == "CyclicLR":
+        del scheduler_args["max_steps"]
+
     # Get the scheduler class from the config
     scheduler_cls = get_scheduler(scheduler_name, **scheduler_args)
 
@@ -960,6 +1041,7 @@ def compute_max_steps(
         logging.warning(
             "Please note that drop_last is broken in pytorch 1.6.0. We will fix when pytorch 1.7.0 is released"
         )
+        # TODO: Master version, not in pytorch 1.6.0
 
     steps_per_epoch = _round(sampler_num_samples / batch_size)
     if isinstance(limit_train_batches, int) or limit_train_batches == 0.0:
@@ -977,6 +1059,7 @@ AVAILABLE_SCHEDULERS = {
     "SquareAnnealing": SquareAnnealing,
     "CosineAnnealing": CosineAnnealing,
     "NoamAnnealing": NoamAnnealing,
+    "NoamHoldAnnealing": NoamHoldAnnealing,
     "WarmupAnnealing": WarmupAnnealing,
     "InverseSquareRootAnnealing": InverseSquareRootAnnealing,
     "T5InverseSquareRootAnnealing": T5InverseSquareRootAnnealing,

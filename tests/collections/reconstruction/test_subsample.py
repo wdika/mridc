@@ -5,7 +5,8 @@ import numpy as np
 import pytest
 
 from mridc.collections.reconstruction.data.subsample import (
-    EquispacedMaskFunc,
+    Equispaced1DMaskFunc,
+    Equispaced2DMaskFunc,
     Gaussian1DMaskFunc,
     Gaussian2DMaskFunc,
     Poisson2DMaskFunc,
@@ -56,9 +57,9 @@ def test_create_mask_for_random_type(
 
 @pytest.mark.parametrize(
     "mask_type, center_fractions, accelerations, expected_mask_func, x, seed, half_scan_percentage",
-    [("equispaced1d", [0.08, 0.04], [4, 8], EquispacedMaskFunc, np.array([1, 320, 320]), None, 0)],
+    [("equispaced1d", [0.08, 0.04], [4, 8], Equispaced1DMaskFunc, np.array([1, 320, 320]), None, 0)],
 )
-def test_create_mask_for_equispaced_type(
+def test_create_mask_for_equispaced1d_type(
     mask_type, center_fractions, accelerations, expected_mask_func, x, seed, half_scan_percentage
 ):
     """
@@ -87,6 +88,45 @@ def test_create_mask_for_equispaced_type(
     if not accelerations[0] <= mask_func.choose_acceleration()[1] <= accelerations[1]:
         raise AssertionError
     if mask.shape != (*x[2:], 1):
+        raise AssertionError
+    if mask.dtype != np.float32:
+        raise AssertionError
+    if not accelerations[0] <= acc <= accelerations[1]:
+        raise AssertionError
+
+
+@pytest.mark.parametrize(
+    "mask_type, center_fractions, accelerations, expected_mask_func, x, seed, half_scan_percentage",
+    [("equispaced2d", [0.08, 0.04], [4, 8], Equispaced2DMaskFunc, np.array([1, 320, 320, 1]), None, 0)],
+)
+def test_create_mask_for_equispaced2d_type(
+    mask_type, center_fractions, accelerations, expected_mask_func, x, seed, half_scan_percentage
+):
+    """
+    Test that the function returns equispaced 2D masks
+
+    Args:
+        mask_type: The type of mask to be created
+        center_fractions: The center fractions of the mask
+        accelerations: The accelerations of the mask
+        expected_mask_func: The expected mask function
+        x: The shape of the mask
+        seed: The seed of the mask
+        half_scan_percentage: The half scan percentage of the mask
+
+    Returns:
+        None
+    """
+    mask_func = create_mask_for_mask_type(mask_type, center_fractions, accelerations)
+
+    mask, acc = mask_func(x, seed, half_scan_percentage)
+    mask = mask.numpy()
+
+    if not isinstance(mask_func, expected_mask_func):
+        raise AssertionError
+    if not accelerations[0] <= mask_func.choose_acceleration()[1] <= accelerations[1]:
+        raise AssertionError
+    if mask.shape[1] == 1:
         raise AssertionError
     if mask.dtype != np.float32:
         raise AssertionError

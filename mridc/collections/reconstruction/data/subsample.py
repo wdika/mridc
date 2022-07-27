@@ -152,9 +152,9 @@ class RandomMaskFunc(MaskFunc):
         return mask, acceleration
 
 
-class EquispacedMaskFunc(MaskFunc):
+class Equispaced1DMaskFunc(MaskFunc):
     """
-    EquispacedMaskFunc creates a sub-sampling mask of a given shape.
+    Equispaced1DMaskFunc creates a sub-sampling mask of a given shape.
 
     The mask selects a subset of columns from the input k-space data. If the k-space data has N columns, the mask \
     picks out:
@@ -164,7 +164,7 @@ class EquispacedMaskFunc(MaskFunc):
         columns selected is equal to (N / acceleration)
 
     It is possible to use multiple center_fractions and accelerations, in which case one possible (center_fraction, \
-    acceleration) is chosen uniformly at random each time the EquispacedMaskFunc object is called.
+    acceleration) is chosen uniformly at random each time the Equispaced1DMaskFunc object is called.
 
     Note that this function may not give equispaced samples (documented in \
     https://github.com/facebookresearch/fastMRI/issues/54), which will require modifications to standard GRAPPA \
@@ -219,6 +219,65 @@ class EquispacedMaskFunc(MaskFunc):
             mask = torch.from_numpy(mask.reshape(*mask_shape).astype(np.float32))
 
         return mask, acceleration
+
+
+class Equispaced2DMaskFunc(MaskFunc):
+    """Same as Equispaced1DMaskFunc, but for 2D k-space data."""
+
+    def __call__(
+        self,
+        shape: Sequence[int],
+        seed: Optional[Union[int, Tuple[int, ...]]] = None,
+        half_scan_percentage: Optional[float] = 0.0,
+        scale: Optional[float] = 0.02,
+    ) -> Tuple[torch.Tensor, int]:
+        """
+        Parameters
+        ----------
+        shape: The shape of the mask to be created. The shape should have at least 3 dimensions. Samples are drawn \
+        along the second last dimension.
+        seed: Seed for the random number generator. Setting the seed ensures the same mask is generated each time for \
+        the same shape. The random state is reset afterwards.
+        half_scan_percentage: Optional; Defines a fraction of the k-space data that is not sampled.
+        scale: Optional; Defines the scale of the center of the mask.
+
+        Returns
+        -------
+        A tuple of the mask and the number of columns selected.
+        """
+        if len(shape) < 3:
+            raise ValueError("Shape should have 3 or more dimensions")
+
+        with temp_seed(self.rng, seed):
+            center_fraction, acceleration = self.choose_acceleration()
+
+            acceleration = acceleration / 2
+            center_fraction = center_fraction / 2
+
+            num_cols = shape[-2]
+            num_low_freqs = int(round(num_cols * center_fraction))
+
+            num_rows = shape[-3]
+            num_high_freqs = int(round(num_rows * center_fraction))
+
+            # create the mask
+            mask = np.zeros([num_rows, num_cols], dtype=np.float32)
+
+            pad_cols = torch.div((num_cols - num_low_freqs + 1), 2, rounding_mode="trunc").item()
+            pad_rows = torch.div((num_rows - num_high_freqs + 1), 2, rounding_mode="trunc").item()
+            mask[pad_rows : pad_rows + num_high_freqs, pad_cols : pad_cols + num_low_freqs] = True  # type: ignore
+
+            for i in np.arange(0, num_rows, acceleration):
+                for j in np.arange(0, num_cols, acceleration):
+                    mask[int(i), int(j)] = True
+
+            # reshape the mask
+            mask_shape = [1 for _ in shape]
+            mask_shape[-2] = num_cols
+            mask_shape[-3] = num_rows
+            mask = torch.from_numpy(mask.reshape(*mask_shape).astype(np.float32))
+
+        return mask, acceleration * 2
 
 
 class Gaussian1DMaskFunc(MaskFunc):
@@ -672,7 +731,9 @@ def create_mask_for_mask_type(
     if mask_type_str == "random1d":
         return RandomMaskFunc(center_fractions, accelerations)
     if mask_type_str == "equispaced1d":
-        return EquispacedMaskFunc(center_fractions, accelerations)
+        return Equispaced1DMaskFunc(center_fractions, accelerations)
+    if mask_type_str == "equispaced2d":
+        return Equispaced2DMaskFunc(center_fractions, accelerations)
     if mask_type_str == "gaussian1d":
         return Gaussian1DMaskFunc(center_fractions, accelerations)
     if mask_type_str == "gaussian2d":

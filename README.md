@@ -1,8 +1,8 @@
 # Data Consistency for Magnetic Resonance Imaging
 
 [![CodeQL](https://github.com/wdika/mridc/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/wdika/mridc/actions/workflows/codeql-analysis.yml)
-[![CircleCI](https://circleci.com/gh/wdika/mridc/tree/main.svg?style=svg)](https://circleci.com/gh/wdika/mridc/tree/main)
 [![codecov](https://codecov.io/gh/wdika/mridc/branch/main/graph/badge.svg?token=KPPQ33DOTF)](https://codecov.io/gh/wdika/mridc)
+[![Tox](https://github.com/wdika/mridc/actions/workflows/tox.yml/badge.svg)](https://github.com/wdika/mridc/actions/workflows/tox.yml)
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 
 ---
@@ -12,6 +12,7 @@
 is provided for MRI data analysis. Primarily it focuses on the following tasks:**
 
 ### **Reconstruction**:
+The following models are implemented for accelerated MRI reconstruction:
 1.[Cascades of Independently Recurrent Inference Machines (CIRIM)](https://iopscience.iop.org/article/10.1088/1361-6560/ac6cc2),
 2.[Compressed Sensing (CS)](https://ieeexplore.ieee.org/document/4472246),
 3.[Convolutional Recurrent Neural Networks (CRNN)](https://ieeexplore.ieee.org/document/8425639),
@@ -30,17 +31,22 @@ is provided for MRI data analysis. Primarily it focuses on the following tasks:*
 16.[XPDNet](https://arxiv.org/abs/2010.07290),
 17.and Zero-Filled reconstruction (ZF).
 
+### **Quantitative Imaging**:
+The following models are implemented for quantitative imaging:
+1.[quantitative Cascades of Independently Recurrent Inference Machines (qCIRIM)](https://iopscience.iop.org/article/10.1088/1361-6560/ac6cc2),
+2.[quantitative End-to-End Variational Network (qE2EVN)](https://link.springer.com/chapter/10.1007/978-3-030-59713-9_7),
+3.[quantitative Independently Recurrent Inference Machines (qIRIM)](http://arxiv.org/abs/2012.07819),
+4.[quantitative Recurrent Inference Machines (qRIM)](https://www.sciencedirect.com/science/article/abs/pii/S1361841518306078?via%3Dihub).
+
+_Note: Currently only the above models are implemented. More models can be added by extending the reconstruction models
+for quantitative imaging. If you wish to extend the toolbox, please open an issue._
+
 ### **Segmentation**:
 _Coming soon..._
 
-### **Acknowledgements**
+## Usage
 
-MRIDC is based on the [NeMo](https://github.com/NVIDIA/NeMo) framework, using PyTorch Lightning for feasible
-high-performance multi-GPU/multi-node mixed-precision training.
-
-For the reconstruction methods:
-- the implementations of 6 and 14 are thanks to and based on the [fastMRI repo](https://github.com/facebookresearch/fastMRI).
-- The implementations of 7, 9, 10, 11, 13, and 16 are thanks to and based on the [DIRECT repo](https://github.com/NKI-AI/direct).
+Check the [projects](https://github.com/wdika/mridc/blob/main/projects/README.md) page for more information of how to use **mridc**.
 
 ## Installation
 
@@ -66,17 +72,6 @@ cd mridc
 ./reinstall.sh
 ```
 
-## Usage
-
-Check the [projects](https://github.com/wdika/mridc/blob/main/projects/README.md) page for more information of how to use **mridc**.
-
-### Datasets
-
-Recommended public datasets to use with this repo:
-
-- [fastMRI](http://arxiv.org/abs/1811.08839),
-- [Fully Sampled Knees](http://old.mridata.org/fullysampled/knees/).
-
 ## API Documentation
 
 [![Documentation Status](https://readthedocs.org/projects/mridc/badge/?version=latest)](https://mridc.readthedocs.io/en/latest/?badge=latest)
@@ -87,15 +82,24 @@ Access the API Documentation [here](https://mridc.readthedocs.io/en/latest/modul
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
+## Acknowledgements
+
+MRIDC is based on the [NeMo](https://github.com/NVIDIA/NeMo) framework, using PyTorch Lightning for feasible
+high-performance multi-GPU/multi-node mixed-precision training.
+
+For the reconstruction methods:
+- the implementations of 6 and 14 are thanks to and based on the [fastMRI repo](https://github.com/facebookresearch/fastMRI).
+- The implementations of 7, 9, 10, 11, 13, and 16 are thanks to and based on the [DIRECT repo](https://github.com/NKI-AI/direct).
+
 ## Citation
 
 Please cite MRIDC using the "_Cite this repository_" button or as
 
 ```BibTeX
 @misc{mridc,
-    author = {Karkalousos, Dimitrios and Caan, Matthan},
+    author = {Karkalousos Dimitrios, Zhang Chaoping, and Caan Matthan},
     title = {MRIDC: Data Consistency for Magnetic Resonance Imaging},
-    year = {2021},
+    year = {2022},
     url = {https://github.com/wdika/mridc},
 }
 ```
@@ -106,3 +110,5 @@ The following papers use the MRIDC repo:
 
 [1] [Karkalousos, D. et al. (2021) ‘Assessment of Data Consistency through Cascades of Independently Recurrent
 Inference Machines for fast and robust accelerated MRI reconstruction’](https://iopscience.iop.org/article/10.1088/1361-6560/ac6cc2)
+
+[2] Zhang, C. et al. (2022) 'A unified model for reconstruction and R2* mapping of accelerated 7T data using the quantitative Recurrent Inference Machine'
