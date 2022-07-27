@@ -231,8 +231,8 @@ class FastMRISliceDataset(Dataset):
 
         # Create random number generator used for consecutive slice selection and set consecutive slice amount
         self.consecutive_slices = consecutive_slices
-        if self.consecutive_slices < 1:
-            raise ValueError("consecutive_slices value is out of range, must be > 0.")
+        if self.consecutive_slices is None or self.consecutive_slices < 1:
+            raise ValueError(f"Consecutive_slices value is out of range, must be > 0.")
 
     @staticmethod
     def _retrieve_metadata(fname):
@@ -382,7 +382,7 @@ class FastMRISliceDataset(Dataset):
                 )
 
                 attrs = dict(hf.attrs)
-                attrs |= metadata
+                attrs.update(metadata)
 
             if sensitivity_map.shape != kspace.shape:
                 if sensitivity_map.ndim == 3:
