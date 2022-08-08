@@ -630,7 +630,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                     create_mask_for_mask_type(mask_type, [cf] * 2, [acc] * 2)
                     for acc, cf in zip(accelerations, center_fractions)
                 ]
-                if len(accelerations) > 2
+                if len(accelerations) >= 2
                 else [create_mask_for_mask_type(mask_type, center_fractions, accelerations)]
             )
 
