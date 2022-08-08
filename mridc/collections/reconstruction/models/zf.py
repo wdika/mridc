@@ -4,13 +4,13 @@ __author__ = "Dimitrios Karkalousos"
 from abc import ABC
 from typing import Any, Dict, Tuple, Union
 
-import numpy as np
 import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
 from mridc.collections.common.parts.fft import ifft2
 from mridc.collections.common.parts.utils import check_stacked_complex, coil_combination, sense
+from mridc.collections.reconstruction.metrics.evaluate import mse, nmse, psnr, ssim
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
 from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
 from mridc.core.classes.common import typecheck
@@ -58,34 +58,6 @@ class ZF(BaseMRIReconstructionModel, ABC):
                 mask_type=cfg_dict.get("sens_mask_type"),
                 normalize=cfg_dict.get("sens_normalize"),
             )
-
-    @staticmethod
-    def process_inputs(y, mask):
-        """
-        Process the inputs to the method.
-
-        Parameters
-        ----------
-        y: Subsampled k-space data.
-            list of torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        mask: Sampling mask.
-            list of torch.Tensor, shape [1, 1, n_x, n_y, 1]
-
-        Returns
-        -------
-        y: Subsampled k-space data.
-            randomly selected y
-        mask: Sampling mask.
-            randomly selected mask
-        r: Random index.
-        """
-        if isinstance(y, list):
-            r = np.random.randint(len(y))
-            y = y[r]
-            mask = mask[r]
-        else:
-            r = 0
-        return y, mask, r
 
     @typecheck()
     def forward(
@@ -147,7 +119,7 @@ class ZF(BaseMRIReconstructionModel, ABC):
             torch.Tensor, shape [batch_size, n_x, n_y, 2]
         """
         kspace, y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
-        y, mask, _ = self.process_inputs(y, mask)
+        y, mask, _, r = self.process_inputs(y, mask, init_pred)
 
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, mask)
@@ -176,5 +148,16 @@ class ZF(BaseMRIReconstructionModel, ABC):
         self.log_image(f"{key}/target", target)
         self.log_image(f"{key}/reconstruction", output)
         self.log_image(f"{key}/error", error)
+
+        target = target.numpy()  # type: ignore
+        output = output.numpy()  # type: ignore
+        self.mse_vals[fname][slice_num] = torch.tensor(mse(target, output)).view(1)
+        self.nmse_vals[fname][slice_num] = torch.tensor(nmse(target, output)).view(1)
+        self.ssim_vals[fname][slice_num] = torch.tensor(ssim(target, output, maxval=output.max() - output.min())).view(
+            1
+        )
+        self.psnr_vals[fname][slice_num] = torch.tensor(psnr(target, output, maxval=output.max() - output.min())).view(
+            1
+        )
 
         return name, slice_num, prediction.detach().cpu().numpy()

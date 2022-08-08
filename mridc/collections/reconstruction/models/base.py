@@ -17,8 +17,11 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torchmetrics.metric import Metric
 
-from mridc.collections.common.parts.fft import ifft2
-from mridc.collections.common.parts.utils import is_none, rss_complex, sense
+from mridc.collections.common.parts.fft import fft2, ifft2
+from mridc.collections.common.parts.utils import (
+    is_none,
+    rss_complex,
+)
 from mridc.collections.reconstruction.data.mri_data import FastMRISliceDataset
 from mridc.collections.reconstruction.data.subsample import create_mask_for_mask_type
 from mridc.collections.reconstruction.metrics.evaluate import mse, nmse, psnr, ssim
@@ -69,12 +72,12 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
-        self.coil_combination_method = cfg_dict.get("coil_combination_method")
-
         self.fft_centered = cfg_dict.get("fft_centered")
         self.fft_normalization = cfg_dict.get("fft_normalization")
         self.spatial_dims = cfg_dict.get("spatial_dims")
         self.coil_dim = cfg_dict.get("coil_dim")
+
+        self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
         # Initialize the sensitivity network if use_sens_net is True
         self.use_sens_net = cfg_dict.get("use_sens_net")
@@ -103,8 +106,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         self.ssim_vals: Dict = defaultdict(dict)
         self.psnr_vals: Dict = defaultdict(dict)
 
-    # skipcq: PYL-R0201
-    def process_loss(self, target, pred, _loss_fn):
+    def process_loss(self, target, pred, _loss_fn, mask=None):
         """
         Processes the loss.
 
@@ -117,6 +119,8 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
             torch.Tensor, shape [batch_size, n_x, n_y, 2]
         _loss_fn: Loss function.
             torch.nn.Module, default torch.nn.L1Loss()
+        mask: Mask for the loss.
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
 
         Returns
         -------
@@ -124,14 +128,17 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
             If self.accumulate_loss is True, returns an accumulative result of all intermediate losses.
         """
         target = torch.abs(target / torch.max(torch.abs(target)))
+        pred = torch.abs(pred / torch.max(torch.abs(pred)))
+
         if "ssim" in str(_loss_fn).lower():
             max_value = np.array(torch.max(torch.abs(target)).item()).astype(np.float32)
 
             def loss_fn(x, y):
                 """Calculate the ssim loss."""
+                y = torch.abs(y / torch.max(torch.abs(y)))
                 return _loss_fn(
                     x.unsqueeze(dim=self.coil_dim),
-                    torch.abs(y / torch.max(torch.abs(y))).unsqueeze(dim=self.coil_dim),
+                    y.unsqueeze(dim=self.coil_dim),
                     data_range=torch.tensor(max_value).unsqueeze(dim=0).to(x.device),
                 )
 
@@ -139,7 +146,8 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
 
             def loss_fn(x, y):
                 """Calculate other loss."""
-                return _loss_fn(x, torch.abs(y / torch.max(torch.abs(y))))
+                y = torch.abs(y / torch.max(torch.abs(y)))
+                return _loss_fn(x, y)
 
         return loss_fn(target, pred)
 
@@ -218,21 +226,11 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
             dict, shape [1]
         """
         kspace, y, sensitivity_maps, mask, init_pred, target, _, _, acc = batch
+
         y, mask, init_pred, r = self.process_inputs(y, mask, init_pred)
 
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, mask)
-            if self.coil_combination_method.upper() == "SENSE":
-                target = sense(
-                    ifft2(
-                        kspace,
-                        centered=self.fft_centered,
-                        normalization=self.fft_normalization,
-                        spatial_dims=self.spatial_dims,
-                    ),
-                    sensitivity_maps,
-                    dim=self.coil_dim,
-                )
 
         preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
 
@@ -241,9 +239,10 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                 preds = next(preds)
             except StopIteration:
                 pass
-            train_loss = sum(self.process_loss(target, preds, _loss_fn=self.train_loss_fn))
+
+            train_loss = sum(self.process_loss(target, preds, _loss_fn=self.train_loss_fn, mask=None))
         else:
-            train_loss = self.process_loss(target, preds, _loss_fn=self.train_loss_fn)
+            train_loss = self.process_loss(target, preds, _loss_fn=self.train_loss_fn, mask=None)
 
         acc = r if r != 0 else acc
         tensorboard_logs = {
@@ -270,7 +269,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
             'target': target data,
                 torch.Tensor, shape [batch_size, n_x, n_y, 2]
             'phase_shift': phase shift for simulated motion,
-                torch.Tensord
+                torch.Tensor
             'fname': filename,
                 str, shape [batch_size]
             'slice_idx': slice_idx,
@@ -293,21 +292,11 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
             dict, shape [1]
         """
         kspace, y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
+
         y, mask, init_pred, r = self.process_inputs(y, mask, init_pred)
 
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, mask)
-            if self.coil_combination_method.upper() == "SENSE":
-                target = sense(
-                    ifft2(
-                        kspace,
-                        centered=self.fft_centered,
-                        normalization=self.fft_normalization,
-                        spatial_dims=self.spatial_dims,
-                    ),
-                    sensitivity_maps,
-                    dim=self.coil_dim,
-                )
 
         preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
 
@@ -316,10 +305,9 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
                 preds = next(preds)
             except StopIteration:
                 pass
-
-            val_loss = sum(self.process_loss(target, preds, _loss_fn=self.eval_loss_fn))
+            val_loss = sum(self.process_loss(target, preds, _loss_fn=self.eval_loss_fn, mask=None))
         else:
-            val_loss = self.process_loss(target, preds, _loss_fn=self.eval_loss_fn)
+            val_loss = self.process_loss(target, preds, _loss_fn=self.eval_loss_fn, mask=None)
 
         # Cascades
         if isinstance(preds, list):
@@ -394,21 +382,11 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
             torch.Tensor, shape [batch_size, n_x, n_y, 2]
         """
         kspace, y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
+
         y, mask, init_pred, r = self.process_inputs(y, mask, init_pred)
 
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, mask)
-            if self.coil_combination_method.upper() == "SENSE":
-                target = sense(
-                    ifft2(
-                        kspace,
-                        centered=self.fft_centered,
-                        normalization=self.fft_normalization,
-                        spatial_dims=self.spatial_dims,
-                    ),
-                    sensitivity_maps,
-                    dim=self.coil_dim,
-                )
 
         preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
 
@@ -426,6 +404,8 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         if isinstance(preds, list):
             preds = preds[-1]
 
+        preds = preds / torch.abs(preds).max()  # type: ignore
+
         slice_num = int(slice_num)
         name = str(fname[0])  # type: ignore
         key = f"{name}_images_idx_{slice_num}"  # type: ignore
@@ -441,6 +421,17 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         self.log_image(f"{key}/target", target)
         self.log_image(f"{key}/reconstruction", output)
         self.log_image(f"{key}/error", error)
+
+        target = target.numpy()  # type: ignore
+        output = output.numpy()  # type: ignore
+        self.mse_vals[fname][slice_num] = torch.tensor(mse(target, output)).view(1)
+        self.nmse_vals[fname][slice_num] = torch.tensor(nmse(target, output)).view(1)
+        self.ssim_vals[fname][slice_num] = torch.tensor(ssim(target, output, maxval=output.max() - output.min())).view(
+            1
+        )
+        self.psnr_vals[fname][slice_num] = torch.tensor(psnr(target, output, maxval=output.max() - output.min())).view(
+            1
+        )
 
         return name, slice_num, preds.detach().cpu().numpy()
 
@@ -536,6 +527,48 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         -------
         Saves the reconstructed images to .h5 files.
         """
+        # Log metrics.
+        # Taken from: https://github.com/facebookresearch/fastMRI/blob/main/fastmri/pl_modules/mri_module.py
+        mse_vals = defaultdict(dict)
+        nmse_vals = defaultdict(dict)
+        ssim_vals = defaultdict(dict)
+        psnr_vals = defaultdict(dict)
+
+        for k in self.mse_vals.keys():
+            mse_vals[k].update(self.mse_vals[k])
+        for k in self.nmse_vals.keys():
+            nmse_vals[k].update(self.nmse_vals[k])
+        for k in self.ssim_vals.keys():
+            ssim_vals[k].update(self.ssim_vals[k])
+        for k in self.psnr_vals.keys():
+            psnr_vals[k].update(self.psnr_vals[k])
+
+        # apply means across image volumes
+        metrics = {"MSE": 0, "NMSE": 0, "SSIM": 0, "PSNR": 0}
+        local_examples = 0
+        for fname in mse_vals:
+            local_examples += 1
+            metrics["MSE"] = metrics["MSE"] + torch.mean(torch.cat([v.view(-1) for _, v in mse_vals[fname].items()]))
+            metrics["NMSE"] = metrics["NMSE"] + torch.mean(
+                torch.cat([v.view(-1) for _, v in nmse_vals[fname].items()])
+            )
+            metrics["SSIM"] = metrics["SSIM"] + torch.mean(
+                torch.cat([v.view(-1) for _, v in ssim_vals[fname].items()])
+            )
+            metrics["PSNR"] = metrics["PSNR"] + torch.mean(
+                torch.cat([v.view(-1) for _, v in psnr_vals[fname].items()])
+            )
+
+        # reduce across ddp via sum
+        metrics["MSE"] = self.MSE(metrics["MSE"])
+        metrics["NMSE"] = self.NMSE(metrics["NMSE"])
+        metrics["SSIM"] = self.SSIM(metrics["SSIM"])
+        metrics["PSNR"] = self.PSNR(metrics["PSNR"])
+
+        tot_examples = self.TotExamples(torch.tensor(local_examples))
+        for metric, value in metrics.items():
+            self.log(f"{metric}", value / tot_examples)
+
         reconstructions = defaultdict(list)
         for fname, slice_num, output in outputs:
             reconstructions[fname].append((slice_num, output))
