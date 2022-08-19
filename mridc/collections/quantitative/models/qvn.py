@@ -154,7 +154,7 @@ class qVarNet(BaseqMRIReconstructionModel, ABC):
             cascades_echoes_etas = []
             for echo in range(y.shape[1]):
                 prediction = y[:, echo, ...].clone()
-                for i, cascade in enumerate(self.vn):
+                for cascade in self.vn:
                     # Forward pass through the cascades
                     prediction = cascade(prediction, y[:, echo, ...], sensitivity_maps, sampling_mask.squeeze(1))
                 estimation = ifft2(
@@ -210,7 +210,7 @@ class qVarNet(BaseqMRIReconstructionModel, ABC):
         phi_map_init = phi_map_init / self.gamma[3]
 
         prediction = y.clone()
-        for i, cascade in enumerate(self.qvn):
+        for cascade in self.qvn:
             # Forward pass through the cascades
             prediction = cascade(
                 prediction,
