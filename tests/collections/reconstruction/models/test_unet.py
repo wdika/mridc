@@ -4,6 +4,7 @@ __author__ = "Dimitrios Karkalousos"
 # Parts of the code have been taken from: https://github.com/facebookresearch/fastMRI
 
 import pytest
+import pytorch_lightning as pl
 import torch
 from omegaconf import OmegaConf
 
@@ -14,7 +15,7 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
 
 
 @pytest.mark.parametrize(
-    "shape, cfg, center_fractions, accelerations",
+    "shape, cfg, center_fractions, accelerations, dimensionality, trainer",
     [
         (
             [1, 3, 32, 16, 2],
@@ -32,6 +33,19 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
             },
             [0.08],
             [4],
+            2,
+            {
+                "strategy": "ddp",
+                "gpus": 1,
+                "num_nodes": 1,
+                "max_epochs": 20,
+                "precision": 16,
+                "enable_checkpointing": False,
+                "logger": False,
+                "log_every_n_steps": 50,
+                "check_val_every_n_epoch": -1,
+                "max_steps": -1,
+            },
         ),
         (
             [1, 5, 15, 12, 2],
@@ -49,6 +63,19 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
             },
             [0.08],
             [4],
+            2,
+            {
+                "strategy": "ddp",
+                "gpus": 1,
+                "num_nodes": 1,
+                "max_epochs": 20,
+                "precision": 16,
+                "enable_checkpointing": False,
+                "logger": False,
+                "log_every_n_steps": 50,
+                "check_val_every_n_epoch": -1,
+                "max_steps": -1,
+            },
         ),
         (
             [1, 2, 17, 19, 2],
@@ -66,6 +93,19 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
             },
             [0.08],
             [4],
+            2,
+            {
+                "strategy": "ddp",
+                "gpus": 1,
+                "num_nodes": 1,
+                "max_epochs": 20,
+                "precision": 16,
+                "enable_checkpointing": False,
+                "logger": False,
+                "log_every_n_steps": 50,
+                "check_val_every_n_epoch": -1,
+                "max_steps": -1,
+            },
         ),
         (
             [1, 2, 17, 19, 2],
@@ -83,10 +123,23 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
             },
             [0.08],
             [4],
+            2,
+            {
+                "strategy": "ddp",
+                "accelerator": "cpu",
+                "num_nodes": 1,
+                "max_epochs": 20,
+                "precision": 32,
+                "enable_checkpointing": False,
+                "logger": False,
+                "log_every_n_steps": 50,
+                "check_val_every_n_epoch": -1,
+                "max_steps": -1,
+            },
         ),
     ],
 )
-def test_unet(shape, cfg, center_fractions, accelerations):
+def test_unet(shape, cfg, center_fractions, accelerations, dimensionality, trainer):
     """
     Test UNet with different parameters
 
@@ -95,6 +148,8 @@ def test_unet(shape, cfg, center_fractions, accelerations):
         cfg: configuration of the model
         center_fractions: center fractions
         accelerations: accelerations
+        dimensionality: 2D or 3D inputs
+        trainer: trainer configuration
 
     Returns:
         None
@@ -111,13 +166,23 @@ def test_unet(shape, cfg, center_fractions, accelerations):
     output = torch.cat(outputs)
     mask = torch.cat(masks)
 
+    if dimensionality == 3 and shape[1] > 1:
+        mask = torch.cat([mask, mask], 1)
+
     cfg = OmegaConf.create(cfg)
     cfg = OmegaConf.create(OmegaConf.to_container(cfg, resolve=True))
 
-    unet = UNet(cfg)
+    trainer = OmegaConf.create(trainer)
+    trainer = OmegaConf.create(OmegaConf.to_container(trainer, resolve=True))
+    trainer = pl.Trainer(**trainer)
+
+    unet = UNet(cfg, trainer=trainer)
 
     with torch.no_grad():
         y = unet.forward(output, output, mask, output, target=torch.abs(torch.view_as_complex(output)))
+
+    if dimensionality == 3:
+        x = x.reshape([x.shape[0] * x.shape[1], x.shape[2], x.shape[3], x.shape[4], x.shape[5]])
 
     if y.shape[1:] != x.shape[2:4]:
         raise AssertionError

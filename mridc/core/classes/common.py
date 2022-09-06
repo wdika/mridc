@@ -429,30 +429,27 @@ class Serialization(ABC):
                 try:
                     # try to import the target class
                     imported_cls = mridc.utils.model_utils.import_class_by_path(target_cls)  # type: ignore
-
                     # use subclass instead
                     if issubclass(cls, imported_cls):
                         imported_cls = cls
-                        if accepts_trainer := Serialization._inspect_signature_for_trainer(imported_cls):
-                            if trainer is None:
-                                # Create a dummy PL trainer object
-                                cfg_trainer = TrainerConfig(
-                                    gpus=1, accelerator="ddp", num_nodes=1, logger=False, checkpoint_callback=False
-                                )
-                                trainer = Trainer(cfg_trainer)
-                            instance = imported_cls(cfg=config, trainer=trainer)  # type: ignore
-                        else:
-                            instance = imported_cls(cfg=config)  # type: ignore
+                    accepts_trainer = Serialization._inspect_signature_for_trainer(imported_cls)
+                    if accepts_trainer:
+                        # Create a dummy PL trainer object
+                        instance = imported_cls(cfg=config, trainer=trainer)  # type: ignore
+                    else:
+                        instance = imported_cls(cfg=config)  # type: ignore
 
                 except Exception as e:
                     tb = traceback.format_exc()
                     prev_error = f"Model instantiation failed.\nTarget class: {target_cls}\nError: {e}\n{tb}"
-
                     logging.debug(prev_error + "\n falling back to 'cls'.")
             # target class resolution was unsuccessful, fall back to current `cls`
             if instance is None:
                 try:
-                    if accepts_trainer := Serialization._inspect_signature_for_trainer(cls):
+                    accepts_trainer = Serialization._inspect_signature_for_trainer(cls)
+                    if accepts_trainer:
+                        instance = cls(cfg=config, trainer=trainer)  # type: ignore
+                    else:
                         instance = cls(cfg=config)  # type: ignore
                 except Exception as e:
                     # report saved errors, if any, and raise the current error
@@ -487,7 +484,8 @@ class Serialization(ABC):
         """Inspects the signature of the class to see if it accepts a trainer argument."""
         if hasattr(check_cls, "__init__"):
             signature = inspect.signature(check_cls.__init__)
-            return Trainer in signature.parameters
+            if "trainer" in signature.parameters:
+                return True
         return False
 
 

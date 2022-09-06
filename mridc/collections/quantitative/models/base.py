@@ -1,5 +1,5 @@
 # coding=utf-8
-__author__ = "Dimitrios Karkalousos"
+__author__ = "Dimitrios Karkalousos, Chaoping Zhang"
 
 import os
 from abc import ABC
@@ -8,11 +8,8 @@ from pathlib import Path
 from typing import Dict, Tuple
 
 import h5py
-import matplotlib
 import numpy as np
 import torch
-
-matplotlib.use("TkAgg")
 
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
@@ -55,6 +52,7 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         if cfg_dict.get("loss_fn") == "ssim":
             self.train_loss_fn = SSIMLoss()
             self.eval_loss_fn = SSIMLoss()
+            # TODO: this needs to be refactored - now is fixed for the paper
             self.loss_regularization_factors = {
                 "R2star": 3.0,
                 "S0": 1.0,
@@ -64,6 +62,7 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         elif cfg_dict.get("loss_fn") == "mse":
             self.train_loss_fn = MSELoss(reduction="none")
             self.eval_loss_fn = MSELoss(reduction="none")
+            # TODO: this needs to be refactored - now is fixed for the paper
             self.loss_regularization_factors = {
                 "R2star": 300.0,
                 "S0": 500.0,
@@ -73,6 +72,7 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         elif cfg_dict.get("loss_fn") == "l1":
             self.train_loss_fn = L1Loss(reduction="none")
             self.eval_loss_fn = L1Loss(reduction="none")
+            # TODO: this needs to be refactored - now is fixed for the paper
             self.loss_regularization_factors = {
                 "R2star": 300.0,
                 "S0": 500.0,

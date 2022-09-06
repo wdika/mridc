@@ -10,6 +10,7 @@ import tempfile
 from typing import Dict, Optional, Set, Union
 
 import pytest
+import pytorch_lightning as pl
 import torch
 from omegaconf import DictConfig, OmegaConf, open_dict
 
@@ -48,8 +49,24 @@ def getattr2(object, attr):
 
 
 class MockModel(ModelPT):
-    def __init__(self, cfg, trainer=None):
-        super(MockModel, self).__init__(cfg=cfg, trainer=trainer)
+    def __init__(self, cfg):
+        trainer = OmegaConf.create(
+            {
+                "strategy": "ddp",
+                "accelerator": "cpu",
+                "num_nodes": 1,
+                "max_epochs": 20,
+                "precision": 32,
+                "enable_checkpointing": False,
+                "logger": False,
+                "log_every_n_steps": 50,
+                "check_val_every_n_epoch": -1,
+                "max_steps": -1,
+            }
+        )
+        trainer = OmegaConf.create(OmegaConf.to_container(trainer, resolve=True))
+        trainer = pl.Trainer(**trainer)
+        super().__init__(cfg=cfg, trainer=trainer)
         self.w = torch.nn.Linear(10, 1)
         # mock temp file
         if "temp_file" in self.cfg and self.cfg.temp_file is not None:
@@ -145,7 +162,7 @@ class TestSaveRestore:
             cfg.model.temp_file = empty_file.name
 
             # Create model
-            model = MockModel(cfg=cfg.model, trainer=None)
+            model = MockModel(cfg=cfg.model)
             model = model.to("cpu")
 
             assert model.temp_file == empty_file.name
@@ -177,7 +194,7 @@ class TestSaveRestore:
             cfg.model.temp_file = empty_file.name
 
             # Create model
-            model = MockModel(cfg=cfg.model, trainer=None)
+            model = MockModel(cfg=cfg.model)
             model = model.to("cpu")
 
             assert model.temp_file == empty_file.name
@@ -215,7 +232,7 @@ class TestSaveRestore:
             cfg.model.temp_file = empty_file.name
 
             # Create model
-            model = MockModel(cfg=cfg.model, trainer=None)  # type: MockModel
+            model = MockModel(cfg=cfg.model)  # type: MockModel
             model = model.to("cpu")
 
             assert model.temp_file == empty_file.name
@@ -235,9 +252,10 @@ class TestSaveRestore:
         with tempfile.TemporaryDirectory() as tmpdir:
             # Update config
             cfg = _mock_model_config()
+
             # Create model
-            model = MockModel(cfg=cfg.model, trainer=None)
-            model_with_custom_connector = MockModel(cfg=cfg.model, trainer=None)
+            model = MockModel(cfg=cfg.model)
+            model_with_custom_connector = MockModel(cfg=cfg.model)
             model_with_custom_connector._save_restore_connector = MySaveRestoreConnector()
             model_with_custom_connector.save_to(os.path.join(tmpdir, "save_custom.mridc"))
 
@@ -263,7 +281,7 @@ class TestSaveRestore:
 
             # Create model
             save_path = os.path.join(tmpdir, "save_custom.mridc")
-            model_with_custom_connector = MockModel(cfg=cfg.model, trainer=None)
+            model_with_custom_connector = MockModel(cfg=cfg.model)
             model_with_custom_connector._save_restore_connector = MySaveRestoreConnector()
             model_with_custom_connector.save_to(save_path)
 
@@ -279,7 +297,8 @@ class TestSaveRestore:
     def test_mock_model_model_collision(self):
         # The usual pipeline is working just fine.
         cfg = _mock_model_config()
-        model = MockModel(cfg=cfg.model, trainer=None)  # type: MockModel
+
+        model = MockModel(cfg=cfg.model)  # type: MockModel
         model = model.to("cpu")
 
         # Let's create a custom config with a 'model.model' node.
@@ -290,7 +309,7 @@ class TestSaveRestore:
 
         # Failing due to collision.
         with pytest.raises(ValueError, match="Creating model config node is forbidden"):
-            model = MockModel(cfg=cfg.model, trainer=None)  # type: MockModel
+            model = MockModel(cfg=cfg.model)  # type: MockModel
             model = model.to("cpu")
 
     @pytest.mark.unit
@@ -310,7 +329,7 @@ class TestSaveRestore:
 
                 # Create model
                 save_path = os.path.join(tmpdir, "save_custom.mridc")
-                model_with_custom_connector = MockModel(cfg=cfg.model, trainer=None)
+                model_with_custom_connector = MockModel(cfg=cfg.model)
                 model_with_custom_connector._save_restore_connector = MySaveRestoreConnector()
                 model_with_custom_connector.save_to(save_path)
 
@@ -343,7 +362,7 @@ class TestSaveRestore:
         assert restored_metadata.restoration_path is not None
 
         # assert that the restore path was the path of the pre-extracted directory
-        # irrespective of whether an old `mridc_filepath` (which doesnt exist anymore) was passed to restore_from.
+        # irrespective of whether an old `mridc_filepath` (which doesn't exist anymore) was passed to restore_from.
         assert extracted_tempdir in restored_metadata.restoration_path
         assert extracted_tempdir not in mridc_filepath
         assert not os.path.exists(mridc_filepath)
