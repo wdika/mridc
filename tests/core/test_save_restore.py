@@ -90,7 +90,7 @@ class MockModel(ModelPT):
     def setup_test_data(self, test_data_config: Union[DictConfig, Dict]):
         self._test_dl = None
 
-    def list_available_models(cls):
+    def list_available_models(self):
         return []
 
 

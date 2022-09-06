@@ -161,11 +161,7 @@ class qMRISliceDataset(Dataset):
             else:
                 raise ValueError(f"{fname} does not contain kspace or reconstruction data.")
 
-        if data_saved_per_slice:
-            num_slices = 1
-        else:
-            num_slices = shape[0]
-
+        num_slices = 1 if data_saved_per_slice else shape[0]
         metadata = {
             "padding_left": padding_left,
             "padding_right": padding_right,
@@ -549,7 +545,7 @@ class qMRISliceDataset(Dataset):
             target = self.get_consecutive_slices(hf, self.recons_key, dataslice) if self.recons_key in hf else None
 
             attrs = dict(hf.attrs)
-            attrs.update(metadata)
+            attrs |= metadata
 
         if self.data_saved_per_slice:
             # arbitrary slice number for logging purposes

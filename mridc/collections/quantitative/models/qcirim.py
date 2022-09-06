@@ -177,11 +177,11 @@ class qCIRIM(BaseqMRIReconstructionModel, ABC):
         if self.use_reconstruction_module:
             echoes_etas = []
             cascades_echoes_etas = []
+            sigma = 1.0
             for echo in range(y.shape[1]):
                 prediction = y[:, echo, ...].clone()
                 init_pred = None
                 hx = None
-                sigma = 1.0
                 cascades_etas = []
                 for i, cascade in enumerate(self.cirim):
                     # Forward pass through the cascades
@@ -262,8 +262,9 @@ class qCIRIM(BaseqMRIReconstructionModel, ABC):
                 eta,
                 hx,
                 self.gamma,
-                keep_eta=False if i == 0 else True,
+                keep_eta=i != 0,
             )
+
 
             time_steps_R2star_maps = []
             time_steps_S0_maps = []
