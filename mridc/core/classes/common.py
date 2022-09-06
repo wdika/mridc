@@ -256,8 +256,7 @@ class Typing(ABC):
                 f"Number of output arguments provided ({len(out_container)}) is not as expected. It should be larger than {len(out_types_list)} and less than {len(mandatory_out_types_list)}.\nThis can be either because insufficient/extra number of output NeuralTypes were provided,or the provided NeuralTypes {output_types} should enable container support (add '[]' to the NeuralType definition)"
             )
 
-
-                # Attach types recursively, if possible
+            # Attach types recursively, if possible
         if not isinstance(out_objects, tuple) and not isinstance(out_objects, list):
             # Here, out_objects is a single object which can potentially be attached with a NeuralType
             try:
@@ -424,9 +423,7 @@ class Serialization(ABC):
                     # use subclass instead
                     if issubclass(cls, imported_cls):
                         imported_cls = cls
-                    if accepts_trainer := Serialization._inspect_signature_for_trainer(
-                        imported_cls
-                    ):
+                    if accepts_trainer := Serialization._inspect_signature_for_trainer(imported_cls):
                         # Create a dummy PL trainer object
                         instance = imported_cls(cfg=config, trainer=trainer)  # type: ignore
                     else:
@@ -439,9 +436,7 @@ class Serialization(ABC):
             # target class resolution was unsuccessful, fall back to current `cls`
             if instance is None:
                 try:
-                    if accepts_trainer := Serialization._inspect_signature_for_trainer(
-                        cls
-                    ):
+                    if accepts_trainer := Serialization._inspect_signature_for_trainer(cls):
                         instance = cls(cfg=config, trainer=trainer)  # type: ignore
                     else:
                         instance = cls(cfg=config)  # type: ignore
