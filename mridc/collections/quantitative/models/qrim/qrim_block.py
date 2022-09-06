@@ -1,5 +1,5 @@
 # coding=utf-8
-__author__ = "Dimitrios Karkalousos"
+__author__ = "Dimitrios Karkalousos, Chaoping Zhang"
 
 from typing import Any, List, Optional, Tuple, Union
 
@@ -230,9 +230,7 @@ class qRIMBlock(torch.nn.Module):
                 grad_eta = hx[h]
 
             grad_eta = self.final_layer(grad_eta)
-
             eta = eta + grad_eta
-
             eta_tmp = eta[:, 0, :, :]
             eta_tmp[eta_tmp < 0] = 0
             eta[:, 0, :, :] = eta_tmp

@@ -4,6 +4,7 @@ __author__ = "Dimitrios Karkalousos"
 # Parts of the code have been taken from: https://github.com/facebookresearch/fastMRI
 
 import pytest
+import pytorch_lightning as pl
 import torch
 from omegaconf import OmegaConf
 
@@ -14,7 +15,7 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
 
 
 @pytest.mark.parametrize(
-    "shape, cfg, center_fractions, accelerations, dimensionality",
+    "shape, cfg, center_fractions, accelerations, dimensionality, trainer",
     [
         (
             [1, 3, 32, 16, 2],
@@ -46,6 +47,18 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
             [0.08],
             [4],
             2,
+            {
+                "strategy": "ddp",
+                "gpus": 1,
+                "num_nodes": 1,
+                "max_epochs": 20,
+                "precision": 16,
+                "enable_checkpointing": False,
+                "logger": False,
+                "log_every_n_steps": 50,
+                "check_val_every_n_epoch": -1,
+                "max_steps": -1,
+            },
         ),
         (
             [1, 5, 15, 12, 2],
@@ -77,6 +90,18 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
             [0.08],
             [4],
             2,
+            {
+                "strategy": "ddp",
+                "gpus": 1,
+                "num_nodes": 1,
+                "max_epochs": 20,
+                "precision": 16,
+                "enable_checkpointing": False,
+                "logger": False,
+                "log_every_n_steps": 50,
+                "check_val_every_n_epoch": -1,
+                "max_steps": -1,
+            },
         ),
         (
             [1, 8, 13, 18, 2],
@@ -108,6 +133,18 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
             [0.08],
             [4],
             2,
+            {
+                "strategy": "ddp",
+                "gpus": 1,
+                "num_nodes": 1,
+                "max_epochs": 20,
+                "precision": 16,
+                "enable_checkpointing": False,
+                "logger": False,
+                "log_every_n_steps": 50,
+                "check_val_every_n_epoch": -1,
+                "max_steps": -1,
+            },
         ),
         (
             [1, 1, 3, 15, 12, 2],
@@ -139,6 +176,18 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
             [0.08],
             [4],
             3,
+            {
+                "strategy": "ddp",
+                "gpus": 1,
+                "num_nodes": 1,
+                "max_epochs": 20,
+                "precision": 16,
+                "enable_checkpointing": False,
+                "logger": False,
+                "log_every_n_steps": 50,
+                "check_val_every_n_epoch": -1,
+                "max_steps": -1,
+            },
         ),
         (
             [3, 2, 5, 15, 12, 2],
@@ -170,6 +219,18 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
             [0.08],
             [4],
             3,
+            {
+                "strategy": "ddp",
+                "gpus": 1,
+                "num_nodes": 1,
+                "max_epochs": 20,
+                "precision": 16,
+                "enable_checkpointing": False,
+                "logger": False,
+                "log_every_n_steps": 50,
+                "check_val_every_n_epoch": -1,
+                "max_steps": -1,
+            },
         ),
         (
             [6, 1, 15, 15, 12, 2],
@@ -201,10 +262,22 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
             [0.08],
             [4],
             3,
+            {
+                "strategy": "ddp",
+                "gpus": 1,
+                "num_nodes": 1,
+                "max_epochs": 20,
+                "precision": 16,
+                "enable_checkpointing": False,
+                "logger": False,
+                "log_every_n_steps": 50,
+                "check_val_every_n_epoch": -1,
+                "max_steps": -1,
+            },
         ),
     ],
 )
-def test_cirim(shape, cfg, center_fractions, accelerations, dimensionality):
+def test_cirim(shape, cfg, center_fractions, accelerations, dimensionality, trainer):
     """
     Test CIRIM with different parameters
 
@@ -214,6 +287,7 @@ def test_cirim(shape, cfg, center_fractions, accelerations, dimensionality):
         center_fractions: center fractions
         accelerations: accelerations
         dimensionality: 2D or 3D inputs
+        trainer: trainer configuration
 
     Returns:
         None
@@ -236,7 +310,11 @@ def test_cirim(shape, cfg, center_fractions, accelerations, dimensionality):
     cfg = OmegaConf.create(cfg)
     cfg = OmegaConf.create(OmegaConf.to_container(cfg, resolve=True))
 
-    cirim = CIRIM(cfg)
+    trainer = OmegaConf.create(trainer)
+    trainer = OmegaConf.create(OmegaConf.to_container(trainer, resolve=True))
+    trainer = pl.Trainer(**trainer)
+
+    cirim = CIRIM(cfg, trainer=trainer)
 
     with torch.no_grad():
         y = cirim.forward(

@@ -1,2 +1,2 @@
 # coding=utf-8
-__author__ = "Dimitrios Karkalousos"
+__author__ = "Dimitrios Karkalousos, Chaoping Zhang"

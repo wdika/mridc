@@ -1,5 +1,5 @@
 # coding=utf-8
-__author__ = "Dimitrios Karkalousos"
+__author__ = "Dimitrios Karkalousos, Chaoping Zhang"
 
 import math
 from abc import ABC
@@ -271,12 +271,12 @@ class qCIRIM(BaseqMRIReconstructionModel, ABC):
             time_steps_phi_maps = []
             for pred in prediction:
                 R2star_map_pred, S0_map_pred, B0_map_pred, phi_map_pred = self.process_intermediate_pred(
-                    pred, None, None, False
+                    torch.abs(torch.view_as_complex(pred)), None, None, False
                 )
-                time_steps_R2star_maps.append(torch.abs(R2star_map_pred))
-                time_steps_S0_maps.append(torch.abs(S0_map_pred))
-                time_steps_B0_maps.append(torch.abs(B0_map_pred))
-                time_steps_phi_maps.append(torch.abs(phi_map_pred))
+                time_steps_R2star_maps.append(R2star_map_pred)
+                time_steps_S0_maps.append(S0_map_pred)
+                time_steps_B0_maps.append(B0_map_pred)
+                time_steps_phi_maps.append(phi_map_pred)
             cascades_R2star_maps.append(time_steps_R2star_maps)
             cascades_S0_maps.append(time_steps_S0_maps)
             cascades_B0_maps.append(time_steps_B0_maps)

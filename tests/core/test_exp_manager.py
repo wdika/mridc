@@ -76,7 +76,25 @@ class OnesDataset(torch.utils.data.Dataset):
 class ExampleModel(ModelPT):
     def __init__(self, *args, **kwargs):
         cfg = OmegaConf.structured({})
-        super().__init__(cfg)
+
+        trainer = OmegaConf.create(
+            {
+                "strategy": "ddp",
+                "gpus": 1,
+                "num_nodes": 1,
+                "max_epochs": 20,
+                "precision": 16,
+                "enable_checkpointing": False,
+                "logger": False,
+                "log_every_n_steps": 50,
+                "check_val_every_n_epoch": -1,
+                "max_steps": -1,
+            }
+        )
+        trainer = OmegaConf.create(OmegaConf.to_container(trainer, resolve=True))
+        trainer = pl.Trainer(**trainer)
+
+        super().__init__(cfg=cfg, trainer=trainer)
         pl.seed_everything(1234)
         self.l1 = torch.nn.modules.Linear(in_features=2, out_features=1)
 

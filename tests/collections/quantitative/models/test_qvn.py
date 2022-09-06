@@ -2,6 +2,7 @@
 __author__ = "Dimitrios Karkalousos"
 
 import pytest
+import pytorch_lightning as pl
 import torch
 from omegaconf import OmegaConf
 
@@ -12,7 +13,7 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
 
 
 @pytest.mark.parametrize(
-    "shape, cfg, center_fractions, accelerations, num_TEs, dimensionality",
+    "shape, cfg, center_fractions, accelerations, num_TEs, dimensionality, trainer",
     [
         (
             [1, 3, 32, 16, 2],
@@ -42,6 +43,18 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
             [4],
             4,
             2,
+            {
+                "strategy": "ddp",
+                "gpus": 1,
+                "num_nodes": 1,
+                "max_epochs": 20,
+                "precision": 16,
+                "enable_checkpointing": False,
+                "logger": False,
+                "log_every_n_steps": 50,
+                "check_val_every_n_epoch": -1,
+                "max_steps": -1,
+            },
         ),
         (
             [1, 5, 32, 16, 2],
@@ -81,6 +94,18 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
             [4],
             4,
             2,
+            {
+                "strategy": "ddp",
+                "gpus": 1,
+                "num_nodes": 1,
+                "max_epochs": 20,
+                "precision": 16,
+                "enable_checkpointing": False,
+                "logger": False,
+                "log_every_n_steps": 50,
+                "check_val_every_n_epoch": -1,
+                "max_steps": -1,
+            },
         ),
         (
             [1, 13, 32, 16, 2],
@@ -120,10 +145,22 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
             [4],
             4,
             2,
+            {
+                "strategy": "ddp",
+                "gpus": 1,
+                "num_nodes": 1,
+                "max_epochs": 20,
+                "precision": 16,
+                "enable_checkpointing": False,
+                "logger": False,
+                "log_every_n_steps": 50,
+                "check_val_every_n_epoch": -1,
+                "max_steps": -1,
+            },
         ),
     ],
 )
-def test_qvn(shape, cfg, center_fractions, accelerations, num_TEs, dimensionality):
+def test_qvn(shape, cfg, center_fractions, accelerations, num_TEs, dimensionality, trainer):
     """
     Test qVarNet with different parameters
 
@@ -141,6 +178,8 @@ def test_qvn(shape, cfg, center_fractions, accelerations, num_TEs, dimensionalit
         Number of TEs to test
     dimensionality : int
         Dimensionality of the data
+    trainer : dict
+        Dictionary with the parameters of the trainer
     """
     mask_func = RandomMaskFunc(center_fractions, accelerations)
     x = create_input(shape)
@@ -170,7 +209,11 @@ def test_qvn(shape, cfg, center_fractions, accelerations, num_TEs, dimensionalit
     cfg = OmegaConf.create(cfg)
     cfg = OmegaConf.create(OmegaConf.to_container(cfg, resolve=True))
 
-    qvn = qVarNet(cfg)
+    trainer = OmegaConf.create(trainer)
+    trainer = OmegaConf.create(OmegaConf.to_container(trainer, resolve=True))
+    trainer = pl.Trainer(**trainer)
+
+    qvn = qVarNet(cfg, trainer=trainer)
 
     with torch.no_grad():
         preds = qvn.forward(
@@ -212,6 +255,9 @@ def test_qvn(shape, cfg, center_fractions, accelerations, num_TEs, dimensionalit
             S0_map_pred = S0_map_pred[-1]
             B0_map_pred = B0_map_pred[-1]
             phi_map_pred = phi_map_pred[-1]
+
+    if dimensionality == 3:
+        x = x.reshape([x.shape[0] * x.shape[1], x.shape[2], x.shape[3], x.shape[4], x.shape[5]])
 
     if R2star_map_pred.shape[1:] != x.shape[2:4]:
         raise AssertionError

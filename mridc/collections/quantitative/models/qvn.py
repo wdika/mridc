@@ -1,5 +1,5 @@
 # coding=utf-8
-__author__ = "Dimitrios Karkalousos"
+__author__ = "Dimitrios Karkalousos, Chaoping Zhang"
 
 from abc import ABC
 from typing import Any, List, Union
@@ -103,6 +103,7 @@ class qVarNet(BaseqMRIReconstructionModel, ABC):
 
         self.accumulate_estimates = cfg_dict.get("quantitative_module_accumulate_estimates")
 
+        # TODO: this needs to be refactored - now is fixed for the paper
         self.gamma = torch.tensor([150.0, 150.0, 1000.0, 150.0])
         self.preprocessor = RescaleByMax
 
