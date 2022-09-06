@@ -1,5 +1,5 @@
 # encoding: utf-8
-__author__ = "Dimitrios Karkalousos"
+__author__ = "Dimitrios Karkalousos, Chaoping Zhang"
 
 import logging
 import os
@@ -222,6 +222,7 @@ class qMRISliceDataset(Dataset):
             else:
                 raise ValueError("No kspace data found in file. Only 'kspace' or 'ksp' keys are supported.")
 
+            # TODO: this needs to be refactored - now is fixed for the paper
             kspace = np.transpose(kspace, (0, 3, 1, 2))  # [nr_TEs, nr_channels, nr_rows, nr_cols]
             kspace = kspace / 10000
 
@@ -239,12 +240,15 @@ class qMRISliceDataset(Dataset):
             else:
                 sensitivity_map = np.array([])
 
+            # TODO: this needs to be refactored - now is fixed for the paper
             sensitivity_map = np.transpose(sensitivity_map, (2, 0, 1))  # [nr_TEs, nr_channels, nr_rows, nr_cols]
 
             if "mask" in hf:
                 mask = np.asarray(self.get_consecutive_slices(hf, "mask", dataslice))
                 if mask.ndim == 3:
                     mask = mask[dataslice]
+
+            # TODO: this needs to be refactored - now is fixed for the paper
             elif "mask_3x" in hf:
                 mask_3x = self.get_consecutive_slices(hf, "mask_3x", dataslice)
                 if mask_3x.ndim == 3:
@@ -299,6 +303,7 @@ class qMRISliceDataset(Dataset):
 
             mask = [mask, mask_brain, mask_head]
 
+            # TODO: this needs to be refactored - now is fixed for the paper
             if "B0_map_init_12x" in hf:
                 B0_map_init_3x = self.get_consecutive_slices(hf, "B0_map_init_3x", dataslice)
                 B0_map_init_6x = self.get_consecutive_slices(hf, "B0_map_init_6x", dataslice)
@@ -357,6 +362,7 @@ class qMRISliceDataset(Dataset):
             else:
                 B0_map = np.empty([])
 
+            # TODO: this needs to be refactored - now is fixed for the paper
             if "S0_map_init_12x" in hf:
                 S0_map_init_3x = self.get_consecutive_slices(hf, "S0_map_init_3x", dataslice)
                 S0_map_init_6x = self.get_consecutive_slices(hf, "S0_map_init_6x", dataslice)
@@ -414,6 +420,7 @@ class qMRISliceDataset(Dataset):
             else:
                 S0_map = np.empty([])
 
+            # TODO: this needs to be refactored - now is fixed for the paper
             if "R2star_map_init_12x" in hf:
                 R2star_map_init_3x = self.get_consecutive_slices(hf, "R2star_map_init_3x", dataslice)
                 R2star_map_init_6x = self.get_consecutive_slices(hf, "R2star_map_init_6x", dataslice)
@@ -472,6 +479,7 @@ class qMRISliceDataset(Dataset):
             else:
                 R2star_map = np.empty([])
 
+            # TODO: this needs to be refactored - now is fixed for the paper
             if "phi_map_init_12x" in hf:
                 phi_map_init_3x = self.get_consecutive_slices(hf, "phi_map_init_3x", dataslice)
                 phi_map_init_6x = self.get_consecutive_slices(hf, "phi_map_init_6x", dataslice)
