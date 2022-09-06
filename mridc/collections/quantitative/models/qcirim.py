@@ -265,7 +265,6 @@ class qCIRIM(BaseqMRIReconstructionModel, ABC):
                 keep_eta=i != 0,
             )
 
-
             time_steps_R2star_maps = []
             time_steps_S0_maps = []
             time_steps_B0_maps = []
