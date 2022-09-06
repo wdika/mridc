@@ -1,5 +1,5 @@
 # encoding: utf-8
-__author__ = "Dimitrios Karkalousos"
+__author__ = "Dimitrios Karkalousos, Chaoping Zhang"
 
 import math
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
@@ -67,60 +67,64 @@ class qMRIDataTransforms:
 
         Parameters
         ----------
-        apply_prewhitening : bool
-            Whether to apply prewhitening.
-        prewhitening_scale_factor : float
-            The scale factor for the prewhitening.
-        prewhitening_patch_start : int
-            The start index for the prewhitening patch.
-        prewhitening_patch_length : int
-            The length of the prewhitening patch.
-        apply_gcc : bool
-            Whether to apply GCC.
-        gcc_virtual_coils : int
-            The number of virtual coils.
-        gcc_calib_lines : int
-            The number of calibration lines.
-        gcc_align_data : bool
-            Whether to align the data.
-        coil_combination_method : str
-            The coil combination method.
-        dimensionality : int
-            The dimensionality of the data.
-        mask_func : Optional[List[MaskFunc]]
-            The mask functions.
-        shift_mask : bool
-            Whether to shift the mask.
-        mask_center_scale : Optional[float]
-            The scale for the mask center.
-        half_scan_percentage : float
-            The percentage of the scan to use.
-        remask : bool
-            Whether to remask the data.
-        crop_size : Optional[Tuple[int, int]]
-            The crop size.
-        kspace_crop : bool
-            Whether to crop the kspace.
-        crop_before_masking : bool
-            Whether to crop before masking.
-        kspace_zero_filling_size : Optional[Tuple]
-            The zero filling size.
-        normalize_inputs : bool
-            Whether to normalize the inputs.
-        fft_centered : bool
-            Whether to center the FFT.
-        fft_normalization : str
-            The FFT normalization.
-        max_norm : bool
-            Whether to apply max norm.
-        spatial_dims : Sequence[int]
-            The spatial dimensions.
-        coil_dim : int
-            The coil dimension.
-        shift_B0_input : bool
-            Whether to shift the B0 input.
-        use_seed : bool
-            Whether to use a seed.
+        TEs: Echo times.
+            List[float]
+        precompute_quantitative_maps: Precompute quantitative maps.
+            bool
+        apply_prewhitening: Apply prewhitening.
+            bool
+        prewhitening_scale_factor: Prewhitening scale factor.
+            float
+        prewhitening_patch_start: Prewhitening patch start.
+            int
+        prewhitening_patch_length: Prewhitening patch length.
+            int
+        apply_gcc: Apply Geometric Decomposition Coil Compression.
+            bool
+        gcc_virtual_coils: GCC virtual coils.
+            int
+        gcc_calib_lines: GCC calibration lines.
+            int
+        gcc_align_data: GCC align data.
+            bool
+        coil_combination_method: Coil combination method. Default: SENSE.
+            str
+        dimensionality: Dimensionality.
+            int
+        mask_func: Mask function.
+            List[MaskFunc]
+        shift_mask: Shift mask.
+            bool
+        mask_center_scale: Mask center scale.
+            float
+        half_scan_percentage: Half scan percentage.
+            float
+        remask: Use the same mask. Default: False.
+            bool
+        crop_size: Crop size.
+            Tuple[int, int]
+        kspace_crop: K-space crop.
+            bool
+        crop_before_masking: Crop before masking.
+            bool
+        kspace_zero_filling_size: K-space zero filling size.
+            Tuple
+        normalize_inputs: Normalize inputs.
+            bool
+        fft_centered: FFT centered.
+            bool
+        fft_normalization: FFT normalization.
+            str
+        max_norm: Normalization by the maximum value.
+            bool
+        spatial_dims: Spatial dimensions.
+            Sequence[int]
+        coil_dim: Coil dimension.
+            int
+        shift_B0_input: Shift B0 input.
+            bool
+        use_seed: Use seed.
+            bool
         """
         self.TEs = TEs
         if self.TEs is None:
@@ -682,6 +686,7 @@ class qMRIDataTransforms:
                 spatial_dims=self.spatial_dims,
             )
         else:
+            # TODO: this needs to be refactored - now is fixed for the paper
             if qmaps[0][0].ndim != 0:
                 B0_map, S0_map, R2star_map, phi_map = qmaps
                 (
