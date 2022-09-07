@@ -12,7 +12,18 @@ from mridc.collections.quantitative.models.qrim.utils import SignalForwardModel
 
 
 class qVarNetBlock(torch.nn.Module):
-    # TODO: add documentation
+    """
+    Implementation of the quantitative End-to-end Variational Network (qVN), as presented in Zhang, C. et al.
+
+    References
+    ----------
+
+    ..
+
+        Zhang, C. et al. (2022) ‘A unified model for reconstruction and R2 mapping of accelerated 7T data using \
+        quantitative Recurrent Inference Machine’. In review.
+
+    """
 
     def __init__(
         self,

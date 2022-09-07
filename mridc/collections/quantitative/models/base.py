@@ -52,33 +52,20 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         if cfg_dict.get("loss_fn") == "ssim":
             self.train_loss_fn = SSIMLoss()
             self.eval_loss_fn = SSIMLoss()
-            # TODO: this needs to be refactored - now is fixed for the paper
-            self.loss_regularization_factors = {
-                "R2star": 3.0,
-                "S0": 1.0,
-                "B0": 1.0,
-                "phi": 1.0,
-            }
         elif cfg_dict.get("loss_fn") == "mse":
             self.train_loss_fn = MSELoss(reduction="none")
             self.eval_loss_fn = MSELoss(reduction="none")
-            # TODO: this needs to be refactored - now is fixed for the paper
-            self.loss_regularization_factors = {
-                "R2star": 300.0,
-                "S0": 500.0,
-                "B0": 20000.0,
-                "phi": 500.0,
-            }
         elif cfg_dict.get("loss_fn") == "l1":
             self.train_loss_fn = L1Loss(reduction="none")
             self.eval_loss_fn = L1Loss(reduction="none")
-            # TODO: this needs to be refactored - now is fixed for the paper
-            self.loss_regularization_factors = {
-                "R2star": 300.0,
-                "S0": 500.0,
-                "B0": 20000.0,
-                "phi": 500.0,
-            }
+
+        loss_regularization_factors = cfg_dict.get("loss_regularization_factors")
+        self.loss_regularization_factors = {
+            "R2star": loss_regularization_factors[0]["R2star"],
+            "S0": loss_regularization_factors[1]["S0"],
+            "B0": loss_regularization_factors[2]["B0"],
+            "phi": loss_regularization_factors[3]["phi"],
+        }
 
         self.MSE = DistributedMetricSum()
         self.NMSE = DistributedMetricSum()
@@ -209,13 +196,9 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
     @staticmethod
     def process_inputs(
         R2star_map_init,
-        R2star_map_recon,
         S0_map_init,
-        S0_map_recon,
         B0_map_init,
-        B0_map_recon,
         phi_map_init,
-        phi_map_recon,
         y,
         mask,
     ):
@@ -226,19 +209,11 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         ----------
         R2star_map_init: R2* map.
             list of torch.Tensor, shape [batch_size, n_x, n_y]
-        R2star_map_recon: R2* map precomputed recon, if exists.
-            list of torch.Tensor, shape [batch_size, n_x, n_y]
         S0_map_init: S0 map.
-            list of torch.Tensor, shape [batch_size, n_x, n_y]
-        S0_map_recon: S0 map precomputed recon, if exists.
             list of torch.Tensor, shape [batch_size, n_x, n_y]
         B0_map_init: B0 map.
             list of torch.Tensor, shape [batch_size, n_x, n_y]
-        B0_map_recon: B0 map precomputed recon, if exists.
-            list of torch.Tensor, shape [batch_size, n_x, n_y]
         phi_map_init: Phi map.
-            list of torch.Tensor, shape [batch_size, n_x, n_y]
-        phi_map_recon: Phi map precomputed recon, if exists.
             list of torch.Tensor, shape [batch_size, n_x, n_y]
         y: Subsampled k-space data.
             list of torch.Tensor, shape [batch_size, n_echoes, n_coils, n_x, n_y, 2]
@@ -268,26 +243,18 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         if isinstance(y, list):
             r = np.random.randint(len(y))
             R2star_map_init = R2star_map_init[r]
-            R2star_map_recon = R2star_map_recon[r]
             S0_map_init = S0_map_init[r]
-            S0_map_recon = S0_map_recon[r]
             B0_map_init = B0_map_init[r]
-            B0_map_recon = B0_map_recon[r]
             phi_map_init = phi_map_init[r]
-            phi_map_recon = phi_map_recon[r]
             y = y[r]
             mask = mask[r]
         else:
             r = 0
         return (
             R2star_map_init,
-            R2star_map_recon,
             S0_map_init,
-            S0_map_recon,
             B0_map_init,
-            B0_map_recon,
             phi_map_init,
-            phi_map_recon,
             y,
             mask,
             r,
@@ -364,16 +331,12 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         """
         (
             R2star_map_init,
-            R2star_map_recon,
             R2star_map_target,
             S0_map_init,
-            S0_map_recon,
             S0_map_target,
             B0_map_init,
-            B0_map_recon,
             B0_map_target,
             phi_map_init,
-            phi_map_recon,
             phi_map_target,
             TEs,
             kspace,
@@ -388,27 +351,11 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
             acc,
         ) = batch
 
-        (
+        (R2star_map_init, S0_map_init, B0_map_init, phi_map_init, y, sampling_mask, r,) = self.process_inputs(
             R2star_map_init,
-            R2star_map_recon,
             S0_map_init,
-            S0_map_recon,
             B0_map_init,
-            B0_map_recon,
             phi_map_init,
-            phi_map_recon,
-            y,
-            sampling_mask,
-            r,
-        ) = self.process_inputs(
-            R2star_map_init,
-            R2star_map_recon,
-            S0_map_init,
-            S0_map_recon,
-            B0_map_init,
-            B0_map_recon,
-            phi_map_init,
-            phi_map_recon,
             y,
             mask,
         )
@@ -564,16 +511,12 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         """
         (
             R2star_map_init,
-            R2star_map_recon,
             R2star_map_target,
             S0_map_init,
-            S0_map_recon,
             S0_map_target,
             B0_map_init,
-            B0_map_recon,
             B0_map_target,
             phi_map_init,
-            phi_map_recon,
             phi_map_target,
             TEs,
             kspace,
@@ -588,27 +531,11 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
             acc,
         ) = batch
 
-        (
+        (R2star_map_init, S0_map_init, B0_map_init, phi_map_init, y, sampling_mask, r,) = self.process_inputs(
             R2star_map_init,
-            R2star_map_recon,
             S0_map_init,
-            S0_map_recon,
             B0_map_init,
-            B0_map_recon,
             phi_map_init,
-            phi_map_recon,
-            y,
-            sampling_mask,
-            r,
-        ) = self.process_inputs(
-            R2star_map_init,
-            R2star_map_recon,
-            S0_map_init,
-            S0_map_recon,
-            B0_map_init,
-            B0_map_recon,
-            phi_map_init,
-            phi_map_recon,
             y,
             mask,
         )
@@ -913,16 +840,12 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         """
         (
             R2star_map_init,
-            R2star_map_recon,
             R2star_map_target,
             S0_map_init,
-            S0_map_recon,
             S0_map_target,
             B0_map_init,
-            B0_map_recon,
             B0_map_target,
             phi_map_init,
-            phi_map_recon,
             phi_map_target,
             TEs,
             kspace,
@@ -937,27 +860,11 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
             acc,
         ) = batch
 
-        (
+        (R2star_map_init, S0_map_init, B0_map_init, phi_map_init, y, sampling_mask, r,) = self.process_inputs(
             R2star_map_init,
-            R2star_map_recon,
             S0_map_init,
-            S0_map_recon,
             B0_map_init,
-            B0_map_recon,
             phi_map_init,
-            phi_map_recon,
-            y,
-            sampling_mask,
-            r,
-        ) = self.process_inputs(
-            R2star_map_init,
-            R2star_map_recon,
-            S0_map_init,
-            S0_map_recon,
-            B0_map_init,
-            B0_map_recon,
-            phi_map_init,
-            phi_map_recon,
             y,
             mask,
         )
@@ -1691,7 +1598,9 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
             sample_rate=cfg.get("sample_rate"),
             consecutive_slices=cfg.get("consecutive_slices"),
             data_saved_per_slice=cfg.get("data_saved_per_slice"),
+            init_coil_dim=cfg.get("init_coil_dim"),
             fixed_precomputed_acceleration=cfg.get("fixed_precomputed_acceleration"),
+            kspace_scaling_factor=cfg.get("kspace_scaling_factor"),
         )
         if cfg.shuffle:
             sampler = torch.utils.data.RandomSampler(dataset)

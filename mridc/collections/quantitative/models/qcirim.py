@@ -24,7 +24,20 @@ __all__ = ["qCIRIM"]
 
 
 class qCIRIM(BaseqMRIReconstructionModel, ABC):
-    # TODO: add documentation
+    """
+    Implementation of the Cascades of Independently Recurrent Inference Machines, as presented in \
+    Karkalousos, D. et al.
+
+    References
+    ----------
+
+    ..
+
+        Karkalousos, D. et al. (2021) ‘Assessment of Data Consistency through Cascades of Independently Recurrent \
+        Inference Machines for fast and robust accelerated MRI reconstruction’. Available at: \
+        https://arxiv.org/abs/2111.15498v1
+
+    """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
         # init superclass
@@ -127,7 +140,7 @@ class qCIRIM(BaseqMRIReconstructionModel, ABC):
 
         self.accumulate_estimates = cfg_dict.get("quantitative_module_accumulate_estimates")
 
-        self.gamma = torch.tensor([150.0, 150.0, 1000.0, 150.0])
+        self.gamma = torch.tensor(cfg_dict.get("quantitative_module_gamma_regularization_factors"))
         self.preprocessor = RescaleByMax
 
     @typecheck()

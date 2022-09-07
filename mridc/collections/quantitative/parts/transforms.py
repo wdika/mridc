@@ -194,17 +194,13 @@ class qMRIDataTransforms:
         slice_idx: int,
     ) -> Tuple[
         Union[Tensor, List[Any], List[Tensor]],
-        Union[Union[List[Any], List[Tensor]], Any],
-        Union[List[Tensor], Any],
+        Union[Tensor, Any],
         Union[Tensor, List[Any], List[Tensor]],
-        Union[Union[List[Any], List[Tensor]], Any],
-        Union[List[Tensor], Any],
+        Union[Tensor, Any],
         Union[Tensor, List[Any], List[Tensor]],
-        Union[Union[List[Any], List[Tensor]], Any],
-        Union[List[Tensor], Any],
+        Union[Tensor, Any],
         Union[Tensor, List[Any], List[Tensor]],
-        Union[Union[List[Any], List[Tensor]], Any],
-        Union[List[Tensor], Any],
+        Union[Tensor, Any],
         Tensor,
         Tensor,
         Union[Union[Tensor, List[Union[Union[float, Tensor], Any]], float], Any],
@@ -655,11 +651,6 @@ class qMRIDataTransforms:
             B0_map_init = torch.stack(B0_maps_init, dim=0)
             phi_map_init = torch.stack(phi_maps_init, dim=0)
 
-            R2star_map_recon = R2star_map_init.clone()
-            S0_map_recon = S0_map_init.clone()
-            B0_map_recon = B0_map_init.clone()
-            phi_map_recon = phi_map_init.clone()
-
             mask_brain_tmp = torch.ones_like(torch.abs(mask_brain))
             mask_brain_tmp = mask_brain_tmp.unsqueeze(0) if mask_brain.dim() == 2 else mask_brain_tmp
             imspace = sense(
@@ -686,137 +677,29 @@ class qMRIDataTransforms:
                 spatial_dims=self.spatial_dims,
             )
         else:
-            # TODO: this needs to be refactored - now is fixed for the paper
             if qmaps[0][0].ndim != 0:
                 B0_map, S0_map, R2star_map, phi_map = qmaps
-                (
-                    B0_map_init_3x,
-                    B0_map_init_6x,
-                    B0_map_init_9x,
-                    B0_map_init_12x,
-                    B0_map_target,
-                    B0_map_recon_3x,
-                    B0_map_recon_6x,
-                    B0_map_recon_9x,
-                    B0_map_recon_12x,
-                ) = (B0_map[0], B0_map[1], B0_map[2], B0_map[3], B0_map[4], B0_map[5], B0_map[6], B0_map[7], B0_map[8])
-                (
-                    S0_map_init_3x,
-                    S0_map_init_6x,
-                    S0_map_init_9x,
-                    S0_map_init_12x,
-                    S0_map_target,
-                    S0_map_recon_3x,
-                    S0_map_recon_6x,
-                    S0_map_recon_9x,
-                    S0_map_recon_12x,
-                ) = (S0_map[0], S0_map[1], S0_map[2], S0_map[3], S0_map[4], S0_map[5], S0_map[6], S0_map[7], S0_map[8])
-                (
-                    R2star_map_init_3x,
-                    R2star_map_init_6x,
-                    R2star_map_init_9x,
-                    R2star_map_init_12x,
-                    R2star_map_target,
-                    R2star_map_recon_3x,
-                    R2star_map_recon_6x,
-                    R2star_map_recon_9x,
-                    R2star_map_recon_12x,
-                ) = (
-                    R2star_map[0],
-                    R2star_map[1],
-                    R2star_map[2],
-                    R2star_map[3],
-                    R2star_map[4],
-                    R2star_map[5],
-                    R2star_map[6],
-                    R2star_map[7],
-                    R2star_map[8],
-                )
-                (
-                    phi_map_init_3x,
-                    phi_map_init_6x,
-                    phi_map_init_9x,
-                    phi_map_init_12x,
-                    phi_map_target,
-                    phi_map_recon_3x,
-                    phi_map_recon_6x,
-                    phi_map_recon_9x,
-                    phi_map_recon_12x,
-                ) = (
-                    phi_map[0],
-                    phi_map[1],
-                    phi_map[2],
-                    phi_map[3],
-                    phi_map[4],
-                    phi_map[5],
-                    phi_map[6],
-                    phi_map[7],
-                    phi_map[8],
-                )
-
-                B0_map_init_3x = torch.from_numpy(B0_map_init_3x).squeeze(0)
-                B0_map_init_6x = torch.from_numpy(B0_map_init_6x).squeeze(0)
-                B0_map_init_9x = torch.from_numpy(B0_map_init_9x).squeeze(0)
-                B0_map_init_12x = torch.from_numpy(B0_map_init_12x).squeeze(0)
-                B0_map_target = torch.from_numpy(B0_map_target).squeeze(0)
-                B0_map_recon_3x = torch.from_numpy(B0_map_recon_3x).squeeze(0)
-                B0_map_recon_6x = torch.from_numpy(B0_map_recon_6x).squeeze(0)
-                B0_map_recon_9x = torch.from_numpy(B0_map_recon_9x).squeeze(0)
-                B0_map_recon_12x = torch.from_numpy(B0_map_recon_12x).squeeze(0)
-                S0_map_init_3x = torch.from_numpy(S0_map_init_3x).squeeze(0)
-                S0_map_init_6x = torch.from_numpy(S0_map_init_6x).squeeze(0)
-                S0_map_init_9x = torch.from_numpy(S0_map_init_9x).squeeze(0)
-                S0_map_init_12x = torch.from_numpy(S0_map_init_12x).squeeze(0)
-                S0_map_target = torch.from_numpy(S0_map_target).squeeze(0)
-                S0_map_recon_3x = torch.from_numpy(S0_map_recon_3x).squeeze(0)
-                S0_map_recon_6x = torch.from_numpy(S0_map_recon_6x).squeeze(0)
-                S0_map_recon_9x = torch.from_numpy(S0_map_recon_9x).squeeze(0)
-                S0_map_recon_12x = torch.from_numpy(S0_map_recon_12x).squeeze(0)
-                R2star_map_init_3x = torch.from_numpy(R2star_map_init_3x).squeeze(0)
-                R2star_map_init_6x = torch.from_numpy(R2star_map_init_6x).squeeze(0)
-                R2star_map_init_9x = torch.from_numpy(R2star_map_init_9x).squeeze(0)
-                R2star_map_init_12x = torch.from_numpy(R2star_map_init_12x).squeeze(0)
-                R2star_map_target = torch.from_numpy(R2star_map_target).squeeze(0)
-                R2star_map_recon_3x = torch.from_numpy(R2star_map_recon_3x).squeeze(0)
-                R2star_map_recon_6x = torch.from_numpy(R2star_map_recon_6x).squeeze(0)
-                R2star_map_recon_9x = torch.from_numpy(R2star_map_recon_9x).squeeze(0)
-                R2star_map_recon_12x = torch.from_numpy(R2star_map_recon_12x).squeeze(0)
-                phi_map_init_3x = torch.from_numpy(phi_map_init_3x).squeeze(0)
-                phi_map_init_6x = torch.from_numpy(phi_map_init_6x).squeeze(0)
-                phi_map_init_9x = torch.from_numpy(phi_map_init_9x).squeeze(0)
-                phi_map_init_12x = torch.from_numpy(phi_map_init_12x).squeeze(0)
-                phi_map_target = torch.from_numpy(phi_map_target).squeeze(0)
-                phi_map_recon_3x = torch.from_numpy(phi_map_recon_3x).squeeze(0)
-                phi_map_recon_6x = torch.from_numpy(phi_map_recon_6x).squeeze(0)
-                phi_map_recon_9x = torch.from_numpy(phi_map_recon_9x).squeeze(0)
-                phi_map_recon_12x = torch.from_numpy(phi_map_recon_12x).squeeze(0)
-
-                B0_map_init = [B0_map_init_3x, B0_map_init_6x, B0_map_init_9x, B0_map_init_12x]
-                B0_map_recon = [B0_map_recon_3x, B0_map_recon_6x, B0_map_recon_9x, B0_map_recon_12x]
-                S0_map_init = [S0_map_init_3x, S0_map_init_6x, S0_map_init_9x, S0_map_init_12x]
-                S0_map_recon = [S0_map_recon_3x, S0_map_recon_6x, S0_map_recon_9x, S0_map_recon_12x]
-                R2star_map_init = [R2star_map_init_3x, R2star_map_init_6x, R2star_map_init_9x, R2star_map_init_12x]
-                R2star_map_recon = [
-                    R2star_map_recon_3x,
-                    R2star_map_recon_6x,
-                    R2star_map_recon_9x,
-                    R2star_map_recon_12x,
-                ]
-                phi_map_init = [phi_map_init_3x, phi_map_init_6x, phi_map_init_9x, phi_map_init_12x]
-                phi_map_recon = [phi_map_recon_3x, phi_map_recon_6x, phi_map_recon_9x, phi_map_recon_12x]
+                B0_map = [torch.from_numpy(x).squeeze(0) for x in B0_map]
+                B0_map_target = B0_map[-1]
+                B0_map_init = B0_map[:-1]
+                S0_map = [torch.from_numpy(x).squeeze(0) for x in S0_map]
+                S0_map_target = S0_map[-1]
+                S0_map_init = S0_map[:-1]
+                R2star_map = [torch.from_numpy(x).squeeze(0) for x in R2star_map]
+                R2star_map_target = R2star_map[-1]
+                R2star_map_init = R2star_map[:-1]
+                phi_map = [torch.from_numpy(x).squeeze(0) for x in phi_map]
+                phi_map_target = phi_map[-1]
+                phi_map_init = phi_map[:-1]
             else:
-                R2star_map_init = [torch.tensor([])] * len(masked_kspace)
-                R2star_map_recon = [torch.tensor([])] * len(masked_kspace)
-                S0_map_init = [torch.tensor([])] * len(masked_kspace)
-                S0_map_recon = [torch.tensor([])] * len(masked_kspace)
+                B0_map_target = torch.tensor([])
                 B0_map_init = [torch.tensor([])] * len(masked_kspace)
-                B0_map_recon = [torch.tensor([])] * len(masked_kspace)
+                S0_map_target = torch.tensor([])
+                S0_map_init = [torch.tensor([])] * len(masked_kspace)
+                R2star_map_target = torch.tensor([])
+                R2star_map_init = [torch.tensor([])] * len(masked_kspace)
+                phi_map_target = torch.tensor([])
                 phi_map_init = [torch.tensor([])] * len(masked_kspace)
-                phi_map_recon = [torch.tensor([])] * len(masked_kspace)
-                R2star_map_target = [torch.tensor([])] * len(masked_kspace)
-                S0_map_target = [torch.tensor([])] * len(masked_kspace)
-                B0_map_target = [torch.tensor([])] * len(masked_kspace)
-                phi_map_target = [torch.tensor([])] * len(masked_kspace)
 
         # Normalize by the max value.
         if self.normalize_inputs:
@@ -913,16 +796,12 @@ class qMRIDataTransforms:
 
         return (
             R2star_map_init,
-            R2star_map_recon,
             R2star_map_target,
             S0_map_init,
-            S0_map_recon,
             S0_map_target,
             B0_map_init,
-            B0_map_recon,
             B0_map_target,
             phi_map_init,
-            phi_map_recon,
             phi_map_target,
             torch.tensor(self.TEs),
             kspace,

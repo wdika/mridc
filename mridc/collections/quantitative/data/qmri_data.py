@@ -32,7 +32,9 @@ class qMRISliceDataset(Dataset):
         mask_root: Union[str, Path, os.PathLike] = None,
         consecutive_slices: int = 1,
         data_saved_per_slice: bool = False,
+        init_coil_dim: int = 0,
         fixed_precomputed_acceleration: Optional[int] = None,
+        kspace_scaling_factor: float = 10000,
     ):
         """
         Parameters
@@ -57,8 +59,10 @@ class qMRISliceDataset(Dataset):
         consecutive_slices: An int (>0) that determine the amount of consecutive slices of the file to be loaded at
             the same time. Defaults to 1, loading single slices.
         data_saved_per_slice: Whether the data is saved per slice or per volume.
+        init_coil_dim: The initial coil dimension of the data.
         fixed_precomputed_acceleration: Optional; A list of integers that determine the fixed acceleration of the
             data. If provided, the data will be loaded with the fixed acceleration.
+        kspace_scaling_factor: A float that determines the scaling factor of the k-space data.
         """
         if sequence not in ("MEGRE", "FUTURE_SEQUENCES"):
             raise ValueError(f'Sequence should be either "MEGRE" or "FUTURE_SEQUENCES". Found {sequence}.')
@@ -74,7 +78,9 @@ class qMRISliceDataset(Dataset):
         self.dataset_cache_file = Path(dataset_cache_file)
 
         self.data_saved_per_slice = data_saved_per_slice
+        self.init_coil_dim = init_coil_dim
         self.fixed_precomputed_acceleration = fixed_precomputed_acceleration
+        self.kspace_scaling_factor = kspace_scaling_factor
 
         self.transform = transform
         self.recons_key = "reconstruction"
@@ -205,6 +211,36 @@ class qMRISliceDataset(Dataset):
 
         return data[start_slice:end_slice]
 
+    def check_stored_qdata(self, data, key, dataslice):
+        """
+        Check if quantitative data are stored in the dataset.
+
+        Parameters
+        ----------
+        data: Data to extract slices from.
+        key: Key to extract slices from.
+        dataslice: Slice to extract.
+        """
+        qdata = []
+        count = 0
+        for k in data.keys():
+            if key in k:
+                acc = k.split("_")[-1].split("x")[0]
+                if acc not in ["brain", "head"]:
+                    x = self.get_consecutive_slices(data, key + str(acc) + "x", dataslice)
+                    if x.ndim == 3:
+                        x = x[dataslice]
+                    if self.fixed_precomputed_acceleration is not None:
+                        if int(acc) == self.fixed_precomputed_acceleration:
+                            qdata.append(x)
+                        else:
+                            count += 1
+                    else:
+                        qdata.append(x)
+            if self.fixed_precomputed_acceleration is not None:
+                qdata = [qdata[0] * count]
+        return qdata
+
     def __len__(self):
         return len(self.examples)
 
@@ -218,9 +254,10 @@ class qMRISliceDataset(Dataset):
             else:
                 raise ValueError("No kspace data found in file. Only 'kspace' or 'ksp' keys are supported.")
 
-            # TODO: this needs to be refactored - now is fixed for the paper
-            kspace = np.transpose(kspace, (0, 3, 1, 2))  # [nr_TEs, nr_channels, nr_rows, nr_cols]
-            kspace = kspace / 10000
+            if self.init_coil_dim in [3, 4, -1]:
+                kspace = np.transpose(kspace, (0, 3, 1, 2))  # [nr_TEs, nr_channels, nr_rows, nr_cols]
+
+            kspace = kspace / self.kspace_scaling_factor
 
             if "sensitivity_map" in hf:
                 sensitivity_map = self.get_consecutive_slices(hf, "sensitivity_map", dataslice).astype(np.complex64)
@@ -236,51 +273,15 @@ class qMRISliceDataset(Dataset):
             else:
                 sensitivity_map = np.array([])
 
-            # TODO: this needs to be refactored - now is fixed for the paper
-            sensitivity_map = np.transpose(sensitivity_map, (2, 0, 1))  # [nr_TEs, nr_channels, nr_rows, nr_cols]
+            if self.init_coil_dim in [3, 4, -1]:
+                sensitivity_map = np.transpose(sensitivity_map, (2, 0, 1))  # [nr_channels, nr_rows, nr_cols]
 
             if "mask" in hf:
                 mask = np.asarray(self.get_consecutive_slices(hf, "mask", dataslice))
                 if mask.ndim == 3:
                     mask = mask[dataslice]
-
-            # TODO: this needs to be refactored - now is fixed for the paper
-            elif "mask_3x" in hf:
-                mask_3x = self.get_consecutive_slices(hf, "mask_3x", dataslice)
-                if mask_3x.ndim == 3:
-                    mask_3x = mask_3x[dataslice]
-                mask_6x = self.get_consecutive_slices(hf, "mask_6x", dataslice)
-                if mask_6x.ndim == 3:
-                    mask_6x = mask_6x[dataslice]
-                mask_9x = self.get_consecutive_slices(hf, "mask_9x", dataslice)
-                if mask_9x.ndim == 3:
-                    mask_9x = mask_9x[dataslice]
-                mask_12x = self.get_consecutive_slices(hf, "mask_12x", dataslice)
-                if mask_12x.ndim == 3:
-                    mask_12x = mask_12x[dataslice]
-
-                if self.fixed_precomputed_acceleration is not None:
-                    if self.fixed_precomputed_acceleration == 3:
-                        mask_6x = mask_3x
-                        mask_9x = mask_3x
-                        mask_12x = mask_3x
-                    elif self.fixed_precomputed_acceleration == 6:
-                        mask_3x = mask_6x
-                        mask_9x = mask_6x
-                        mask_12x = mask_6x
-                    elif self.fixed_precomputed_acceleration == 9:
-                        mask_3x = mask_9x
-                        mask_6x = mask_9x
-                        mask_12x = mask_9x
-                    elif self.fixed_precomputed_acceleration == 12:
-                        mask_3x = mask_12x
-                        mask_6x = mask_12x
-                        mask_9x = mask_12x
-                    else:
-                        raise ValueError(
-                            f"{self.fixed_precomputed_acceleration}x is not a valid precomputed acceleration factor."
-                        )
-                mask = [mask_3x, mask_6x, mask_9x, mask_12x]
+            elif any("mask_" in _ for _ in hf.keys()):
+                mask = self.check_stored_qdata(hf, "mask_", dataslice)
             elif self.mask_root is not None and self.mask_root != "None":
                 with h5py.File(Path(self.mask_root) / fname.name, "r") as mf:
                     mask = np.asarray(self.get_consecutive_slices(mf, "mask", dataslice))
@@ -292,244 +293,50 @@ class qMRISliceDataset(Dataset):
             else:
                 mask_brain = np.empty([])
 
-            if "mask_head" in hf:
+            if "mask_head" in hf.keys():
                 mask_head = np.asarray(self.get_consecutive_slices(hf, "mask_head", dataslice))
             else:
                 mask_head = np.empty([])
 
             mask = [mask, mask_brain, mask_head]
 
-            # TODO: this needs to be refactored - now is fixed for the paper
-            if "B0_map_init_12x" in hf:
-                B0_map_init_3x = self.get_consecutive_slices(hf, "B0_map_init_3x", dataslice)
-                B0_map_init_6x = self.get_consecutive_slices(hf, "B0_map_init_6x", dataslice)
-                B0_map_init_9x = self.get_consecutive_slices(hf, "B0_map_init_9x", dataslice)
-                B0_map_init_12x = self.get_consecutive_slices(hf, "B0_map_init_12x", dataslice)
-                B0_map_target = self.get_consecutive_slices(hf, "B0_map_target", dataslice)
-                B0_map_recon_3x = self.get_consecutive_slices(hf, "B0_map_recon_3x", dataslice)
-                B0_map_recon_6x = self.get_consecutive_slices(hf, "B0_map_recon_6x", dataslice)
-                B0_map_recon_9x = self.get_consecutive_slices(hf, "B0_map_recon_9x", dataslice)
-                B0_map_recon_12x = self.get_consecutive_slices(hf, "B0_map_recon_12x", dataslice)
-
-                if self.fixed_precomputed_acceleration is not None:
-                    if self.fixed_precomputed_acceleration == 3:
-                        B0_map_init_6x = B0_map_init_3x
-                        B0_map_init_9x = B0_map_init_3x
-                        B0_map_init_12x = B0_map_init_3x
-                        B0_map_recon_6x = B0_map_recon_3x
-                        B0_map_recon_9x = B0_map_recon_3x
-                        B0_map_recon_12x = B0_map_recon_3x
-                    elif self.fixed_precomputed_acceleration == 6:
-                        B0_map_init_3x = B0_map_init_6x
-                        B0_map_init_9x = B0_map_init_6x
-                        B0_map_init_12x = B0_map_init_6x
-                        B0_map_recon_3x = B0_map_recon_6x
-                        B0_map_recon_9x = B0_map_recon_6x
-                        B0_map_recon_12x = B0_map_recon_6x
-                    elif self.fixed_precomputed_acceleration == 9:
-                        B0_map_init_3x = B0_map_init_9x
-                        B0_map_init_6x = B0_map_init_9x
-                        B0_map_init_12x = B0_map_init_9x
-                        B0_map_recon_3x = B0_map_recon_9x
-                        B0_map_recon_6x = B0_map_recon_9x
-                        B0_map_recon_12x = B0_map_recon_9x
-                    elif self.fixed_precomputed_acceleration == 12:
-                        B0_map_init_3x = B0_map_init_12x
-                        B0_map_init_6x = B0_map_init_12x
-                        B0_map_init_9x = B0_map_init_12x
-                        B0_map_recon_3x = B0_map_recon_12x
-                        B0_map_recon_6x = B0_map_recon_12x
-                        B0_map_recon_9x = B0_map_recon_12x
-                    else:
-                        raise ValueError(
-                            f"{self.fixed_precomputed_acceleration}x is not a valid precomputed acceleration factor."
-                        )
-                B0_map = [
-                    B0_map_init_3x,
-                    B0_map_init_6x,
-                    B0_map_init_9x,
-                    B0_map_init_12x,
-                    B0_map_target,
-                    B0_map_recon_3x,
-                    B0_map_recon_6x,
-                    B0_map_recon_9x,
-                    B0_map_recon_12x,
-                ]
+            if any("B0_map_init_" in _ for _ in hf.keys()):
+                B0_map = self.check_stored_qdata(hf, "B0_map_init_", dataslice)
+                if any("B0_map_target" in _ for _ in hf.keys()):
+                    B0_map_target = self.get_consecutive_slices(hf, "B0_map_target", dataslice)
+                    B0_map.append(B0_map_target)
+                else:
+                    raise ValueError("While B0 map initializations are found, no B0 map target found in file.")
             else:
                 B0_map = np.empty([])
 
-            # TODO: this needs to be refactored - now is fixed for the paper
-            if "S0_map_init_12x" in hf:
-                S0_map_init_3x = self.get_consecutive_slices(hf, "S0_map_init_3x", dataslice)
-                S0_map_init_6x = self.get_consecutive_slices(hf, "S0_map_init_6x", dataslice)
-                S0_map_init_9x = self.get_consecutive_slices(hf, "S0_map_init_9x", dataslice)
-                S0_map_init_12x = self.get_consecutive_slices(hf, "S0_map_init_12x", dataslice)
-                S0_map_target = self.get_consecutive_slices(hf, "S0_map_target", dataslice)
-                S0_map_recon_3x = self.get_consecutive_slices(hf, "S0_map_recon_3x", dataslice)
-                S0_map_recon_6x = self.get_consecutive_slices(hf, "S0_map_recon_6x", dataslice)
-                S0_map_recon_9x = self.get_consecutive_slices(hf, "S0_map_recon_9x", dataslice)
-                S0_map_recon_12x = self.get_consecutive_slices(hf, "S0_map_recon_12x", dataslice)
-                if self.fixed_precomputed_acceleration is not None:
-                    if self.fixed_precomputed_acceleration == 3:
-                        S0_map_init_6x = S0_map_init_3x
-                        S0_map_init_9x = S0_map_init_3x
-                        S0_map_init_12x = S0_map_init_3x
-                        S0_map_recon_6x = S0_map_recon_3x
-                        S0_map_recon_9x = S0_map_recon_3x
-                        S0_map_recon_12x = S0_map_recon_3x
-                    elif self.fixed_precomputed_acceleration == 6:
-                        S0_map_init_3x = S0_map_init_6x
-                        S0_map_init_9x = S0_map_init_6x
-                        S0_map_init_12x = S0_map_init_6x
-                        S0_map_recon_3x = S0_map_recon_6x
-                        S0_map_recon_9x = S0_map_recon_6x
-                        S0_map_recon_12x = S0_map_recon_6x
-                    elif self.fixed_precomputed_acceleration == 9:
-                        S0_map_init_3x = S0_map_init_9x
-                        S0_map_init_6x = S0_map_init_9x
-                        S0_map_init_12x = S0_map_init_9x
-                        S0_map_recon_3x = S0_map_recon_9x
-                        S0_map_recon_6x = S0_map_recon_9x
-                        S0_map_recon_12x = S0_map_recon_9x
-                    elif self.fixed_precomputed_acceleration == 12:
-                        S0_map_init_3x = S0_map_init_12x
-                        S0_map_init_6x = S0_map_init_12x
-                        S0_map_init_9x = S0_map_init_12x
-                        S0_map_recon_3x = S0_map_recon_12x
-                        S0_map_recon_6x = S0_map_recon_12x
-                        S0_map_recon_9x = S0_map_recon_12x
-                    else:
-                        raise ValueError(
-                            f"{self.fixed_precomputed_acceleration}x is not a valid precomputed acceleration factor."
-                        )
-                S0_map = [
-                    S0_map_init_3x,
-                    S0_map_init_6x,
-                    S0_map_init_9x,
-                    S0_map_init_12x,
-                    S0_map_target,
-                    S0_map_recon_3x,
-                    S0_map_recon_6x,
-                    S0_map_recon_9x,
-                    S0_map_recon_12x,
-                ]
+            if any("S0_map_init_" in _ for _ in hf.keys()):
+                S0_map = self.check_stored_qdata(hf, "S0_map_init_", dataslice)
+                if any("S0_map_target" in _ for _ in hf.keys()):
+                    S0_map_target = self.get_consecutive_slices(hf, "S0_map_target", dataslice)
+                    S0_map.append(S0_map_target)
+                else:
+                    raise ValueError("While S0 map initializations are found, no S0 map target found in file.")
             else:
                 S0_map = np.empty([])
 
-            # TODO: this needs to be refactored - now is fixed for the paper
-            if "R2star_map_init_12x" in hf:
-                R2star_map_init_3x = self.get_consecutive_slices(hf, "R2star_map_init_3x", dataslice)
-                R2star_map_init_6x = self.get_consecutive_slices(hf, "R2star_map_init_6x", dataslice)
-                R2star_map_init_9x = self.get_consecutive_slices(hf, "R2star_map_init_9x", dataslice)
-                R2star_map_init_12x = self.get_consecutive_slices(hf, "R2star_map_init_12x", dataslice)
-                R2star_map_target = self.get_consecutive_slices(hf, "R2star_map_target", dataslice)
-                R2star_map_recon_3x = self.get_consecutive_slices(hf, "R2star_map_recon_3x", dataslice)
-                R2star_map_recon_6x = self.get_consecutive_slices(hf, "R2star_map_recon_6x", dataslice)
-                R2star_map_recon_9x = self.get_consecutive_slices(hf, "R2star_map_recon_9x", dataslice)
-                R2star_map_recon_12x = self.get_consecutive_slices(hf, "R2star_map_recon_12x", dataslice)
-
-                if self.fixed_precomputed_acceleration is not None:
-                    if self.fixed_precomputed_acceleration == 3:
-                        R2star_map_init_6x = R2star_map_init_3x
-                        R2star_map_init_9x = R2star_map_init_3x
-                        R2star_map_init_12x = R2star_map_init_3x
-                        R2star_map_recon_6x = R2star_map_recon_3x
-                        R2star_map_recon_9x = R2star_map_recon_3x
-                        R2star_map_recon_12x = R2star_map_recon_3x
-                    elif self.fixed_precomputed_acceleration == 6:
-                        R2star_map_init_3x = R2star_map_init_6x
-                        R2star_map_init_9x = R2star_map_init_6x
-                        R2star_map_init_12x = R2star_map_init_6x
-                        R2star_map_recon_3x = R2star_map_recon_6x
-                        R2star_map_recon_9x = R2star_map_recon_6x
-                        R2star_map_recon_12x = R2star_map_recon_6x
-                    elif self.fixed_precomputed_acceleration == 9:
-                        R2star_map_init_3x = R2star_map_init_9x
-                        R2star_map_init_6x = R2star_map_init_9x
-                        R2star_map_init_12x = R2star_map_init_9x
-                        R2star_map_recon_3x = R2star_map_recon_9x
-                        R2star_map_recon_6x = R2star_map_recon_9x
-                        R2star_map_recon_12x = R2star_map_recon_9x
-                    elif self.fixed_precomputed_acceleration == 12:
-                        R2star_map_init_3x = R2star_map_init_12x
-                        R2star_map_init_6x = R2star_map_init_12x
-                        R2star_map_init_9x = R2star_map_init_12x
-                        R2star_map_recon_3x = R2star_map_recon_12x
-                        R2star_map_recon_6x = R2star_map_recon_12x
-                        R2star_map_recon_9x = R2star_map_recon_12x
-                    else:
-                        raise ValueError(
-                            f"{self.fixed_precomputed_acceleration}x is not a valid precomputed acceleration factor."
-                        )
-                R2star_map = [
-                    R2star_map_init_3x,
-                    R2star_map_init_6x,
-                    R2star_map_init_9x,
-                    R2star_map_init_12x,
-                    R2star_map_target,
-                    R2star_map_recon_3x,
-                    R2star_map_recon_6x,
-                    R2star_map_recon_9x,
-                    R2star_map_recon_12x,
-                ]
+            if any("R2star_map_init_" in _ for _ in hf.keys()):
+                R2star_map = self.check_stored_qdata(hf, "R2star_map_init_", dataslice)
+                if any("R2star_map_target" in _ for _ in hf.keys()):
+                    R2star_map_target = self.get_consecutive_slices(hf, "R2star_map_target", dataslice)
+                    R2star_map.append(R2star_map_target)
+                else:
+                    raise ValueError("While R2star map initializations are found, no R2star map target found in file.")
             else:
                 R2star_map = np.empty([])
 
-            # TODO: this needs to be refactored - now is fixed for the paper
-            if "phi_map_init_12x" in hf:
-                phi_map_init_3x = self.get_consecutive_slices(hf, "phi_map_init_3x", dataslice)
-                phi_map_init_6x = self.get_consecutive_slices(hf, "phi_map_init_6x", dataslice)
-                phi_map_init_9x = self.get_consecutive_slices(hf, "phi_map_init_9x", dataslice)
-                phi_map_init_12x = self.get_consecutive_slices(hf, "phi_map_init_12x", dataslice)
-                phi_map_target = self.get_consecutive_slices(hf, "phi_map_target", dataslice)
-                phi_map_recon_3x = self.get_consecutive_slices(hf, "phi_map_recon_3x", dataslice)
-                phi_map_recon_6x = self.get_consecutive_slices(hf, "phi_map_recon_6x", dataslice)
-                phi_map_recon_9x = self.get_consecutive_slices(hf, "phi_map_recon_9x", dataslice)
-                phi_map_recon_12x = self.get_consecutive_slices(hf, "phi_map_recon_12x", dataslice)
-                if self.fixed_precomputed_acceleration is not None:
-                    if self.fixed_precomputed_acceleration == 3:
-                        phi_map_init_6x = phi_map_init_3x
-                        phi_map_init_9x = phi_map_init_3x
-                        phi_map_init_12x = phi_map_init_3x
-                        phi_map_recon_6x = phi_map_recon_3x
-                        phi_map_recon_9x = phi_map_recon_3x
-                        phi_map_recon_12x = phi_map_recon_3x
-                    elif self.fixed_precomputed_acceleration == 6:
-                        phi_map_init_3x = phi_map_init_6x
-                        phi_map_init_9x = phi_map_init_6x
-                        phi_map_init_12x = phi_map_init_6x
-                        phi_map_recon_3x = phi_map_recon_6x
-                        phi_map_recon_9x = phi_map_recon_6x
-                        phi_map_recon_12x = phi_map_recon_6x
-                    elif self.fixed_precomputed_acceleration == 9:
-                        phi_map_init_3x = phi_map_init_9x
-                        phi_map_init_6x = phi_map_init_9x
-                        phi_map_init_12x = phi_map_init_9x
-                        phi_map_recon_3x = phi_map_recon_9x
-                        phi_map_recon_6x = phi_map_recon_9x
-                        phi_map_recon_12x = phi_map_recon_9x
-                    elif self.fixed_precomputed_acceleration == 12:
-                        phi_map_init_3x = phi_map_init_12x
-                        phi_map_init_6x = phi_map_init_12x
-                        phi_map_init_9x = phi_map_init_12x
-                        phi_map_recon_3x = phi_map_recon_12x
-                        phi_map_recon_6x = phi_map_recon_12x
-                        phi_map_recon_9x = phi_map_recon_12x
-                    else:
-                        raise ValueError(
-                            f"{self.fixed_precomputed_acceleration}x is not a valid precomputed acceleration factor."
-                        )
-                phi_map = [
-                    phi_map_init_3x,
-                    phi_map_init_6x,
-                    phi_map_init_9x,
-                    phi_map_init_12x,
-                    phi_map_target,
-                    phi_map_recon_3x,
-                    phi_map_recon_6x,
-                    phi_map_recon_9x,
-                    phi_map_recon_12x,
-                ]
+            if any("phi_map_init_" in _ for _ in hf.keys()):
+                phi_map = self.check_stored_qdata(hf, "phi_map_init_", dataslice)
+                if any("phi_map_target" in _ for _ in hf.keys()):
+                    phi_map_target = self.get_consecutive_slices(hf, "phi_map_target", dataslice)
+                    phi_map.append(phi_map_target)
+                else:
+                    raise ValueError("While phi map initializations are found, no phi map target found in file.")
             else:
                 phi_map = np.empty([])
 
@@ -545,7 +352,7 @@ class qMRISliceDataset(Dataset):
             target = self.get_consecutive_slices(hf, self.recons_key, dataslice) if self.recons_key in hf else None
 
             attrs = dict(hf.attrs)
-            attrs |= metadata
+            attrs.update(metadata)
 
         if self.data_saved_per_slice:
             # arbitrary slice number for logging purposes

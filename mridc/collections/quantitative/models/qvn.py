@@ -23,7 +23,18 @@ __all__ = ["qVarNet"]
 
 
 class qVarNet(BaseqMRIReconstructionModel, ABC):
-    # TODO: add documentation
+    """
+    Implementation of the quantitative End-to-end Variational Network (qVN), as presented in Zhang, C. et al.
+
+    References
+    ----------
+
+    ..
+
+        Zhang, C. et al. (2022) ‘A unified model for reconstruction and R2 mapping of accelerated 7T data using \
+        quantitative Recurrent Inference Machine’. In review.
+
+    """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
         # init superclass
@@ -103,8 +114,7 @@ class qVarNet(BaseqMRIReconstructionModel, ABC):
 
         self.accumulate_estimates = cfg_dict.get("quantitative_module_accumulate_estimates")
 
-        # TODO: this needs to be refactored - now is fixed for the paper
-        self.gamma = torch.tensor([150.0, 150.0, 1000.0, 150.0])
+        self.gamma = torch.tensor(cfg_dict.get("quantitative_module_gamma_regularization_factors"))
         self.preprocessor = RescaleByMax
 
     @typecheck()
