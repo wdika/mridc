@@ -50,9 +50,7 @@ def _dataloder(subjectID: str, datapath: str):
 
         file_coilimgs_p1 = f"Subcortex_{subjectID.zfill(4)}*_R02_inv2_"
         file_coilimgs_p2 = "_gdataCorrected.nii.gz"
-        filename_coilimgs = glob.glob(
-            os.path.join(folders[0], f"{file_coilimgs_p1}*{file_coilimgs_p2}")
-        )
+        filename_coilimgs = glob.glob(os.path.join(folders[0], f"{file_coilimgs_p1}*{file_coilimgs_p2}"))
 
         if filename_sense and filename_coilimgs:
             # load sensitivity map (complex-valued)
