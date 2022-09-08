@@ -12,6 +12,7 @@
 is provided for MRI data analysis. Primarily it focuses on the following tasks:**
 
 ### **Reconstruction**:
+The following models are implemented for accelerated MRI reconstruction:
 1.[Cascades of Independently Recurrent Inference Machines (CIRIM)](https://iopscience.iop.org/article/10.1088/1361-6560/ac6cc2),
 2.[Compressed Sensing (CS)](https://ieeexplore.ieee.org/document/4472246),
 3.[Convolutional Recurrent Neural Networks (CRNN)](https://ieeexplore.ieee.org/document/8425639),
@@ -29,6 +30,16 @@ is provided for MRI data analysis. Primarily it focuses on the following tasks:*
 15.[Variable Splitting Network (VSNet)](https://dl.acm.org/doi/abs/10.1007/978-3-030-32251-9_78),
 16.[XPDNet](https://arxiv.org/abs/2010.07290),
 17.and Zero-Filled reconstruction (ZF).
+
+### **Quantitative Imaging**:
+The following models are implemented for quantitative imaging:
+1.[quantitative Cascades of Independently Recurrent Inference Machines (qCIRIM)](https://iopscience.iop.org/article/10.1088/1361-6560/ac6cc2),
+2.[quantitative End-to-End Variational Network (qE2EVN)](https://link.springer.com/chapter/10.1007/978-3-030-59713-9_7),
+3.[quantitative Independently Recurrent Inference Machines (qIRIM)](http://arxiv.org/abs/2012.07819),
+4.[quantitative Recurrent Inference Machines (qRIM)](https://www.sciencedirect.com/science/article/abs/pii/S1361841518306078?via%3Dihub),
+
+_Note: Currently only the above models are implemented. More models can be added by extending the reconstruction models
+for quantitative imaging. If you wish to extend the toolbox, please open an issue._
 
 ### **Segmentation**:
 _Coming soon..._
@@ -93,9 +104,9 @@ Please cite MRIDC using the "_Cite this repository_" button or as
 
 ```BibTeX
 @misc{mridc,
-    author = {Karkalousos, Dimitrios and Caan, Matthan},
+    author = {Karkalousos Dimitrios, Zhang Chaoping, and Caan Matthan},
     title = {MRIDC: Data Consistency for Magnetic Resonance Imaging},
-    year = {2021},
+    year = {2022},
     url = {https://github.com/wdika/mridc},
 }
 ```
@@ -106,3 +117,5 @@ The following papers use the MRIDC repo:
 
 [1] [Karkalousos, D. et al. (2021) ‘Assessment of Data Consistency through Cascades of Independently Recurrent
 Inference Machines for fast and robust accelerated MRI reconstruction’](https://iopscience.iop.org/article/10.1088/1361-6560/ac6cc2)
+
+[2] [Zhang, C. et al. (2022) 'A unified model for reconstruction and R2* mapping of accelerated 7T data using the quantitative Recurrent Inference Machine'](placeholder)

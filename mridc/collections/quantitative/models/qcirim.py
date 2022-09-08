@@ -247,10 +247,10 @@ class qCIRIM(BaseqMRIReconstructionModel, ABC):
             B0_map_init = torch.stack(B0_maps_init, dim=0).to(y)
             phi_map_init = torch.stack(phi_maps_init, dim=0).to(y)
 
-        R2star_map_init = R2star_map_init / self.gamma[0]
-        S0_map_init = S0_map_init / self.gamma[1]
-        B0_map_init = B0_map_init / self.gamma[2]
-        phi_map_init = phi_map_init / self.gamma[3]
+        R2star_map_pred = R2star_map_init / self.gamma[0]
+        S0_map_pred = S0_map_init / self.gamma[1]
+        B0_map_pred = B0_map_init / self.gamma[2]
+        phi_map_pred = phi_map_init / self.gamma[3]
 
         prediction = y.clone()
         eta = None
@@ -265,10 +265,10 @@ class qCIRIM(BaseqMRIReconstructionModel, ABC):
             prediction, hx = cascade(
                 prediction,
                 y,
-                R2star_map_init,
-                S0_map_init,
-                B0_map_init,
-                phi_map_init,
+                R2star_map_pred,
+                S0_map_pred,
+                B0_map_pred,
+                phi_map_pred,
                 TEs,
                 sensitivity_maps,
                 sampling_mask,
@@ -277,19 +277,33 @@ class qCIRIM(BaseqMRIReconstructionModel, ABC):
                 self.gamma,
                 keep_eta=i != 0,
             )
+            R2star_map_pred, S0_map_pred, B0_map_pred, phi_map_pred = (
+                prediction[-1][:, 0],
+                prediction[-1][:, 1],
+                prediction[-1][:, 2],
+                prediction[-1][:, 3],
+            )
+            if R2star_map_pred.shape[-1] == 2:
+                R2star_map_pred = torch.view_as_complex(R2star_map_pred)
+            if S0_map_pred.shape[-1] == 2:
+                S0_map_pred = torch.view_as_complex(S0_map_pred)
+            if B0_map_pred.shape[-1] == 2:
+                B0_map_pred = torch.view_as_complex(B0_map_pred)
+            if phi_map_pred.shape[-1] == 2:
+                phi_map_pred = torch.view_as_complex(phi_map_pred)
 
             time_steps_R2star_maps = []
             time_steps_S0_maps = []
             time_steps_B0_maps = []
             time_steps_phi_maps = []
             for pred in prediction:
-                R2star_map_pred, S0_map_pred, B0_map_pred, phi_map_pred = self.process_intermediate_pred(
+                _R2star_map_pred, _S0_map_pred, _B0_map_pred, _phi_map_pred = self.process_intermediate_pred(
                     torch.abs(pred), None, None, False
                 )
-                time_steps_R2star_maps.append(R2star_map_pred)
-                time_steps_S0_maps.append(S0_map_pred)
-                time_steps_B0_maps.append(B0_map_pred)
-                time_steps_phi_maps.append(phi_map_pred)
+                time_steps_R2star_maps.append(_R2star_map_pred)
+                time_steps_S0_maps.append(_S0_map_pred)
+                time_steps_B0_maps.append(_B0_map_pred)
+                time_steps_phi_maps.append(_phi_map_pred)
             cascades_R2star_maps.append(time_steps_R2star_maps)
             cascades_S0_maps.append(time_steps_S0_maps)
             cascades_B0_maps.append(time_steps_B0_maps)

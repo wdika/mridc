@@ -215,10 +215,10 @@ class qVarNet(BaseqMRIReconstructionModel, ABC):
             B0_map_init = torch.stack(B0_maps_init, dim=0).to(y)
             phi_map_init = torch.stack(phi_maps_init, dim=0).to(y)
 
-        R2star_map_init = R2star_map_init / self.gamma[0]
-        S0_map_init = S0_map_init / self.gamma[1]
-        B0_map_init = B0_map_init / self.gamma[2]
-        phi_map_init = phi_map_init / self.gamma[3]
+        R2star_map_pred = R2star_map_init / self.gamma[0]
+        S0_map_pred = S0_map_init / self.gamma[1]
+        B0_map_pred = B0_map_init / self.gamma[2]
+        phi_map_pred = phi_map_init / self.gamma[3]
 
         prediction = y.clone()
         for cascade in self.qvn:
@@ -226,15 +226,30 @@ class qVarNet(BaseqMRIReconstructionModel, ABC):
             prediction = cascade(
                 prediction,
                 y,
-                R2star_map_init,
-                S0_map_init,
-                B0_map_init,
-                phi_map_init,
+                R2star_map_pred,
+                S0_map_pred,
+                B0_map_pred,
+                phi_map_pred,
                 TEs,
                 sensitivity_maps,
                 sampling_mask,
                 self.gamma,
             )
+            R2star_map_pred, S0_map_pred, B0_map_pred, phi_map_pred = (
+                prediction[:, 0],
+                prediction[:, 1],
+                prediction[:, 2],
+                prediction[:, 3],
+            )
+            if R2star_map_pred.shape[-1] == 2:
+                R2star_map_pred = torch.view_as_complex(R2star_map_pred)
+            if S0_map_pred.shape[-1] == 2:
+                S0_map_pred = torch.view_as_complex(S0_map_pred)
+            if B0_map_pred.shape[-1] == 2:
+                B0_map_pred = torch.view_as_complex(B0_map_pred)
+            if phi_map_pred.shape[-1] == 2:
+                phi_map_pred = torch.view_as_complex(phi_map_pred)
+
         R2star_map_pred, S0_map_pred, B0_map_pred, phi_map_pred = self.process_intermediate_pred(
             torch.abs(torch.view_as_complex(prediction)), None, None, False
         )

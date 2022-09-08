@@ -1,0 +1,188 @@
+pretrained: false
+checkpoint: None
+mode: train
+
+model:
+  model_name: qVN
+  use_reconstruction_module: false
+  reconstruction_module_num_cascades: 2
+  reconstruction_module_channels: 8
+  reconstruction_module_pooling_layers: 2
+  reconstruction_module_in_channels: 2
+  reconstruction_module_out_channels: 2
+  reconstruction_module_padding_size: 11
+  reconstruction_module_normalize: true
+  reconstruction_module_no_dc: false
+  reconstruction_module_dimensionality: 2
+  reconstruction_module_accumulate_estimates: false
+  quantitative_module_num_cascades: 1
+  quantitative_module_channels: 4
+  quantitative_module_pooling_layers: 2
+  quantitative_module_in_channels: 8
+  quantitative_module_out_channels: 8
+  quantitative_module_padding_size: 11
+  quantitative_module_normalize: true
+  quantitative_module_no_dc: false
+  quantitative_module_dimensionality: 2
+  quantitative_module_accumulate_estimates: false
+  quantitative_module_signal_forward_model_sequence: MEGRE
+  quantitative_module_gamma_regularization_factors:
+    - 150.0
+    - 150.0
+    - 1000.0
+    - 150.0
+  loss_fn: ssim
+  loss_regularization_factors:
+    - R2star: 3.0
+    - S0: 1.0
+    - B0: 1.0
+    - phi: 1.0
+#  loss_fn: mse or l1
+#  loss_regularization_factors:
+#    - R2star: 300.0
+#    - S0: 500.0
+#    - B0: 20000.0
+#    - phi: 500.0
+  coil_combination_method: SENSE
+  use_sens_net: false
+  sens_chans: 8
+  sens_pools: 4
+  sens_mask_type: 2D
+  fft_centered: false
+  fft_normalization: backward
+  spatial_dims:
+    - -2
+    - -1
+  coil_dim: 2
+  shift_B0_input: false
+
+  train_ds:
+    data_path: ???
+    sequence: MEGRE
+    data_saved_per_slice: true
+    coil_combination_method: SENSE
+    dimensionality: 2
+    consecutive_slices: 1
+    init_coil_dim: -1
+    kspace_scaling_factor: 10000
+    fft_centered: false
+    fft_normalization: backward
+    spatial_dims:
+      - -2
+      - -1
+    coil_dim: 2
+    precompute_quantitative_maps: false
+    shift_B0_input: false
+    TEs:
+      - 3.0
+      - 11.5
+      - 20.0
+      - 28.5
+    mask_args:
+      type: gaussian2d
+      accelerations:
+        - 3
+        - 6
+        - 9
+        - 12
+      center_fractions:
+        - 0.7
+        - 0.7
+        - 0.7
+        - 0.7
+      scale: 0.02
+      shift_mask: false
+      use_seed: true
+    normalize_inputs: true
+    max_norm: true
+    crop_size: None
+    crop_before_masking: true
+    kspace_zero_filling_size: None
+    sample_rate: 1
+    batch_size: 1
+    shuffle: true
+    num_workers: 8
+    drop_last: false
+    pin_memory: false
+
+  validation_ds:
+    data_path: ???
+    sequence: MEGRE
+    data_saved_per_slice: true
+    coil_combination_method: SENSE
+    dimensionality: 2
+    consecutive_slices: 1
+    init_coil_dim: -1
+    kspace_scaling_factor: 10000
+    fft_centered: false
+    fft_normalization: backward
+    spatial_dims:
+      - -2
+      - -1
+    coil_dim: 2
+    precompute_quantitative_maps: false
+    shift_B0_input: false
+    TEs:
+      - 3.0
+      - 11.5
+      - 20.0
+      - 28.5
+    mask_args:
+      type: gaussian2d
+      accelerations:
+        - 3
+        - 6
+        - 9
+        - 12
+      center_fractions:
+        - 0.7
+        - 0.7
+        - 0.7
+        - 0.7
+      scale: 0.02
+      shift_mask: false
+      use_seed: false
+    normalize_inputs: true
+    max_norm: true
+    crop_size: None
+    crop_before_masking: true
+    kspace_zero_filling_size: None
+    sample_rate: 1
+    batch_size: 1
+    shuffle: false
+    num_workers: 8
+    drop_last: false
+    pin_memory: false
+
+  optim:
+    name: adam
+    lr: 0.001
+    betas:
+      - 0.9
+      - 0.98
+    weight_decay: 0.0
+    sched:
+      name: InverseSquareRootAnnealing
+      min_lr: 0.0
+      last_epoch: -1
+      warmup_ratio: 0.1
+
+trainer:
+  strategy: ddp
+  gpus: 1
+  num_nodes: 1
+  max_epochs: 200
+  precision: 16
+  enable_checkpointing: false
+  logger: false
+  log_every_n_steps: 50
+  check_val_every_n_epoch: -1
+  max_steps: -1
+
+exp_manager:
+  exp_dir: ???
+  create_tensorboard_logger: true
+  create_wandb_logger: false
+  wandb_logger_kwargs:
+    project: ???
+  files_to_copy: [ ]
