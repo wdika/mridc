@@ -303,41 +303,37 @@ class qMRISliceDataset(Dataset):
 
             if any("B0_map_init_" in _ for _ in hf.keys()):
                 B0_map = self.check_stored_qdata(hf, "B0_map_init_", dataslice)
-                if any("B0_map_target" in _ for _ in hf.keys()):
-                    B0_map_target = self.get_consecutive_slices(hf, "B0_map_target", dataslice)
-                    B0_map.append(B0_map_target)
-                else:
+                if all("B0_map_target" not in _ for _ in hf.keys()):
                     raise ValueError("While B0 map initializations are found, no B0 map target found in file.")
+                B0_map_target = self.get_consecutive_slices(hf, "B0_map_target", dataslice)
+                B0_map.append(B0_map_target)
             else:
                 B0_map = np.empty([])
 
             if any("S0_map_init_" in _ for _ in hf.keys()):
                 S0_map = self.check_stored_qdata(hf, "S0_map_init_", dataslice)
-                if any("S0_map_target" in _ for _ in hf.keys()):
-                    S0_map_target = self.get_consecutive_slices(hf, "S0_map_target", dataslice)
-                    S0_map.append(S0_map_target)
-                else:
+                if all("S0_map_target" not in _ for _ in hf.keys()):
                     raise ValueError("While S0 map initializations are found, no S0 map target found in file.")
+                S0_map_target = self.get_consecutive_slices(hf, "S0_map_target", dataslice)
+                S0_map.append(S0_map_target)
             else:
                 S0_map = np.empty([])
 
             if any("R2star_map_init_" in _ for _ in hf.keys()):
                 R2star_map = self.check_stored_qdata(hf, "R2star_map_init_", dataslice)
-                if any("R2star_map_target" in _ for _ in hf.keys()):
-                    R2star_map_target = self.get_consecutive_slices(hf, "R2star_map_target", dataslice)
-                    R2star_map.append(R2star_map_target)
-                else:
+                if all("R2star_map_target" not in _ for _ in hf.keys()):
                     raise ValueError("While R2star map initializations are found, no R2star map target found in file.")
+                R2star_map_target = self.get_consecutive_slices(hf, "R2star_map_target", dataslice)
+                R2star_map.append(R2star_map_target)
             else:
                 R2star_map = np.empty([])
 
             if any("phi_map_init_" in _ for _ in hf.keys()):
                 phi_map = self.check_stored_qdata(hf, "phi_map_init_", dataslice)
-                if any("phi_map_target" in _ for _ in hf.keys()):
-                    phi_map_target = self.get_consecutive_slices(hf, "phi_map_target", dataslice)
-                    phi_map.append(phi_map_target)
-                else:
+                if all("phi_map_target" not in _ for _ in hf.keys()):
                     raise ValueError("While phi map initializations are found, no phi map target found in file.")
+                phi_map_target = self.get_consecutive_slices(hf, "phi_map_target", dataslice)
+                phi_map.append(phi_map_target)
             else:
                 phi_map = np.empty([])
 
@@ -353,7 +349,7 @@ class qMRISliceDataset(Dataset):
             target = self.get_consecutive_slices(hf, self.recons_key, dataslice) if self.recons_key in hf else None
 
             attrs = dict(hf.attrs)
-            attrs.update(metadata)
+            attrs |= metadata
 
         if self.data_saved_per_slice:
             # arbitrary slice number for logging purposes
