@@ -349,7 +349,7 @@ class qMRISliceDataset(Dataset):
             target = self.get_consecutive_slices(hf, self.recons_key, dataslice) if self.recons_key in hf else None
 
             attrs = dict(hf.attrs)
-            attrs |= metadata
+            attrs.update(metadata)
 
         if self.data_saved_per_slice:
             # arbitrary slice number for logging purposes
