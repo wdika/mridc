@@ -40,14 +40,20 @@ def _dataloder(subjectID: str, datapath: str):
     sense_complex = False
     coilimgs = False
     brain_mask = False
-    folders = glob.glob(datapath + "Subcortex_" + str(subjectID).zfill(4) + "*_R02")
-    if folders:
+    if folders := glob.glob(f"{datapath}Subcortex_{subjectID.zfill(4)}*_R02"):
         filename_sense = glob.glob(
-            os.path.join(folders[0], "Subcortex_" + str(subjectID).zfill(4) + "*_R02_inv2_rcal.mat")
+            os.path.join(
+                folders[0],
+                f"Subcortex_{subjectID.zfill(4)}*_R02_inv2_rcal.mat",
+            )
         )
-        file_coilimgs_p1 = "Subcortex_" + str(subjectID).zfill(4) + "*_R02_inv2_"
+
+        file_coilimgs_p1 = f"Subcortex_{subjectID.zfill(4)}*_R02_inv2_"
         file_coilimgs_p2 = "_gdataCorrected.nii.gz"
-        filename_coilimgs = glob.glob(os.path.join(folders[0], file_coilimgs_p1 + "*" + file_coilimgs_p2))
+        filename_coilimgs = glob.glob(
+            os.path.join(folders[0], f"{file_coilimgs_p1}*{file_coilimgs_p2}")
+        )
+
         if filename_sense and filename_coilimgs:
             # load sensitivity map (complex-valued)
             with h5py.File(filename_sense[0], "r") as f:
@@ -102,7 +108,7 @@ def B0mapping(coilimgs, sense, mask_brain):
     phase_diff_set = []
     TE_diff = []
     # obtain phase differences and TE differences
-    for i in range(0, phase_unwrapped.shape[0] - TEnotused):
+    for i in range(phase_unwrapped.shape[0] - TEnotused):
         phase_diff_set.append((phase_unwrapped[i + 1] - phase_unwrapped[i]).flatten())
         phase_diff_set[i] = (
             phase_diff_set[i]
@@ -161,17 +167,10 @@ def main(args):
 
     datapath = args.datapath
     applymask = args.applymask
-    if applymask:
-        savepath = args.savepath
-    else:
+    if not applymask:
         centerslices = args.centerslices
-        if centerslices:
-            savepath = args.savepath
-            half_nr_of_slices = 25
-        else:
-            savepath = args.savepath
-            half_nr_of_slices = 50
-
+        half_nr_of_slices = 25 if centerslices else 50
+    savepath = args.savepath
     for subjectID in tqdm(range(1, 119)):
         coilimgs, sense, brain_mask = _dataloder(subjectID, datapath)
         if coilimgs != False:
@@ -181,7 +180,7 @@ def main(args):
                 sense = sense * np.repeat(brain_mask[..., np.newaxis], sense.shape[-1], axis=3)
             B0map = B0mapping(coilimgs, sense, brain_mask)
             planes = ["sagittal", "coronal", "axial"]
-            folder_subject = "Subcortex_" + str(subjectID).zfill(4) + "_R02_inv2"
+            folder_subject = f"Subcortex_{str(subjectID).zfill(4)}_R02_inv2"
             for dim in range(3):
                 ksp = generate_2dksp(coilimgs, dim)
                 ksp_dim = np.swapaxes(ksp, 1, dim + 1)
@@ -195,8 +194,9 @@ def main(args):
                         savepath,
                         folder_subject,
                         planes[dim],
-                        "Subcortex_" + str(subjectID).zfill(4) + "_" + planes[dim] + "_" + str(itr_dim) + ".h5",
+                        f"Subcortex_{str(subjectID).zfill(4)}_{planes[dim]}_{str(itr_dim)}.h5",
                     )
+
                     with h5py.File(filename_save, "w") as data:
                         data.create_dataset("ksp", data=ksp_dim[:, itr_dim, ...].squeeze())
                         data.create_dataset("sense", data=sense_dim[itr_dim, ...].squeeze())
