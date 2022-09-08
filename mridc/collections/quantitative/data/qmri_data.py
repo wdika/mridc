@@ -230,13 +230,14 @@ class qMRISliceDataset(Dataset):
                     x = self.get_consecutive_slices(data, key + str(acc) + "x", dataslice)
                     if x.ndim == 3:
                         x = x[dataslice]
-                    if self.fixed_precomputed_acceleration is not None:
-                        if int(acc) == self.fixed_precomputed_acceleration:
-                            qdata.append(x)
-                        else:
-                            count += 1
-                    else:
+                    if (
+                        self.fixed_precomputed_acceleration is not None
+                        and int(acc) == self.fixed_precomputed_acceleration
+                        or self.fixed_precomputed_acceleration is None
+                    ):
                         qdata.append(x)
+                    else:
+                        count += 1
             if self.fixed_precomputed_acceleration is not None:
                 qdata = [qdata[0] * count]
         return qdata
