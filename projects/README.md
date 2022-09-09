@@ -10,6 +10,13 @@ For example, to train a CIRIM:
 
 `python -m mridc.launch --config-path mridc/projects/reconstruction/model_zoo/conf/ --config-name base_cirim_train.yaml`
 
+### Datasets
+
+The recommended public datasets to use with this repo for accelerated MRI reconstruction are the:
+
+- [fastMRI](http://arxiv.org/abs/1811.08839) dataset, and the
+- [Fully Sampled Knees](http://old.mridata.org/fullysampled/knees/) dataset.
+
 ## **Quantitative**
 
 For training/running a model, you will need to set up a configuration file.
@@ -22,7 +29,7 @@ For example, to train a qRIM:
 
 `python -m mridc.launch --config-path mridc/projects/quantitative/model_zoo/conf/ --config-name base_qrim_train.yaml`
 
-### Dataset
+### Datasets
 The recommended public dataset to use with this repo for quantitative imaging is the [AHEAD](https://doi.org/10.34894/IHZGQM) dataset.
 The raw data are in NIfTI format; including 3D complex data, coil sensitivity maps, and brain mask (needed for constraining the loss in training).
 The data should be saved as 2D slices and converted in h5 format.
