@@ -44,14 +44,9 @@ for quantitative imaging. If you wish to extend the toolbox, please open an issu
 ### **Segmentation**:
 _Coming soon..._
 
-### **Acknowledgements**
+## Usage
 
-MRIDC is based on the [NeMo](https://github.com/NVIDIA/NeMo) framework, using PyTorch Lightning for feasible
-high-performance multi-GPU/multi-node mixed-precision training.
-
-For the reconstruction methods:
-- the implementations of 6 and 14 are thanks to and based on the [fastMRI repo](https://github.com/facebookresearch/fastMRI).
-- The implementations of 7, 9, 10, 11, 13, and 16 are thanks to and based on the [DIRECT repo](https://github.com/NKI-AI/direct).
+Check the [projects](https://github.com/wdika/mridc/blob/main/projects/README.md) page for more information of how to use **mridc**.
 
 ## Installation
 
@@ -77,16 +72,14 @@ cd mridc
 ./reinstall.sh
 ```
 
-## Usage
+### **Acknowledgements**
 
-Check the [projects](https://github.com/wdika/mridc/blob/main/projects/README.md) page for more information of how to use **mridc**.
+MRIDC is based on the [NeMo](https://github.com/NVIDIA/NeMo) framework, using PyTorch Lightning for feasible
+high-performance multi-GPU/multi-node mixed-precision training.
 
-### Datasets
-
-Recommended public datasets to use with this repo:
-
-- [fastMRI](http://arxiv.org/abs/1811.08839),
-- [Fully Sampled Knees](http://old.mridata.org/fullysampled/knees/).
+For the reconstruction methods:
+- the implementations of 6 and 14 are thanks to and based on the [fastMRI repo](https://github.com/facebookresearch/fastMRI).
+- The implementations of 7, 9, 10, 11, 13, and 16 are thanks to and based on the [DIRECT repo](https://github.com/NKI-AI/direct).
 
 ## API Documentation
 
@@ -118,4 +111,4 @@ The following papers use the MRIDC repo:
 [1] [Karkalousos, D. et al. (2021) ‘Assessment of Data Consistency through Cascades of Independently Recurrent
 Inference Machines for fast and robust accelerated MRI reconstruction’](https://iopscience.iop.org/article/10.1088/1361-6560/ac6cc2)
 
-[2] [Zhang, C. et al. (2022) 'A unified model for reconstruction and R2* mapping of accelerated 7T data using the quantitative Recurrent Inference Machine'](placeholder)
+[2] Zhang, C. et al. (2022) 'A unified model for reconstruction and R2* mapping of accelerated 7T data using the quantitative Recurrent Inference Machine'

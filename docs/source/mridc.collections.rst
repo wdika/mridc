@@ -8,6 +8,7 @@ Subpackages
    :maxdepth: 4
 
    mridc.collections.common
+   mridc.collections.quantitative
    mridc.collections.reconstruction
 
 Module contents
