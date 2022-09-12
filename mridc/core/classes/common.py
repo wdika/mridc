@@ -193,9 +193,9 @@ class Typing(ABC):
             if hasattr(value, "shape"):
                 value_shape = value.shape
                 type_shape = metadata.base_types[key].axes
-                name = key
-
                 if type_shape is not None and len(value_shape) != len(tuple(type_shape)):
+                    name = key
+
                     raise TypeError(
                         f"Input shape mismatch occurred for {name} in module {self.__class__.__name__} : \n"
                         f"Input shape expected = {metadata.base_types[name].axes} | \n"
@@ -251,18 +251,9 @@ class Typing(ABC):
         if metadata.is_singular_container_type:
             pass
 
-        # In all other cases, python will wrap multiple outputs into an outer tuple.
-        # Allow number of output arguments to be <= total output neural types and >= mandatory outputs.
-
         elif len(out_container) > len(out_types_list) or len(out_container) < len(mandatory_out_types_list):
             raise TypeError(
-                "Number of output arguments provided ({}) is not as expected. It should be larger than {} and "
-                "less than {}.\n"
-                "This can be either because insufficient/extra number of output NeuralTypes were provided,"
-                "or the provided NeuralTypes {} should enable container support "
-                "(add '[]' to the NeuralType definition)".format(
-                    len(out_container), len(out_types_list), len(mandatory_out_types_list), output_types
-                )
+                f"Number of output arguments provided ({len(out_container)}) is not as expected. It should be larger than {len(out_types_list)} and less than {len(mandatory_out_types_list)}.\nThis can be either because insufficient/extra number of output NeuralTypes were provided,or the provided NeuralTypes {output_types} should enable container support (add '[]' to the NeuralType definition)"
             )
 
             # Attach types recursively, if possible
@@ -429,30 +420,25 @@ class Serialization(ABC):
                 try:
                     # try to import the target class
                     imported_cls = mridc.utils.model_utils.import_class_by_path(target_cls)  # type: ignore
-
                     # use subclass instead
                     if issubclass(cls, imported_cls):
                         imported_cls = cls
-                        if accepts_trainer := Serialization._inspect_signature_for_trainer(imported_cls):
-                            if trainer is None:
-                                # Create a dummy PL trainer object
-                                cfg_trainer = TrainerConfig(
-                                    gpus=1, accelerator="ddp", num_nodes=1, logger=False, checkpoint_callback=False
-                                )
-                                trainer = Trainer(cfg_trainer)
-                            instance = imported_cls(cfg=config, trainer=trainer)  # type: ignore
-                        else:
-                            instance = imported_cls(cfg=config)  # type: ignore
+                    if accepts_trainer := Serialization._inspect_signature_for_trainer(imported_cls):
+                        # Create a dummy PL trainer object
+                        instance = imported_cls(cfg=config, trainer=trainer)  # type: ignore
+                    else:
+                        instance = imported_cls(cfg=config)  # type: ignore
 
                 except Exception as e:
                     tb = traceback.format_exc()
                     prev_error = f"Model instantiation failed.\nTarget class: {target_cls}\nError: {e}\n{tb}"
-
                     logging.debug(prev_error + "\n falling back to 'cls'.")
             # target class resolution was unsuccessful, fall back to current `cls`
             if instance is None:
                 try:
                     if accepts_trainer := Serialization._inspect_signature_for_trainer(cls):
+                        instance = cls(cfg=config, trainer=trainer)  # type: ignore
+                    else:
                         instance = cls(cfg=config)  # type: ignore
                 except Exception as e:
                     # report saved errors, if any, and raise the current error
@@ -487,7 +473,8 @@ class Serialization(ABC):
         """Inspects the signature of the class to see if it accepts a trainer argument."""
         if hasattr(check_cls, "__init__"):
             signature = inspect.signature(check_cls.__init__)
-            return Trainer in signature.parameters
+            if "trainer" in signature.parameters:
+                return True
         return False
 
 

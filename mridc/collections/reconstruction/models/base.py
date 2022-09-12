@@ -31,7 +31,7 @@ from mridc.collections.reconstruction.parts.utils import batched_mask_center
 from mridc.core.classes.modelPT import ModelPT
 from mridc.utils.model_utils import convert_model_config_to_dict_config, maybe_update_config_version
 
-__all__ = ["BaseMRIReconstructionModel", "BaseSensitivityModel"]
+__all__ = ["BaseMRIReconstructionModel", "BaseSensitivityModel", "DistributedMetricSum"]
 
 
 class DistributedMetricSum(Metric):

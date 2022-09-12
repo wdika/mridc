@@ -14,6 +14,8 @@ from mridc.collections.reconstruction.models.kikinet import KIKINet
 from mridc.collections.reconstruction.models.lpd import LPDNet
 from mridc.collections.reconstruction.models.multidomainnet import MultiDomainNet
 from mridc.collections.reconstruction.models.pics import PICS
+from mridc.collections.quantitative.models.qcirim import qCIRIM
+from mridc.collections.quantitative.models.qvn import qVarNet
 from mridc.collections.reconstruction.models.rvn import RecurrentVarNet
 from mridc.collections.reconstruction.models.unet import UNet
 from mridc.collections.reconstruction.models.vn import VarNet
@@ -62,6 +64,10 @@ def main(cfg: DictConfig) -> None:
         model = MultiDomainNet(cfg.model, trainer=trainer)
     elif model_name == "PICS":
         model = PICS(cfg.model, trainer=trainer)
+    elif model_name == "QCIRIM":
+        model = qCIRIM(cfg.model, trainer=trainer)
+    elif model_name == "QVN":
+        model = qVarNet(cfg.model, trainer=trainer)
     elif model_name == "RVN":
         model = RecurrentVarNet(cfg.model, trainer=trainer)
     elif model_name == "UNET":
@@ -75,8 +81,8 @@ def main(cfg: DictConfig) -> None:
     else:
         raise NotImplementedError(
             f"{model_name} is not implemented in MRIDC. You can use one of the following methods: "
-            "CASCADENET, CIRIM, CRNNET, DUNET, E2EVN, JOINTICNET, KIKINET, LPDNET, MULTIDOMAINNET, PICS, RVN, UNET, "
-            "VSNET, XPDNET, or Zero-Filled. /n"
+            "CASCADENET, CIRIM, CRNNET, DUNET, E2EVN, JOINTICNET, KIKINET, LPDNET, MULTIDOMAINNET, PICS, qCIRIM, qVN, "
+            "RVN, UNET, VSNET, XPDNET, or Zero-Filled. /n"
             "If you implemented a new model, please consider adding it through a PR on GitHub."
         )
 

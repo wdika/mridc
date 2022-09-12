@@ -4,7 +4,11 @@ __author__ = "Dimitrios Karkalousos"
 from abc import ABC
 from typing import Any, Dict, Tuple, Union
 
-import bart
+try:
+    import bart
+except:
+    pass
+
 import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
