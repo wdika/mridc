@@ -7,4 +7,4 @@ from packaging import version
 
 # Library version globals
 TORCH_VERSION = None
-TORCH_VERSION_MIN = version.Version("1.9.0")
+TORCH_VERSION_MIN = version.Version("1.8.0")

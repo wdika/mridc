@@ -539,8 +539,8 @@ class ModelPT(LightningModule, Model):
                     for i in range(len(scheduler_config["name"]))
                 ]
 
-                self._scheduler = _schedulers
-                self._optimizer = [self._optimizer] * len(scheduler_config["name"])
+                self._scheduler = _schedulers  # type: ignore
+                self._optimizer = [self._optimizer] * len(scheduler_config["name"])  # type: ignore
             else:
                 # Try to instantiate scheduler for optimizer
                 self._scheduler = mridc.core.optim.lr_scheduler.prepare_lr_scheduler(  # type: ignore

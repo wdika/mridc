@@ -172,7 +172,7 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
 
         self._fp32_grad_accum = fp32_grad_accum
         self._contiguous_grad_bucket = contiguous_grad_bucket
-        self._async_grad_allreduce = async_grad_allreduce
+        self._async_grad_allreduce = async_grad_allreduce and get_data_parallel_world_size() > 1
         self._grad_divisor = 1 / get_data_parallel_world_size()
 
         if self._async_grad_allreduce:
@@ -279,7 +279,7 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
 
         def param_hook(*unused):
             """Gradient accumulation and all-reduce."""
-            if param.grad.data is None:
+            if param.grad is None:
                 return
             if main_param.grad is None:
                 main_param.grad = param.grad.float()
@@ -400,6 +400,11 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
     @torch.no_grad()
     def step(self, **kwargs):
         """Step the optimizer."""
+        # While async grad allreduce is enabled, bprop will keep moving forward without waiting for the finish of
+        # async grad AR works. Hence, to guarantee the correctness of grads reduction, we cannot start weight update
+        # until all async grad AR works are done.
+        if self._async_grad_allreduce:
+            torch.cuda.synchronize()
         self.optimizer.step(closure=None, **kwargs)
         # Update params from main params.
         with torch.no_grad():
@@ -462,7 +467,7 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
 
     def _get_state(self):
         """Promote state, so it can be retrieved or set via "optimizer_instance.state."""
-        return self.optimizer.state
+        return self.optimizer.state if hasattr(self, "optimizer") else []
 
     def _set_state(self, value):
         """Promote state, so it can be retrieved or set via "optimizer_instance.state."""
@@ -475,10 +480,20 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
         Promote param_groups, so it can be retrieved or set via "optimizer_instance.param_groups.
         (for example, to adjust the learning rate)
         """
-        return self.optimizer.param_groups
+        return self.optimizer.param_groups if hasattr(self, "optimizer") else []
 
     def _set_param_groups(self, value):
         """Set param_groups."""
         self.optimizer.param_groups = value
 
     param_groups = property(_get_param_groups, _set_param_groups)
+
+    def _get_defaults(self):
+        """Promote defaults, so it can be retrieved or set via 'optimizer_instance.default'."""
+        return self.optimizer.defaults if hasattr(self, "optimizer") else []
+
+    def _set_defaults(self, value):
+        """Set defaults."""
+        self.optimizer.defaults = value
+
+    defaults = property(_get_defaults, _set_defaults)

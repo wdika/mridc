@@ -5,6 +5,7 @@ __author__ = "Dimitrios Karkalousos"
 
 from abc import ABC
 from os.path import exists
+from typing import List, Union
 
 import torch
 from torch.onnx import TrainingMode
@@ -47,9 +48,10 @@ class Exportable(ABC):
         do_constant_folding=True,
         onnx_opset_version=None,
         training=TrainingMode.EVAL,
-        check_trace: bool = False,
+        check_trace: Union[bool, List[torch.Tensor]] = False,
         dynamic_axes=None,
         check_tolerance=0.01,
+        export_modules_as_functions: bool = False,
     ):
         """
         Export the module to a file.
@@ -65,6 +67,7 @@ class Exportable(ABC):
         check_trace: If True, check the trace of the exported model.
         dynamic_axes: A dictionary of input names and dynamic axes.
         check_tolerance: The tolerance for the check_trace.
+        export_modules_as_functions: If True, export modules as functions.
         """
         all_out = []
         all_descr = []
@@ -81,6 +84,7 @@ class Exportable(ABC):
                 check_trace=check_trace,
                 dynamic_axes=dynamic_axes,
                 check_tolerance=check_tolerance,
+                export_modules_as_functions=export_modules_as_functions,
             )
             # Propagate input example (default scenario, may need to be overriden)
             if input_example is not None:
@@ -101,6 +105,7 @@ class Exportable(ABC):
         check_trace: bool = False,
         dynamic_axes=None,
         check_tolerance=0.01,
+        export_modules_as_functions: bool = False,
     ):
         """
         Helper to export the module to a file.
@@ -116,15 +121,13 @@ class Exportable(ABC):
         check_trace: If True, check the trace of the exported model.
         dynamic_axes: A dictionary of input names and dynamic axes.
         check_tolerance: The tolerance for the check_trace.
+        export_modules_as_functions: If True, export modules as functions.
         """
         my_args = locals().copy()
         my_args.pop("self")
 
-        exportables = []
-        for m in self.modules():  # type: ignore
-            if isinstance(m, Exportable):
-                exportables.append(m)
-        qual_name = self.__module__ + "." + self.__class__.__qualname__
+        exportables = [m for m in self.modules() if isinstance(m, Exportable)]  # type: ignore
+        qual_name = f"{self.__module__}.{self.__class__.__qualname__}"
         format = get_export_format(output)
         output_descr = f"{qual_name} exported to {format}"
 
@@ -191,10 +194,12 @@ class Exportable(ABC):
                         do_constant_folding=do_constant_folding,
                         dynamic_axes=dynamic_axes,
                         opset_version=onnx_opset_version,
+                        export_modules_as_functions=export_modules_as_functions,
                     )
 
                     if check_trace:
-                        verify_runtime(output, input_list, input_dict, input_names, output_names, output_example)
+                        check_trace_input = [input_example] if isinstance(check_trace, bool) else check_trace
+                        verify_runtime(self, output, check_trace_input, input_names)
 
                 else:
                     raise ValueError(f"Encountered unknown export format {format}.")

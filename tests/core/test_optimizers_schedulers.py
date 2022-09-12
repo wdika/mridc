@@ -162,16 +162,29 @@ class TestOptimizersSchedulers:
     INITIAL_LR = 0.1
     MIN_LR = 1e-3
     MAX_STEPS = 10
+    D_MODEL = 16
 
     # fused_adam is looking for CUDA and this test is being run on CPU only tests
     @pytest.mark.unit
     def test_get_optimizer(self):
         """Test that the optimizer is correctly created"""
         model = TempModel()
+        if torch.cuda.is_available():
+            model.cuda()
 
         for opt_name in AVAILABLE_OPTIMIZERS:
             if opt_name == "fused_adam" and not torch.cuda.is_available():
                 continue
+            if opt_name == "distributed_fused_adam":
+                if not torch.cuda.is_available() or not torch.distributed.is_nccl_available():
+                    continue
+                if not torch.distributed.is_initialized():
+                    torch.distributed.init_process_group(
+                        "nccl",
+                        world_size=1,
+                        rank=0,
+                        store=torch.distributed.HashStore(),
+                    )
             opt_cls = get_optimizer(opt_name)
             if opt_name == "adafactor":
                 # Adafactor's default mode uses relative_step without any lr.
@@ -712,6 +725,56 @@ class TestOptimizersSchedulers:
 
         if final_lr != self.MIN_LR:
             raise AssertionError
+
+    # Noam scheduler should decay past MAX_STEPS - run two schedulers in parallel to test it
+    @pytest.mark.unit
+    def test_NoamAnnealing(self):
+        model = TempModel()
+        opt_cls = optim.get_optimizer("novograd")
+        opt1 = opt_cls(model.parameters(), lr=self.INITIAL_LR)
+        opt2 = opt_cls(model.parameters(), lr=self.INITIAL_LR)
+
+        # No warmup case
+        policy1 = optim.lr_scheduler.NoamAnnealing(
+            opt1, d_model=self.D_MODEL, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR
+        )
+        policy2 = optim.lr_scheduler.NoamAnnealing(
+            opt2, d_model=self.D_MODEL, max_steps=self.MAX_STEPS * 2, min_lr=self.MIN_LR
+        )
+        initial_lr = policy1.get_last_lr()[0]
+
+        assert initial_lr == self.D_MODEL ** (-0.5) * self.INITIAL_LR
+
+        for i in range(self.MAX_STEPS * 2):
+            assert self.MIN_LR < policy1.get_last_lr()[0] <= self.INITIAL_LR
+            assert policy1.get_last_lr()[0] == policy2.get_last_lr()[0]
+            opt1.step()
+            opt2.step()
+            policy1.step()
+            policy2.step()
+
+        # Warmup steps available
+        policy1 = optim.lr_scheduler.NoamAnnealing(
+            opt1, d_model=self.D_MODEL, warmup_steps=5, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR
+        )
+        policy2 = optim.lr_scheduler.NoamAnnealing(
+            opt2, d_model=self.D_MODEL, warmup_steps=5, max_steps=self.MAX_STEPS * 2, min_lr=self.MIN_LR
+        )
+        initial_lr = policy1.get_last_lr()[0]
+
+        assert initial_lr < self.INITIAL_LR
+
+        for i in range(self.MAX_STEPS * 2):
+            if i <= 5:
+                assert policy1.get_last_lr()[0] <= self.INITIAL_LR
+            else:
+                assert self.MIN_LR < policy1.get_last_lr()[0] < self.INITIAL_LR
+                assert policy1.get_last_lr()[0] == policy2.get_last_lr()[0]
+
+            opt1.step()
+            opt2.step()
+            policy1.step()
+            policy2.step()
 
     @pytest.mark.unit
     def test_PolynomialDecayAnnealing(self):

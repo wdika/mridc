@@ -13,6 +13,12 @@ coverage:
 # --------------
 # which folders/files to ignore
 ignore:
+  - mridc/launch.py
+  - mridc/core/utils/*
+  - mridc/utils/arguments.py
+  - mridc/utils/distributed.py
+  - mridc/utils/export_utils.py
+  - mridc/utils/decorators/*
   - projects/*
   - setup.py
 
