@@ -45,6 +45,14 @@ mridc.utils.config\_utils module
    :undoc-members:
    :show-inheritance:
 
+mridc.utils.debug\_hook module
+------------------------------
+
+.. automodule:: mridc.utils.debug_hook
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 mridc.utils.distributed module
 ------------------------------
 

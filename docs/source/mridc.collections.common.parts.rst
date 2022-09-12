@@ -36,6 +36,14 @@ mridc.collections.common.parts.rnn\_utils module
    :undoc-members:
    :show-inheritance:
 
+mridc.collections.common.parts.training\_utils module
+-----------------------------------------------------
+
+.. automodule:: mridc.collections.common.parts.training_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 mridc.collections.common.parts.utils module
 -------------------------------------------
 

@@ -203,7 +203,7 @@ class ConcatMapDataset(Dataset):
                 )
             if len(self.sampling_probabilities) != len(self.datasets):
                 raise ValueError(
-                    "Length of probabilities list must be equal to the number of datasets. "
+                    "Length of probabilities list must be equal to the number of datasets. "  # type: ignore
                     f"Found {len(sampling_probabilities)} probs and {len(self.datasets)} datasets."  # type: ignore
                 )
             p = np.array(self.sampling_probabilities)
