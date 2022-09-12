@@ -1,8 +1,8 @@
 # Data Consistency for Magnetic Resonance Imaging
 
 [![CodeQL](https://github.com/wdika/mridc/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/wdika/mridc/actions/workflows/codeql-analysis.yml)
-[![CircleCI](https://circleci.com/gh/wdika/mridc/tree/main.svg?style=svg)](https://circleci.com/gh/wdika/mridc/tree/main)
 [![codecov](https://codecov.io/gh/wdika/mridc/branch/main/graph/badge.svg?token=KPPQ33DOTF)](https://codecov.io/gh/wdika/mridc)
+[![Tox](https://github.com/wdika/mridc/actions/workflows/tox.yml/badge.svg)](https://github.com/wdika/mridc/actions/workflows/tox.yml)
 <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 
 ---
@@ -36,7 +36,7 @@ The following models are implemented for quantitative imaging:
 1.[quantitative Cascades of Independently Recurrent Inference Machines (qCIRIM)](https://iopscience.iop.org/article/10.1088/1361-6560/ac6cc2),
 2.[quantitative End-to-End Variational Network (qE2EVN)](https://link.springer.com/chapter/10.1007/978-3-030-59713-9_7),
 3.[quantitative Independently Recurrent Inference Machines (qIRIM)](http://arxiv.org/abs/2012.07819),
-4.[quantitative Recurrent Inference Machines (qRIM)](https://www.sciencedirect.com/science/article/abs/pii/S1361841518306078?via%3Dihub),
+4.[quantitative Recurrent Inference Machines (qRIM)](https://www.sciencedirect.com/science/article/abs/pii/S1361841518306078?via%3Dihub).
 
 _Note: Currently only the above models are implemented. More models can be added by extending the reconstruction models
 for quantitative imaging. If you wish to extend the toolbox, please open an issue._
