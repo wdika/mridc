@@ -14,12 +14,30 @@ coverage:
 # which folders/files to ignore
 ignore:
   - mridc/launch.py
+  - mridc/core/classes/loss.py
+  - mridc/core/classes/export.py
+  - mridc/core/classes/module.py
+  - mridc/core/conf/dataloader.py
+  - mridc/core/conf/base_config.py
+  - mridc/core/conf/hydra_runner.py
+  - mridc/core/optim/optimizer_with_master_params.py
+  - mridc/collections/common/data/*
+  - mridc/collections/common/metrics/*
+  - mridc/collections/common/callbacks/*
+  - mridc/collections/common/parts/patch_utils.py
+  - mridc/collections/common/parts/ptl_overrides.py
+  - mridc/collections/common/parts/training_utils.py
+  - mridc/collections/common/losses/aggregator.py
+  - mridc/collections/reconstruction/models/pics.py
+  - mridc/collections/reconstruction/models/zf.py
   - mridc/core/utils/*
   - mridc/utils/arguments.py
+  - mridc/utils/debug_hook.py
   - mridc/utils/distributed.py
   - mridc/utils/export_utils.py
   - mridc/utils/decorators/*
   - projects/*
+  - projects/quantitative/datasets/ahead/*
   - setup.py
 
 # Pull request comments:
