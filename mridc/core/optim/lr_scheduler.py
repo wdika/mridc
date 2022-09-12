@@ -628,11 +628,7 @@ class NoamHoldAnnealing(WarmupHoldPolicy):
         if self.warmup_steps is None or self.warmup_steps == 0:
             raise ValueError("Noam scheduler cannot be used without warmup steps")
 
-        if self.hold_steps > 0:
-            hold_steps = self.hold_steps - self.warmup_steps
-        else:
-            hold_steps = 0
-
+        hold_steps = self.hold_steps - self.warmup_steps if self.hold_steps > 0 else 0
         return [
             _noam_hold_annealing(
                 initial_lr,
