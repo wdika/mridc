@@ -7,9 +7,9 @@ import os
 import sys
 from pathlib import Path
 
-import SimpleITK as sitk
 import h5py
 import numpy as np
+import SimpleITK as sitk
 import torch
 from skimage.restoration import unwrap_phase
 from tqdm import tqdm

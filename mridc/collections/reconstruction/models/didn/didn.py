@@ -192,7 +192,7 @@ class DUB(nn.Module):
 
         Parameters
         ----------
-        x: Input tensor with shape (\*, H, W).
+        x: Input tensor with shape ('\'*, H, W).
         shape: Crop shape corresponding to H, W.
 
         Returns
@@ -320,7 +320,7 @@ class DIDN(nn.Module):
 
         Parameters
         ----------
-        x: Input tensor with shape (\*, H, W).
+        x: Input tensor with shape ('\'*, H, W).
         shape: Crop shape corresponding to H, W.
 
         Returns

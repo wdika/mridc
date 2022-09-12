@@ -102,9 +102,9 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
         Update the coil sensitivity maps.
 
         .. math::
-            C = (1 - 2 * \lambda_{k}^{C} * ni_{k}) * C_{k}
+            C = (1 - 2 * '\'lambda_{k}^{C} * ni_{k}) * C_{k}
 
-            C = 2 * \lambda_{k}^{C} * ni_{k} * D_{C}(F^-1(b))
+            C = 2 * '\'lambda_{k}^{C} * ni_{k} * D_{C}(F^-1(b))
 
             A(x_{k}) = M * F * (C * x_{k})
 
@@ -164,9 +164,9 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
         Update the image.
 
         .. math::
-            x_{k} = (1 - 2 * \lamdba_{{k}_{I}} * mi_{k} - 2 * \lamdba_{{k}_{F}} * mi_{k}) * x_{k}
+            x_{k} = (1 - 2 * '\'lamdba_{{k}_{I}} * mi_{k} - 2 * '\'lamdba_{{k}_{F}} * mi_{k}) * x_{k}
 
-            x_{k} = 2 * mi_{k} * (\lambda_{{k}_{I}} * D_I(x_{k}) + \lambda_{{k}_{F}} * F^-1(D_F(f)))
+            x_{k} = 2 * mi_{k} * ('\'lambda_{{k}_{I}} * D_I(x_{k}) + '\'lambda_{{k}_{F}} * F^-1(D_F(f)))
 
             A(x{k} - b) = M * F * (C * x{k}) - b
 

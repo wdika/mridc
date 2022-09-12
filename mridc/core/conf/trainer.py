@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/config/pytorch_lightning.py
@@ -43,7 +43,6 @@ class TrainerConfig:
     accelerator: Optional[str] = None
     sync_batchnorm: bool = False
     precision: Any = 32
-    weights_save_path: Optional[str] = None
     num_sanity_val_steps: int = 2
     resume_from_checkpoint: Optional[str] = None
     profiler: Optional[Any] = None

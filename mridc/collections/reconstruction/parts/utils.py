@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
@@ -8,6 +8,8 @@ from typing import Any, Optional, Sequence, Tuple, Union
 import numpy as np
 import torch
 
+from mridc.collections.reconstruction.data.subsample import MaskFunc
+
 __all__ = [
     "apply_mask",
     "mask_center",
@@ -16,8 +18,6 @@ __all__ = [
     "complex_center_crop",
     "center_crop_to_smallest",
 ]
-
-from mridc.collections.reconstruction.data.subsample import MaskFunc
 
 
 def apply_mask(

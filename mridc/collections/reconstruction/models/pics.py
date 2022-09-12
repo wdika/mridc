@@ -4,11 +4,6 @@ __author__ = "Dimitrios Karkalousos"
 from abc import ABC
 from typing import Any, Dict, Tuple, Union
 
-try:
-    import bart
-except:
-    pass
-
 import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
@@ -19,6 +14,12 @@ from mridc.collections.reconstruction.metrics.evaluate import mse, nmse, psnr, s
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
 from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
 from mridc.core.classes.common import typecheck
+
+try:
+    import bart
+except:
+    pass
+
 
 __all__ = ["PICS"]
 

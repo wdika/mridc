@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from:
@@ -32,6 +32,8 @@ class GlobalAverageLossMetric(Metric):
     take_avg_loss: If ``True`` values of :meth:`update` method ``loss`` argument has to be a mean loss. If ``False`` \
     values of :meth:`update` method ``loss`` argument has to be a sum of losses. default: ``True``
     """
+
+    full_state_update = True
 
     def __init__(self, compute_on_step=True, dist_sync_on_step=False, process_group=None, take_avg_loss=True):
         super().__init__(

@@ -1,6 +1,6 @@
-pretrained: false
-checkpoint: None
-mode: train
+pretrained: true
+checkpoint: ???
+mode: test
 
 model:
   model_name: qCIRIM

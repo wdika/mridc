@@ -15,7 +15,7 @@ from mridc.collections.common.parts.fft import fft2, ifft2
 from mridc.collections.common.parts.rnn_utils import rnn_weights_init
 from mridc.collections.common.parts.utils import coil_combination, complex_conj, complex_mul
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel
-from mridc.collections.reconstruction.models.recurrentvarnet.recurentvarnet import RecurrentInit, RecurrentVarNetBlock
+from mridc.collections.reconstruction.models.recurrentvarnet.recurrentvarnet import RecurrentInit, RecurrentVarNetBlock
 from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
 from mridc.core.classes.common import typecheck
 

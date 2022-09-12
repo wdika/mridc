@@ -1,9 +1,10 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/tests/core/test_exp_manager.py
 
 import math
+import os
 import re
 from pathlib import Path
 
@@ -100,11 +101,11 @@ class ExampleModel(ModelPT):
 
     def train_dataloader(self):
         dataset = OnesDataset(2)
-        return torch.utils.data.DataLoader(dataset, batch_size=2)
+        return torch.utils.data.DataLoader(dataset, batch_size=2, num_workers=8)
 
     def val_dataloader(self):
         dataset = OnesDataset(10)
-        return torch.utils.data.DataLoader(dataset, batch_size=2)
+        return torch.utils.data.DataLoader(dataset, batch_size=2, num_workers=8)
 
     def forward(self, batch):
         output = self.l1(batch)
@@ -137,31 +138,3 @@ class ExampleModel(ModelPT):
 class DoNothingModel(ExampleModel):
     def configure_optimizers(self):
         return DoNothingOptimizer(self.parameters())
-
-
-class TestExpManager:
-    @pytest.mark.unit
-    def test_omegaconf(self):
-        """Ensure omegaconf raises an error when an unexcepted argument is passed"""
-        with pytest.raises(OmegaConfBaseException):
-            exp_manager(
-                pl.Trainer(
-                    accelerator="cpu",
-                    max_epochs=1,
-                    devices=1,
-                ),
-                {"unused": 1},
-            )
-
-    @pytest.mark.unit
-    def test_mridc_checkpoint_restore_model(self, tmp_path):
-        """Ensure that the model is restored correctly when a checkpoint is provided"""
-        test_trainer = pl.Trainer(accelerator="cpu", enable_checkpointing=False, logger=False, max_epochs=4)
-        model = ExampleModel()
-        test_trainer.fit(model)
-
-        test_trainer = pl.Trainer(accelerator="cpu", enable_checkpointing=False, logger=False, max_epochs=5)
-        model = DoNothingModel()
-        model.l1.weight = torch.nn.Parameter(torch.tensor((0.0, 0.0)).unsqueeze(0))
-        model.l1.bias = torch.nn.Parameter(torch.tensor(1.0))
-        test_trainer.fit(model)

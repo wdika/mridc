@@ -243,7 +243,8 @@ class TransposeMultiDomainConvBlock(nn.Module):
 class StandardizationLayer(nn.Module):
     """
     Multi-channel data standardization method. Inspired by AIRS model submission to the Fast MRI 2020 challenge.
-    Given individual coil images :math:`\{x_i\}_{i=1}^{N_c}` and sensitivity coil maps :math:`\{S_i\}_{i=1}^{N_c}` \
+    Given individual coil images :math:`'\'{x_i'\'}_{i=1}^{N_c}` and sensitivity coil maps \
+    :math:`'\'{S_i'\'}_{i=1}^{N_c}`
     it returns
 
     .. math::
@@ -254,7 +255,7 @@ class StandardizationLayer(nn.Module):
 
     :math:`{x_{res}}_i = xi - S_i X x_{sense}` and
 
-    :math:`x_{sense} = \sum_{i=1}^{N_c} {S_i}^{*} X x_i`.
+    :math:`x_{sense} = '\'sum_{i=1}^{N_c} {S_i}^{*} X x_i`.
     """
 
     def __init__(self, coil_dim=1, channel_dim=-1):

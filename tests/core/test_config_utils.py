@@ -1,7 +1,7 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
-# Taken and adapted from: https://github.com/wdika/NeMo/blob/main/tests/core/test_config_utils.py
+# Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/tests/core/test_config_utils.py
 from abc import ABC
 from dataclasses import dataclass
 from typing import Any

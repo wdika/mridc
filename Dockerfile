@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=nvcr.io/nvidia/pytorch:22.04-py3
+ARG BASE_IMAGE=nvcr.io/nvidia/pytorch:22.08-py3
 
 
 # build an image that includes only the mridc dependencies, ensures that dependencies

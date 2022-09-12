@@ -1,10 +1,12 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/neural_types/elements.py
 
 from abc import ABC, ABCMeta
 from typing import Dict, Optional, Tuple
+
+from mridc.core.neural_types.comparison import NeuralTypeComparisonResult
 
 __all__ = [
     "ElementType",
@@ -38,8 +40,6 @@ __all__ = [
     "LogDeterminantType",
     "SequenceToSequenceAlignmentType",
 ]
-
-from mridc.core.neural_types.comparison import NeuralTypeComparisonResult
 
 
 class ElementType(ABC):

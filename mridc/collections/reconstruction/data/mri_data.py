@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
@@ -355,11 +355,7 @@ class FastMRISliceDataset(Dataset):
             if "reconstruction_sense" in hf:
                 self.recons_key = "reconstruction_sense"
 
-            target = (
-                self.get_consecutive_slices(hf, self.recons_key, dataslice).astype(np.float32)
-                if self.recons_key in hf
-                else None
-            )
+            target = self.get_consecutive_slices(hf, self.recons_key, dataslice) if self.recons_key in hf else None
 
             attrs = dict(hf.attrs)
             attrs.update(metadata)

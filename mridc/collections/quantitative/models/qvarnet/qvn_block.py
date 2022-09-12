@@ -4,10 +4,9 @@ __author__ = "Dimitrios Karkalousos, Chaoping Zhang"
 from typing import List, Optional, Tuple
 
 import torch
-from matplotlib import pyplot as plt
 
 from mridc.collections.common.parts.fft import fft2, ifft2
-from mridc.collections.common.parts.utils import coil_combination, complex_conj, complex_mul
+from mridc.collections.common.parts.utils import complex_conj, complex_mul
 from mridc.collections.quantitative.models.qrim.utils import SignalForwardModel
 
 

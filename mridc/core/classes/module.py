@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/classes/module.py
@@ -7,9 +7,9 @@ from contextlib import contextmanager
 
 from torch.nn import Module
 
-__all__ = ["NeuralModule"]
-
 from mridc.core.classes.common import FileIO, Serialization, Typing
+
+__all__ = ["NeuralModule"]
 
 
 class NeuralModule(Module, Typing, Serialization, FileIO, ABC):

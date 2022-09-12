@@ -1,16 +1,16 @@
+# coding=utf-8
 # ! /usr/bin/python
-# -*- coding: utf-8 -*-
-import sys
-
-__author__ = "Dimitrios Karkalousos"
-
+import importlib.util
 import subprocess
+import sys
 from distutils import cmd as distutils_cmd
 from distutils import log as distutils_log
 from pathlib import Path
-import importlib.util
 
 import setuptools
+
+__author__ = "Dimitrios Karkalousos"
+
 
 spec = importlib.util.spec_from_file_location("package_info", "mridc/package_info.py")
 package_info = importlib.util.module_from_spec(spec)  # type: ignore

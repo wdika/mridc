@@ -10,6 +10,7 @@ Subpackages
    mridc.collections.common
    mridc.collections.quantitative
    mridc.collections.reconstruction
+   mridc.collections.segmentation
 
 Module contents
 ---------------

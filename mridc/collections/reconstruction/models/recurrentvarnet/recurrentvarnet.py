@@ -108,7 +108,7 @@ class RecurrentInit(nn.Module):
 
 class RecurrentVarNetBlock(nn.Module):
     """
-    Recurrent Variational Network Block :math:`\mathcal{H}_{\theta_{t}}` as presented in Yiasemis, George, et al.
+    Recurrent Variational Network Block :math:`'\'mathcal{H}_{'\'theta_{t}}` as presented in Yiasemis, George, et al.
 
 
     References

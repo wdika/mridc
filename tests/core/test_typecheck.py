@@ -1,7 +1,7 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
-# Taken and adapted from: https://github.com/wdika/NeMo/blob/main/tests/core/test_typecheck.py
+# Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/tests/core/test_typecheck.py
 
 from mridc.core.neural_types.comparison import NeuralTypeComparisonResult
 

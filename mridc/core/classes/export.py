@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/classes/exportable.py
@@ -102,7 +102,7 @@ class Exportable(ABC):
         do_constant_folding=True,
         onnx_opset_version=None,
         training=TrainingMode.EVAL,
-        check_trace: bool = False,
+        check_trace: Union[bool, List[torch.Tensor]] = False,
         dynamic_axes=None,
         check_tolerance=0.01,
         export_modules_as_functions: bool = False,
@@ -165,6 +165,11 @@ class Exportable(ABC):
                 output_example = tuple(self.forward(*input_list, **input_dict))  # type: ignore
 
                 if format == ExportFormat.TORCHSCRIPT:
+                    if check_trace:
+                        if isinstance(check_trace, bool):
+                            check_trace_input = {"forward": tuple(input_list) + tuple(input_dict.values())}
+                        else:
+                            check_trace_input = check_trace  # type: ignore
                     jitted_model = torch.jit.trace_module(
                         self,
                         {"forward": tuple(input_list) + tuple(input_dict.values())},
@@ -198,7 +203,9 @@ class Exportable(ABC):
                     )
 
                     if check_trace:
-                        check_trace_input = [input_example] if isinstance(check_trace, bool) else check_trace
+                        check_trace_input = (
+                            [input_example] if isinstance(check_trace, bool) else check_trace  # type: ignore
+                        )
                         verify_runtime(self, output, check_trace_input, input_names)
 
                 else:

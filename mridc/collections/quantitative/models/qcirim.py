@@ -25,17 +25,15 @@ __all__ = ["qCIRIM"]
 
 class qCIRIM(BaseqMRIReconstructionModel, ABC):
     """
-    Implementation of the Cascades of Independently Recurrent Inference Machines, as presented in \
-    Karkalousos, D. et al.
+    Implementation of the quantitative Recurrent Inference Machines (qRIM), as presented in Zhang, C. et al.
 
     References
     ----------
 
     ..
 
-        Karkalousos, D. et al. (2021) ‘Assessment of Data Consistency through Cascades of Independently Recurrent \
-        Inference Machines for fast and robust accelerated MRI reconstruction’. Available at: \
-        https://arxiv.org/abs/2111.15498v1
+        Zhang, C. et al. (2022) ‘A unified model for reconstruction and R2 mapping of accelerated 7T data using \
+        quantitative Recurrent Inference Machine’. In review.
 
     """
 

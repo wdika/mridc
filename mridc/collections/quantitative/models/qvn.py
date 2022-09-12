@@ -10,7 +10,7 @@ from pytorch_lightning import Trainer
 from torch import Tensor
 
 from mridc.collections.common.parts.fft import fft2, ifft2
-from mridc.collections.common.parts.utils import coil_combination, complex_conj, complex_mul
+from mridc.collections.common.parts.utils import coil_combination, complex_mul
 from mridc.collections.quantitative.models.base import BaseqMRIReconstructionModel
 from mridc.collections.quantitative.models.qrim.utils import RescaleByMax, SignalForwardModel
 from mridc.collections.quantitative.models.qvarnet.qvn_block import qVarNetBlock
@@ -46,8 +46,6 @@ class qVarNet(BaseqMRIReconstructionModel, ABC):
             raise ValueError(
                 f"Only 2D is currently supported for qMRI models.Found {quantitative_module_dimensionality}"
             )
-
-        quantitative_module_no_dc = cfg_dict.get("quantitative_module_no_dc")
 
         self.fft_centered = cfg_dict.get("fft_centered")
         self.fft_normalization = cfg_dict.get("fft_normalization")

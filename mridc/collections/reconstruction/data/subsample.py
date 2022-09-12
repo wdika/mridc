@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 # Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
 __author__ = "Dimitrios Karkalousos"
 

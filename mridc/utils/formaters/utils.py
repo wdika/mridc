@@ -1,14 +1,14 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/utils/formatters/utils.py
 
 import sys
 
-__all__ = ["check_color_support", "to_unicode"]
-
 from mridc.constants import MRIDC_ENV_VARNAME_ENABLE_COLORING
 from mridc.utils.env_var_parsing import get_envbool
+
+__all__ = ["check_color_support", "to_unicode"]
 
 
 def check_color_support():
