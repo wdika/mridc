@@ -3,12 +3,12 @@ checkpoint: ???
 mode: test
 
 model:
-  model_name: qCIRIM
-  use_reconstruction_module: false
-  reconstruction_module_recurrent_layer: GRU
+  model_name: JRSCIRIM
+  use_reconstruction_module: true
+  reconstruction_module_recurrent_layer: IndRNN
   reconstruction_module_conv_filters:
-    - 128
-    - 128
+    - 64
+    - 64
     - 2
   reconstruction_module_conv_kernels:
     - 5
@@ -23,8 +23,8 @@ model:
     - true
     - false
   reconstruction_module_recurrent_filters:
-    - 128
-    - 128
+    - 64
+    - 64
     - 0
   reconstruction_module_recurrent_kernels:
     - 1
@@ -46,66 +46,40 @@ model:
   reconstruction_module_no_dc: true
   reconstruction_module_keep_eta: true
   reconstruction_module_accumulate_estimates: true
-  quantitative_module_recurrent_layer: GRU
-  quantitative_module_conv_filters:
-    - 128
-    - 128
-    - 4
-  quantitative_module_conv_kernels:
-    - 5
-    - 3
-    - 3
-  quantitative_module_conv_dilations:
-    - 1
-    - 2
-    - 1
-  quantitative_module_conv_bias:
-    - true
-    - true
-    - false
-  quantitative_module_recurrent_filters:
-    - 128
-    - 128
-    - 0
-  quantitative_module_recurrent_kernels:
-    - 1
-    - 1
-    - 0
-  quantitative_module_recurrent_dilations:
-    - 1
-    - 1
-    - 0
-  quantitative_module_recurrent_bias:
-    - true
-    - true
-    - false
-  quantitative_module_depth: 2
-  quantitative_module_time_steps: 8
-  quantitative_module_conv_dim: 2
-  quantitative_module_num_cascades: 1
-  quantitative_module_no_dc: true
-  quantitative_module_keep_eta: true
-  quantitative_module_accumulate_estimates: true
-  quantitative_module_signal_forward_model_sequence: MEGRE
-  quantitative_module_dimensionality: 2
-  quantitative_module_gamma_regularization_factors:
-    - 150.0
-    - 150.0
-    - 1000.0
-    - 150.0
-  loss_fn: ssim
-  loss_regularization_factors:
-    - R2star: 3.0
-    - S0: 1.0
-    - B0: 1.0
-    - phi: 1.0
-#  loss_fn: mse or l1
-#  loss_regularization_factors:
-#    - R2star: 300.0
-#    - S0: 500.0
-#    - B0: 20000.0
-#    - phi: 500.0
+  reconstruction_loss_fn: l1
+  segmentation_module: UNet
+  segmentation_module_input_channels: 2
+  segmentation_module_output_channels: 4
+  segmentation_module_channels: 32
+  segmentation_module_pooling_layers: 4
+  segmentation_module_dropout: 0.1
+  segmentation_loss_fn:
+    - cross_entropy
+    - dice
+  cross_entropy_loss_num_samples: 1
+  cross_entropy_loss_ignore_index: -100
+  cross_entropy_loss_reduction: none
+  cross_entropy_loss_label_smoothing: 0.0
+  cross_entropy_loss_weight: none
+  cross_entropy_loss_normalization: softmax
   coil_combination_method: SENSE
+  dice_loss_batched: false
+  dice_loss_include_background: true
+  dice_loss_squared_pred: false
+  dice_loss_normalization: softmax
+  dice_loss_epsilon: 1
+  cross_entropy_metric_num_samples: 1
+  cross_entropy_metric_ignore_index: -100
+  cross_entropy_metric_reduction: none
+  cross_entropy_metric_label_smoothing: 0.0
+  cross_entropy_metric_weight: none
+  cross_entropy_metric_normalization: softmax
+  dice_coefficient_batched: false
+  dice_coefficient_include_background: true
+  dice_coefficient_squared_pred: false
+  dice_coefficient_normalization: softmax
+  dice_coefficient_epsilon: 1
+  consecutive_slices: 3
   use_sens_net: false
   sens_chans: 8
   sens_pools: 4
@@ -116,52 +90,48 @@ model:
     - -2
     - -1
   coil_dim: 2
-  shift_B0_input: false
 
   test_ds:
     data_path: ???
-    sequence: MEGRE
-    data_saved_per_slice: true
+    sense_path: None
+    mask_path: None
+    batch_size: 1
+    sample_rate: 1
+    volume_sample_rate: None
+    use_dataset_cache: false
+    dataset_cache_file: None
+    num_cols: None
+    consecutive_slices: 3
+    segmentation_classes: 4
+    data_saved_per_slice: false
+    apply_prewhitening: false
+    apply_gcc: false
     coil_combination_method: SENSE
     dimensionality: 2
-    consecutive_slices: 1
-    init_coil_dim: -1
-    kspace_scaling_factor: 10000
+    mask_args:
+      type: gaussian2d
+      accelerations:
+        - 10
+      center_fractions:
+        - 0.7
+      scale: 0.02
+      shift_mask: false
+      use_seed: true
+    half_scan_percentage: 0.0
+    remask: false
+    crop_size: None
+    kspace_crop: false
+    crop_before_masking: true
+    kspace_zero_filling_size: None
+    normalize_inputs: true
+    max_norm: true
     fft_centered: false
     fft_normalization: backward
     spatial_dims:
       - -2
       - -1
     coil_dim: 2
-    precompute_quantitative_maps: false
-    shift_B0_input: false
-    TEs:
-      - 3.0
-      - 11.5
-      - 20.0
-      - 28.5
-    mask_args:
-      type: gaussian2d
-      accelerations:
-        - 3
-        - 6
-        - 9
-        - 12
-      center_fractions:
-        - 0.7
-        - 0.7
-        - 0.7
-        - 0.7
-      scale: 0.02
-      shift_mask: false
-      use_seed: false
-    normalize_inputs: true
-    max_norm: true
-    crop_size: None
-    crop_before_masking: true
-    kspace_zero_filling_size: None
-    sample_rate: 1
-    batch_size: 1
+    use_seed: true
     shuffle: false
     num_workers: 8
     drop_last: false
@@ -169,7 +139,7 @@ model:
 
   optim:
     name: adam
-    lr: 0.001
+    lr: 1e-3
     betas:
       - 0.9
       - 0.98

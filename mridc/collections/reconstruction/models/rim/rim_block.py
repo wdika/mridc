@@ -35,6 +35,7 @@ class RIMBlock(torch.nn.Module):
         spatial_dims: Optional[Tuple[int, int]] = None,
         coil_dim: int = 1,
         dimensionality: int = 2,
+        consecutive_slices: int = 1,
     ):
         """
         Initialize the RIMBlock.
@@ -59,6 +60,7 @@ class RIMBlock(torch.nn.Module):
         spatial_dims: Spatial dimensions of the input.
         coil_dim: Coils dimension of the input.
         dimensionality: Dimensionality of the input.
+        consecutive_slices: Number of consecutive slices in the input.
         """
         super(RIMBlock, self).__init__()
 
@@ -132,6 +134,7 @@ class RIMBlock(torch.nn.Module):
             self.zero = torch.zeros(1, 1, 1, 1, 1)
 
         self.dimensionality = dimensionality
+        self.consecutive_slices = consecutive_slices
 
     def forward(
         self,
@@ -220,6 +223,9 @@ class RIMBlock(torch.nn.Module):
                     self.coil_dim,
                 )
             )
+
+        if (self.consecutive_slices > 1 or self.dimensionality == 3) and eta.dim() == 5:
+            eta = eta.reshape([eta.shape[0] * eta.shape[1], eta.shape[2], eta.shape[3], eta.shape[4]])
 
         etas = []
         for _ in range(self.time_steps):

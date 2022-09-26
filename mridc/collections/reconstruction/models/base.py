@@ -179,6 +179,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
             r = np.random.randint(len(y))
             y = y[r]
             mask = mask[r]
+            init_pred = init_pred[r]
         else:
             r = 0
         return y, mask, init_pred, r
@@ -403,8 +404,6 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         # Time-steps
         if isinstance(preds, list):
             preds = preds[-1]
-
-        preds = preds / torch.abs(preds).max()  # type: ignore
 
         slice_num = int(slice_num)
         name = str(fname[0])  # type: ignore

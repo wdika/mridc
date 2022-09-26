@@ -22,6 +22,8 @@ from mridc.collections.reconstruction.models.vn import VarNet
 from mridc.collections.reconstruction.models.vsnet import VSNet
 from mridc.collections.reconstruction.models.xpdnet import XPDNet
 from mridc.collections.reconstruction.models.zf import ZF
+from mridc.collections.segmentation.models.jrscirim import JRSCIRIM
+from mridc.collections.segmentation.models.unet import SegmentationUNet
 from mridc.core.conf.hydra_runner import hydra_runner
 from mridc.utils import logging
 from mridc.utils.exp_manager import exp_manager
@@ -56,6 +58,8 @@ def main(cfg: DictConfig) -> None:
         model = VarNet(cfg.model, trainer=trainer)
     elif model_name == "JOINTICNET":
         model = JointICNet(cfg.model, trainer=trainer)
+    elif model_name == "JRSCIRIM":
+        model = JRSCIRIM(cfg.model, trainer=trainer)
     elif model_name == "KIKINET":
         model = KIKINet(cfg.model, trainer=trainer)
     elif model_name == "LPDNET":
@@ -70,6 +74,8 @@ def main(cfg: DictConfig) -> None:
         model = qVarNet(cfg.model, trainer=trainer)
     elif model_name == "RVN":
         model = RecurrentVarNet(cfg.model, trainer=trainer)
+    elif model_name == "SEGMENTATIONUNET":
+        model = SegmentationUNet(cfg.model, trainer=trainer)
     elif model_name == "UNET":
         model = UNet(cfg.model, trainer=trainer)
     elif model_name == "VSNET":
@@ -81,8 +87,8 @@ def main(cfg: DictConfig) -> None:
     else:
         raise NotImplementedError(
             f"{model_name} is not implemented in MRIDC. You can use one of the following methods: "
-            "CASCADENET, CIRIM, CRNNET, DUNET, E2EVN, JOINTICNET, KIKINET, LPDNET, MULTIDOMAINNET, PICS, qCIRIM, qVN, "
-            "RVN, UNET, VSNET, XPDNET, or Zero-Filled. /n"
+            "CASCADENET, CIRIM, CRNNET, DUNET, E2EVN, JOINTICNET, JRSCIRIM, KIKINET, LPDNET, MULTIDOMAINNET, PICS, "
+            "qCIRIM, qVN, RVN, SEGMENTATIONUNET, UNET, VSNET, XPDNET, or Zero-Filled. /n"
             "If you implemented a new model, please consider adding it through a PR on GitHub."
         )
 

@@ -1,0 +1,288 @@
+# coding=utf-8
+__author__ = "Dimitrios Karkalousos, Lysander de Jong"
+
+import math
+from abc import ABC
+from typing import Any, Tuple
+
+import numpy as np
+import torch
+from omegaconf import DictConfig, OmegaConf
+from pytorch_lightning import Trainer
+
+from mridc.collections.common.parts.fft import ifft2
+from mridc.collections.common.parts.rnn_utils import rnn_weights_init
+from mridc.collections.common.parts.utils import coil_combination
+from mridc.collections.reconstruction.models.rim.rim_block import RIMBlock
+from mridc.collections.reconstruction.models.unet_base.unet_block import Unet
+from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
+from mridc.collections.segmentation.models.base import BaseMRIJointReconstructionSegmentationModel
+from mridc.core.classes.common import typecheck
+
+__all__ = ["JRSCIRIM"]
+
+
+class JRSCIRIM(BaseMRIJointReconstructionSegmentationModel, ABC):
+    """
+    Implementation of the Joint Reconstruction & Segmentation Cascades of Independently Recurrent Inference Machines,
+    as presented in [placeholder].
+
+    References
+    ----------
+
+    ..
+
+        Placeholder.
+
+    """
+
+    def __init__(self, cfg: DictConfig, trainer: Trainer = None):
+        # init superclass
+        super().__init__(cfg=cfg, trainer=trainer)
+
+        cfg_dict = OmegaConf.to_container(cfg, resolve=True)
+
+        self.fft_centered = cfg_dict.get("fft_centered")
+        self.fft_normalization = cfg_dict.get("fft_normalization")
+        self.spatial_dims = cfg_dict.get("spatial_dims")
+        self.coil_dim = cfg_dict.get("coil_dim")
+        self.coil_combination_method = cfg_dict.get("coil_combination_method")
+        self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
+        self.dimensionality = 2
+
+        self.use_reconstruction_module = cfg_dict.get("use_reconstruction_module")
+        if self.use_reconstruction_module:
+            reconstruction_module_recurrent_filters = cfg_dict.get("reconstruction_module_recurrent_filters")
+            reconstruction_module_num_cascades = cfg_dict.get("reconstruction_module_num_cascades")
+            self.reconstruction_module_time_steps = 8 * math.ceil(cfg_dict.get("reconstruction_module_time_steps") / 8)
+            self.no_dc = cfg_dict.get("reconstruction_module_no_dc")
+            self.keep_eta = cfg_dict.get("reconstruction_module_keep_eta")
+            self.dimensionality = cfg_dict.get("reconstruction_module_dimensionality")
+
+            self.reconstruction_module = torch.nn.ModuleList([])
+            for _ in range(reconstruction_module_num_cascades):
+                self.reconstruction_module.append(
+                    RIMBlock(
+                        recurrent_layer=cfg_dict.get("reconstruction_module_recurrent_layer"),
+                        conv_filters=cfg_dict.get("reconstruction_module_conv_filters"),
+                        conv_kernels=cfg_dict.get("reconstruction_module_conv_kernels"),
+                        conv_dilations=cfg_dict.get("reconstruction_module_conv_dilations"),
+                        conv_bias=cfg_dict.get("reconstruction_module_conv_bias"),
+                        recurrent_filters=reconstruction_module_recurrent_filters,
+                        recurrent_kernels=cfg_dict.get("reconstruction_module_recurrent_kernels"),
+                        recurrent_dilations=cfg_dict.get("reconstruction_module_recurrent_dilations"),
+                        recurrent_bias=cfg_dict.get("reconstruction_module_recurrent_bias"),
+                        depth=cfg_dict.get("reconstruction_module_depth"),
+                        time_steps=self.reconstruction_module_time_steps,
+                        conv_dim=cfg_dict.get("reconstruction_module_conv_dim"),
+                        no_dc=self.no_dc,
+                        fft_centered=self.fft_centered,
+                        fft_normalization=self.fft_normalization,
+                        spatial_dims=self.spatial_dims,
+                        coil_dim=self.coil_dim - 1,
+                        dimensionality=self.dimensionality,
+                        consecutive_slices=self.consecutive_slices,
+                    )
+                )
+
+            # Keep estimation through the cascades if keep_eta is True or re-estimate it if False.
+            self.reconstruction_module_keep_eta = cfg_dict.get("reconstruction_module_keep_eta")
+
+            # initialize weights if not using pretrained cirim
+            if not cfg_dict.get("pretrained", False):
+                std_init_range = 1 / reconstruction_module_recurrent_filters[0] ** 0.5
+                self.reconstruction_module.apply(lambda module: rnn_weights_init(module, std_init_range))
+
+            self.dc_weight = torch.nn.Parameter(torch.ones(1))
+            self.reconstruction_module_accumulate_estimates = cfg_dict.get(
+                "reconstruction_module_accumulate_estimates"
+            )
+
+        segmentation_module = cfg_dict.get("segmentation_module")
+        if segmentation_module.lower() == "unet":
+            self.segmentation_module = Unet(
+                in_chans=cfg_dict.get("segmentation_module_input_channels", 2),
+                out_chans=cfg_dict.get("segmentation_module_output_channels", 2),
+                chans=cfg_dict.get("segmentation_module_channels", 64),
+                num_pool_layers=cfg_dict.get("segmentation_module_pooling_layers", 2),
+                drop_prob=cfg_dict.get("segmentation_module_dropout", 0.0),
+            )
+        else:
+            raise ValueError(f"Segmentation module {segmentation_module} not implemented.")
+
+    @typecheck()
+    def forward(
+        self,
+        y: torch.Tensor,
+        sensitivity_maps: torch.Tensor,
+        mask: torch.Tensor,
+        init_reconstruction_pred: torch.Tensor,
+        target_reconstruction: torch.Tensor,
+    ) -> Tuple[Any, Any]:
+        """
+        Forward pass of the network.
+
+        Parameters
+        ----------
+        y: Data.
+            torch.Tensor, shape [batch_size, n_echoes, n_coils, n_x, n_y, 2]
+        sensitivity_maps: Coil sensitivity maps.
+            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+        mask: Sub-sampling mask.
+            torch.Tensor, shape [batch_size, 1, n_x, n_y, 2]
+        init_reconstruction_pred: Initial reconstruction prediction.
+            torch.Tensor, shape [batch_size, 1, n_x, n_y, 2]
+        target_reconstruction: Target reconstruction.
+            torch.Tensor, shape [batch_size, 1, n_x, n_y, 2]
+
+        Returns
+        -------
+        pred_reconstruction: Predicted reconstruction.
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        pred_segmentation: Predicted segmentation.
+            torch.Tensor, shape [batch_size, nr_classes, n_x, n_y]
+        """
+        if self.use_reconstruction_module:
+            prediction = y.clone()
+            init_reconstruction_pred = (
+                None
+                if init_reconstruction_pred is None or init_reconstruction_pred.dim() < 4
+                else init_reconstruction_pred
+            )
+            hx = None
+            sigma = 1.0
+            cascades_etas = []
+            for i, cascade in enumerate(self.reconstruction_module):
+                # Forward pass through the cascades
+                prediction, hx = cascade(
+                    prediction,
+                    y,
+                    sensitivity_maps,
+                    mask,
+                    init_reconstruction_pred,
+                    hx,
+                    sigma,
+                    keep_eta=False if i == 0 else self.keep_eta,
+                )
+                time_steps_etas = [
+                    self.process_intermediate_pred(pred, sensitivity_maps, target_reconstruction)
+                    for pred in prediction
+                ]
+                cascades_etas.append(time_steps_etas)
+            pred_reconstruction = cascades_etas
+        else:
+            pred_reconstruction = init_reconstruction_pred
+
+        _pred_reconstruction = pred_reconstruction
+        if isinstance(_pred_reconstruction, list):
+            _pred_reconstruction = _pred_reconstruction[-1]
+        if isinstance(_pred_reconstruction, list):
+            _pred_reconstruction = _pred_reconstruction[-1]
+        if _pred_reconstruction.shape[-1] != 2:  # type: ignore
+            _pred_reconstruction = torch.view_as_real(_pred_reconstruction)
+        if (
+            self.consecutive_slices > 1 or self.dimensionality == 3
+        ) and _pred_reconstruction.dim() == 5:  # type: ignore
+            _pred_reconstruction = _pred_reconstruction.reshape(  # type: ignore
+                _pred_reconstruction.shape[0] * _pred_reconstruction.shape[1],  # type: ignore
+                _pred_reconstruction.shape[2],  # type: ignore
+                _pred_reconstruction.shape[3],  # type: ignore
+                _pred_reconstruction.shape[4],  # type: ignore
+            )
+        if _pred_reconstruction.shape[-1] == 2:  # type: ignore
+            _pred_reconstruction = _pred_reconstruction.permute(0, 3, 1, 2)  # type: ignore
+
+        pred_segmentation = self.segmentation_module(_pred_reconstruction)
+
+        return pred_reconstruction, pred_segmentation
+
+    def process_intermediate_pred(self, pred, sensitivity_maps, target, do_coil_combination=False):
+        """
+        Process the intermediate prediction.
+
+        Parameters
+        ----------
+        pred: Intermediate prediction.
+            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+        sensitivity_maps: Coil sensitivity maps.
+            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
+        target: Target data to crop to size.
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        do_coil_combination: Whether to do coil combination.
+            bool, default False
+
+        Returns
+        -------
+        pred: torch.Tensor, shape [batch_size, n_x, n_y, 2]
+            Processed prediction.
+        """
+        # Take the last time step of the eta
+        if not self.no_dc or do_coil_combination:
+            pred = ifft2(
+                pred, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
+            )
+            pred = coil_combination(pred, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim)
+        pred = torch.view_as_complex(pred)
+        if target.shape[-1] == 2:
+            target = torch.view_as_complex(target)
+        _, pred = center_crop_to_smallest(target, pred)
+        return pred
+
+    def process_reconstruction_loss(self, target, pred, _loss_fn=None):
+        """
+        Process the loss.
+
+        Parameters
+        ----------
+        target: Target data.
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        pred: Final prediction(s).
+            list of torch.Tensor, shape [batch_size, n_x, n_y, 2], or
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        _loss_fn: Loss function.
+            torch.nn.Module, default torch.nn.L1Loss()
+
+        Returns
+        -------
+        loss: torch.FloatTensor, shape [1]
+            If self.accumulate_loss is True, returns an accumulative result of all intermediate losses.
+        """
+        target = torch.abs(target / torch.max(torch.abs(target)))
+
+        if "ssim" in str(_loss_fn).lower():
+            max_value = np.array(torch.max(torch.abs(target)).item()).astype(np.float32)
+
+            def loss_fn(x, y):
+                """Calculate the ssim loss."""
+                y = torch.abs(y / torch.max(torch.abs(y)))
+                return _loss_fn(
+                    x,
+                    y,
+                    data_range=torch.tensor(max_value).unsqueeze(dim=0).to(x.device),
+                )
+
+        else:
+
+            def loss_fn(x, y):
+                """Calculate other loss."""
+                x = torch.abs(x / torch.max(torch.abs(x)))
+                y = torch.abs(y / torch.max(torch.abs(y)))
+                return _loss_fn(x, y)
+
+        if self.reconstruction_module_accumulate_estimates:
+            echoes_loss = []
+            for echo_time in range(len(pred)):
+                cascades_loss = []
+                for cascade_pred in pred[echo_time]:
+                    time_steps_loss = [
+                        loss_fn(target[:, echo_time, :, :], time_step_pred).mean() for time_step_pred in cascade_pred
+                    ]
+                    _loss = [
+                        x * torch.logspace(-1, 0, steps=self.reconstruction_module_time_steps).to(time_steps_loss[0])
+                        for x in time_steps_loss
+                    ]
+                    cascades_loss.append(sum(sum(_loss) / self.reconstruction_module_time_steps))
+                echoes_loss.append(sum(list(cascades_loss)) / len(self.cirim))
+            yield sum(echoes_loss) / len(pred)
+        else:
+            return loss_fn(target, pred)
