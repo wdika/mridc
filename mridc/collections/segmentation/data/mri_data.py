@@ -21,6 +21,7 @@ class JRSMRISliceDataset(Dataset):
         root: Union[str, Path, os.PathLike],
         sense_root: Union[str, Path, os.PathLike] = None,
         mask_root: Union[str, Path, os.PathLike] = None,
+        segmentations_root: Union[str, Path, os.PathLike] = None,
         sample_rate: Optional[float] = None,
         volume_sample_rate: Optional[float] = None,
         use_dataset_cache: bool = False,
@@ -28,6 +29,7 @@ class JRSMRISliceDataset(Dataset):
         num_cols: Optional[Tuple[int]] = None,
         consecutive_slices: int = 1,
         segmentation_classes: int = 2,
+        complex_data: bool = True,
         data_saved_per_slice: bool = False,
         transform: Optional[Callable] = None,
     ):
@@ -42,6 +44,8 @@ class JRSMRISliceDataset(Dataset):
             Path to the sensitivity maps, if are stored separately.
         mask_root: str
             Path to the masks, if are stored separately.
+        segmentations_root: str
+            Path to the segmentations, if are stored separately.
         sample_rate: float
             Sample rate of the dataset.
         volume_sample_rate: float
@@ -56,6 +60,8 @@ class JRSMRISliceDataset(Dataset):
             Number of consecutive slices to use.
         segmentation_classes: int
             Number of segmentation classes.
+        complex_data: bool
+            Use complex data.
         data_saved_per_slice: bool
             If the data are saved per slice.
         transform: callable
@@ -68,6 +74,7 @@ class JRSMRISliceDataset(Dataset):
 
         self.sense_root = sense_root
         self.mask_root = mask_root
+        self.segmentations_root = segmentations_root
 
         # set default sampling mode if none given
         if is_none(sample_rate):
@@ -124,6 +131,7 @@ class JRSMRISliceDataset(Dataset):
         if self.consecutive_slices < 1:
             raise ValueError("consecutive_slices value is out of range, must be > 0.")
         self.segmentation_classes = segmentation_classes
+        self.complex_data = complex_data
         self.transform = transform
 
     @staticmethod
@@ -205,46 +213,76 @@ class JRSMRISliceDataset(Dataset):
     def __getitem__(self, i: int):
         fname, dataslice, metadata = self.examples[i]
         with h5py.File(fname, "r") as hf:
-            if "kspace" in hf:
-                kspace = self.get_consecutive_slices(hf, "kspace", dataslice).astype(np.complex64)
-            elif "ksp" in hf:
-                kspace = self.get_consecutive_slices(hf, "ksp", dataslice).astype(np.complex64)
-            else:
-                raise ValueError("No kspace data found in file. Only 'kspace' or 'ksp' keys are supported.")
+            if self.complex_data:
+                if "kspace" in hf:
+                    kspace = self.get_consecutive_slices(hf, "kspace", dataslice).astype(np.complex64)
+                elif "ksp" in hf:
+                    kspace = self.get_consecutive_slices(hf, "ksp", dataslice).astype(np.complex64)
+                else:
+                    raise ValueError(
+                        "Complex data has been selected but no kspace data found in file. "
+                        "Only 'kspace' or 'ksp' keys are supported."
+                    )
 
-            if "sensitivity_map" in hf:
-                sensitivity_map = self.get_consecutive_slices(hf, "sensitivity_map", dataslice).astype(np.complex64)
-            elif "sense" in hf:
-                sensitivity_map = self.get_consecutive_slices(hf, "sense", dataslice).astype(np.complex64)
-            elif self.sense_root is not None and self.sense_root != "None":
-                with h5py.File(Path(self.sense_root) / Path(str(fname).split("/")[-2]) / fname.name, "r") as sf:
-                    if "sensitivity_map" in sf or "sensitivity_map" in next(iter(sf.keys())):
-                        sensitivity_map = self.get_consecutive_slices(sf, "sensitivity_map", dataslice)
-                    else:
-                        sensitivity_map = self.get_consecutive_slices(sf, "sense", dataslice)
-                    sensitivity_map = sensitivity_map.squeeze().astype(np.complex64)
-            else:
+                if "sensitivity_map" in hf:
+                    sensitivity_map = self.get_consecutive_slices(hf, "sensitivity_map", dataslice).astype(
+                        np.complex64
+                    )
+                elif "sense" in hf:
+                    sensitivity_map = self.get_consecutive_slices(hf, "sense", dataslice).astype(np.complex64)
+                elif self.sense_root is not None and self.sense_root != "None":
+                    with h5py.File(Path(self.sense_root) / Path(str(fname).split("/")[-2]) / fname.name, "r") as sf:
+                        if "sensitivity_map" in sf or "sensitivity_map" in next(iter(sf.keys())):
+                            sensitivity_map = self.get_consecutive_slices(sf, "sensitivity_map", dataslice)
+                        else:
+                            sensitivity_map = self.get_consecutive_slices(sf, "sense", dataslice)
+                        sensitivity_map = sensitivity_map.squeeze().astype(np.complex64)
+                else:
+                    sensitivity_map = np.array([])
+
+                if "mask" in hf:
+                    mask = np.asarray(self.get_consecutive_slices(hf, "mask", dataslice))
+                    if mask.ndim == 3:
+                        mask = mask[dataslice]
+                elif self.mask_root is not None and self.mask_root != "None":
+                    with h5py.File(Path(self.mask_root) / fname.name, "r") as mf:
+                        mask = np.asarray(self.get_consecutive_slices(mf, "mask", dataslice))
+                else:
+                    mask = np.empty([])
+                imspace = np.empty([])
+            elif not self.complex_data:
+                if "reconstruction" in hf:
+                    imspace = self.get_consecutive_slices(hf, "reconstruction", dataslice).astype(np.float32)
+                else:
+                    raise ValueError(
+                        "Complex data has not been selected but no reconstruction data found in file. "
+                        "Only 'reconstruction' key is supported."
+                    )
+                kspace = np.empty([])
                 sensitivity_map = np.array([])
-
-            if "mask" in hf:
-                mask = np.asarray(self.get_consecutive_slices(hf, "mask", dataslice))
-                if mask.ndim == 3:
-                    mask = mask[dataslice]
-            elif self.mask_root is not None and self.mask_root != "None":
-                with h5py.File(Path(self.mask_root) / fname.name, "r") as mf:
-                    mask = np.asarray(self.get_consecutive_slices(mf, "mask", dataslice))
-            else:
                 mask = np.empty([])
 
             if "segmentation" in hf:
-                segmentation = np.asarray(self.get_consecutive_slices(hf, "segmentation", dataslice))
-                if segmentation.shape[-1] == self.segmentation_classes:
-                    if segmentation.ndim == 3:
-                        segmentation = np.transpose(segmentation, (2, 0, 1))
+                segmentation_labels = np.asarray(self.get_consecutive_slices(hf, "segmentation", dataslice))
+                if segmentation_labels.shape[-1] == self.segmentation_classes:
+                    if segmentation_labels.ndim == 3:
+                        segmentation_labels = np.transpose(segmentation_labels, (2, 0, 1))
                     else:
-                        segmentation = np.transpose(segmentation, (0, 3, 1, 2))
+                        segmentation_labels = np.transpose(segmentation_labels, (0, 3, 1, 2))
+                if segmentation_labels.ndim == 2:
+                    segmentation_labels = np.expand_dims(segmentation_labels, axis=0)
+            elif self.segmentations_root is not None and self.segmentations_root != "None":
+                with h5py.File(Path(self.segmentations_root) / fname.name, "r") as sf:
+                    segmentation_labels = np.asarray(self.get_consecutive_slices(sf, "segmentation", dataslice))
+                    if segmentation_labels.shape[-1] == self.segmentation_classes:
+                        if segmentation_labels.ndim == 3:
+                            segmentation_labels = np.transpose(segmentation_labels, (2, 0, 1))
+                        else:
+                            segmentation_labels = np.transpose(segmentation_labels, (0, 3, 1, 2))
+                    if segmentation_labels.ndim == 2:
+                        segmentation_labels = np.expand_dims(segmentation_labels, axis=0)
             else:
-                segmentation = np.empty([])
+                segmentation_labels = np.empty([])
 
             attrs = dict(hf.attrs)
             attrs.update(metadata)
@@ -252,9 +290,10 @@ class JRSMRISliceDataset(Dataset):
         return (
             (
                 kspace,
+                imspace,
                 sensitivity_map,
                 mask,
-                segmentation,
+                segmentation_labels,
                 attrs,
                 fname.name,
                 dataslice,
@@ -262,9 +301,10 @@ class JRSMRISliceDataset(Dataset):
             if self.transform is None
             else self.transform(
                 kspace,
+                imspace,
                 sensitivity_map,
                 mask,
-                segmentation,
+                segmentation_labels,
                 attrs,
                 fname.name,
                 dataslice,

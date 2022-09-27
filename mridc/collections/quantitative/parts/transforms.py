@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
+
 from skimage.restoration import unwrap_phase
 from torch import Tensor
 from torch.nn import functional as F
@@ -147,7 +148,7 @@ class qMRIDataTransforms:
         self.fft_normalization = fft_normalization
         self.max_norm = max_norm
         self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
-        self.coil_dim = coil_dim - 1 if self.dimensionality == 2 else coil_dim
+        self.coil_dim = coil_dim - 1
 
         self.shift_B0_input = shift_B0_input
 
@@ -366,6 +367,7 @@ class qMRIDataTransforms:
             self.crop_size = (int(h), int(w))
 
             target = center_crop(target, self.crop_size)
+
             if sensitivity_map is not None and sensitivity_map.size != 0:
                 sensitivity_map = (
                     ifft2(
@@ -430,56 +432,7 @@ class qMRIDataTransforms:
                 )
             )
 
-        if isinstance(mask, list):
-            masked_kspaces = []
-            masks = []
-            for _mask in mask:
-                if list(_mask.shape) == [kspace.shape[-3], kspace.shape[-2]]:
-                    _mask = _mask.unsqueeze(0).unsqueeze(-1)
-
-                padding = (acq_start, acq_end)
-                if (not is_none(padding[0]) and not is_none(padding[1])) and padding[0] != 0:
-                    _mask[:, :, : padding[0]] = 0
-                    _mask[:, :, padding[1] :] = 0  # padding value inclusive on right of zeros
-
-                if isinstance(_mask, np.ndarray):
-                    _mask = torch.from_numpy(_mask).unsqueeze(0).unsqueeze(-1)
-
-                if self.shift_mask:
-                    _mask = torch.fft.fftshift(_mask, dim=(self.spatial_dims[0] - 1, self.spatial_dims[1] - 1))
-
-                if self.crop_size is not None and self.crop_size not in ("", "None") and self.crop_before_masking:
-                    _mask = complex_center_crop(_mask, self.crop_size)
-
-                masked_kspaces.append(kspace * _mask + 0.0)
-                masks.append(_mask)
-            masked_kspace = masked_kspaces
-            mask = masks
-            acc = 1
-        elif not is_none(mask) and mask.ndim != 0:  # and not is_none(self.mask_func):
-            for _mask in mask:
-                if list(_mask.shape) == [kspace.shape[-3], kspace.shape[-2]]:
-                    mask = torch.from_numpy(_mask).unsqueeze(0).unsqueeze(-1)
-                    break
-
-            padding = (acq_start, acq_end)
-            if (not is_none(padding[0]) and not is_none(padding[1])) and padding[0] != 0:
-                mask[:, :, : padding[0]] = 0
-                mask[:, :, padding[1] :] = 0  # padding value inclusive on right of zeros
-
-            if isinstance(mask, np.ndarray):
-                mask = torch.from_numpy(mask).unsqueeze(0).unsqueeze(-1)
-
-            if self.shift_mask:
-                mask = torch.fft.fftshift(mask, dim=(self.spatial_dims[0] - 1, self.spatial_dims[1] - 1))
-
-            if self.crop_size is not None and self.crop_size not in ("", "None") and self.crop_before_masking:
-                mask = complex_center_crop(mask, self.crop_size)
-
-            masked_kspace = kspace * mask + 0.0  # the + 0.0 removes the sign of the zeros
-
-            acc = 1
-        elif is_none(self.mask_func):
+        if is_none(self.mask_func):
             masked_kspace = kspace.clone()
             acc = torch.tensor([1])
 
@@ -555,6 +508,55 @@ class qMRIDataTransforms:
             masked_kspace = masked_kspaces
             mask = masks
             acc = accs  # type: ignore
+        elif isinstance(mask, list):
+            masked_kspaces = []
+            masks = []
+            for _mask in mask:
+                if list(_mask.shape) == [kspace.shape[-3], kspace.shape[-2]]:
+                    _mask = _mask.unsqueeze(0).unsqueeze(-1)
+
+                padding = (acq_start, acq_end)
+                if (not is_none(padding[0]) and not is_none(padding[1])) and padding[0] != 0:
+                    _mask[:, :, : padding[0]] = 0
+                    _mask[:, :, padding[1] :] = 0  # padding value inclusive on right of zeros
+
+                if isinstance(_mask, np.ndarray):
+                    _mask = torch.from_numpy(_mask).unsqueeze(0).unsqueeze(-1)
+
+                if self.shift_mask:
+                    _mask = torch.fft.fftshift(_mask, dim=(self.spatial_dims[0] - 1, self.spatial_dims[1] - 1))
+
+                if self.crop_size is not None and self.crop_size not in ("", "None") and self.crop_before_masking:
+                    _mask = complex_center_crop(_mask, self.crop_size)
+
+                masked_kspaces.append(kspace * _mask + 0.0)
+                masks.append(_mask)
+            masked_kspace = masked_kspaces
+            mask = masks
+            acc = 1
+        elif not is_none(mask) and mask.ndim != 0:  # and not is_none(self.mask_func):
+            for _mask in mask:
+                if list(_mask.shape) == [kspace.shape[-3], kspace.shape[-2]]:
+                    mask = torch.from_numpy(_mask).unsqueeze(0).unsqueeze(-1)
+                    break
+
+            padding = (acq_start, acq_end)
+            if (not is_none(padding[0]) and not is_none(padding[1])) and padding[0] != 0:
+                mask[:, :, : padding[0]] = 0
+                mask[:, :, padding[1] :] = 0  # padding value inclusive on right of zeros
+
+            if isinstance(mask, np.ndarray):
+                mask = torch.from_numpy(mask).unsqueeze(0).unsqueeze(-1)
+
+            if self.shift_mask:
+                mask = torch.fft.fftshift(mask, dim=(self.spatial_dims[0] - 1, self.spatial_dims[1] - 1))
+
+            if self.crop_size is not None and self.crop_size not in ("", "None") and self.crop_before_masking:
+                mask = complex_center_crop(mask, self.crop_size)
+
+            masked_kspace = kspace * mask + 0.0  # the + 0.0 removes the sign of the zeros
+
+            acc = 1
         else:
             masked_kspace, mask, acc = apply_mask(
                 kspace,
@@ -628,6 +630,7 @@ class qMRIDataTransforms:
                     sensitivity_map.unsqueeze(0),
                     dim=self.coil_dim,
                 )
+
                 etas.append(eta)
                 R2star_map_init, S0_map_init, B0_map_init, phi_map_init = R2star_B0_real_S0_complex_mapping(
                     eta,
@@ -646,10 +649,10 @@ class qMRIDataTransforms:
                 B0_maps_init.append(B0_map_init)
                 phi_maps_init.append(phi_map_init)
 
-            R2star_map_init = torch.stack(R2star_maps_init, dim=0)
-            S0_map_init = torch.stack(S0_maps_init, dim=0)
-            B0_map_init = torch.stack(B0_maps_init, dim=0)
-            phi_map_init = torch.stack(phi_maps_init, dim=0)
+            R2star_map_init = R2star_maps_init
+            S0_map_init = S0_maps_init
+            B0_map_init = B0_maps_init
+            phi_map_init = phi_maps_init
 
             mask_brain_tmp = torch.ones_like(torch.abs(mask_brain))
             mask_brain_tmp = mask_brain_tmp.unsqueeze(0) if mask_brain.dim() == 2 else mask_brain_tmp
@@ -1076,7 +1079,7 @@ def R2star_S0_mapping(
     """
     prediction = torch.abs(torch.view_as_complex(prediction)) + 1e-8
     prediction_flatten = torch.flatten(prediction, start_dim=1, end_dim=-1).detach().cpu()  # .numpy()
-    TEs = np.array(TEs).to(prediction_flatten)
+    TEs = torch.tensor(TEs).to(prediction_flatten)
 
     # TODO: this part needs a proper implementation in PyTorch
     R2star_map = torch.zeros([prediction_flatten.shape[1]])

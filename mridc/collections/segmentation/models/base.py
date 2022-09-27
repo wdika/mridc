@@ -12,9 +12,12 @@ import numpy as np
 import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
+from torch.nn import L1Loss
 from torch.utils.data import DataLoader
 
-from mridc.collections.common.parts.utils import is_none
+from mridc.collections.common.losses.ssim import SSIMLoss
+from mridc.collections.common.parts.fft import ifft2
+from mridc.collections.common.parts.utils import is_none, sense
 from mridc.collections.reconstruction.data.subsample import create_mask_for_mask_type
 from mridc.collections.reconstruction.metrics.evaluate import mse, nmse, psnr, ssim
 from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, DistributedMetricSum
@@ -60,16 +63,21 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
                 ignore_index=cfg_dict.get("cross_entropy_loss_ignore_index", -100),
                 reduction=cfg_dict.get("cross_entropy_loss_reduction", "none"),
                 label_smoothing=cfg_dict.get("cross_entropy_loss_label_smoothing", 0.0),
-                normalization=cfg_dict.get("cross_entropy_loss_normalization", "softmax"),
                 weight=cross_entropy_loss_weight,
             )
         if "dice" in segmentation_loss_fn:
             self.segmentation_loss_fn["dice"] = Dice(  # type: ignore
-                batched=cfg_dict.get("dice_loss_batched", False),
                 include_background=cfg_dict.get("dice_loss_include_background", False),
+                to_onehot_y=cfg_dict.get("dice_loss_to_onehot_y", False),
+                sigmoid=cfg_dict.get("dice_loss_sigmoid", True),
+                softmax=cfg_dict.get("dice_loss_softmax", False),
+                other_act=cfg_dict.get("dice_loss_other_act", None),
                 squared_pred=cfg_dict.get("dice_loss_squared_pred", False),
-                normalization=cfg_dict.get("dice_loss_normalization", "softmax"),
-                epsilon=cfg_dict.get("dice_loss_epsilon", 1e-5),
+                jaccard=cfg_dict.get("dice_loss_jaccard", False),
+                reduction=cfg_dict.get("dice_loss_reduction", "mean"),
+                smooth_nr=cfg_dict.get("dice_loss_smooth_nr", 1e-5),
+                smooth_dr=cfg_dict.get("dice_loss_smooth_dr", 1e-5),
+                batch=cfg_dict.get("dice_loss_batch", False),
             )
 
         self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
@@ -84,32 +92,42 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
             ignore_index=cfg_dict.get("cross_entropy_metric_ignore_index", -100),
             reduction=cfg_dict.get("cross_entropy_metric_reduction", "none"),
             label_smoothing=cfg_dict.get("cross_entropy_metric_label_smoothing", 0.0),
-            normalization=cfg_dict.get("cross_entropy_metric_normalization", "softmax"),
             weight=cross_entropy_metric_weight,
         )
         self.dice_coefficient_metric = Dice(  # type: ignore
-            batched=cfg_dict.get("dice_coefficient_batched", False),
-            include_background=cfg_dict.get("dice_coefficient_include_background", False),
-            squared_pred=cfg_dict.get("dice_coefficient_squared_pred", False),
-            normalization=cfg_dict.get("dice_coefficient_normalization", "softmax"),
-            epsilon=cfg_dict.get("dice_coefficient_epsilon", 1e-5),
+            include_background=cfg_dict.get("dice_metric_include_background", False),
+            to_onehot_y=cfg_dict.get("dice_metric_to_onehot_y", False),
+            sigmoid=cfg_dict.get("dice_metric_sigmoid", True),
+            softmax=cfg_dict.get("dice_metric_softmax", False),
+            other_act=cfg_dict.get("dice_metric_other_act", None),
+            squared_pred=cfg_dict.get("dice_metric_squared_pred", False),
+            jaccard=cfg_dict.get("dice_metric_jaccard", False),
+            reduction=cfg_dict.get("dice_metric_reduction", "mean"),
+            smooth_nr=cfg_dict.get("dice_metric_smooth_nr", 1e-5),
+            smooth_dr=cfg_dict.get("dice_metric_smooth_dr", 1e-5),
+            batch=cfg_dict.get("dice_metric_batch", False),
         )
 
         self.CROSS_ENTROPY = DistributedMetricSum()
-        self.DICE = DistributedMetricSum()
-
-        self.dice_vals: Dict = defaultdict(dict)
         self.cross_entropy_vals: Dict = defaultdict(dict)
 
-        self.mse_vals_segmentation: Dict = defaultdict(dict)
-        self.nmse_vals_segmentation: Dict = defaultdict(dict)
-        self.ssim_vals_segmentation: Dict = defaultdict(dict)
-        self.psnr_vals_segmentation: Dict = defaultdict(dict)
+        self.DICE = DistributedMetricSum()
+        self.dice_vals: Dict = defaultdict(dict)
 
         self.use_reconstruction_module = cfg_dict.get("use_reconstruction_module")
         if self.use_reconstruction_module:
-            self.train_loss_fn = cfg_dict.get("reconstruction_loss_fn")
-            self.val_loss_fn = cfg_dict.get("reconstruction_loss_fn")
+            reconstruction_loss_fn = cfg_dict.get("reconstruction_loss_fn")
+            if reconstruction_loss_fn == "ssim":
+                self.train_loss_fn = SSIMLoss()
+                self.val_loss_fn = SSIMLoss()
+            elif reconstruction_loss_fn == "l1":
+                self.train_loss_fn = L1Loss()
+                self.val_loss_fn = L1Loss()
+            else:
+                raise ValueError(
+                    f"Unrecognized reconstruction loss function: {reconstruction_loss_fn}. "
+                    "Only SSIM and L1 are supported."
+                )
 
             self.mse_vals_reconstruction: Dict = defaultdict(dict)
             self.nmse_vals_reconstruction: Dict = defaultdict(dict)
@@ -128,12 +146,11 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
             torch.Tensor, shape [batch_size, nr_classes, n_x, n_y]
         """
         loss_dict = {"cross_entropy_loss": 0.0, "dice_loss": 0.0}
+        # TODO: fix cross entropy loss
         if self.segmentation_loss_fn["cross_entropy"] is not None:
-            loss_dict["cross_entropy_loss"] = self.segmentation_loss_fn["cross_entropy"].to(target.device)(
-                target, pred
-            )
+            loss_dict["cross_entropy_loss"] = self.segmentation_loss_fn["cross_entropy"].to(self.device)(target, pred)
         if self.segmentation_loss_fn["dice"] is not None:
-            loss_dict["dice_loss"] = torch.tensor(1.0) - torch.mean(self.segmentation_loss_fn["dice"](target, pred))
+            _, loss_dict["dice_loss"] = self.segmentation_loss_fn["dice"](target, pred)
         loss_dict["segmentation_loss"] = loss_dict["cross_entropy_loss"] + loss_dict["dice_loss"]
         return loss_dict
 
@@ -198,28 +215,21 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
         )
 
         if self.consecutive_slices > 1:
+            batch, slices = target_segmentation.shape[:2]  # type: ignore
+            target_reconstruction = target_reconstruction.reshape(  # type: ignore
+                batch * slices, *target_reconstruction.shape[2:]  # type: ignore
+            )
+            pred_segmentation = pred_segmentation.reshape(batch * slices, *pred_segmentation.shape[2:])  # type: ignore
             target_segmentation = target_segmentation.reshape(  # type: ignore
-                target_segmentation.shape[0] * target_segmentation.shape[1],  # type: ignore
-                target_segmentation.shape[2],  # type: ignore
-                target_segmentation.shape[3],  # type: ignore
-                target_segmentation.shape[4],  # type: ignore
+                batch * slices, *target_segmentation.shape[2:]  # type: ignore
             )
 
         segmentation_loss = self.process_segmentation_loss(target_segmentation, pred_segmentation)["segmentation_loss"]
 
         if self.use_reconstruction_module:
-            if self.accumulate_estimates:
-                try:
-                    pred_reconstruction = next(pred_reconstruction)
-                except StopIteration:
-                    pass
-                reconstruction_loss = sum(
-                    self.process_loss(target_reconstruction, pred_reconstruction, _loss_fn=self.val_loss_fn, mask=None)
-                )
-            else:
-                reconstruction_loss = self.process_loss(
-                    target_reconstruction, pred_reconstruction, _loss_fn=self.train_loss_fn, mask=None
-                )
+            reconstruction_loss = self.process_reconstruction_loss(
+                target_reconstruction, pred_reconstruction, self.train_loss_fn
+            )
             train_loss = 1e-4 * segmentation_loss + 1e-4 * reconstruction_loss
         else:
             train_loss = segmentation_loss
@@ -289,61 +299,59 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, mask)
 
+            if self.coil_combination_method == "SENSE":
+                init_reconstruction_pred = sense(
+                    ifft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims),
+                    sensitivity_maps,
+                    self.coil_dim,
+                )
+
         pred_reconstruction, pred_segmentation = self.forward(
             y, sensitivity_maps, mask, init_reconstruction_pred, target_reconstruction
         )
 
+        if init_reconstruction_pred.shape[-1] == 2:  # type: ignore
+            init_reconstruction_pred = torch.view_as_complex(init_reconstruction_pred)
+        init_reconstruction_pred = init_reconstruction_pred / torch.max(torch.abs(init_reconstruction_pred))
+        self.log_image(f"{key}/segmentation/input", torch.abs(init_reconstruction_pred).detach().cpu())
+
         if self.consecutive_slices > 1:
+            batch, slices = target_segmentation.shape[:2]  # type: ignore
             target_reconstruction = target_reconstruction.reshape(  # type: ignore
-                target_reconstruction.shape[0] * target_reconstruction.shape[1],  # type: ignore
-                target_reconstruction.shape[2],  # type: ignore
-                target_reconstruction.shape[3],  # type: ignore
+                batch * slices, *target_reconstruction.shape[2:]  # type: ignore
             )
+            pred_segmentation = pred_segmentation.reshape(batch * slices, *pred_segmentation.shape[2:])  # type: ignore
             target_segmentation = target_segmentation.reshape(  # type: ignore
-                target_segmentation.shape[0] * target_segmentation.shape[1],  # type: ignore
-                target_segmentation.shape[2],  # type: ignore
-                target_segmentation.shape[3],  # type: ignore
-                target_segmentation.shape[4],  # type: ignore
+                batch * slices, *target_segmentation.shape[2:]  # type: ignore
             )
-        target_reconstruction = torch.abs(target_reconstruction).detach().cpu()
-        target_reconstruction = target_reconstruction / target_reconstruction.max()  # type: ignore
+
+        target_reconstruction = torch.abs(
+            target_reconstruction / torch.max(torch.abs(target_reconstruction))  # type: ignore
+        )
 
         segmentation_loss = self.process_segmentation_loss(target_segmentation, pred_segmentation)["segmentation_loss"]
 
         if self.use_reconstruction_module:
-            if self.accumulate_estimates:
-                try:
-                    pred_reconstruction = next(pred_reconstruction)
-                except StopIteration:
-                    pass
-
-                reconstruction_loss = sum(
-                    self.process_loss(target_reconstruction, pred_reconstruction, _loss_fn=self.val_loss_fn, mask=None)
-                )
-
-                # Cascades
-                if isinstance(pred_reconstruction, list):
-                    pred_reconstruction = pred_reconstruction[-1]
-
-                # Time-steps
-                if isinstance(pred_reconstruction, list):
-                    pred_reconstruction = pred_reconstruction[-1]
-            else:
-                reconstruction_loss = self.process_loss(
-                    target_reconstruction, pred_reconstruction, _loss_fn=self.train_loss_fn, mask=None
-                )
+            reconstruction_loss = sum(
+                self.process_reconstruction_loss(target_reconstruction, pred_reconstruction, self.val_loss_fn)
+            )
+            # Cascades
+            if isinstance(pred_reconstruction, list):
+                pred_reconstruction = pred_reconstruction[-1]
+            # Time-steps
+            if isinstance(pred_reconstruction, list):
+                pred_reconstruction = pred_reconstruction[-1]
 
             val_loss = 1e-4 * segmentation_loss + 1e-4 * reconstruction_loss
 
             if self.consecutive_slices > 1:
                 pred_reconstruction = pred_reconstruction.reshape(
-                    pred_reconstruction.shape[0] * pred_reconstruction.shape[1],
-                    pred_reconstruction.shape[2],
-                    pred_reconstruction.shape[3],
+                    pred_reconstruction.shape[0], pred_reconstruction.shape[1], *pred_reconstruction.shape[2:]
                 )
 
-            output_reconstruction = torch.abs(pred_reconstruction).detach().cpu()
-            output_reconstruction = output_reconstruction / output_reconstruction.max()
+            output_reconstruction = torch.abs(pred_reconstruction / torch.max(torch.abs(pred_reconstruction)))
+            output_reconstruction = torch.abs(output_reconstruction).detach().cpu()
+            target_reconstruction = torch.abs(target_reconstruction).detach().cpu()
             error_reconstruction = torch.abs(target_reconstruction - output_reconstruction)
             self.log_image(f"{key}/reconstruction/target", target_reconstruction)
             self.log_image(f"{key}/reconstruction/prediction", output_reconstruction)
@@ -374,87 +382,24 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
         else:
             val_loss = segmentation_loss
 
-        output_segmentation = torch.abs(pred_segmentation).detach().cpu()
-        output_segmentation = output_segmentation / output_segmentation.max()
-        target_segmentation = torch.abs(target_segmentation).detach().cpu()
-        target_segmentation = target_segmentation / target_segmentation.max()  # type: ignore
-        error_segmentation = torch.abs(target_segmentation - output_segmentation)
-
-        # remove all zero classes to avoid division by zero
-        non_zero_target_classes = []
-        non_zero_output_classes = []
-        for class_idx in range(target_segmentation.shape[0]):  # type: ignore
-            if not torch.all(target_segmentation[class_idx] == 0):  # type: ignore
-                non_zero_target_classes.append(target_segmentation[class_idx])  # type: ignore
-                non_zero_output_classes.append(output_segmentation[class_idx])
-        target_segmentation = torch.stack(non_zero_target_classes, dim=0)
-        output_segmentation = torch.stack(non_zero_output_classes, dim=0)
-
-        mses = []
-        nmses = []
-        ssims = []
-        psnrs = []
-
-        for class_idx in range(output_segmentation.shape[1]):
+        for class_idx in range(target_segmentation.shape[1]):  # type: ignore
             target_segmentation_class = target_segmentation[:, class_idx]  # type: ignore
-            output_segmentation_class = output_segmentation[:, class_idx]
-            error_segmentation_class = error_segmentation[:, class_idx]
-
+            target_segmentation_class = target_segmentation_class / torch.max(torch.abs(target_segmentation_class))
+            output_segmentation_class = pred_segmentation[:, class_idx]
+            output_segmentation_class = output_segmentation_class / torch.max(torch.abs(output_segmentation_class))
             self.log_image(
                 f"{key}/segmentation_classes/target_class_{class_idx}",
                 target_segmentation_class,  # type: ignore
             )
             self.log_image(f"{key}/segmentation_classes/prediction_class_{class_idx}", output_segmentation_class)
-            self.log_image(f"{key}/segmentation_classes/error_class_{class_idx}", error_segmentation_class)
-
-            target_segmented_class = target_reconstruction * target_segmentation_class
-            target_segmented_class = target_segmented_class / target_segmented_class.max()
-            output_segmented_class = target_reconstruction * output_segmentation_class
-            output_segmented_class = output_segmented_class / output_segmented_class.max()
-            error_segmented_class = torch.abs(target_reconstruction - error_segmentation_class)
-            error_segmented_class = error_segmented_class / error_segmented_class.max()
-
-            self.log_image(f"{key}/segmentations/target_class_{class_idx}", target_segmented_class)
-            self.log_image(f"{key}/segmentations/prediction_class_{class_idx}", output_segmented_class)
-            self.log_image(f"{key}/segmentations/error_class_{class_idx}", error_segmented_class)
-
-            target_segmented_class = target_segmented_class.numpy()
-            output_segmented_class = output_segmented_class.numpy()
-
-            mses.append(torch.tensor(mse(target_segmented_class, output_segmented_class)).view(1))
-            nmses.append(torch.tensor(nmse(target_segmented_class, output_segmented_class)).view(1))
-            ssims.append(
-                torch.tensor(
-                    ssim(
-                        target_segmented_class,
-                        output_segmented_class,
-                        maxval=output_segmented_class.max() - output_segmented_class.min(),
-                    )
-                ).view(1)
-            )
-            psnrs.append(
-                torch.tensor(
-                    psnr(
-                        target_segmented_class,
-                        output_segmented_class,
-                        maxval=output_segmented_class.max() - output_segmented_class.min(),
-                    )
-                ).view(1)
+            self.log_image(
+                f"{key}/segmentation_classes/error_class_{class_idx}",
+                target_segmentation_class - output_segmentation_class,
             )
 
-        target_segmentation = target_segmentation.float()  # type: ignore
-        output_segmentation = output_segmentation.float()
-        self.cross_entropy_vals[fname][slice_idx] = torch.mean(
-            self.cross_entropy_metric(target_segmentation, output_segmentation)
-        )
-        self.dice_vals[fname][slice_idx] = torch.mean(
-            self.dice_coefficient_metric(target_segmentation, output_segmentation)
-        )
-
-        self.mse_vals_segmentation[fname][slice_idx] = torch.mean(torch.stack(mses))
-        self.nmse_vals_segmentation[fname][slice_idx] = torch.mean(torch.stack(nmses))
-        self.ssim_vals_segmentation[fname][slice_idx] = torch.mean(torch.stack(ssims))
-        self.psnr_vals_segmentation[fname][slice_idx] = torch.mean(torch.stack(psnrs))
+        self.cross_entropy_vals[fname][slice_idx] = self.cross_entropy_metric(target_segmentation, pred_segmentation)
+        dice_score, _ = self.dice_coefficient_metric(target_segmentation, pred_segmentation)
+        self.dice_vals[fname][slice_idx] = dice_score
 
         return {"val_loss": val_loss}
 
@@ -517,49 +462,52 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, mask)
 
+            if self.coil_combination_method == "SENSE":
+                init_reconstruction_pred = sense(
+                    ifft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims),
+                    sensitivity_maps,
+                    self.coil_dim,
+                )
+
         pred_reconstruction, pred_segmentation = self.forward(
             y, sensitivity_maps, mask, init_reconstruction_pred, target_reconstruction
         )
 
+        if init_reconstruction_pred.shape[-1] == 2:  # type: ignore
+            init_reconstruction_pred = torch.view_as_complex(init_reconstruction_pred)
+        init_reconstruction_pred = init_reconstruction_pred / torch.max(torch.abs(init_reconstruction_pred))
+        self.log_image(f"{key}/segmentation/input", torch.abs(init_reconstruction_pred).detach().cpu())
+
         if self.consecutive_slices > 1:
+            batch, slices = target_segmentation.shape[:2]  # type: ignore
             target_reconstruction = target_reconstruction.reshape(  # type: ignore
-                target_reconstruction.shape[0] * target_reconstruction.shape[1],  # type: ignore
-                target_reconstruction.shape[2],  # type: ignore
-                target_reconstruction.shape[3],  # type: ignore
+                batch * slices, *target_reconstruction.shape[2:]  # type: ignore
             )
+            pred_segmentation = pred_segmentation.reshape(batch * slices, *pred_segmentation.shape[2:])  # type: ignore
             target_segmentation = target_segmentation.reshape(  # type: ignore
-                target_segmentation.shape[0] * target_segmentation.shape[1],  # type: ignore
-                target_segmentation.shape[2],  # type: ignore
-                target_segmentation.shape[3],  # type: ignore
-                target_segmentation.shape[4],  # type: ignore
+                batch * slices, *target_segmentation.shape[2:]  # type: ignore
             )
+
+        target_reconstruction = torch.abs(
+            target_reconstruction / torch.max(torch.abs(target_reconstruction))  # type: ignore
+        )
         target_reconstruction = torch.abs(target_reconstruction).detach().cpu()
-        target_reconstruction = target_reconstruction / target_reconstruction.max()  # type: ignore
 
         if self.use_reconstruction_module:
-            if self.accumulate_estimates:
-                try:
-                    pred_reconstruction = next(pred_reconstruction)
-                except StopIteration:
-                    pass
-
-                # Cascades
-                if isinstance(pred_reconstruction, list):
-                    pred_reconstruction = pred_reconstruction[-1]
-
-                # Time-steps
-                if isinstance(pred_reconstruction, list):
-                    pred_reconstruction = pred_reconstruction[-1]
+            # Cascades
+            if isinstance(pred_reconstruction, list):
+                pred_reconstruction = pred_reconstruction[-1]
+            # Time-steps
+            if isinstance(pred_reconstruction, list):
+                pred_reconstruction = pred_reconstruction[-1]
 
             if self.consecutive_slices > 1:
                 pred_reconstruction = pred_reconstruction.reshape(
-                    pred_reconstruction.shape[0] * pred_reconstruction.shape[1],
-                    pred_reconstruction.shape[2],
-                    pred_reconstruction.shape[3],
+                    pred_reconstruction.shape[0], pred_reconstruction.shape[1], *pred_reconstruction.shape[2:]
                 )
 
-            output_reconstruction = torch.abs(pred_reconstruction).detach().cpu()
-            output_reconstruction = output_reconstruction / output_reconstruction.max()
+            output_reconstruction = torch.abs(pred_reconstruction / torch.max(torch.abs(pred_reconstruction)))
+            output_reconstruction = torch.abs(output_reconstruction).detach().cpu()
             error_reconstruction = torch.abs(target_reconstruction - output_reconstruction)
             self.log_image(f"{key}/reconstruction/target", target_reconstruction)
             self.log_image(f"{key}/reconstruction/prediction", output_reconstruction)
@@ -588,87 +536,24 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
                 )
             ).view(1)
 
-        output_segmentation = torch.abs(pred_segmentation).detach().cpu()
-        output_segmentation = output_segmentation / output_segmentation.max()
-        target_segmentation = torch.abs(target_segmentation).detach().cpu()
-        target_segmentation = target_segmentation / target_segmentation.max()  # type: ignore
-        error_segmentation = torch.abs(target_segmentation - output_segmentation)
-
-        # remove all zero classes to avoid division by zero
-        non_zero_target_classes = []
-        non_zero_output_classes = []
-        for class_idx in range(target_segmentation.shape[0]):  # type: ignore
-            if not torch.all(target_segmentation[class_idx] == 0):  # type: ignore
-                non_zero_target_classes.append(target_segmentation[class_idx])  # type: ignore
-                non_zero_output_classes.append(output_segmentation[class_idx])
-        target_segmentation = torch.stack(non_zero_target_classes, dim=0)
-        output_segmentation = torch.stack(non_zero_output_classes, dim=0)
-
-        mses = []
-        nmses = []
-        ssims = []
-        psnrs = []
-
-        for class_idx in range(output_segmentation.shape[1]):
+        for class_idx in range(target_segmentation.shape[1]):  # type: ignore
             target_segmentation_class = target_segmentation[:, class_idx]  # type: ignore
-            output_segmentation_class = output_segmentation[:, class_idx]
-            error_segmentation_class = error_segmentation[:, class_idx]
-
+            target_segmentation_class = target_segmentation_class / torch.max(torch.abs(target_segmentation_class))
+            output_segmentation_class = pred_segmentation[:, class_idx]
+            output_segmentation_class = output_segmentation_class / torch.max(torch.abs(output_segmentation_class))
             self.log_image(
                 f"{key}/segmentation_classes/target_class_{class_idx}",
                 target_segmentation_class,  # type: ignore
             )
             self.log_image(f"{key}/segmentation_classes/prediction_class_{class_idx}", output_segmentation_class)
-            self.log_image(f"{key}/segmentation_classes/error_class_{class_idx}", error_segmentation_class)
-
-            target_segmented_class = target_reconstruction * target_segmentation_class
-            target_segmented_class = target_segmented_class / target_segmented_class.max()
-            output_segmented_class = target_reconstruction * output_segmentation_class
-            output_segmented_class = output_segmented_class / output_segmented_class.max()
-            error_segmented_class = torch.abs(target_reconstruction - error_segmentation_class)
-            error_segmented_class = error_segmented_class / error_segmented_class.max()
-
-            self.log_image(f"{key}/segmentations/target_class_{class_idx}", target_segmented_class)
-            self.log_image(f"{key}/segmentations/prediction_class_{class_idx}", output_segmented_class)
-            self.log_image(f"{key}/segmentations/error_class_{class_idx}", error_segmented_class)
-
-            target_segmented_class = target_segmented_class.numpy()
-            output_segmented_class = output_segmented_class.numpy()
-
-            mses.append(torch.tensor(mse(target_segmented_class, output_segmented_class)).view(1))
-            nmses.append(torch.tensor(nmse(target_segmented_class, output_segmented_class)).view(1))
-            ssims.append(
-                torch.tensor(
-                    ssim(
-                        target_segmented_class,
-                        output_segmented_class,
-                        maxval=output_segmented_class.max() - output_segmented_class.min(),
-                    )
-                ).view(1)
-            )
-            psnrs.append(
-                torch.tensor(
-                    psnr(
-                        target_segmented_class,
-                        output_segmented_class,
-                        maxval=output_segmented_class.max() - output_segmented_class.min(),
-                    )
-                ).view(1)
+            self.log_image(
+                f"{key}/segmentation_classes/error_class_{class_idx}",
+                target_segmentation_class - output_segmentation_class,
             )
 
-        target_segmentation = target_segmentation.float()  # type: ignore
-        output_segmentation = output_segmentation.float()
-        self.cross_entropy_vals[fname][slice_idx] = torch.mean(
-            self.cross_entropy_metric(target_segmentation, output_segmentation)
-        )
-        self.dice_vals[fname][slice_idx] = torch.mean(
-            self.dice_coefficient_metric(target_segmentation, output_segmentation)
-        )
-
-        self.mse_vals_segmentation[fname][slice_idx] = torch.mean(torch.stack(mses))
-        self.nmse_vals_segmentation[fname][slice_idx] = torch.mean(torch.stack(nmses))
-        self.ssim_vals_segmentation[fname][slice_idx] = torch.mean(torch.stack(ssims))
-        self.psnr_vals_segmentation[fname][slice_idx] = torch.mean(torch.stack(psnrs))
+        self.cross_entropy_vals[fname][slice_idx] = self.cross_entropy_metric(target_segmentation, pred_segmentation)
+        dice_score, _ = self.dice_coefficient_metric(target_segmentation, pred_segmentation)
+        self.dice_vals[fname][slice_idx] = dice_score
 
         predictions = (
             (pred_segmentation.detach().cpu().numpy(), pred_reconstruction.detach().cpu().numpy())
@@ -687,10 +572,11 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
         outputs: List of outputs from the train step.
             list of dicts
         """
-        self.log("train_loss", torch.stack([x["train_loss"] for x in outputs]).mean())
+        self.log("train_loss", torch.stack([x["train_loss"] for x in outputs]).mean(), sync_dist=True)
         self.log(
             f"train_loss_{self.acc}x",
             torch.stack([x[f"train_loss_{self.acc}x"] for x in outputs]).mean(),
+            sync_dist=True,
         )
 
     def validation_epoch_end(self, outputs):
@@ -707,30 +593,18 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
         metrics: Dictionary of metrics.
             dict
         """
-        self.log("val_loss", torch.stack([x["val_loss"] for x in outputs]).mean())
+        self.log("val_loss", torch.stack([x["val_loss"] for x in outputs]).mean(), sync_dist=True)
 
         # Log metrics.
         cross_entropy_vals = defaultdict(dict)
         dice_vals = defaultdict(dict)
-
-        mse_vals_segmentation = defaultdict(dict)
-        nmse_vals_segmentation = defaultdict(dict)
-        ssim_vals_segmentation = defaultdict(dict)
-        psnr_vals_segmentation = defaultdict(dict)
 
         for k in self.cross_entropy_vals.keys():
             cross_entropy_vals[k].update(self.cross_entropy_vals[k])
         for k in self.dice_vals.keys():
             dice_vals[k].update(self.dice_vals[k])
 
-        for k in self.mse_vals_segmentation.keys():
-            mse_vals_segmentation[k].update(self.mse_vals_segmentation[k])
-        for k in self.nmse_vals_segmentation.keys():
-            nmse_vals_segmentation[k].update(self.nmse_vals_segmentation[k])
-        for k in self.ssim_vals_segmentation.keys():
-            ssim_vals_segmentation[k].update(self.ssim_vals_segmentation[k])
-        for k in self.psnr_vals_segmentation.keys():
-            psnr_vals_segmentation[k].update(self.psnr_vals_segmentation[k])
+        metrics_segmentation = {"Cross_Entropy": 0, "DICE": 0}
 
         if self.use_reconstruction_module:
             mse_vals_reconstruction = defaultdict(dict)
@@ -744,92 +618,52 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
                 nmse_vals_reconstruction[k].update(self.nmse_vals_reconstruction[k])
             for k in self.ssim_vals_reconstruction.keys():
                 ssim_vals_reconstruction[k].update(self.ssim_vals_reconstruction[k])
-            for k in self.psnr_vals_R2star.keys():
+            for k in self.psnr_vals_reconstruction.keys():
                 psnr_vals_reconstruction[k].update(self.psnr_vals_reconstruction[k])
 
-        # apply means across image volumes
-        metrics = {
-            "Cross_Entropy": {
-                "segmentation": 0,
-            },
-            "DICE": {
-                "segmentation": 0,
-            },
-            "MSE": {
-                "reconstruction": 0,
-                "segmentation": 0,
-            },
-            "NMSE": {
-                "reconstruction": 0,
-                "segmentation": 0,
-            },
-            "SSIM": {
-                "reconstruction": 0,
-                "segmentation": 0,
-            },
-            "PSNR": {
-                "reconstruction": 0,
-                "segmentation": 0,
-            },
-        }
+            metrics_reconstruction = {"MSE": 0, "NMSE": 0, "SSIM": 0, "PSNR": 0}
+
         local_examples = 0
-        for fname in mse_vals_segmentation:
+        for fname in dice_vals:
             local_examples += 1
 
-            metrics["Cross_Entropy"]["segmentation"] = metrics["Cross_Entropy"]["segmentation"] + torch.mean(
+            metrics_segmentation["Cross_Entropy"] = metrics_segmentation["Cross_Entropy"] + torch.mean(
                 torch.cat([v.view(-1).float() for _, v in cross_entropy_vals[fname].items()])
             )
-            metrics["DICE"]["segmentation"] = metrics["DICE"]["segmentation"] + torch.mean(
+            metrics_segmentation["DICE"] = metrics_segmentation["DICE"] + torch.mean(
                 torch.cat([v.view(-1).float() for _, v in dice_vals[fname].items()])
             )
 
-            metrics["MSE"]["segmentation"] = metrics["MSE"]["segmentation"] + torch.mean(
-                torch.cat([v.view(-1).float() for _, v in mse_vals_segmentation[fname].items()])
-            )
-            metrics["NMSE"]["segmentation"] = metrics["NMSE"]["segmentation"] + torch.mean(
-                torch.cat([v.view(-1).float() for _, v in nmse_vals_segmentation[fname].items()])
-            )
-            metrics["SSIM"]["segmentation"] = metrics["SSIM"]["segmentation"] + torch.mean(
-                torch.cat([v.view(-1).float() for _, v in ssim_vals_segmentation[fname].items()])
-            )
-            metrics["PSNR"]["segmentation"] = metrics["PSNR"]["segmentation"] + torch.mean(
-                torch.cat([v.view(-1).float() for _, v in psnr_vals_segmentation[fname].items()])
-            )
-
             if self.use_reconstruction_module:
-                metrics["MSE"]["reconstruction"] = metrics["MSE"]["reconstruction"] + torch.mean(
+                metrics_reconstruction["MSE"] = metrics_reconstruction["MSE"] + torch.mean(
                     torch.cat([v.view(-1).float() for _, v in mse_vals_reconstruction[fname].items()])
                 )
-                metrics["NMSE"]["reconstruction"] = metrics["NMSE"]["reconstruction"] + torch.mean(
+                metrics_reconstruction["NMSE"] = metrics_reconstruction["NMSE"] + torch.mean(
                     torch.cat([v.view(-1).float() for _, v in nmse_vals_reconstruction[fname].items()])
                 )
-                metrics["SSIM"]["reconstruction"] = metrics["SSIM"]["reconstruction"] + torch.mean(
+                metrics_reconstruction["SSIM"] = metrics_reconstruction["SSIM"] + torch.mean(
                     torch.cat([v.view(-1).float() for _, v in ssim_vals_reconstruction[fname].items()])
                 )
-                metrics["PSNR"]["reconstruction"] = metrics["PSNR"]["reconstruction"] + torch.mean(
+                metrics_reconstruction["PSNR"] = metrics_reconstruction["PSNR"] + torch.mean(
                     torch.cat([v.view(-1).float() for _, v in psnr_vals_reconstruction[fname].items()])
                 )
 
         # reduce across ddp via sum
-        metrics["Cross_Entropy"]["segmentation"] = self.CROSS_ENTROPY(metrics["Cross_Entropy"]["segmentation"])
-        metrics["DICE"]["segmentation"] = self.DICE(metrics["DICE"]["segmentation"])
-
-        metrics["MSE"]["segmentation"] = self.MSE(metrics["MSE"]["segmentation"])
-        metrics["NMSE"]["segmentation"] = self.NMSE(metrics["NMSE"]["segmentation"])
-        metrics["SSIM"]["segmentation"] = self.SSIM(metrics["SSIM"]["segmentation"])
-        metrics["PSNR"]["segmentation"] = self.PSNR(metrics["PSNR"]["segmentation"])
+        metrics_segmentation["Cross_Entropy"] = self.CROSS_ENTROPY(metrics_segmentation["Cross_Entropy"])
+        metrics_segmentation["DICE"] = self.DICE(metrics_segmentation["DICE"])
 
         if self.use_reconstruction_module:
-            metrics["MSE"]["reconstruction"] = self.MSE(metrics["MSE"]["reconstruction"])
-            metrics["NMSE"]["reconstruction"] = self.NMSE(metrics["NMSE"]["reconstruction"])
-            metrics["SSIM"]["reconstruction"] = self.SSIM(metrics["SSIM"]["reconstruction"])
-            metrics["PSNR"]["reconstruction"] = self.PSNR(metrics["PSNR"]["reconstruction"])
+            metrics_reconstruction["MSE"] = self.MSE(metrics_reconstruction["MSE"])
+            metrics_reconstruction["NMSE"] = self.NMSE(metrics_reconstruction["NMSE"])
+            metrics_reconstruction["SSIM"] = self.SSIM(metrics_reconstruction["SSIM"])
+            metrics_reconstruction["PSNR"] = self.PSNR(metrics_reconstruction["PSNR"])
 
         tot_examples = self.TotExamples(torch.tensor(local_examples))
-        for metric, value in metrics.items():
-            self.log(f"{metric}_Segmentation", value["segmentation"] / tot_examples)
-            if self.use_reconstruction_module:
-                self.log(f"{metric}_Reconstruction", value["reconstruction"] / tot_examples)
+        for metric, value in metrics_segmentation.items():
+            self.log(f"{metric}_Segmentation", value / tot_examples, sync_dist=True)
+        if self.use_reconstruction_module:
+            for metric, value in metrics_reconstruction.items():
+                self.log(f"{metric}_Reconstruction", value / tot_examples, sync_dist=True)
 
     def test_epoch_end(self, outputs):
         """
@@ -848,24 +682,12 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
         cross_entropy_vals = defaultdict(dict)
         dice_vals = defaultdict(dict)
 
-        mse_vals_segmentation = defaultdict(dict)
-        nmse_vals_segmentation = defaultdict(dict)
-        ssim_vals_segmentation = defaultdict(dict)
-        psnr_vals_segmentation = defaultdict(dict)
-
         for k in self.cross_entropy_vals.keys():
             cross_entropy_vals[k].update(self.cross_entropy_vals[k])
         for k in self.dice_vals.keys():
             dice_vals[k].update(self.dice_vals[k])
 
-        for k in self.mse_vals_segmentation.keys():
-            mse_vals_segmentation[k].update(self.mse_vals_segmentation[k])
-        for k in self.nmse_vals_segmentation.keys():
-            nmse_vals_segmentation[k].update(self.nmse_vals_segmentation[k])
-        for k in self.ssim_vals_segmentation.keys():
-            ssim_vals_segmentation[k].update(self.ssim_vals_segmentation[k])
-        for k in self.psnr_vals_segmentation.keys():
-            psnr_vals_segmentation[k].update(self.psnr_vals_segmentation[k])
+        metrics_segmentation = {"Cross_Entropy": 0, "DICE": 0}
 
         if self.use_reconstruction_module:
             mse_vals_reconstruction = defaultdict(dict)
@@ -879,92 +701,52 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
                 nmse_vals_reconstruction[k].update(self.nmse_vals_reconstruction[k])
             for k in self.ssim_vals_reconstruction.keys():
                 ssim_vals_reconstruction[k].update(self.ssim_vals_reconstruction[k])
-            for k in self.psnr_vals_R2star.keys():
+            for k in self.psnr_vals_reconstruction.keys():
                 psnr_vals_reconstruction[k].update(self.psnr_vals_reconstruction[k])
 
-        # apply means across image volumes
-        metrics = {
-            "Cross_Entropy": {
-                "segmentation": 0,
-            },
-            "DICE": {
-                "segmentation": 0,
-            },
-            "MSE": {
-                "reconstruction": 0,
-                "segmentation": 0,
-            },
-            "NMSE": {
-                "reconstruction": 0,
-                "segmentation": 0,
-            },
-            "SSIM": {
-                "reconstruction": 0,
-                "segmentation": 0,
-            },
-            "PSNR": {
-                "reconstruction": 0,
-                "segmentation": 0,
-            },
-        }
+            metrics_reconstruction = {"MSE": 0, "NMSE": 0, "SSIM": 0, "PSNR": 0}
+
         local_examples = 0
-        for fname in mse_vals_segmentation:
+        for fname in dice_vals:
             local_examples += 1
 
-            metrics["Cross_Entropy"]["segmentation"] = metrics["Cross_Entropy"]["segmentation"] + torch.mean(
+            metrics_segmentation["Cross_Entropy"] = metrics_segmentation["Cross_Entropy"] + torch.mean(
                 torch.cat([v.view(-1).float() for _, v in cross_entropy_vals[fname].items()])
             )
-            metrics["DICE"]["segmentation"] = metrics["DICE"]["segmentation"] + torch.mean(
+            metrics_segmentation["DICE"] = metrics_segmentation["DICE"] + torch.mean(
                 torch.cat([v.view(-1).float() for _, v in dice_vals[fname].items()])
             )
 
-            metrics["MSE"]["segmentation"] = metrics["MSE"]["segmentation"] + torch.mean(
-                torch.cat([v.view(-1).float() for _, v in mse_vals_segmentation[fname].items()])
-            )
-            metrics["NMSE"]["segmentation"] = metrics["NMSE"]["segmentation"] + torch.mean(
-                torch.cat([v.view(-1).float() for _, v in nmse_vals_segmentation[fname].items()])
-            )
-            metrics["SSIM"]["segmentation"] = metrics["SSIM"]["segmentation"] + torch.mean(
-                torch.cat([v.view(-1).float() for _, v in ssim_vals_segmentation[fname].items()])
-            )
-            metrics["PSNR"]["segmentation"] = metrics["PSNR"]["segmentation"] + torch.mean(
-                torch.cat([v.view(-1).float() for _, v in psnr_vals_segmentation[fname].items()])
-            )
-
             if self.use_reconstruction_module:
-                metrics["MSE"]["reconstruction"] = metrics["MSE"]["reconstruction"] + torch.mean(
+                metrics_reconstruction["MSE"] = metrics_reconstruction["MSE"] + torch.mean(
                     torch.cat([v.view(-1).float() for _, v in mse_vals_reconstruction[fname].items()])
                 )
-                metrics["NMSE"]["reconstruction"] = metrics["NMSE"]["reconstruction"] + torch.mean(
+                metrics_reconstruction["NMSE"] = metrics_reconstruction["NMSE"] + torch.mean(
                     torch.cat([v.view(-1).float() for _, v in nmse_vals_reconstruction[fname].items()])
                 )
-                metrics["SSIM"]["reconstruction"] = metrics["SSIM"]["reconstruction"] + torch.mean(
+                metrics_reconstruction["SSIM"] = metrics_reconstruction["SSIM"] + torch.mean(
                     torch.cat([v.view(-1).float() for _, v in ssim_vals_reconstruction[fname].items()])
                 )
-                metrics["PSNR"]["reconstruction"] = metrics["PSNR"]["reconstruction"] + torch.mean(
+                metrics_reconstruction["PSNR"] = metrics_reconstruction["PSNR"] + torch.mean(
                     torch.cat([v.view(-1).float() for _, v in psnr_vals_reconstruction[fname].items()])
                 )
 
         # reduce across ddp via sum
-        metrics["Cross_Entropy"]["segmentation"] = self.CROSS_ENTROPY(metrics["Cross_Entropy"]["segmentation"])
-        metrics["DICE"]["segmentation"] = self.DICE(metrics["DICE"]["segmentation"])
-
-        metrics["MSE"]["segmentation"] = self.MSE(metrics["MSE"]["segmentation"])
-        metrics["NMSE"]["segmentation"] = self.NMSE(metrics["NMSE"]["segmentation"])
-        metrics["SSIM"]["segmentation"] = self.SSIM(metrics["SSIM"]["segmentation"])
-        metrics["PSNR"]["segmentation"] = self.PSNR(metrics["PSNR"]["segmentation"])
+        metrics_segmentation["Cross_Entropy"] = self.CROSS_ENTROPY(metrics_segmentation["Cross_Entropy"])
+        metrics_segmentation["DICE"] = self.DICE(metrics_segmentation["DICE"])
 
         if self.use_reconstruction_module:
-            metrics["MSE"]["reconstruction"] = self.MSE(metrics["MSE"]["reconstruction"])
-            metrics["NMSE"]["reconstruction"] = self.NMSE(metrics["NMSE"]["reconstruction"])
-            metrics["SSIM"]["reconstruction"] = self.SSIM(metrics["SSIM"]["reconstruction"])
-            metrics["PSNR"]["reconstruction"] = self.PSNR(metrics["PSNR"]["reconstruction"])
+            metrics_reconstruction["MSE"] = self.MSE(metrics_reconstruction["MSE"])
+            metrics_reconstruction["NMSE"] = self.NMSE(metrics_reconstruction["NMSE"])
+            metrics_reconstruction["SSIM"] = self.SSIM(metrics_reconstruction["SSIM"])
+            metrics_reconstruction["PSNR"] = self.PSNR(metrics_reconstruction["PSNR"])
 
         tot_examples = self.TotExamples(torch.tensor(local_examples))
-        for metric, value in metrics.items():
-            self.log(f"{metric}_Segmentation", value["segmentation"] / tot_examples)
-            if self.use_reconstruction_module:
-                self.log(f"{metric}_Reconstruction", value["reconstruction"] / tot_examples)
+        for metric, value in metrics_segmentation.items():
+            self.log(f"{metric}_Segmentation", value / tot_examples, sync_dist=True)
+        if self.use_reconstruction_module:
+            for metric, value in metrics_reconstruction.items():
+                self.log(f"{metric}_Reconstruction", value / tot_examples, sync_dist=True)
 
         predictions = defaultdict(list)
         for fname, slice_num, output in outputs:
@@ -1018,10 +800,13 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
                 else [create_mask_for_mask_type(mask_type, center_fractions, accelerations)]
             )
 
+        complex_data = cfg.get("complex_data", True)
+
         dataset = JRSMRISliceDataset(
             root=cfg.get("data_path"),
             sense_root=cfg.get("sense_path"),
             mask_root=cfg.get("mask_path"),
+            segmentations_root=cfg.get("segmentations_path"),
             sample_rate=cfg.get("sample_rate", 1.0),
             volume_sample_rate=cfg.get("volume_sample_rate", None),
             use_dataset_cache=cfg.get("use_dataset_cache", None),
@@ -1029,8 +814,10 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
             num_cols=cfg.get("num_cols", None),
             consecutive_slices=cfg.get("consecutive_slices", 1),
             segmentation_classes=cfg.get("segmentation_classes", 2),
+            complex_data=complex_data,
             data_saved_per_slice=cfg.get("data_saved_per_slice", False),
             transform=JRSMRIDataTransforms(
+                complex_data=complex_data,
                 apply_prewhitening=cfg.get("apply_prewhitening", False),
                 prewhitening_scale_factor=cfg.get("prewhitening_scale_factor", 1.0),
                 prewhitening_patch_start=cfg.get("prewhitening_patch_start", 10),

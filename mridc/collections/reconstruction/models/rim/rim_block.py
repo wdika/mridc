@@ -165,33 +165,19 @@ class RIMBlock(torch.nn.Module):
         -------
         Reconstructed image and hidden states.
         """
-        if self.dimensionality == 3:
+        if self.dimensionality == 3 or self.consecutive_slices > 1:
             # 2D pred.shape = [batch, coils, height, width, 2]
             # 3D pred.shape = [batch, slices, coils, height, width, 2] -> [batch * slices, coils, height, width, 2]
             batch, slices = masked_kspace.shape[0], masked_kspace.shape[1]
-
             if isinstance(pred, (tuple, list)):
                 pred = pred[-1].detach()
             else:
-                pred = pred.reshape(
-                    [pred.shape[0] * pred.shape[1], pred.shape[2], pred.shape[3], pred.shape[4], pred.shape[5]]
-                )
-
+                pred = pred.reshape([pred.shape[0] * pred.shape[1], *pred.shape[2:]])
             masked_kspace = masked_kspace.reshape(
-                [
-                    masked_kspace.shape[0] * masked_kspace.shape[1],
-                    masked_kspace.shape[2],
-                    masked_kspace.shape[3],
-                    masked_kspace.shape[4],
-                    masked_kspace.shape[5],
-                ]
+                [masked_kspace.shape[0] * masked_kspace.shape[1], *masked_kspace.shape[2:]]
             )
-            mask = mask.reshape(
-                [mask.shape[0] * mask.shape[1], mask.shape[2], mask.shape[3], mask.shape[4], mask.shape[5]]
-            )
-            sense = sense.reshape(
-                [sense.shape[0] * sense.shape[1], sense.shape[2], sense.shape[3], sense.shape[4], sense.shape[5]]
-            )
+            mask = mask.reshape([mask.shape[0] * mask.shape[1], *mask.shape[2:]])
+            sense = sense.reshape([sense.shape[0] * sense.shape[1], *sense.shape[2:]])
         else:
             batch = masked_kspace.shape[0]
             slices = masked_kspace.shape[1]

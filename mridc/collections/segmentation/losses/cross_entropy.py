@@ -14,7 +14,6 @@ class MC_CrossEntropyLoss(nn.Module):
         ignore_index: int = -100,
         reduction: str = "none",
         label_smoothing: float = 0.0,
-        normalization: str = "softmax",
         weight: torch.Tensor = None,
     ) -> None:
         """
@@ -28,19 +27,11 @@ class MC_CrossEntropyLoss(nn.Module):
             Reduction method, by default "none"
         label_smoothing : float, optional
             Label smoothing, by default 0.0
-        normalization : str, optional
-            Normalization method, by default "softmax"
         weight : torch.Tensor, optional
             Weight for each class, by default None
         """
         super().__init__()
         self.mc_samples = num_samples
-        if normalization == "sigmoid":
-            self.normalization = nn.Sigmoid()
-        elif normalization == "softmax":
-            self.normalization = nn.Softmax(dim=1)
-        else:
-            raise ValueError(f"Dice loss normalization should be either sigmoid or softmax. Found {normalization}")
 
         self.cross_entropy = torch.nn.CrossEntropyLoss(
             weight=weight,
@@ -51,11 +42,11 @@ class MC_CrossEntropyLoss(nn.Module):
 
     def forward(self, target, input, pred_log_var=None):
         """Forward pass of Monte Carlo Cross Entropy Loss"""
-        target = self.normalization(target)
-        input = self.normalization(input)
+        target = torch.argmax(target, dim=1).clone().long()
+        input = input.clone().float()
 
         if self.mc_samples == 1 or pred_log_var is None:
-            return self.cross_entropy(input.float(), target.float()).mean()
+            return self.cross_entropy(input, target).mean()
 
         pred_shape = [self.mc_samples, *input.shape]
         noise = torch.randn(pred_shape, device=input.device)

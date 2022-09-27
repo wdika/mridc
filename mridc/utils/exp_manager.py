@@ -907,10 +907,6 @@ def configure_checkpointing(trainer: Trainer, log_dir: Path, name: str, resume: 
                 "and create_checkpoint_callback was set to True. Please either set create_checkpoint_callback "
                 "to False, or remove ModelCheckpoint from the lightning trainer"
             )
-    if Path(trainer.weights_save_path) != Path.cwd():
-        raise CheckpointMisconfigurationError(
-            "The pytorch lightning was passed weights_save_path. This variable is ignored by exp_manager"
-        )
 
     # Create the callback and attach it to trainer
     if "filepath" in params:

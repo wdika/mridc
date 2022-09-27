@@ -48,7 +48,11 @@ class JRSCIRIM(BaseMRIJointReconstructionSegmentationModel, ABC):
         self.coil_dim = cfg_dict.get("coil_dim")
         self.coil_combination_method = cfg_dict.get("coil_combination_method")
         self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
-        self.dimensionality = 2
+        self.dimensionality = cfg_dict.get("dimensionality", 2)
+        if self.dimensionality != 2:
+            raise NotImplementedError(f"Currently only 2D is supported for segmentation, got {self.dimensionality}D.")
+        self.input_channels = cfg_dict.get("segmentation_module_input_channels", 2)
+        self.magnitude_input = cfg_dict.get("magnitude_input", True)
 
         self.use_reconstruction_module = cfg_dict.get("use_reconstruction_module")
         if self.use_reconstruction_module:
@@ -101,7 +105,7 @@ class JRSCIRIM(BaseMRIJointReconstructionSegmentationModel, ABC):
         segmentation_module = cfg_dict.get("segmentation_module")
         if segmentation_module.lower() == "unet":
             self.segmentation_module = Unet(
-                in_chans=cfg_dict.get("segmentation_module_input_channels", 2),
+                in_chans=self.input_channels,
                 out_chans=cfg_dict.get("segmentation_module_output_channels", 2),
                 chans=cfg_dict.get("segmentation_module_channels", 64),
                 num_pool_layers=cfg_dict.get("segmentation_module_pooling_layers", 2),
@@ -144,7 +148,7 @@ class JRSCIRIM(BaseMRIJointReconstructionSegmentationModel, ABC):
         """
         if self.use_reconstruction_module:
             prediction = y.clone()
-            init_reconstruction_pred = (
+            _pred_reconstruction = (
                 None
                 if init_reconstruction_pred is None or init_reconstruction_pred.dim() < 4
                 else init_reconstruction_pred
@@ -159,7 +163,7 @@ class JRSCIRIM(BaseMRIJointReconstructionSegmentationModel, ABC):
                     y,
                     sensitivity_maps,
                     mask,
-                    init_reconstruction_pred,
+                    _pred_reconstruction,
                     hx,
                     sigma,
                     keep_eta=False if i == 0 else self.keep_eta,
@@ -180,9 +184,7 @@ class JRSCIRIM(BaseMRIJointReconstructionSegmentationModel, ABC):
             _pred_reconstruction = _pred_reconstruction[-1]
         if _pred_reconstruction.shape[-1] != 2:  # type: ignore
             _pred_reconstruction = torch.view_as_real(_pred_reconstruction)
-        if (
-            self.consecutive_slices > 1 or self.dimensionality == 3
-        ) and _pred_reconstruction.dim() == 5:  # type: ignore
+        if self.consecutive_slices > 1 and _pred_reconstruction.dim() == 5:
             _pred_reconstruction = _pred_reconstruction.reshape(  # type: ignore
                 _pred_reconstruction.shape[0] * _pred_reconstruction.shape[1],  # type: ignore
                 _pred_reconstruction.shape[2],  # type: ignore
@@ -190,9 +192,26 @@ class JRSCIRIM(BaseMRIJointReconstructionSegmentationModel, ABC):
                 _pred_reconstruction.shape[4],  # type: ignore
             )
         if _pred_reconstruction.shape[-1] == 2:  # type: ignore
-            _pred_reconstruction = _pred_reconstruction.permute(0, 3, 1, 2)  # type: ignore
+            if self.input_channels == 1:
+                _pred_reconstruction = torch.view_as_complex(_pred_reconstruction).unsqueeze(1)
+                if self.magnitude_input:
+                    _pred_reconstruction = torch.abs(_pred_reconstruction)
+            elif self.input_channels == 2:
+                if self.magnitude_input:
+                    raise ValueError("Magnitude input is not supported for 2-channel input.")
+                _pred_reconstruction = _pred_reconstruction.permute(0, 3, 1, 2)  # type: ignore
+            else:
+                raise ValueError("The input channels must be either 1 or 2. Found: {}".format(self.input_channels))
+        else:
+            _pred_reconstruction = _pred_reconstruction.unsqueeze(1)
 
         pred_segmentation = self.segmentation_module(_pred_reconstruction)
+
+        pred_segmentation = torch.abs(pred_segmentation / torch.abs(torch.max(pred_segmentation)))
+        if self.consecutive_slices > 1:
+            # get batch size and number of slices from y, because if the reconstruction module is used they will not
+            # be saved before
+            pred_segmentation = pred_segmentation.view([y.shape[0], y.shape[1], *pred_segmentation.shape[1:]])
 
         return pred_reconstruction, pred_segmentation
 
@@ -270,19 +289,14 @@ class JRSCIRIM(BaseMRIJointReconstructionSegmentationModel, ABC):
                 return _loss_fn(x, y)
 
         if self.reconstruction_module_accumulate_estimates:
-            echoes_loss = []
-            for echo_time in range(len(pred)):
-                cascades_loss = []
-                for cascade_pred in pred[echo_time]:
-                    time_steps_loss = [
-                        loss_fn(target[:, echo_time, :, :], time_step_pred).mean() for time_step_pred in cascade_pred
-                    ]
-                    _loss = [
-                        x * torch.logspace(-1, 0, steps=self.reconstruction_module_time_steps).to(time_steps_loss[0])
-                        for x in time_steps_loss
-                    ]
-                    cascades_loss.append(sum(sum(_loss) / self.reconstruction_module_time_steps))
-                echoes_loss.append(sum(list(cascades_loss)) / len(self.cirim))
-            yield sum(echoes_loss) / len(pred)
+            cascades_loss = []
+            for cascade_pred in pred:
+                time_steps_loss = [loss_fn(target, time_step_pred) for time_step_pred in cascade_pred]
+                _loss = [
+                    x * torch.logspace(-1, 0, steps=self.reconstruction_module_time_steps).to(time_steps_loss[0])
+                    for x in time_steps_loss
+                ]
+                cascades_loss.append(sum(sum(_loss) / self.reconstruction_module_time_steps))
+            yield sum(list(cascades_loss)) / len(self.reconstruction_module)
         else:
             return loss_fn(target, pred)

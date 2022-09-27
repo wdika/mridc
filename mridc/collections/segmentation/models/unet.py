@@ -1,17 +1,13 @@
 # coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
-import math
 from abc import ABC
 from typing import Any, Tuple
 
-import numpy as np
 import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-from mridc.collections.common.parts.rnn_utils import rnn_weights_init
-from mridc.collections.reconstruction.models.rim.rim_block import RIMBlock
 from mridc.collections.reconstruction.models.unet_base.unet_block import Unet
 from mridc.collections.segmentation.models.base import BaseMRIJointReconstructionSegmentationModel
 from mridc.core.classes.common import typecheck
@@ -46,9 +42,16 @@ class SegmentationUNet(BaseMRIJointReconstructionSegmentationModel, ABC):
         self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
         self.use_reconstruction_module = False
+        self.input_channels = cfg_dict.get("segmentation_module_input_channels", 2)
+        if self.input_channels == 0:
+            raise ValueError("Segmentation module input channels cannot be 0.")
+        elif self.input_channels > 2:
+            raise ValueError(
+                "Segmentation module input channels must be either 1 or 2. Found: {}".format(self.input_channels)
+            )
 
         self.segmentation_module = Unet(
-            in_chans=cfg_dict.get("segmentation_module_input_channels", 2),
+            in_chans=self.input_channels,
             out_chans=cfg_dict.get("segmentation_module_output_channels", 2),
             chans=cfg_dict.get("segmentation_module_channels", 64),
             num_pool_layers=cfg_dict.get("segmentation_module_pooling_layers", 2),
@@ -56,6 +59,7 @@ class SegmentationUNet(BaseMRIJointReconstructionSegmentationModel, ABC):
         )
 
         self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
+        self.magnitude_input = cfg_dict.get("magnitude_input", True)
 
     @typecheck()
     def forward(
@@ -89,15 +93,40 @@ class SegmentationUNet(BaseMRIJointReconstructionSegmentationModel, ABC):
             torch.Tensor, shape [batch_size, nr_classes, n_x, n_y]
         """
         if self.consecutive_slices > 1:
+            batch, slices = init_reconstruction_pred.shape[:2]
             init_reconstruction_pred = init_reconstruction_pred.reshape(  # type: ignore
                 init_reconstruction_pred.shape[0] * init_reconstruction_pred.shape[1],  # type: ignore
                 init_reconstruction_pred.shape[2],  # type: ignore
                 init_reconstruction_pred.shape[3],  # type: ignore
                 init_reconstruction_pred.shape[4],  # type: ignore
             )
+
         if init_reconstruction_pred.shape[-1] == 2:  # type: ignore
-            init_reconstruction_pred = init_reconstruction_pred.permute(0, 3, 1, 2)  # type: ignore
+            if self.input_channels == 1:
+                init_reconstruction_pred = torch.view_as_complex(init_reconstruction_pred).unsqueeze(1)
+                if self.magnitude_input:
+                    init_reconstruction_pred = torch.abs(init_reconstruction_pred)
+            elif self.input_channels == 2:
+                if self.magnitude_input:
+                    raise ValueError("Magnitude input is not supported for 2-channel input.")
+                init_reconstruction_pred = init_reconstruction_pred.permute(0, 3, 1, 2)  # type: ignore
+            else:
+                raise ValueError("The input channels must be either 1 or 2. Found: {}".format(self.input_channels))
+        else:
+            init_reconstruction_pred = init_reconstruction_pred.unsqueeze(1)
 
         pred_segmentation = self.segmentation_module(init_reconstruction_pred)
+
+        pred_segmentation = torch.abs(pred_segmentation / torch.abs(torch.max(pred_segmentation)))
+        if self.consecutive_slices > 1:
+            pred_segmentation = pred_segmentation.view(
+                [
+                    batch,
+                    slices,
+                    pred_segmentation.shape[1],
+                    pred_segmentation.shape[2],
+                    pred_segmentation.shape[3],
+                ]
+            )
 
         return torch.empty([]), pred_segmentation
