@@ -46,10 +46,7 @@ class SegmentationUNet(BaseMRIJointReconstructionSegmentationModel, ABC):
         if self.input_channels == 0:
             raise ValueError("Segmentation module input channels cannot be 0.")
         elif self.input_channels > 2:
-            raise ValueError(
-                f"Segmentation module input channels must be either 1 or 2. Found: {self.input_channels}"
-            )
-
+            raise ValueError(f"Segmentation module input channels must be either 1 or 2. Found: {self.input_channels}")
 
         self.segmentation_module = Unet(
             in_chans=self.input_channels,
@@ -112,9 +109,7 @@ class SegmentationUNet(BaseMRIJointReconstructionSegmentationModel, ABC):
                     raise ValueError("Magnitude input is not supported for 2-channel input.")
                 init_reconstruction_pred = init_reconstruction_pred.permute(0, 3, 1, 2)  # type: ignore
             else:
-                raise ValueError(
-                    f"The input channels must be either 1 or 2. Found: {self.input_channels}"
-                )
+                raise ValueError(f"The input channels must be either 1 or 2. Found: {self.input_channels}")
 
         else:
             init_reconstruction_pred = init_reconstruction_pred.unsqueeze(1)

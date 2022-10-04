@@ -201,9 +201,7 @@ class JRSCIRIM(BaseMRIJointReconstructionSegmentationModel, ABC):
                     raise ValueError("Magnitude input is not supported for 2-channel input.")
                 _pred_reconstruction = _pred_reconstruction.permute(0, 3, 1, 2)  # type: ignore
             else:
-                raise ValueError(
-                    f"The input channels must be either 1 or 2. Found: {self.input_channels}"
-                )
+                raise ValueError(f"The input channels must be either 1 or 2. Found: {self.input_channels}")
 
         else:
             _pred_reconstruction = _pred_reconstruction.unsqueeze(1)

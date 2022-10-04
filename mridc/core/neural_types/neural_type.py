@@ -208,5 +208,4 @@ class NeuralPortNmTensorMismatchError(NeuralTypeError):
             + f"of incompatible neural types:\n\n{first_type} \n\n and \n\n{second_type}"
         )
 
-
         self.message += f"\n\nType comparison result: {type_compatibility}"

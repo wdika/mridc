@@ -55,9 +55,7 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
         if "cross_entropy" in segmentation_loss_fn:
             cross_entropy_loss_weight = cfg_dict.get("cross_entropy_loss_weight", None)
             cross_entropy_loss_weight = (
-                None
-                if is_none(cross_entropy_loss_weight)
-                else torch.tensor(cross_entropy_loss_weight)
+                None if is_none(cross_entropy_loss_weight) else torch.tensor(cross_entropy_loss_weight)
             )
 
             self.segmentation_loss_fn["cross_entropy"] = MC_CrossEntropyLoss(  # type: ignore
@@ -86,9 +84,7 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
 
         cross_entropy_metric_weight = cfg_dict.get("cross_entropy_metric_weight", None)
         cross_entropy_metric_weight = (
-            None
-            if is_none(cross_entropy_metric_weight)
-            else torch.tensor(cross_entropy_metric_weight)
+            None if is_none(cross_entropy_metric_weight) else torch.tensor(cross_entropy_metric_weight)
         )
 
         self.cross_entropy_metric = MC_CrossEntropyLoss(  # type: ignore
