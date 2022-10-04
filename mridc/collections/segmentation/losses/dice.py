@@ -92,8 +92,8 @@ class Dice(_Loss):
         self.squared_pred = squared_pred
         self.jaccard = jaccard
         self.reduction = reduction
-        self.smooth_nr = float(smooth_nr)
-        self.smooth_dr = float(smooth_dr)
+        self.smooth_nr = smooth_nr
+        self.smooth_dr = smooth_dr
         self.batch = batch
 
     def forward(self, target: torch.Tensor, input: torch.Tensor) -> tuple[Union[Tensor, Any], Tensor]:
@@ -182,7 +182,7 @@ class Dice(_Loss):
         elif self.reduction == "none":
             # If we are not computing voxelwise loss components at least
             # make sure a none reduction maintains a broadcastable shape
-            broadcast_shape = list(f.shape[0:2]) + [1] * (len(input.shape) - 2)
+            broadcast_shape = list(f.shape[:2]) + [1] * (len(input.shape) - 2)
             dice_score = dice_score.view(broadcast_shape)
             f = f.view(broadcast_shape)
         else:

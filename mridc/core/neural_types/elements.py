@@ -112,7 +112,7 @@ class VoidType(ElementType):
     For example, when you need template-like functionality.
     """
 
-    def compare(cls, second: ABCMeta) -> NeuralTypeComparisonResult:
+    def compare(self, second: ABCMeta) -> NeuralTypeComparisonResult:
         """Void type is compatible with everything."""
         return NeuralTypeComparisonResult.SAME
 

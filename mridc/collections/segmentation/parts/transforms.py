@@ -121,48 +121,40 @@ class JRSMRIDataTransforms:
             bool
         """
         self.complex_data = complex_data
-        if not self.complex_data:
-            if not is_none(coil_combination_method):
-                raise ValueError("Coil combination method for non-complex data should be None.")
-        else:
+        if self.complex_data:
             self.coil_combination_method = coil_combination_method
+        elif not is_none(coil_combination_method):
+            raise ValueError("Coil combination method for non-complex data should be None.")
         self.dimensionality = dimensionality
-        if not self.complex_data:
-            if not is_none(mask_func):
-                raise ValueError("Mask function for non-complex data should be None.")
-        else:
+        if self.complex_data:
             self.mask_func = mask_func
+        elif not is_none(mask_func):
+            raise ValueError("Mask function for non-complex data should be None.")
         self.shift_mask = shift_mask
         self.mask_center_scale = mask_center_scale
         self.half_scan_percentage = half_scan_percentage
         self.remask = remask
         self.crop_size = crop_size
-        if not self.complex_data:
-            if kspace_crop:
-                raise ValueError("K-space crop for non-complex data should be None.")
-        else:
+        if self.complex_data:
             self.kspace_crop = kspace_crop
+        elif kspace_crop:
+            raise ValueError("K-space crop for non-complex data should be None.")
         self.crop_before_masking = crop_before_masking
-        if not self.complex_data:
-            if not is_none(kspace_zero_filling_size):
-                raise ValueError("K-space zero filling size for non-complex data should be None.")
-        else:
+        if self.complex_data:
             self.kspace_zero_filling_size = kspace_zero_filling_size
+        elif not is_none(kspace_zero_filling_size):
+            raise ValueError("K-space zero filling size for non-complex data should be None.")
         self.normalize_inputs = normalize_inputs
         self.max_norm = max_norm
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
         self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
-        if not self.complex_data:
-            if not is_none(coil_dim):
-                raise ValueError("Coil dimension for non-complex data should be None.")
-        else:
+        if self.complex_data:
             self.coil_dim = coil_dim - 1
 
-        if not self.complex_data:
-            if apply_prewhitening:
-                raise ValueError("Prewhitening for non-complex data cannot be applied.")
-        else:
+        elif not is_none(coil_dim):
+            raise ValueError("Coil dimension for non-complex data should be None.")
+        if self.complex_data:
             self.apply_prewhitening = apply_prewhitening
             self.prewhitening = (
                 NoisePreWhitening(
@@ -178,10 +170,9 @@ class JRSMRIDataTransforms:
                 else None
             )
 
-        if not self.complex_data:
-            if apply_gcc:
-                raise ValueError("GCC for non-complex data cannot be applied.")
-        else:
+        elif apply_prewhitening:
+            raise ValueError("Prewhitening for non-complex data cannot be applied.")
+        if self.complex_data:
             self.gcc = (
                 GeometricDecompositionCoilCompression(
                     virtual_coils=gcc_virtual_coils,
@@ -195,6 +186,8 @@ class JRSMRIDataTransforms:
                 else None
             )
 
+        elif apply_gcc:
+            raise ValueError("GCC for non-complex data cannot be applied.")
         self.use_seed = use_seed
 
     def __call__(

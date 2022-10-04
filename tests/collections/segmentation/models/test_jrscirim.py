@@ -627,9 +627,9 @@ def test_jrscirim(shape, cfg, center_fractions, accelerations, dimensionality, s
     if x.shape[-1] == 2:
         x = x[..., 0] + 1j * x[..., 1]
 
+    if pred_reconstruction.shape[1:] != x.shape[2:]:
+        raise AssertionError
     if consecutive_slices > 1 or dimensionality == 3:
-        if pred_reconstruction.shape[1:] != x.shape[2:]:
-            raise AssertionError
         if output.dim() == 6:
             output = output.reshape(
                 [output.shape[0] * output.shape[1], output.shape[2], output.shape[3], output.shape[4], output.shape[5]]
@@ -641,11 +641,7 @@ def test_jrscirim(shape, cfg, center_fractions, accelerations, dimensionality, s
             pred_segmentation = pred_segmentation.reshape(
                 pred_segmentation.shape[0] * pred_segmentation.shape[1], *pred_segmentation.shape[2:]
             )
-        if pred_segmentation.shape != output.shape:
-            raise AssertionError
     else:
-        if pred_reconstruction.shape[1:] != x.shape[2:]:
-            raise AssertionError
         output = torch.view_as_complex(torch.stack([output for _ in range(segmentation_classes)], 1).sum(coil_dim + 1))
-        if pred_segmentation.shape != output.shape:
-            raise AssertionError
+    if pred_segmentation.shape != output.shape:
+        raise AssertionError

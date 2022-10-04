@@ -66,9 +66,7 @@ def maybe_download_from_cloud(url, filename, subfolder=None, cache_dir=None, ref
         i += 1
         try:
             wget.download(wget_uri, str(destination_file))
-            if os.path.exists(destination_file):
-                return str(destination_file)
-            return ""
+            return str(destination_file) if os.path.exists(destination_file) else ""
         except Exception as e:
             logging.info(f"Download from cloud failed. Attempt {i} of {max_attempts}")
             logging.info(f"Error: {e}")

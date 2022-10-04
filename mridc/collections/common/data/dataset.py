@@ -234,7 +234,6 @@ class ConcatMapDataset(Dataset):
         # Sample index -> shuffled sample index
         shuffled_sample_idx = self.permuted_dataset_indices[dataset_index][sample_idx]
 
-        sample = self.datasets[dataset_index][shuffled_sample_idx]
         self.dataset_index[dataset_index] += 1
 
-        return sample
+        return self.datasets[dataset_index][shuffled_sample_idx]

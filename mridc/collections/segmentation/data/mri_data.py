@@ -250,7 +250,7 @@ class JRSMRISliceDataset(Dataset):
                 else:
                     mask = np.empty([])
                 imspace = np.empty([])
-            elif not self.complex_data:
+            else:
                 if "reconstruction" in hf:
                     imspace = self.get_consecutive_slices(hf, "reconstruction", dataslice).astype(np.float32)
                 else:
@@ -285,7 +285,7 @@ class JRSMRISliceDataset(Dataset):
                 segmentation_labels = np.empty([])
 
             attrs = dict(hf.attrs)
-            attrs.update(metadata)
+            attrs |= metadata
 
         return (
             (

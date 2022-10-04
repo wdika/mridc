@@ -42,9 +42,7 @@ def et_query(root: str, qlist: Sequence[str], namespace: str = "https://www.ismr
         s += f"//{prefix}:{el}"
 
     value = root.find(s, ns)  # type: ignore
-    if value is None:
-        return "0"
-    return str(value.text)  # type: ignore
+    return "0" if value is None else str(value.text)
 
 
 class FastMRICombinedSliceDataset(torch.utils.data.Dataset):
@@ -362,7 +360,7 @@ class FastMRISliceDataset(Dataset):
             )
 
             attrs = dict(hf.attrs)
-            attrs.update(metadata)
+            attrs |= metadata
 
         if sensitivity_map.shape != kspace.shape:
             if sensitivity_map.ndim == 3:

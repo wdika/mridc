@@ -279,9 +279,7 @@ def test_unet(shape, cfg, center_fractions, accelerations, dimensionality, segme
         pred_segmentation = pred_segmentation.reshape(
             pred_segmentation.shape[0] * pred_segmentation.shape[1], *pred_segmentation.shape[2:]
         )
-        if pred_segmentation.shape != output.shape:
-            raise AssertionError
     else:
         output = torch.view_as_complex(torch.stack([output for _ in range(segmentation_classes)], 1).sum(coil_dim + 1))
-        if pred_segmentation.shape != output.shape:
-            raise AssertionError
+    if pred_segmentation.shape != output.shape:
+        raise AssertionError

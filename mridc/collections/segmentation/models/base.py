@@ -54,10 +54,12 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
         segmentation_loss_fn = cfg_dict.get("segmentation_loss_fn")
         if "cross_entropy" in segmentation_loss_fn:
             cross_entropy_loss_weight = cfg_dict.get("cross_entropy_loss_weight", None)
-            if not is_none(cross_entropy_loss_weight):
-                cross_entropy_loss_weight = torch.tensor(cross_entropy_loss_weight)
-            else:
-                cross_entropy_loss_weight = None
+            cross_entropy_loss_weight = (
+                None
+                if is_none(cross_entropy_loss_weight)
+                else torch.tensor(cross_entropy_loss_weight)
+            )
+
             self.segmentation_loss_fn["cross_entropy"] = MC_CrossEntropyLoss(  # type: ignore
                 num_samples=cfg_dict.get("cross_entropy_loss_num_samples", 50),
                 ignore_index=cfg_dict.get("cross_entropy_loss_ignore_index", -100),
@@ -83,10 +85,12 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
         self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
 
         cross_entropy_metric_weight = cfg_dict.get("cross_entropy_metric_weight", None)
-        if not is_none(cross_entropy_metric_weight):
-            cross_entropy_metric_weight = torch.tensor(cross_entropy_metric_weight)
-        else:
-            cross_entropy_metric_weight = None
+        cross_entropy_metric_weight = (
+            None
+            if is_none(cross_entropy_metric_weight)
+            else torch.tensor(cross_entropy_metric_weight)
+        )
+
         self.cross_entropy_metric = MC_CrossEntropyLoss(  # type: ignore
             num_samples=cfg_dict.get("cross_entropy_metric_num_samples", 50),
             ignore_index=cfg_dict.get("cross_entropy_metric_ignore_index", -100),

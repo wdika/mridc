@@ -88,9 +88,7 @@ def numba_cpu_is_supported(min_version: str) -> bool:
     module_available, _ = check_lib_version("numba", checked_version=min_version, operator=operator.ge)
 
     # If numba is not installed
-    if module_available is None:
-        return False
-    return True
+    return module_available is not None
 
 
 def numba_cuda_is_supported(min_version: str) -> bool:

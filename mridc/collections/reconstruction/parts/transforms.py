@@ -298,10 +298,10 @@ class MRIDataTransforms:
         acq_start = attrs["padding_left"] if "padding_left" in attrs else 0
         acq_end = attrs["padding_right"] if "padding_left" in attrs else 0
 
-        # This should be outside the condition because it needs to be returned in the end, even if cropping is off.
-        # crop_size = torch.tensor([attrs["recon_size"][0], attrs["recon_size"][1]])
-        crop_size = target.shape
         if self.crop_size is not None and self.crop_size not in ("", "None"):
+            # This should be outside the condition because it needs to be returned in the end, even if cropping is off.
+            # crop_size = torch.tensor([attrs["recon_size"][0], attrs["recon_size"][1]])
+            crop_size = target.shape
             # Check for smallest size against the target shape.
             h = min(int(self.crop_size[0]), target.shape[0])
             w = min(int(self.crop_size[1]), target.shape[1])

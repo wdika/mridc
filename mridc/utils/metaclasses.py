@@ -15,14 +15,14 @@ class Singleton(type):
     # Lock used for accessing the instance.
     __lock = threading.Lock()
 
-    def __call__(cls, *args, **kwargs):
+    def __call__(self, *args, **kwargs):
         """Returns singleton instance. A thread safe implementation."""
-        if cls not in cls.__instances:
+        if self not in self.__instances:
             # Enter critical section.
-            with cls.__lock:
+            with self.__lock:
                 # Check once again.
-                if cls not in cls.__instances:
+                if self not in self.__instances:
                     # Create a new object instance - one per class.
-                    cls.__instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+                    self.__instances[self] = super(Singleton, self).__call__(*args, **kwargs)
         # Return the instance.
-        return cls.__instances[cls]
+        return self.__instances[self]
