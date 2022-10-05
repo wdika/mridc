@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/utils/nemo_logging.py
@@ -11,13 +11,13 @@ import warnings
 from contextlib import contextmanager
 from logging.handlers import MemoryHandler
 
-__all__ = ["Logger", "LogMode"]
-
 from mridc.constants import MRIDC_ENV_VARNAME_REDIRECT_LOGS_TO_STDERR, MRIDC_ENV_VARNAME_TESTING
 from mridc.utils.env_var_parsing import get_envbool
 from mridc.utils.formaters.base import BaseMRIDCFormatter, DebugMRIDCFormatter
 from mridc.utils.get_rank import is_global_rank_zero
 from mridc.utils.metaclasses import Singleton
+
+__all__ = ["Logger", "LogMode"]
 
 
 class LogMode(enum.IntEnum):

@@ -4,38 +4,32 @@ coverage:
   status:
     patch: true
 
-  range: 50..100     # First number represents red, and second represents green
+  range: 70..100     # First number represents red, and second represents green
   # (default is 70..100)
-  round: down       # up, down, or nearest
+  round: nearest       # up, down, or nearest
   precision: 2      # Number of decimal places, between 0 and 5
 
 # Ignoring Paths
 # --------------
 # which folders/files to ignore
 ignore:
-  - mridc/launch.py
-  - mridc/core/classes/loss.py
-  - mridc/core/classes/export.py
-  - mridc/core/classes/module.py
-  - mridc/core/conf/dataloader.py
-  - mridc/core/conf/base_config.py
-  - mridc/core/conf/hydra_runner.py
-  - mridc/core/optim/optimizer_with_master_params.py
   - mridc/collections/common/data/*
   - mridc/collections/common/metrics/*
-  - mridc/collections/common/callbacks/*
   - mridc/collections/common/parts/patch_utils.py
   - mridc/collections/common/parts/ptl_overrides.py
-  - mridc/collections/common/parts/training_utils.py
-  - mridc/collections/common/losses/aggregator.py
+  - mridc/collections/segmentation/metrics/distance.py
   - mridc/collections/reconstruction/models/pics.py
   - mridc/collections/reconstruction/models/zf.py
-  - mridc/core/utils/*
+  - mridc/core/classes/module.py
+  - mridc/core/optim/adafactor.py
+  - mridc/core/optim/novograd.py
+  - mridc/core/optim/radam.py
+  - mridc/core/utils/numba_utils.py
+  - mridc/utils/decorators/*
+  - mridc/utils/cloud.py
   - mridc/utils/arguments.py
   - mridc/utils/debug_hook.py
-  - mridc/utils/distributed.py
-  - mridc/utils/export_utils.py
-  - mridc/utils/decorators/*
+  - mridc/launch.py
   - projects/*
   - projects/quantitative/datasets/ahead/*
   - setup.py

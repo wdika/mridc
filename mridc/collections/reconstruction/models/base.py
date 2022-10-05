@@ -17,11 +17,8 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torchmetrics.metric import Metric
 
-from mridc.collections.common.parts.fft import fft2, ifft2
-from mridc.collections.common.parts.utils import (
-    is_none,
-    rss_complex,
-)
+from mridc.collections.common.parts.fft import ifft2
+from mridc.collections.common.parts.utils import is_none, rss_complex
 from mridc.collections.reconstruction.data.mri_data import FastMRISliceDataset
 from mridc.collections.reconstruction.data.subsample import create_mask_for_mask_type
 from mridc.collections.reconstruction.metrics.evaluate import mse, nmse, psnr, ssim
@@ -179,6 +176,7 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
             r = np.random.randint(len(y))
             y = y[r]
             mask = mask[r]
+            init_pred = init_pred[r]
         else:
             r = 0
         return y, mask, init_pred, r
@@ -404,8 +402,6 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
         if isinstance(preds, list):
             preds = preds[-1]
 
-        preds = preds / torch.abs(preds).max()  # type: ignore
-
         slice_num = int(slice_num)
         name = str(fname[0])  # type: ignore
         key = f"{name}_images_idx_{slice_num}"  # type: ignore
@@ -452,6 +448,8 @@ class BaseMRIReconstructionModel(ModelPT, ABC):
             image = image[0].unsqueeze(0)
 
         if "wandb" in self.logger.__module__.lower():
+            if image.is_cuda:
+                image = image.detach().cpu()
             self.logger.experiment.log({name: wandb.Image(image.numpy())})
         else:
             self.logger.experiment.add_image(name, image, global_step=self.global_step)

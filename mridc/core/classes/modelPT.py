@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/classes/modelPT.py
@@ -18,17 +18,16 @@ from omegaconf import DictConfig, OmegaConf, open_dict
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.utilities import model_summary, rank_zero_only
 
-from mridc.core.classes.common import Model
-
-__all__ = ["ModelPT"]
-
 import mridc.core.optim
+import mridc.utils
 from mridc import package_info
+from mridc.core.classes.common import Model
 from mridc.core.connectors.save_restore_connector import SaveRestoreConnector
 from mridc.utils import logging
 from mridc.utils.app_state import AppState
 from mridc.utils.get_rank import is_global_rank_zero
-import mridc.utils
+
+__all__ = ["ModelPT"]
 
 
 class ModelPT(LightningModule, Model):
@@ -846,7 +845,7 @@ class ModelPT(LightningModule, Model):
         """Get the name of one or more data loaders, which will be prepended to all logs."""
         return self.test_names[dataloader_idx]  # type: ignore
 
-    def load_part_of_state_dict(self, state_dict, include, exclude, load_from_string):
+    def load_part_of_state_dict(self, state_dict, include, exclude, load_from_string=None):
         """Load part of the state dict."""
         excluded_param_names = []
         # create dict
@@ -864,13 +863,19 @@ class ModelPT(LightningModule, Model):
 
         # Restore checkpoint part into current model
         self.load_state_dict(dict_to_load, strict=False)  # type: ignore
-        logging.info(f"Model checkpoint partially restored from {load_from_string}")
-
-        if excluded_param_names:
-            logging.info(
-                f"The following parameters were excluded from loading from {load_from_string} : {excluded_param_names}"
-            )
-            logging.info("Make sure that this is what you wanted!")
+        if load_from_string is not None:
+            logging.info(f"Model checkpoint partially restored from {load_from_string}")
+            if len(excluded_param_names) > 0:
+                logging.info(
+                    f"The following parameters were excluded when loading from {load_from_string} : "
+                    f"{excluded_param_names}"
+                )
+                logging.info(f"Make sure that this is what you wanted!")
+        else:
+            if len(excluded_param_names) > 0:
+                logging.info(
+                    f"The following parameters were excluded when loading checkpoint : {excluded_param_names}"
+                )
 
     @rank_zero_only
     def maybe_init_from_pretrained_checkpoint(self, cfg: OmegaConf, map_location: str = "cpu"):
@@ -1010,7 +1015,7 @@ class ModelPT(LightningModule, Model):
                         exclude = model_load_cfg.pop("exclude", [])
 
                         self.load_part_of_state_dict(
-                            ckpt["state_dict"], include, exclude, f"nemo file with path `{model_path}`"
+                            ckpt["state_dict"], include, exclude, f"mridc file with path `{ckpt_path}`"
                         )
                 else:
                     raise TypeError("Invalid type: init_from_ptl_ckpt is not a string or a dict!")

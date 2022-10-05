@@ -82,7 +82,7 @@ class DataGDLayer(torch.nn.Module):
         )
         gradD_x = torch.sum(
             complex_mul(
-                ifft2c(
+                ifft2(
                     A_x_y * mask,
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,

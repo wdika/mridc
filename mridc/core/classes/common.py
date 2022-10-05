@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Interfaces common to all Neural Modules and Models.
@@ -21,7 +21,6 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
 import mridc.utils
-from mridc.core.conf.trainer import TrainerConfig
 from mridc.core.connectors.save_restore_connector import SaveRestoreConnector
 from mridc.core.neural_types.comparison import NeuralTypeComparisonResult
 from mridc.core.neural_types.neural_type import NeuralType

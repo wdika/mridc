@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/collections/common/data/dataset.py
@@ -8,7 +8,7 @@ from typing import Any, Dict, List
 
 import numpy as np
 import torch.utils.data as pt_data
-from torch.utils.data import Dataset, IterableDataset
+from torch.utils.data import Dataset
 
 __all__ = ["ConcatDataset", "ConcatMapDataset"]
 

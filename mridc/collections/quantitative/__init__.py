@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 
 from mridc.package_info import __version__
 

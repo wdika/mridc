@@ -1,8 +1,7 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
-# Taken and adapted from:
-# https://github.com/wdika/NeMo/blob/9d095ff261319301e4711edf7530a6bb7cf6c8b6/nemo/core/optim/adafactor.py
+# Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/optim/adafactor.py
 
 import math
 

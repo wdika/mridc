@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos, Chaoping Zhang"
 
 import logging
@@ -353,7 +353,9 @@ class qMRISliceDataset(Dataset):
 
         if self.data_saved_per_slice:
             # arbitrary slice number for logging purposes
-            fname = fname.name  # type: ignore
+            fname = str(fname.name)  # type: ignore
+            if "h5" in fname:  # type: ignore
+                fname = fname.split(".h5")[0]  # type: ignore
             dataslice = int(fname.split("_")[-1])  # type: ignore
             fname = "_".join(fname.split("_")[:-1])  # type: ignore
 

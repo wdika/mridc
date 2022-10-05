@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 from math import sqrt
@@ -8,13 +8,7 @@ import numpy as np
 import torch
 
 from mridc.collections.common.parts.fft import fft2, ifft2
-from mridc.collections.common.parts.utils import (
-    is_none,
-    reshape_fortran,
-    rss,
-    sense,
-    to_tensor,
-)
+from mridc.collections.common.parts.utils import is_none, reshape_fortran, rss, sense, to_tensor
 from mridc.collections.reconstruction.data.subsample import MaskFunc
 from mridc.collections.reconstruction.parts.utils import apply_mask, center_crop, complex_center_crop
 
