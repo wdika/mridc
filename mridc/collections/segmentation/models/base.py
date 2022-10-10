@@ -52,6 +52,7 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
 
         self.segmentation_loss_fn = {"cross_entropy": None, "dice": None}
         segmentation_loss_fn = cfg_dict.get("segmentation_loss_fn")
+
         if "cross_entropy" in segmentation_loss_fn:
             cross_entropy_loss_weight = cfg_dict.get("cross_entropy_loss_weight", None)
             if not is_none(cross_entropy_loss_weight):
@@ -65,6 +66,7 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
                 label_smoothing=cfg_dict.get("cross_entropy_loss_label_smoothing", 0.0),
                 weight=cross_entropy_loss_weight,
             )
+            self.cross_entropy_loss_weighting_factor = cfg_dict.get("cross_entropy_loss_weighting_factor", 1.0)
         if "dice" in segmentation_loss_fn:
             self.segmentation_loss_fn["dice"] = Dice(  # type: ignore
                 include_background=cfg_dict.get("dice_loss_include_background", False),
@@ -74,11 +76,13 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
                 other_act=cfg_dict.get("dice_loss_other_act", None),
                 squared_pred=cfg_dict.get("dice_loss_squared_pred", False),
                 jaccard=cfg_dict.get("dice_loss_jaccard", False),
+                flatten=cfg_dict.get("dice_loss_flatten", False),
                 reduction=cfg_dict.get("dice_loss_reduction", "mean"),
                 smooth_nr=cfg_dict.get("dice_loss_smooth_nr", 1e-5),
                 smooth_dr=cfg_dict.get("dice_loss_smooth_dr", 1e-5),
                 batch=cfg_dict.get("dice_loss_batch", False),
             )
+            self.dice_loss_weighting_factor = cfg_dict.get("dice_loss_weighting_factor", 1.0)
 
         self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
 
@@ -97,15 +101,16 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
         self.dice_coefficient_metric = Dice(  # type: ignore
             include_background=cfg_dict.get("dice_metric_include_background", False),
             to_onehot_y=cfg_dict.get("dice_metric_to_onehot_y", False),
-            sigmoid=cfg_dict.get("dice_metric_sigmoid", True),
-            softmax=cfg_dict.get("dice_metric_softmax", False),
+            sigmoid=cfg_dict.get("dice_metric_sigmoid", False),
+            softmax=cfg_dict.get("dice_metric_softmax", True),
             other_act=cfg_dict.get("dice_metric_other_act", None),
             squared_pred=cfg_dict.get("dice_metric_squared_pred", False),
             jaccard=cfg_dict.get("dice_metric_jaccard", False),
+            flatten=cfg_dict.get("dice_metric_flatten", False),
             reduction=cfg_dict.get("dice_metric_reduction", "mean"),
             smooth_nr=cfg_dict.get("dice_metric_smooth_nr", 1e-5),
             smooth_dr=cfg_dict.get("dice_metric_smooth_dr", 1e-5),
-            batch=cfg_dict.get("dice_metric_batch", False),
+            batch=cfg_dict.get("dice_metric_batch", True),
         )
 
         self.CROSS_ENTROPY = DistributedMetricSum()
@@ -200,11 +205,19 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
             torch.Tensor, shape [batch_size, nr_classes, n_x, n_y]
         """
         loss_dict = {"cross_entropy_loss": 0.0, "dice_loss": 0.0}
-        # TODO: fix cross entropy loss
+        num_losses = 0
         if self.segmentation_loss_fn["cross_entropy"] is not None:
-            loss_dict["cross_entropy_loss"] = self.segmentation_loss_fn["cross_entropy"].to(self.device)(target, pred)
+            loss_dict["cross_entropy_loss"] = (
+                self.segmentation_loss_fn["cross_entropy"].to(self.device)(
+                    torch.abs(target / torch.abs(torch.max(target))).argmax(1).detach().cpu(), pred.detach().cpu()
+                )
+                * self.cross_entropy_loss_weighting_factor
+            )
+            num_losses += 1
         if self.segmentation_loss_fn["dice"] is not None:
             _, loss_dict["dice_loss"] = self.segmentation_loss_fn["dice"](target, pred)
+            loss_dict["dice_loss"] = loss_dict["dice_loss"] * self.dice_loss_weighting_factor
+            num_losses += 1
         loss_dict["segmentation_loss"] = loss_dict["cross_entropy_loss"] + loss_dict["dice_loss"]
         return loss_dict
 
@@ -455,7 +468,10 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
                 target_segmentation_class - output_segmentation_class,
             )
 
-        self.cross_entropy_vals[fname][slice_idx] = self.cross_entropy_metric(target_segmentation, pred_segmentation)
+        self.cross_entropy_vals[fname][slice_idx] = self.cross_entropy_metric(
+            torch.abs(target_segmentation / torch.abs(torch.max(target_segmentation))).argmax(1).detach().cpu(),
+            pred_segmentation.detach().cpu(),
+        )
         dice_score, _ = self.dice_coefficient_metric(target_segmentation, pred_segmentation)
         self.dice_vals[fname][slice_idx] = dice_score
 
@@ -601,7 +617,10 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
                 target_segmentation_class - output_segmentation_class,
             )
 
-        self.cross_entropy_vals[fname][slice_idx] = self.cross_entropy_metric(target_segmentation, pred_segmentation)
+        self.cross_entropy_vals[fname][slice_idx] = self.cross_entropy_metric(
+            torch.abs(target_segmentation / torch.abs(torch.max(target_segmentation))).argmax(1).detach().cpu(),
+            pred_segmentation.detach().cpu(),
+        )
         dice_score, _ = self.dice_coefficient_metric(target_segmentation, pred_segmentation)
         self.dice_vals[fname][slice_idx] = dice_score
 
@@ -864,6 +883,7 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
             num_cols=cfg.get("num_cols", None),
             consecutive_slices=cfg.get("consecutive_slices", 1),
             segmentation_classes=cfg.get("segmentation_classes", 2),
+            remove_segmentation_background=cfg.get("remove_segmentation_background", False),
             complex_data=complex_data,
             data_saved_per_slice=cfg.get("data_saved_per_slice", False),
             transform=JRSMRIDataTransforms(

@@ -29,6 +29,7 @@ class JRSMRISliceDataset(Dataset):
         num_cols: Optional[Tuple[int]] = None,
         consecutive_slices: int = 1,
         segmentation_classes: int = 2,
+        remove_segmentation_background: bool = False,
         complex_data: bool = True,
         data_saved_per_slice: bool = False,
         transform: Optional[Callable] = None,
@@ -60,6 +61,8 @@ class JRSMRISliceDataset(Dataset):
             Number of consecutive slices to use.
         segmentation_classes: int
             Number of segmentation classes.
+        remove_segmentation_background: bool
+            Remove segmentation background.
         complex_data: bool
             Use complex data.
         data_saved_per_slice: bool
@@ -131,6 +134,7 @@ class JRSMRISliceDataset(Dataset):
         if self.consecutive_slices < 1:
             raise ValueError("consecutive_slices value is out of range, must be > 0.")
         self.segmentation_classes = segmentation_classes
+        self.remove_segmentation_background = remove_segmentation_background
         self.complex_data = complex_data
         self.transform = transform
 
@@ -264,6 +268,8 @@ class JRSMRISliceDataset(Dataset):
 
             if "segmentation" in hf:
                 segmentation_labels = np.asarray(self.get_consecutive_slices(hf, "segmentation", dataslice))
+                if self.remove_segmentation_background:
+                    segmentation_labels = segmentation_labels[..., 1:]
                 if segmentation_labels.shape[-1] == self.segmentation_classes:
                     if segmentation_labels.ndim == 3:
                         segmentation_labels = np.transpose(segmentation_labels, (2, 0, 1))
@@ -274,6 +280,8 @@ class JRSMRISliceDataset(Dataset):
             elif self.segmentations_root is not None and self.segmentations_root != "None":
                 with h5py.File(Path(self.segmentations_root) / fname.name, "r") as sf:
                     segmentation_labels = np.asarray(self.get_consecutive_slices(sf, "segmentation", dataslice))
+                    if self.remove_segmentation_background:
+                        segmentation_labels = segmentation_labels[..., 1:]
                     if segmentation_labels.shape[-1] == self.segmentation_classes:
                         if segmentation_labels.ndim == 3:
                             segmentation_labels = np.transpose(segmentation_labels, (2, 0, 1))

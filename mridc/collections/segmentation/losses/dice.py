@@ -39,42 +39,44 @@ class Dice(_Loss):
         other_act: Optional[Callable] = None,
         squared_pred: bool = False,
         jaccard: bool = False,
+        flatten: bool = False,
         reduction: str = "mean",
         smooth_nr: float = 1e-5,
         smooth_dr: float = 1e-5,
         batch: bool = True,
     ) -> None:
         """
-        Args:
-            include_background: if False, channel index 0 (background category) is excluded from the calculation.
-                if the non-background segmentations are small compared to the total image size they can get overwhelmed
-                by the signal from the background so excluding it in such cases helps convergence.
-            to_onehot_y: whether to convert `y` into the one-hot format. Defaults to False.
-            sigmoid: if True, apply a sigmoid function to the prediction.
-            softmax: if True, apply a softmax function to the prediction.
-            other_act: if don't want to use `sigmoid` or `softmax`, use other callable function to execute
-                other activation layers, Defaults to ``None``. for example:
-                `other_act = torch.tanh`.
-            squared_pred: use squared versions of targets and predictions in the denominator or not.
-            jaccard: compute Jaccard Index (soft IoU) instead of dice or not.
-            reduction: {``"none"``, ``"mean"``, ``"sum"``}
-                Specifies the reduction to apply to the output. Defaults to ``"mean"``.
-
-                - ``"none"``: no reduction will be applied.
-                - ``"mean"``: the sum of the output will be divided by the number of elements in the output.
-                - ``"sum"``: the output will be summed.
-
-            smooth_nr: a small constant added to the numerator to avoid zero.
-            smooth_dr: a small constant added to the denominator to avoid nan.
-            batch: whether to sum the intersection and union areas over the batch dimension before the dividing.
-                Defaults to False, a Dice loss value is computed independently from each item in the batch
-                before any `reduction`.
-
-        Raises:
-            TypeError: When ``other_act`` is not an ``Optional[Callable]``.
-            ValueError: When more than 1 of [``sigmoid=True``, ``softmax=True``, ``other_act is not None``].
-                Incompatible values.
-
+        Parameters
+        ----------
+        include_background: bool
+            whether to skip Dice computation on the first channel of the predicted output. Defaults to True.
+        to_onehot_y: bool
+            Whether to convert `y` into the one-hot format. Defaults to False.
+        sigmoid: bool
+            Whether to add sigmoid function to the input data. Defaults to True.
+        softmax: bool
+            Whether to add softmax function to the input data. Defaults to False.
+        other_act: Callable
+            Use this parameter if you want to apply another type of activation layer.
+        squared_pred: bool
+            Whether to square the prediction before calculating Dice. Defaults to False.
+        jaccard: bool
+            Whether to compute Jaccard Index as a loss. Defaults to False.
+        flatten: bool
+            Whether to flatten input data. Defaults to False.
+        reduction: str
+            Specifies the reduction to apply to the output: 'none' | 'mean' | 'sum'.
+            'none': no reduction will be applied.
+            'mean': the sum of the output will be divided by the number of elements in the output.
+            'sum': the output will be summed.
+            Default: 'mean'
+        smooth_nr: float
+            A small constant added to the numerator to avoid `nan` when all items are 0.
+        smooth_dr: float
+            A small constant added to the denominator to avoid `nan` when all items are 0.
+        batch: bool
+            If True, compute Dice loss for each batch and return a tensor with shape (batch_size,).
+            If False, compute Dice loss for the whole batch and return a tensor with shape (1,).
         """
         super().__init__()
         other_act = None if is_none(other_act) else other_act
@@ -91,6 +93,7 @@ class Dice(_Loss):
         self.other_act = other_act
         self.squared_pred = squared_pred
         self.jaccard = jaccard
+        self.flatten = flatten
         self.reduction = reduction
         self.smooth_nr = float(smooth_nr)
         self.smooth_dr = float(smooth_dr)
@@ -98,27 +101,16 @@ class Dice(_Loss):
 
     def forward(self, target: torch.Tensor, input: torch.Tensor) -> Tuple[Union[Tensor, Any], Tensor]:
         """
-        Args:
-            target: the shape should be BNH[WD] or B1H[WD], where N is the number of classes.
-            input: the shape should be BNH[WD], where N is the number of classes.
-
-        Raises:
-            AssertionError: When input and target (after one hot transform if set)
-                have different shapes.
-            ValueError: When ``self.reduction`` is not one of ["mean", "sum", "none"].
-
-        Example:
-            >>> from mridc.losses.dice import *  # NOQA
-            >>> import torch
-            >>> from mridc.losses.dice import DiceLoss
-            >>> B, C, H, W = 7, 5, 3, 2
-            >>> input = torch.rand(B, C, H, W)
-            >>> target_idx = torch.randint(low=0, high=C - 1, size=(B, H, W)).long()
-            >>> target = one_hot(target_idx[:, None, ...], num_classes=C)
-            >>> self = DiceLoss(reduction='none')
-            >>> loss = self(input, target)
-            >>> assert np.broadcast_shapes(loss.shape, input.shape) == input.shape
+        Parameters
+        ----------
+        target: torch.Tensor
+            the ground truth of shape [BNHW[D]].
+        input: torch.Tensor
+            the prediction of shape [BNHW[D]].
         """
+        if self.flatten:
+            target = target.view(target.shape[0], 1, -1)
+            input = input.view(input.shape[0], 1, -1)
 
         if self.sigmoid:
             input = torch.sigmoid(input)
@@ -195,39 +187,19 @@ class Dice(_Loss):
 
 def one_hot(labels: torch.Tensor, num_classes: int, dtype: torch.dtype = torch.float, dim: int = 1) -> torch.Tensor:
     """
-    For every value v in `labels`, the value in the output will be either 1 or 0. Each vector along the `dim`-th
-    dimension has the "one-hot" format, i.e., it has a total length of `num_classes`,
-    with a one and `num_class-1` zeros.
-    Note that this will include the background label, thus a binary mask should be treated as having two classes.
+    Convert labels to one-hot representation.
 
-    Args:
-        labels: input tensor of integers to be converted into the 'one-hot' format. Internally `labels` will be
-            converted into integers `labels.long()`.
-        num_classes: number of output channels, the corresponding length of `labels[dim]` will be converted to
-            `num_classes` from `1`.
-        dtype: the data type of the output one_hot label.
-        dim: the dimension to be converted to `num_classes` channels from `1` channel, should be non-negative number.
-
-    Example:
-
-    For a tensor `labels` of dimensions [B]1[spatial_dims], return a tensor of dimensions `[B]N[spatial_dims]`
-    when `num_classes=N` number of classes and `dim=1`.
-
-    .. code-block:: python
-
-        from monai.networks.utils import one_hot
-        import torch
-
-        a = torch.randint(0, 2, size=(1, 2, 2, 2))
-        out = one_hot(a, num_classes=2, dim=0)
-        print(out.shape)  # torch.Size([2, 2, 2, 2])
-
-        a = torch.randint(0, 2, size=(2, 1, 2, 2, 2))
-        out = one_hot(a, num_classes=2, dim=1)
-        print(out.shape)  # torch.Size([2, 2, 2, 2, 2])
-
+    Parameters
+    ----------
+    labels: torch.Tensor
+        the labels of shape [BNHW[D]].
+    num_classes: int
+        number of classes.
+    dtype: torch.dtype
+        the data type of the returned tensor.
+    dim: int
+        the dimension to expand the one-hot tensor.
     """
-
     # if `dim` is bigger, add singleton dim at the end
     if labels.ndim < dim + 1:
         shape = list(labels.shape) + [1] * (dim + 1 - len(labels.shape))

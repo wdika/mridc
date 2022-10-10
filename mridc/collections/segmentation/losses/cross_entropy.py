@@ -42,9 +42,6 @@ class MC_CrossEntropyLoss(nn.Module):
 
     def forward(self, target, input, pred_log_var=None):
         """Forward pass of Monte Carlo Cross Entropy Loss"""
-        target = torch.argmax(target, dim=1).clone().long()
-        input = input.clone().float()
-
         if self.mc_samples == 1 or pred_log_var is None:
             return self.cross_entropy(input, target).mean()
 
