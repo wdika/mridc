@@ -208,9 +208,7 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
         num_losses = 0
         if self.segmentation_loss_fn["cross_entropy"] is not None:
             loss_dict["cross_entropy_loss"] = (
-                self.segmentation_loss_fn["cross_entropy"].to(self.device)(
-                    torch.abs(target / torch.abs(torch.max(target))).argmax(1).detach().cpu(), pred.detach().cpu()
-                )
+                self.segmentation_loss_fn["cross_entropy"].cpu()(target.argmax(1).detach().cpu(), pred.detach().cpu())
                 * self.cross_entropy_loss_weighting_factor
             )
             num_losses += 1
@@ -298,6 +296,9 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
                 batch * slices, *target_segmentation.shape[2:]  # type: ignore
             )
             pred_segmentation = pred_segmentation.reshape(batch * slices, *pred_segmentation.shape[2:])  # type: ignore
+
+        target_segmentation = target_segmentation.type(torch.float32)  # type: ignore
+        pred_segmentation = pred_segmentation.type(torch.float32)
 
         segmentation_loss = self.process_segmentation_loss(target_segmentation, pred_segmentation)["segmentation_loss"]
 
@@ -395,6 +396,15 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
                 batch * slices, *target_segmentation.shape[2:]  # type: ignore
             )
             pred_segmentation = pred_segmentation.reshape(batch * slices, *pred_segmentation.shape[2:])  # type: ignore
+            target_reconstruction = target_reconstruction.reshape(  # type: ignore
+                batch * slices, *target_reconstruction.shape[2:]  # type: ignore
+            )
+
+        target_reconstruction = torch.abs(target_reconstruction).detach().cpu()
+        self.log_image(f"{key}/reconstruction/target", target_reconstruction)
+
+        target_segmentation = target_segmentation.type(torch.float32)  # type: ignore
+        pred_segmentation = pred_segmentation.type(torch.float32)
 
         segmentation_loss = self.process_segmentation_loss(target_segmentation, pred_segmentation)["segmentation_loss"]
 
@@ -413,18 +423,12 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
             if isinstance(pred_reconstruction, list):
                 pred_reconstruction = pred_reconstruction[-1]
             if self.consecutive_slices > 1:
-                target_reconstruction = target_reconstruction.reshape(  # type: ignore
-                    target_reconstruction.shape[0] * target_reconstruction.shape[1],  # type: ignore
-                    *target_reconstruction.shape[2:],  # type: ignore
-                )
                 pred_reconstruction = pred_reconstruction.reshape(
                     pred_reconstruction.shape[0] * pred_reconstruction.shape[1], *pred_reconstruction.shape[2:]
                 )
 
             output_reconstruction = torch.abs(pred_reconstruction / torch.max(torch.abs(pred_reconstruction)))
             output_reconstruction = torch.abs(output_reconstruction).detach().cpu()
-            target_reconstruction = torch.abs(target_reconstruction).detach().cpu()
-            self.log_image(f"{key}/reconstruction/target", target_reconstruction)
             self.log_image(f"{key}/reconstruction/prediction", output_reconstruction)
             self.log_image(f"{key}/reconstruction/error", target_reconstruction - output_reconstruction)
 
@@ -468,9 +472,8 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
                 target_segmentation_class - output_segmentation_class,
             )
 
-        self.cross_entropy_vals[fname][slice_idx] = self.cross_entropy_metric(
-            torch.abs(target_segmentation / torch.abs(torch.max(target_segmentation))).argmax(1).detach().cpu(),
-            pred_segmentation.detach().cpu(),
+        self.cross_entropy_vals[fname][slice_idx] = self.cross_entropy_metric.to(self.device)(
+            target_segmentation.argmax(1), pred_segmentation  # type: ignore
         )
         dice_score, _ = self.dice_coefficient_metric(target_segmentation, pred_segmentation)
         self.dice_vals[fname][slice_idx] = dice_score
@@ -557,6 +560,12 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
                 batch * slices, *target_segmentation.shape[2:]  # type: ignore
             )
             pred_segmentation = pred_segmentation.reshape(batch * slices, *pred_segmentation.shape[2:])  # type: ignore
+            target_reconstruction = target_reconstruction.reshape(  # type: ignore
+                batch * slices, *target_reconstruction.shape[2:]  # type: ignore
+            )
+
+        target_reconstruction = torch.abs(target_reconstruction).detach().cpu()
+        self.log_image(f"{key}/reconstruction/target", target_reconstruction)
 
         if self.use_reconstruction_module:
             # Cascades
@@ -566,10 +575,6 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
             if isinstance(pred_reconstruction, list):
                 pred_reconstruction = pred_reconstruction[-1]
             if self.consecutive_slices > 1:
-                target_reconstruction = target_reconstruction.reshape(  # type: ignore
-                    target_reconstruction.shape[0] * target_reconstruction.shape[1],  # type: ignore
-                    *target_reconstruction.shape[2:],  # type: ignore
-                )
                 pred_reconstruction = pred_reconstruction.reshape(
                     pred_reconstruction.shape[0] * pred_reconstruction.shape[1], *pred_reconstruction.shape[2:]
                 )
@@ -617,9 +622,8 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
                 target_segmentation_class - output_segmentation_class,
             )
 
-        self.cross_entropy_vals[fname][slice_idx] = self.cross_entropy_metric(
-            torch.abs(target_segmentation / torch.abs(torch.max(target_segmentation))).argmax(1).detach().cpu(),
-            pred_segmentation.detach().cpu(),
+        self.cross_entropy_vals[fname][slice_idx] = self.cross_entropy_metric.to(self.device)(
+            target_segmentation.argmax(1), pred_segmentation  # type: ignore
         )
         dice_score, _ = self.dice_coefficient_metric(target_segmentation, pred_segmentation)
         self.dice_vals[fname][slice_idx] = dice_score
