@@ -208,8 +208,9 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
         num_losses = 0
         if self.segmentation_loss_fn["cross_entropy"] is not None:
             loss_dict["cross_entropy_loss"] = (
-                self.segmentation_loss_fn["cross_entropy"].cpu()(target.argmax(1).detach().cpu(), pred.detach().cpu())
-                * self.cross_entropy_loss_weighting_factor
+                    self.segmentation_loss_fn["cross_entropy"].cpu()(target.argmax(1).detach().cpu(),
+                                                                     pred.detach().cpu())
+                    * self.cross_entropy_loss_weighting_factor
             )
             num_losses += 1
         if self.segmentation_loss_fn["dice"] is not None:
@@ -291,11 +292,13 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
         )
 
         if self.consecutive_slices > 1:
-            batch, slices = target_segmentation.shape[:2]  # type: ignore
+            batch_size, slices = target_segmentation.shape[:2]  # type: ignore
             target_segmentation = target_segmentation.reshape(  # type: ignore
-                batch * slices, *target_segmentation.shape[2:]  # type: ignore
+                batch_size * slices, *target_segmentation.shape[2:]  # type: ignore
             )
-            pred_segmentation = pred_segmentation.reshape(batch * slices, *pred_segmentation.shape[2:])  # type: ignore
+            pred_segmentation = pred_segmentation.reshape(
+                batch_size * slices, *pred_segmentation.shape[2:]  # type: ignore
+            )
 
         target_segmentation = target_segmentation.type(torch.float32)  # type: ignore
         pred_segmentation = pred_segmentation.type(torch.float32)
@@ -370,8 +373,6 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
             acc,
         ) = batch
 
-        key = f"{fname[0]}_images_idx_{int(slice_idx)}"  # type: ignore
-
         y, mask, init_reconstruction_pred, r = self.process_inputs(y, mask, init_reconstruction_pred)
 
         target_reconstruction = target_reconstruction / torch.max(torch.abs(target_reconstruction))  # type: ignore
@@ -391,16 +392,21 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
         )
 
         if self.consecutive_slices > 1:
-            batch, slices = target_segmentation.shape[:2]  # type: ignore
+            batch_size, slices = target_segmentation.shape[:2]  # type: ignore
             target_segmentation = target_segmentation.reshape(  # type: ignore
-                batch * slices, *target_segmentation.shape[2:]  # type: ignore
+                batch_size * slices, *target_segmentation.shape[2:]  # type: ignore
             )
-            pred_segmentation = pred_segmentation.reshape(batch * slices, *pred_segmentation.shape[2:])  # type: ignore
+            pred_segmentation = pred_segmentation.reshape(
+                batch_size * slices, *pred_segmentation.shape[2:]  # type: ignore
+            )
             target_reconstruction = target_reconstruction.reshape(  # type: ignore
-                batch * slices, *target_reconstruction.shape[2:]  # type: ignore
+                batch_size * slices, *target_reconstruction.shape[2:]  # type: ignore
             )
 
         target_reconstruction = torch.abs(target_reconstruction).detach().cpu()
+
+        slice_idx = int(slice_idx)
+        key = f"{fname[0]}_images_idx_{slice_idx}"  # type: ignore
         self.log_image(f"{key}/reconstruction/target", target_reconstruction)
 
         target_segmentation = target_segmentation.type(torch.float32)  # type: ignore
@@ -429,6 +435,7 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
 
             output_reconstruction = torch.abs(pred_reconstruction / torch.max(torch.abs(pred_reconstruction)))
             output_reconstruction = torch.abs(output_reconstruction).detach().cpu()
+
             self.log_image(f"{key}/reconstruction/prediction", output_reconstruction)
             self.log_image(f"{key}/reconstruction/error", target_reconstruction - output_reconstruction)
 
@@ -462,6 +469,7 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
             target_segmentation_class = target_segmentation_class / torch.max(torch.abs(target_segmentation_class))
             output_segmentation_class = pred_segmentation[:, class_idx]
             output_segmentation_class = output_segmentation_class / torch.max(torch.abs(output_segmentation_class))
+
             self.log_image(
                 f"{key}/segmentation_classes/target_class_{class_idx}",
                 target_segmentation_class,  # type: ignore
@@ -555,13 +563,15 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
         )
 
         if self.consecutive_slices > 1:
-            batch, slices = target_segmentation.shape[:2]  # type: ignore
+            batch_size, slices = target_segmentation.shape[:2]  # type: ignore
             target_segmentation = target_segmentation.reshape(  # type: ignore
-                batch * slices, *target_segmentation.shape[2:]  # type: ignore
+                batch_size * slices, *target_segmentation.shape[2:]  # type: ignore
             )
-            pred_segmentation = pred_segmentation.reshape(batch * slices, *pred_segmentation.shape[2:])  # type: ignore
+            pred_segmentation = pred_segmentation.reshape(
+                batch_size * slices, *pred_segmentation.shape[2:]  # type: ignore
+            )
             target_reconstruction = target_reconstruction.reshape(  # type: ignore
-                batch * slices, *target_reconstruction.shape[2:]  # type: ignore
+                batch_size * slices, *target_reconstruction.shape[2:]  # type: ignore
             )
 
         target_reconstruction = torch.abs(target_reconstruction).detach().cpu()

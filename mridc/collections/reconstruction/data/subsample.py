@@ -467,7 +467,7 @@ class Poisson2DMaskFunc(MaskFunc):
         calib: Optional[Tuple[float, float]] = (0.0, 0.0),
         crop_corner: bool = True,
         max_attempts: int = 30,
-        tol: float = 0.1,
+        tol: float = 0.3,
     ) -> Tuple[torch.Tensor, int]:
         """
         Parameters
@@ -492,11 +492,7 @@ class Poisson2DMaskFunc(MaskFunc):
         """
         self.shape = tuple(shape[-3:-1])
         self.scale = scale
-        _, acceleration = self.choose_acceleration()
-        self.acceleration = acceleration
-
-        if seed is not None:
-            rand_state = np.random.get_state()
+        _, self.acceleration = self.choose_acceleration()
 
         ny, nx = self.shape
         y, x = np.mgrid[:ny, :nx]
@@ -512,17 +508,16 @@ class Poisson2DMaskFunc(MaskFunc):
             slope = (slope_max + slope_min) / 2
             radius_x = np.clip((1 + r * slope) * nx / max(nx, ny), 1, None)
             radius_y = np.clip((1 + r * slope) * ny / max(nx, ny), 1, None)
-            mask = self.generate_poisson_mask(
-                self.shape[-1], self.shape[-2], max_attempts, radius_x, radius_y, calib, seed
-            )
+            mask = self.generate_poisson_mask(self.shape[-1], self.shape[-2], max_attempts, radius_x, radius_y, calib)
             if crop_corner:
                 mask *= r < 1
 
-            actual_accel = self.shape[-1] * self.shape[-2] / np.sum(mask)
+            with np.errstate(divide='ignore', invalid='ignore'):
+                actual_acceleration = mask.size / np.sum(mask)
 
-            if abs(actual_accel - self.acceleration) < tol:
+            if abs(actual_acceleration - self.acceleration) < tol:
                 break
-            if actual_accel < self.acceleration:
+            if actual_acceleration < self.acceleration:
                 slope_min = slope
             else:
                 slope_max = slope
@@ -531,16 +526,15 @@ class Poisson2DMaskFunc(MaskFunc):
         pattern2 = self.centered_circle()
         mask = np.logical_or(pattern1, pattern2)
 
-        if abs(actual_accel - self.acceleration) >= tol:
+        if abs(actual_acceleration - self.acceleration) >= tol:
             raise ValueError(f"Cannot generate mask to satisfy acceleration factor of {self.acceleration}.")
 
         if half_scan_percentage != 0:
             mask[: int(np.round(mask.shape[0] * half_scan_percentage)), :] = 0.0
 
-        if seed is not None:
-            np.random.set_state(rand_state)
-
-        return (torch.from_numpy(mask.reshape(self.shape).astype(np.float32)).unsqueeze(0).unsqueeze(-1), acceleration)
+        return (
+            torch.from_numpy(mask.reshape(self.shape).astype(np.float32)).unsqueeze(0).unsqueeze(-1), self.acceleration
+        )
 
     def centered_circle(self):
         """Creates a boolean centered circle image using the scale as a radius."""
@@ -560,7 +554,6 @@ class Poisson2DMaskFunc(MaskFunc):
         radius_x: np.ndarray,
         radius_y: np.ndarray,
         calib: Tuple[float, float],
-        seed: Optional[Union[int, Tuple[int, ...]]] = None,
     ):
         """
         Generates a Poisson mask.
@@ -572,11 +565,9 @@ class Poisson2DMaskFunc(MaskFunc):
         max_attempts: Maximum number of attempts to generate a mask with the desired acceleration factor.
         radius_x: Radius of the Poisson distribution in the x-direction.
         radius_y: Radius of the Poisson distribution in the y-direction.
-        calib: Defines the size of the calibration region. The calibration region is a square region in the center of k-space. \
-        The first value defines the percentage of the center that is sampled. The second value defines the size of the \
-        calibration region in the center of k-space.
-        seed: Seed for the random number generator. Setting the seed ensures the same mask is generated each time for the \
-        same shape. The random state is reset afterwards.
+        calib: Defines the size of the calibration region. The calibration region is a square region in the center of \
+        k-space. The first value defines the percentage of the center that is sampled. The second value defines the \
+        size of the calibration region in the center of k-space.
         """
         mask = np.zeros((ny, nx))
 
@@ -585,9 +576,6 @@ class Poisson2DMaskFunc(MaskFunc):
             int(ny / 2 - calib[-2] / 2) : int(ny / 2 + calib[-2] / 2),
             int(nx / 2 - calib[-1] / 2) : int(nx / 2 + calib[-1] / 2),
         ] = 1
-
-        if seed is not None:
-            np.random.seed(int(seed))  # type: ignore
 
         # initialize active list
         pxs = np.empty(nx * ny, np.int32)
