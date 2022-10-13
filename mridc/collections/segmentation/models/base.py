@@ -208,9 +208,8 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
         num_losses = 0
         if self.segmentation_loss_fn["cross_entropy"] is not None:
             loss_dict["cross_entropy_loss"] = (
-                    self.segmentation_loss_fn["cross_entropy"].cpu()(target.argmax(1).detach().cpu(),
-                                                                     pred.detach().cpu())
-                    * self.cross_entropy_loss_weighting_factor
+                self.segmentation_loss_fn["cross_entropy"].cpu()(target.argmax(1).detach().cpu(), pred.detach().cpu())
+                * self.cross_entropy_loss_weighting_factor
             )
             num_losses += 1
         if self.segmentation_loss_fn["dice"] is not None:
@@ -897,7 +896,9 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
             num_cols=cfg.get("num_cols", None),
             consecutive_slices=cfg.get("consecutive_slices", 1),
             segmentation_classes=cfg.get("segmentation_classes", 2),
-            remove_segmentation_background=cfg.get("remove_segmentation_background", False),
+            segmentation_classes_to_remove=cfg.get("segmentation_classes_to_remove", None),
+            segmentation_classes_to_combine=cfg.get("segmentation_classes_to_combine", None),
+            segmentation_classes_to_separate=cfg.get("segmentation_classes_to_separate", None),
             complex_data=complex_data,
             data_saved_per_slice=cfg.get("data_saved_per_slice", False),
             transform=JRSMRIDataTransforms(

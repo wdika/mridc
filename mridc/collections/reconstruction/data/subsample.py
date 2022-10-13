@@ -512,7 +512,7 @@ class Poisson2DMaskFunc(MaskFunc):
             if crop_corner:
                 mask *= r < 1
 
-            with np.errstate(divide='ignore', invalid='ignore'):
+            with np.errstate(divide="ignore", invalid="ignore"):
                 actual_acceleration = mask.size / np.sum(mask)
 
             if abs(actual_acceleration - self.acceleration) < tol:
@@ -533,7 +533,8 @@ class Poisson2DMaskFunc(MaskFunc):
             mask[: int(np.round(mask.shape[0] * half_scan_percentage)), :] = 0.0
 
         return (
-            torch.from_numpy(mask.reshape(self.shape).astype(np.float32)).unsqueeze(0).unsqueeze(-1), self.acceleration
+            torch.from_numpy(mask.reshape(self.shape).astype(np.float32)).unsqueeze(0).unsqueeze(-1),
+            self.acceleration,
         )
 
     def centered_circle(self):

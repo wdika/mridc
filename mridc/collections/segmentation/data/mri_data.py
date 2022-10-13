@@ -29,7 +29,9 @@ class JRSMRISliceDataset(Dataset):
         num_cols: Optional[Tuple[int]] = None,
         consecutive_slices: int = 1,
         segmentation_classes: int = 2,
-        remove_segmentation_background: bool = False,
+        segmentation_classes_to_remove: Optional[Tuple[int]] = None,
+        segmentation_classes_to_combine: Optional[Tuple[int]] = None,
+        segmentation_classes_to_separate: Optional[Tuple[int]] = None,
         complex_data: bool = True,
         data_saved_per_slice: bool = False,
         transform: Optional[Callable] = None,
@@ -61,8 +63,12 @@ class JRSMRISliceDataset(Dataset):
             Number of consecutive slices to use.
         segmentation_classes: int
             Number of segmentation classes.
-        remove_segmentation_background: bool
-            Remove segmentation background.
+        segmentation_classes_to_remove: tuple
+            Segmentation classes to remove.
+        segmentation_classes_to_combine: tuple
+            Segmentation classes to combine.
+        segmentation_classes_to_separate: tuple
+            Segmentation classes to separate.
         complex_data: bool
             Use complex data.
         data_saved_per_slice: bool
@@ -134,7 +140,9 @@ class JRSMRISliceDataset(Dataset):
         if self.consecutive_slices < 1:
             raise ValueError("consecutive_slices value is out of range, must be > 0.")
         self.segmentation_classes = segmentation_classes
-        self.remove_segmentation_background = remove_segmentation_background
+        self.segmentation_classes_to_remove = segmentation_classes_to_remove
+        self.segmentation_classes_to_combine = segmentation_classes_to_combine
+        self.segmentation_classes_to_separate = segmentation_classes_to_separate
         self.complex_data = complex_data
         self.transform = transform
 
@@ -211,6 +219,97 @@ class JRSMRISliceDataset(Dataset):
 
         return data[start_slice:end_slice]
 
+    def process_segmentation_labels(self, segmentation_labels: np.ndarray) -> np.ndarray:
+        """
+        Process segmentation labels to remove, combine, and separate classes.
+
+        Parameters
+        ----------
+        segmentation_labels: Segmentation labels to process.
+        """
+        # make sure that the segmentation dim will be the last one
+        segmentation_labels_dim = -1
+        for dim in range(segmentation_labels.ndim):
+            if segmentation_labels.shape[dim] == self.segmentation_classes:
+                segmentation_labels_dim = dim
+
+        if segmentation_labels.ndim == 2:
+            segmentation_labels = np.expand_dims(segmentation_labels, axis=0)
+
+        if segmentation_labels.ndim == 3 and segmentation_labels_dim == 0:
+            segmentation_labels = np.transpose(segmentation_labels, (1, 2, 0))
+        elif segmentation_labels.ndim == 3 and segmentation_labels_dim == 1:
+            segmentation_labels = np.transpose(segmentation_labels, (0, 2, 1))
+        elif segmentation_labels.ndim == 4 and segmentation_labels_dim == 0:
+            segmentation_labels = np.transpose(segmentation_labels, (1, 2, 3, 0))
+        elif segmentation_labels.ndim == 4 and segmentation_labels_dim == 1:
+            segmentation_labels = np.transpose(segmentation_labels, (0, 2, 3, 1))
+        elif segmentation_labels.ndim == 4 and segmentation_labels_dim == 2:
+            segmentation_labels = np.transpose(segmentation_labels, (0, 1, 3, 2))
+
+        removed_classes = 0
+
+        # check if we need to remove any classes, e.g. background
+        if self.segmentation_classes_to_remove is not None:
+            segmentation_labels = np.stack(
+                [
+                    segmentation_labels[..., x]
+                    for x in range(segmentation_labels.shape[-1])
+                    if x not in self.segmentation_classes_to_remove
+                ],
+                axis=-1,
+            )
+            removed_classes += len(self.segmentation_classes_to_remove)
+
+        # check if we need to combine any classes, e.g. White Matter and Gray Matter
+        if self.segmentation_classes_to_combine is not None:
+            segmentation_labels_to_combine = []
+            segmentation_labels_to_keep = []
+            for x in range(segmentation_labels.shape[-1]):
+                if x in self.segmentation_classes_to_combine:
+                    segmentation_labels_to_combine.append(segmentation_labels[..., x - removed_classes])
+                else:
+                    segmentation_labels_to_keep.append(segmentation_labels[..., x - removed_classes])
+            segmentation_labels_to_combine = np.expand_dims(
+                np.sum(np.stack(segmentation_labels_to_combine, axis=-1), axis=-1), axis=-1
+            )
+            segmentation_labels_to_keep = np.stack(segmentation_labels_to_keep, axis=-1)
+
+            if 0 in self.segmentation_classes_to_remove or "0" in self.segmentation_classes_to_remove:  # type: ignore
+                # if background is removed, we can stack the combined labels with the rest straight away
+                segmentation_labels = np.concatenate(
+                    [segmentation_labels_to_combine, segmentation_labels_to_keep], axis=-1
+                )
+            else:
+                # if background is not removed, we need to add it back as new background channel
+                segmentation_labels = np.concatenate(
+                    [
+                        np.expand_dims(segmentation_labels[..., 0], axis=-1),
+                        segmentation_labels_to_combine,
+                        segmentation_labels_to_keep,
+                    ],
+                    axis=-1,
+                )
+
+            removed_classes += len(self.segmentation_classes_to_combine) - 1
+
+        # check if we need to separate any classes, e.g. pathologies from White Matter and Gray Matter
+        if self.segmentation_classes_to_separate is not None:
+            for x in self.segmentation_classes_to_separate:
+                segmentation_class_to_separate = segmentation_labels[..., x - removed_classes]
+                for i in range(segmentation_labels.shape[-1]):
+                    if i == x - removed_classes:
+                        continue
+                    segmentation_labels[..., i][segmentation_class_to_separate > 0] = 0
+
+        segmentation_labels = (
+            np.moveaxis(segmentation_labels, -1, 0)
+            if segmentation_labels.ndim == 3
+            else np.moveaxis(segmentation_labels, -1, 1)
+        )
+
+        return segmentation_labels
+
     def __len__(self):
         return len(self.examples)
 
@@ -268,27 +367,11 @@ class JRSMRISliceDataset(Dataset):
 
             if "segmentation" in hf:
                 segmentation_labels = np.asarray(self.get_consecutive_slices(hf, "segmentation", dataslice))
-                if self.remove_segmentation_background:
-                    segmentation_labels = segmentation_labels[..., 1:]
-                if segmentation_labels.shape[-1] == self.segmentation_classes:
-                    if segmentation_labels.ndim == 3:
-                        segmentation_labels = np.transpose(segmentation_labels, (2, 0, 1))
-                    else:
-                        segmentation_labels = np.transpose(segmentation_labels, (0, 3, 1, 2))
-                if segmentation_labels.ndim == 2:
-                    segmentation_labels = np.expand_dims(segmentation_labels, axis=0)
+                segmentation_labels = self.process_segmentation_labels(segmentation_labels)
             elif self.segmentations_root is not None and self.segmentations_root != "None":
                 with h5py.File(Path(self.segmentations_root) / fname.name, "r") as sf:
                     segmentation_labels = np.asarray(self.get_consecutive_slices(sf, "segmentation", dataslice))
-                    if self.remove_segmentation_background:
-                        segmentation_labels = segmentation_labels[..., 1:]
-                    if segmentation_labels.shape[-1] == self.segmentation_classes:
-                        if segmentation_labels.ndim == 3:
-                            segmentation_labels = np.transpose(segmentation_labels, (2, 0, 1))
-                        else:
-                            segmentation_labels = np.transpose(segmentation_labels, (0, 3, 1, 2))
-                    if segmentation_labels.ndim == 2:
-                        segmentation_labels = np.expand_dims(segmentation_labels, axis=0)
+                    segmentation_labels = self.process_segmentation_labels(segmentation_labels)
             else:
                 segmentation_labels = np.empty([])
 
