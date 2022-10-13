@@ -8,21 +8,21 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
-from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel
-from mridc.collections.reconstruction.models.conv.conv2d import Conv2d
-from mridc.collections.reconstruction.models.crossdomain.crossdomain import CrossDomainNetwork
-from mridc.collections.reconstruction.models.crossdomain.multicoil import MultiCoil
-from mridc.collections.reconstruction.models.didn.didn import DIDN
-from mridc.collections.reconstruction.models.mwcnn.mwcnn import MWCNN
-from mridc.collections.reconstruction.models.unet_base.unet_block import NormUnet
-from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
-from mridc.core.classes.common import typecheck
+import mridc.collections.common.losses.ssim as losses
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.reconstruction.models.base as base_models
+import mridc.collections.reconstruction.models.conv.conv2d as conv2d
+import mridc.collections.reconstruction.models.crossdomain.crossdomain as crossdomain
+import mridc.collections.reconstruction.models.crossdomain.multicoil as crossdomain_multicoil
+import mridc.collections.reconstruction.models.didn.didn as didn_
+import mridc.collections.reconstruction.models.mwcnn.mwcnn as mwcnn_
+import mridc.collections.reconstruction.models.unet_base.unet_block as unet_block
+import mridc.core.classes.common as common_classes
 
 __all__ = ["XPDNet"]
 
 
-class XPDNet(BaseMRIReconstructionModel, ABC):
+class XPDNet(base_models.BaseMRIReconstructionModel, ABC):
     """
     Implementation of the XPDNet, as presented in Ramzi, Zaccharie, et al.
 
@@ -60,8 +60,8 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
         elif kspace_model_architecture == "CONV":
             kspace_model_list = torch.nn.ModuleList(
                 [
-                    MultiCoil(
-                        Conv2d(
+                    crossdomain_multicoil.MultiCoil(
+                        conv2d.Conv2d(
                             2 * (num_dual + num_primal + 1),
                             2 * num_dual,
                             dual_conv_hidden_channels,
@@ -75,8 +75,8 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
         elif kspace_model_architecture == "DIDN":
             kspace_model_list = torch.nn.ModuleList(
                 [
-                    MultiCoil(
-                        DIDN(
+                    crossdomain_multicoil.MultiCoil(
+                        didn_.DIDN(
                             in_channels=2 * (num_dual + num_primal + 1),
                             out_channels=2 * num_dual,
                             hidden_channels=dual_didn_hidden_channels,
@@ -90,8 +90,8 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
         elif kspace_model_architecture in ["UNET", "NORMUNET"]:
             kspace_model_list = torch.nn.ModuleList(
                 [
-                    MultiCoil(
-                        NormUnet(
+                    crossdomain_multicoil.MultiCoil(
+                        unet_block.NormUnet(
                             cfg_dict.get("kspace_unet_num_filters"),
                             cfg_dict.get("kspace_unet_num_pool_layers"),
                             in_chans=2 * (num_dual + num_primal + 1),
@@ -121,7 +121,7 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
             image_model_list = torch.nn.ModuleList(
                 [
                     torch.nn.Sequential(
-                        MWCNN(
+                        mwcnn_.MWCNN(
                             input_channels=2 * (num_primal + num_dual),
                             first_conv_hidden_channels=mwcnn_hidden_channels,
                             num_scales=mwcnn_num_scales,
@@ -136,7 +136,7 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
         elif image_model_architecture in ["UNET", "NORMUNET"]:
             image_model_list = torch.nn.ModuleList(
                 [
-                    NormUnet(
+                    unet_block.NormUnet(
                         cfg_dict.get("imspace_unet_num_filters"),
                         cfg_dict.get("imspace_unet_num_pool_layers"),
                         in_chans=2 * (num_primal + num_dual),
@@ -156,7 +156,7 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
         self.coil_dim = cfg_dict.get("coil_dim")
         self.num_cascades = cfg_dict.get("num_cascades")
 
-        self.xpdnet = CrossDomainNetwork(
+        self.xpdnet = crossdomain.CrossDomainNetwork(
             image_model_list=image_model_list,
             kspace_model_list=kspace_model_list,
             domain_sequence="KI" * num_iter,
@@ -169,12 +169,12 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
             coil_dim=self.coil_dim,
         )
 
-        self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
+        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
 
         self.accumulate_estimates = False
 
-    @typecheck()
+    @common_classes.typecheck()
     def forward(
         self,
         y: torch.Tensor,
@@ -207,5 +207,5 @@ class XPDNet(BaseMRIReconstructionModel, ABC):
         """
         eta = self.xpdnet(y, sensitivity_maps, mask)
         eta = (eta**2).sqrt().sum(-1)
-        _, eta = center_crop_to_smallest(target, eta)
+        _, eta = utils.center_crop_to_smallest(target, eta)
         return eta

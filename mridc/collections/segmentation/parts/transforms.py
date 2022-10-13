@@ -7,11 +7,10 @@ import numpy as np
 import torch
 from torch import Tensor
 
-from mridc.collections.common.parts.fft import fft2, ifft2
-from mridc.collections.common.parts.utils import is_none, rss, sense, to_tensor
-from mridc.collections.reconstruction.data.subsample import MaskFunc
-from mridc.collections.reconstruction.parts.transforms import GeometricDecompositionCoilCompression, NoisePreWhitening
-from mridc.collections.reconstruction.parts.utils import apply_mask, center_crop, complex_center_crop
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.reconstruction.data.subsample as subsample
+import mridc.collections.reconstruction.parts.transforms as reconstruction_transforms
 
 __all__ = ["JRSMRIDataTransforms"]
 
@@ -32,7 +31,7 @@ class JRSMRIDataTransforms:
         gcc_align_data: bool = True,
         coil_combination_method: str = "SENSE",
         dimensionality: int = 2,
-        mask_func: Optional[List[MaskFunc]] = None,
+        mask_func: Optional[List[subsample.MaskFunc]] = None,
         shift_mask: bool = False,
         mask_center_scale: Optional[float] = 0.02,
         half_scan_percentage: float = 0.0,
@@ -78,7 +77,7 @@ class JRSMRIDataTransforms:
         dimensionality: Dimensionality.
             int
         mask_func: Mask function.
-            List[MaskFunc]
+            List[subsample.MaskFunc]
         shift_mask: Shift mask.
             bool
         mask_center_scale: Mask center scale.
@@ -114,13 +113,13 @@ class JRSMRIDataTransforms:
         """
         self.complex_data = complex_data
         if not self.complex_data:
-            if not is_none(coil_combination_method):
+            if not utils.is_none(coil_combination_method):
                 raise ValueError("Coil combination method for non-complex data should be None.")
         else:
             self.coil_combination_method = coil_combination_method
         self.dimensionality = dimensionality
         if not self.complex_data:
-            if not is_none(mask_func):
+            if not utils.is_none(mask_func):
                 raise ValueError("Mask function for non-complex data should be None.")
         else:
             self.mask_func = mask_func
@@ -136,7 +135,7 @@ class JRSMRIDataTransforms:
             self.kspace_crop = kspace_crop
         self.crop_before_masking = crop_before_masking
         if not self.complex_data:
-            if not is_none(kspace_zero_filling_size):
+            if not utils.is_none(kspace_zero_filling_size):
                 raise ValueError("K-space zero filling size for non-complex data should be None.")
         else:
             self.kspace_zero_filling_size = kspace_zero_filling_size
@@ -146,7 +145,7 @@ class JRSMRIDataTransforms:
         self.fft_normalization = fft_normalization
         self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
         if not self.complex_data:
-            if not is_none(coil_dim):
+            if not utils.is_none(coil_dim):
                 raise ValueError("Coil dimension for non-complex data should be None.")
         else:
             self.coil_dim = coil_dim - 1
@@ -157,7 +156,7 @@ class JRSMRIDataTransforms:
         else:
             self.apply_prewhitening = apply_prewhitening
             self.prewhitening = (
-                NoisePreWhitening(
+                reconstruction_transforms.NoisePreWhitening(
                     patch_size=[
                         prewhitening_patch_start,
                         prewhitening_patch_length + prewhitening_patch_start,
@@ -175,7 +174,7 @@ class JRSMRIDataTransforms:
                 raise ValueError("GCC for non-complex data cannot be applied.")
         else:
             self.gcc = (
-                GeometricDecompositionCoilCompression(
+                reconstruction_transforms.GeometricDecompositionCoilCompression(
                     virtual_coils=gcc_virtual_coils,
                     calib_lines=gcc_calib_lines,
                     align_data=gcc_align_data,
@@ -232,11 +231,11 @@ class JRSMRIDataTransforms:
         if not self.complex_data:
             imspace = torch.from_numpy(imspace)
         else:
-            kspace = to_tensor(kspace)
+            kspace = utils.to_tensor(kspace)
 
             # This condition is necessary in case of auto estimation of sense maps.
             if sensitivity_map is not None and sensitivity_map.size != 0:
-                sensitivity_map = to_tensor(sensitivity_map)
+                sensitivity_map = utils.to_tensor(sensitivity_map)
 
             if isinstance(mask, list):
                 mask = [torch.from_numpy(m) for m in mask]
@@ -255,9 +254,9 @@ class JRSMRIDataTransforms:
             if self.gcc is not None:
                 kspace = torch.stack([self.gcc(kspace[echo]) for echo in range(kspace.shape[0])], dim=0)
                 if isinstance(sensitivity_map, torch.Tensor):
-                    sensitivity_map = ifft2(
+                    sensitivity_map = fft.ifft2(
                         self.gcc(
-                            fft2(
+                            fft.fft2(
                                 sensitivity_map,
                                 centered=self.fft_centered,
                                 normalization=self.fft_normalization,
@@ -282,7 +281,7 @@ class JRSMRIDataTransforms:
                 )
                 kspace = torch.view_as_real(kspace)
 
-                sensitivity_map = fft2(
+                sensitivity_map = fft.fft2(
                     sensitivity_map,
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
@@ -296,7 +295,7 @@ class JRSMRIDataTransforms:
                     value=0,
                 )
                 sensitivity_map = torch.view_as_real(sensitivity_map)
-                sensitivity_map = ifft2(
+                sensitivity_map = fft.ifft2(
                     sensitivity_map,
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
@@ -305,8 +304,8 @@ class JRSMRIDataTransforms:
 
             # If the target is not given, we need to compute it.
             if self.coil_combination_method.upper() == "RSS":
-                target_reconstruction = rss(
-                    ifft2(
+                target_reconstruction = utils.rss(
+                    fft.ifft2(
                         kspace,
                         centered=self.fft_centered,
                         normalization=self.fft_normalization,
@@ -316,8 +315,8 @@ class JRSMRIDataTransforms:
                 )
             elif self.coil_combination_method.upper() == "SENSE":
                 if sensitivity_map is not None and sensitivity_map.size != 0:
-                    target_reconstruction = sense(
-                        ifft2(
+                    target_reconstruction = utils.sense(
+                        fft.ifft2(
                             kspace,
                             centered=self.fft_centered,
                             normalization=self.fft_normalization,
@@ -356,14 +355,14 @@ class JRSMRIDataTransforms:
 
             self.crop_size = (int(h), int(w))
 
-            target_reconstruction = center_crop(target_reconstruction, self.crop_size)
+            target_reconstruction = utils.center_crop(target_reconstruction, self.crop_size)
 
             if self.complex_data:
                 if sensitivity_map is not None and sensitivity_map.size != 0:
                     sensitivity_map = (
-                        ifft2(
-                            complex_center_crop(
-                                fft2(
+                        fft.ifft2(
+                            utils.complex_center_crop(
+                                fft.fft2(
                                     sensitivity_map,
                                     centered=self.fft_centered,
                                     normalization=self.fft_normalization,
@@ -376,21 +375,21 @@ class JRSMRIDataTransforms:
                             spatial_dims=self.spatial_dims,
                         )
                         if self.kspace_crop
-                        else complex_center_crop(sensitivity_map, self.crop_size)
+                        else utils.complex_center_crop(sensitivity_map, self.crop_size)
                     )
 
             if segmentation_labels is not None:
-                segmentation_labels = center_crop(segmentation_labels, self.crop_size)
+                segmentation_labels = utils.center_crop(segmentation_labels, self.crop_size)
 
         if self.complex_data:
             # Cropping before masking will maintain the shape of original kspace intact for masking.
             if self.crop_size is not None and self.crop_size not in ("", "None") and self.crop_before_masking:
                 kspace = (
-                    complex_center_crop(kspace, self.crop_size)
+                    utils.complex_center_crop(kspace, self.crop_size)
                     if self.kspace_crop
-                    else fft2(
-                        complex_center_crop(
-                            ifft2(
+                    else fft.fft2(
+                        utils.complex_center_crop(
+                            fft.ifft2(
                                 kspace,
                                 centered=self.fft_centered,
                                 normalization=self.fft_normalization,
@@ -412,7 +411,7 @@ class JRSMRIDataTransforms:
                         _mask = _mask.unsqueeze(0).unsqueeze(-1)
 
                     padding = (acq_start, acq_end)
-                    if (not is_none(padding[0]) and not is_none(padding[1])) and padding[0] != 0:
+                    if (not utils.is_none(padding[0]) and not utils.is_none(padding[1])) and padding[0] != 0:
                         _mask[:, :, : padding[0]] = 0
                         _mask[:, :, padding[1] :] = 0  # padding value inclusive on right of zeros
 
@@ -423,21 +422,21 @@ class JRSMRIDataTransforms:
                         _mask = torch.fft.fftshift(_mask, dim=(self.spatial_dims[0] - 1, self.spatial_dims[1] - 1))
 
                     if self.crop_size is not None and self.crop_size not in ("", "None") and self.crop_before_masking:
-                        _mask = complex_center_crop(_mask, self.crop_size)
+                        _mask = utils.complex_center_crop(_mask, self.crop_size)
 
                     masked_kspaces.append(kspace * _mask + 0.0)
                     masks.append(_mask)
                 masked_kspace = masked_kspaces
                 mask = masks
                 acc = 1
-            elif not is_none(mask) and mask.ndim != 0:  # and not is_none(self.mask_func):
+            elif not utils.is_none(mask) and mask.ndim != 0:  # and not is_none(self.mask_func):
                 for _mask in mask:
                     if list(_mask.shape) == [kspace.shape[-3], kspace.shape[-2]]:
                         mask = torch.from_numpy(_mask).unsqueeze(0).unsqueeze(-1)
                         break
 
                 padding = (acq_start, acq_end)
-                if (not is_none(padding[0]) and not is_none(padding[1])) and padding[0] != 0:
+                if (not utils.is_none(padding[0]) and not utils.is_none(padding[1])) and padding[0] != 0:
                     mask[:, :, : padding[0]] = 0
                     mask[:, :, padding[1] :] = 0  # padding value inclusive on right of zeros
 
@@ -448,12 +447,12 @@ class JRSMRIDataTransforms:
                     mask = torch.fft.fftshift(mask, dim=(self.spatial_dims[0] - 1, self.spatial_dims[1] - 1))
 
                 if self.crop_size is not None and self.crop_size not in ("", "None") and self.crop_before_masking:
-                    mask = complex_center_crop(mask, self.crop_size)
+                    mask = utils.complex_center_crop(mask, self.crop_size)
 
                 masked_kspace = kspace * mask + 0.0  # the + 0.0 removes the sign of the zeros
 
                 acc = 1
-            elif is_none(self.mask_func):
+            elif utils.is_none(self.mask_func):
                 masked_kspace = kspace.clone()
                 acc = torch.tensor([1])
 
@@ -477,7 +476,7 @@ class JRSMRIDataTransforms:
                 else:  # 2D mask
                     # Crop loaded mask.
                     if self.crop_size is not None and self.crop_size not in ("", "None"):
-                        mask = center_crop(mask, self.crop_size)
+                        mask = utils.center_crop(mask, self.crop_size)
                     mask = mask.unsqueeze(0).unsqueeze(-1)
 
                 if self.shift_mask:
@@ -491,7 +490,7 @@ class JRSMRIDataTransforms:
                 accs = []
                 for m in self.mask_func:
                     if self.dimensionality == 2:
-                        _masked_kspace, _mask, _acc = apply_mask(
+                        _masked_kspace, _mask, _acc = utils.apply_mask(
                             kspace,
                             m,
                             seed,
@@ -504,7 +503,7 @@ class JRSMRIDataTransforms:
                         _masked_kspace = []
                         _mask = None
                         for i in range(kspace.shape[0]):
-                            _i_masked_kspace, _i_mask, _i_acc = apply_mask(
+                            _i_masked_kspace, _i_mask, _i_acc = utils.apply_mask(
                                 kspace[i],
                                 m,
                                 seed,
@@ -530,7 +529,7 @@ class JRSMRIDataTransforms:
                 mask = masks
                 acc = accs  # type: ignore
             else:
-                masked_kspace, mask, acc = apply_mask(
+                masked_kspace, mask, acc = utils.apply_mask(
                     kspace,
                     self.mask_func[0],  # type: ignore
                     seed,
@@ -544,11 +543,11 @@ class JRSMRIDataTransforms:
             # Cropping after masking.
             if self.crop_size is not None and self.crop_size not in ("", "None") and not self.crop_before_masking:
                 kspace = (
-                    complex_center_crop(kspace, self.crop_size)
+                    utils.complex_center_crop(kspace, self.crop_size)
                     if self.kspace_crop
-                    else fft2(
-                        complex_center_crop(
-                            ifft2(
+                    else fft.fft2(
+                        utils.complex_center_crop(
+                            fft.ifft2(
                                 kspace,
                                 centered=self.fft_centered,
                                 normalization=self.fft_normalization,
@@ -563,11 +562,11 @@ class JRSMRIDataTransforms:
                 )
 
                 masked_kspace = (
-                    complex_center_crop(masked_kspace, self.crop_size)
+                    utils.complex_center_crop(masked_kspace, self.crop_size)
                     if self.kspace_crop
-                    else fft2(
-                        complex_center_crop(
-                            ifft2(
+                    else fft.fft2(
+                        utils.complex_center_crop(
+                            fft.ifft2(
                                 masked_kspace,
                                 centered=self.fft_centered,
                                 normalization=self.fft_normalization,
@@ -581,12 +580,12 @@ class JRSMRIDataTransforms:
                     )
                 )
 
-                mask = center_crop(mask.squeeze(-1), self.crop_size).unsqueeze(-1)
+                mask = utils.center_crop(mask.squeeze(-1), self.crop_size).unsqueeze(-1)
 
             if self.normalize_inputs:
                 if isinstance(self.mask_func, list):
                     if self.fft_normalization in ("backward", "ortho", "forward"):
-                        imspace = ifft2(
+                        imspace = fft.ifft2(
                             kspace,
                             centered=self.fft_centered,
                             normalization=self.fft_normalization,
@@ -594,7 +593,7 @@ class JRSMRIDataTransforms:
                         )
                         if self.max_norm:
                             imspace = imspace / torch.max(torch.abs(imspace))
-                        kspace = fft2(
+                        kspace = fft.fft2(
                             imspace,
                             centered=self.fft_centered,
                             normalization=self.fft_normalization,
@@ -610,7 +609,7 @@ class JRSMRIDataTransforms:
                     masked_kspaces = []
                     for y in masked_kspace:
                         if self.fft_normalization in ("backward", "ortho", "forward"):
-                            imspace = ifft2(
+                            imspace = fft.ifft2(
                                 y,
                                 centered=self.fft_centered,
                                 normalization=self.fft_normalization,
@@ -618,7 +617,7 @@ class JRSMRIDataTransforms:
                             )
                             if self.max_norm:
                                 imspace = imspace / torch.max(torch.abs(imspace))
-                            y = fft2(
+                            y = fft.fft2(
                                 imspace,
                                 centered=self.fft_centered,
                                 normalization=self.fft_normalization,
@@ -631,7 +630,7 @@ class JRSMRIDataTransforms:
                         masked_kspaces.append(y)
                     masked_kspace = masked_kspaces
                 elif self.fft_normalization in ("backward", "ortho", "forward"):
-                    imspace = ifft2(
+                    imspace = fft.ifft2(
                         kspace,
                         centered=self.fft_centered,
                         normalization=self.fft_normalization,
@@ -639,13 +638,13 @@ class JRSMRIDataTransforms:
                     )
                     if self.max_norm:
                         imspace = imspace / torch.max(torch.abs(imspace))
-                    kspace = fft2(
+                    kspace = fft.fft2(
                         imspace,
                         centered=self.fft_centered,
                         normalization=self.fft_normalization,
                         spatial_dims=self.spatial_dims,
                     )
-                    imspace = ifft2(
+                    imspace = fft.ifft2(
                         masked_kspace,
                         centered=self.fft_centered,
                         normalization=self.fft_normalization,
@@ -653,7 +652,7 @@ class JRSMRIDataTransforms:
                     )
                     if self.max_norm:
                         imspace = imspace / torch.max(torch.abs(imspace))
-                    masked_kspace = fft2(
+                    masked_kspace = fft.fft2(
                         imspace,
                         centered=self.fft_centered,
                         normalization=self.fft_normalization,
@@ -683,8 +682,8 @@ class JRSMRIDataTransforms:
                         and sensitivity_map is not None
                         and sensitivity_map.size != 0
                     ):
-                        eta = sense(
-                            ifft2(
+                        eta = utils.sense(
+                            fft.ifft2(
                                 y,
                                 centered=self.fft_centered,
                                 normalization=self.fft_normalization,
@@ -694,8 +693,8 @@ class JRSMRIDataTransforms:
                             dim=self.coil_dim,
                         )
                     else:
-                        eta = rss(
-                            ifft2(
+                        eta = utils.rss(
+                            fft.ifft2(
                                 y,
                                 centered=self.fft_centered,
                                 normalization=self.fft_normalization,
@@ -711,8 +710,8 @@ class JRSMRIDataTransforms:
                     and sensitivity_map is not None
                     and sensitivity_map.size != 0
                 ):
-                    initial_prediction_reconstruction = sense(
-                        ifft2(
+                    initial_prediction_reconstruction = utils.sense(
+                        fft.ifft2(
                             masked_kspace,
                             centered=self.fft_centered,
                             normalization=self.fft_normalization,
@@ -722,8 +721,8 @@ class JRSMRIDataTransforms:
                         dim=self.coil_dim,
                     )
                 else:
-                    initial_prediction_reconstruction = rss(
-                        ifft2(
+                    initial_prediction_reconstruction = utils.rss(
+                        fft.ifft2(
                             masked_kspace,
                             centered=self.fft_centered,
                             normalization=self.fft_normalization,

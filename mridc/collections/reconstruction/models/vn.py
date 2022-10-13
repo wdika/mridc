@@ -8,19 +8,18 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
-from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import ifft2
-from mridc.collections.common.parts.utils import coil_combination
-from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel
-from mridc.collections.reconstruction.models.unet_base.unet_block import NormUnet
-from mridc.collections.reconstruction.models.varnet.vn_block import VarNetBlock
-from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
-from mridc.core.classes.common import typecheck
+import mridc.collections.common.losses.ssim as losses
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.reconstruction.models.base as base_models
+import mridc.collections.reconstruction.models.unet_base.unet_block as unet_block
+import mridc.collections.reconstruction.models.varnet.vn_block as vn_block
+import mridc.core.classes.common as common_classes
 
 __all__ = ["VarNet"]
 
 
-class VarNet(BaseMRIReconstructionModel, ABC):
+class VarNet(base_models.BaseMRIReconstructionModel, ABC):
     """
     Implementation of the End-to-end Variational Network (VN), as presented in Sriram, A. et al.
 
@@ -50,8 +49,8 @@ class VarNet(BaseMRIReconstructionModel, ABC):
         # Cascades of VN blocks
         self.cascades = torch.nn.ModuleList(
             [
-                VarNetBlock(
-                    NormUnet(
+                vn_block.VarNetBlock(
+                    unet_block.NormUnet(
                         chans=cfg_dict.get("channels"),
                         num_pools=cfg_dict.get("pooling_layers"),
                         padding_size=cfg_dict.get("padding_size"),
@@ -72,13 +71,13 @@ class VarNet(BaseMRIReconstructionModel, ABC):
         # initialize weights if not using pretrained vn
         # TODO if not cfg_dict.get("pretrained", False)
 
-        self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
+        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
 
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
         self.accumulate_estimates = False
 
-    @typecheck()
+    @common_classes.typecheck()
     def forward(
         self,
         y: torch.Tensor,
@@ -115,15 +114,15 @@ class VarNet(BaseMRIReconstructionModel, ABC):
             # Forward pass through the cascades
             estimation = cascade(estimation, y, sensitivity_maps, mask)
 
-        estimation = ifft2(
+        estimation = fft.ifft2(
             estimation,
             centered=self.fft_centered,
             normalization=self.fft_normalization,
             spatial_dims=self.spatial_dims,
         )
-        estimation = coil_combination(
+        estimation = utils.coil_combination(
             estimation, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim
         )
         estimation = torch.view_as_complex(estimation)
-        _, estimation = center_crop_to_smallest(target, estimation)
+        _, estimation = utils.center_crop_to_smallest(target, estimation)
         return estimation

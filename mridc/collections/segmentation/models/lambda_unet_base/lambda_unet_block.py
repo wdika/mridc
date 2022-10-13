@@ -1,11 +1,11 @@
 # coding=utf-8
-__author__ = "Dimitrios Karkalousos, Lysander de Jong"
+__author__ = "Dimitrios Karkalousos"
 
 import torch
 from einops import rearrange
 from torch import einsum, nn
 
-from mridc.collections.reconstruction.models.unet_base.unet_block import ConvBlock, TransposeConvBlock, Unet
+import mridc.collections.reconstruction.models.unet_base.unet_block as unet_block
 
 
 class LambdaLayer(nn.Module):
@@ -206,7 +206,7 @@ class LambdaBlock(nn.Module):
         return self.layers(image)
 
 
-class LambdaUNet(Unet):
+class LambdaUNet(unet_block.Unet):
     """Extended Unet with Lambda Blocks."""
 
     def __init__(
@@ -299,7 +299,7 @@ class LambdaUNet(Unet):
         self.up_conv = nn.ModuleList()
         self.up_transpose_conv = nn.ModuleList()
         for _ in range(num_pool_layers - 1):
-            self.up_transpose_conv.append(TransposeConvBlock(ch * 2, ch))
+            self.up_transpose_conv.append(unet_block.TransposeConvBlock(ch * 2, ch))
             self.up_conv.append(
                 LambdaBlock(
                     ch * 2,
@@ -314,7 +314,7 @@ class LambdaUNet(Unet):
             )
             ch //= 2
 
-        self.up_transpose_conv.append(TransposeConvBlock(ch * 2, ch))
+        self.up_transpose_conv.append(unet_block.TransposeConvBlock(ch * 2, ch))
         self.up_conv.append(
             nn.Sequential(
                 LambdaBlock(

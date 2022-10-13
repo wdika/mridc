@@ -8,9 +8,9 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import OmegaConf
 
+from mridc.collections.common.parts import utils
 from mridc.collections.reconstruction.data.subsample import RandomMaskFunc
 from mridc.collections.reconstruction.models.rvn import RecurrentVarNet
-from mridc.collections.reconstruction.parts import transforms
 from tests.collections.reconstruction.fastmri.conftest import create_input
 
 
@@ -207,7 +207,7 @@ def test_recurrentvarnet(shape, cfg, center_fractions, accelerations, dimensiona
 
     outputs, masks = [], []
     for i in range(x.shape[0]):
-        output, mask, _ = transforms.apply_mask(x[i : i + 1], mask_func, seed=123)
+        output, mask, _ = utils.apply_mask(x[i : i + 1], mask_func, seed=123)
         outputs.append(output)
         masks.append(mask)
 

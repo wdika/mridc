@@ -6,8 +6,8 @@ from typing import Optional
 import torch.nn as nn
 from torch import Tensor
 
-from mridc.collections.reconstruction.models.rim.conv_layers import ConvNonlinear
-from mridc.collections.reconstruction.models.rim.rnn_cells import ConvGRUCell
+import mridc.collections.reconstruction.models.rim.conv_layers as conv_layers
+import mridc.collections.reconstruction.models.rim.rnn_cells as rnn_cells
 
 
 class GRUConv2d(nn.Module):
@@ -50,7 +50,7 @@ class GRUConv2d(nn.Module):
 
         self.layers = nn.ModuleList()
         self.layers.append(
-            ConvGRUCell(
+            rnn_cells.ConvGRUCell(
                 in_channels,
                 hidden_channels,
                 conv_dim=2,
@@ -61,7 +61,7 @@ class GRUConv2d(nn.Module):
         )
         for _ in range(n_convs):
             self.layers.append(
-                ConvNonlinear(
+                conv_layers.ConvNonlinear(
                     hidden_channels,
                     hidden_channels,
                     conv_dim=2,
@@ -73,7 +73,7 @@ class GRUConv2d(nn.Module):
             )
         self.layers.append(
             nn.Sequential(
-                ConvNonlinear(
+                conv_layers.ConvNonlinear(
                     hidden_channels,
                     out_channels,
                     conv_dim=2,

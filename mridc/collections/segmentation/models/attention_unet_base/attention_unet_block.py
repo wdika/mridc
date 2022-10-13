@@ -1,10 +1,10 @@
 # coding=utf-8
-__author__ = "Dimitrios Karkalousos, Lysander de Jong"
+__author__ = "Dimitrios Karkalousos"
 
 import torch
 from torch import nn
 
-from mridc.collections.reconstruction.models.unet_base.unet_block import ConvBlock, TransposeConvBlock
+import mridc.collections.reconstruction.models.unet_base.unet_block as unet_block
 
 
 class AttentionGate(nn.Module):
@@ -80,7 +80,7 @@ class AttentionUnet(nn.Module):
         chans: int = 32,
         num_pool_layers: int = 4,
         drop_prob: float = 0.0,
-        block=ConvBlock,
+        block=unet_block.ConvBlock,
         **kwargs,
     ):
         """
@@ -107,7 +107,7 @@ class AttentionUnet(nn.Module):
         self.num_pool_layers = num_pool_layers
         self.drop_prob = drop_prob
 
-        self.down_sample_layers = nn.ModuleList([ConvBlock(in_chans, chans, drop_prob)])
+        self.down_sample_layers = nn.ModuleList([unet_block.ConvBlock(in_chans, chans, drop_prob)])
         ch = chans
         for _ in range(num_pool_layers - 1):
             self.down_sample_layers.append(block(ch, ch * 2, drop_prob, **kwargs))
@@ -118,15 +118,15 @@ class AttentionUnet(nn.Module):
         self.up_transpose_conv = nn.ModuleList()
         self.up_attention_gates = nn.ModuleList()
         for _ in range(num_pool_layers - 1):
-            self.up_transpose_conv.append(TransposeConvBlock(ch * 2, ch))
-            self.up_conv.append(ConvBlock(ch * 2, ch, drop_prob))
+            self.up_transpose_conv.append(unet_block.TransposeConvBlock(ch * 2, ch))
+            self.up_conv.append(unet_block.ConvBlock(ch * 2, ch, drop_prob))
             self.up_attention_gates.append(AttentionGate(ch, ch * 2, ch))
             ch //= 2
 
-        self.up_transpose_conv.append(TransposeConvBlock(ch * 2, ch))
+        self.up_transpose_conv.append(unet_block.TransposeConvBlock(ch * 2, ch))
         self.up_conv.append(
             nn.Sequential(
-                ConvBlock(ch * 2, ch, drop_prob, **kwargs),
+                unet_block.ConvBlock(ch * 2, ch, drop_prob, **kwargs),
                 nn.Conv2d(ch, self.out_chans, kernel_size=1, stride=1),
             )
         )

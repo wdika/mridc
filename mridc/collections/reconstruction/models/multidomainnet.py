@@ -8,18 +8,17 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
-from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import ifft2
-from mridc.collections.common.parts.utils import coil_combination
-from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel
-from mridc.collections.reconstruction.models.multidomain.multidomain import MultiDomainUnet2d, StandardizationLayer
-from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
-from mridc.core.classes.common import typecheck
+import mridc.collections.common.losses.ssim as losses
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.reconstruction.models.base as base_models
+import mridc.collections.reconstruction.models.multidomain.multidomain as multidomain_
+import mridc.core.classes.common as common_classes
 
 __all__ = ["MultiDomainNet"]
 
 
-class MultiDomainNet(BaseMRIReconstructionModel, ABC):
+class MultiDomainNet(base_models.BaseMRIReconstructionModel, ABC):
     """Feature-level multi-domain module. Inspired by AIRS Medical submission to the FastMRI 2020 challenge."""
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
@@ -35,9 +34,9 @@ class MultiDomainNet(BaseMRIReconstructionModel, ABC):
 
         standardization = cfg_dict["standardization"]
         if standardization:
-            self.standardization = StandardizationLayer(self.coil_dim, -1)
+            self.standardization = multidomain_.StandardizationLayer(self.coil_dim, -1)
 
-        self.unet = MultiDomainUnet2d(
+        self.unet = multidomain_.MultiDomainUnet2d(
             in_channels=4 if standardization else 2,  # if standardization, in_channels is 4 due to standardized input
             out_channels=2,
             num_filters=cfg_dict["num_filters"],
@@ -51,8 +50,8 @@ class MultiDomainNet(BaseMRIReconstructionModel, ABC):
 
         self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
-        self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
+        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
 
         self.accumulate_estimates = False
 
@@ -79,7 +78,7 @@ class MultiDomainNet(BaseMRIReconstructionModel, ABC):
         output = torch.stack(output, dim=self.coil_dim)
         return output
 
-    @typecheck()
+    @common_classes.typecheck()
     def forward(
         self,
         y: torch.Tensor,
@@ -110,7 +109,7 @@ class MultiDomainNet(BaseMRIReconstructionModel, ABC):
              If self.accumulate_loss is True, returns a list of all intermediate estimates.
              If False, returns the final estimate.
         """
-        image = ifft2(
+        image = fft.ifft2(
             y, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
         )
 
@@ -118,9 +117,9 @@ class MultiDomainNet(BaseMRIReconstructionModel, ABC):
             image = self.standardization(image, sensitivity_maps)
 
         output_image = self._compute_model_per_coil(self.unet, image.permute(0, 1, 4, 2, 3)).permute(0, 1, 3, 4, 2)
-        output_image = coil_combination(
+        output_image = utils.coil_combination(
             output_image, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim
         )
         output_image = torch.view_as_complex(output_image)
-        _, output_image = center_crop_to_smallest(target, output_image)
+        _, output_image = utils.center_crop_to_smallest(target, output_image)
         return output_image

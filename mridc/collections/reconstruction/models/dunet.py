@@ -8,26 +8,20 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
-from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import ifft2
-from mridc.collections.common.parts.utils import complex_conj, complex_mul
-from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel
-from mridc.collections.reconstruction.models.didn.didn import DIDN
-from mridc.collections.reconstruction.models.sigmanet.dc_layers import (
-    DataGDLayer,
-    DataIDLayer,
-    DataProxCGLayer,
-    DataVSLayer,
-)
-from mridc.collections.reconstruction.models.sigmanet.sensitivity_net import SensitivityNetwork
-from mridc.collections.reconstruction.models.unet_base.unet_block import NormUnet
-from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
-from mridc.core.classes.common import typecheck
+import mridc.collections.common.losses.ssim as losses
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.reconstruction.models.base as base_models
+import mridc.collections.reconstruction.models.didn.didn as didn_
+import mridc.collections.reconstruction.models.sigmanet.dc_layers as dc_layers
+import mridc.collections.reconstruction.models.sigmanet.sensitivity_net as sensitivity_net
+import mridc.collections.reconstruction.models.unet_base.unet_block as unet_block
+import mridc.core.classes.common as common_classes
 
 __all__ = ["DUNet"]
 
 
-class DUNet(BaseMRIReconstructionModel, ABC):
+class DUNet(base_models.BaseMRIReconstructionModel, ABC):
     """
     Implementation of the Down-Up NET, inspired by Hammernik, K, Schlemper, J, Qin, C, et al.
 
@@ -54,7 +48,7 @@ class DUNet(BaseMRIReconstructionModel, ABC):
 
         reg_model_architecture = cfg_dict.get("reg_model_architecture")
         if reg_model_architecture == "DIDN":
-            reg_model = DIDN(
+            reg_model = didn_.DIDN(
                 in_channels=2,
                 out_channels=2,
                 hidden_channels=cfg_dict.get("didn_hidden_channels"),
@@ -62,7 +56,7 @@ class DUNet(BaseMRIReconstructionModel, ABC):
                 num_convs_recon=cfg_dict.get("didn_num_convs_recon"),
             )
         elif reg_model_architecture in ["UNET", "NORMUNET"]:
-            reg_model = NormUnet(
+            reg_model = unet_block.NormUnet(
                 cfg_dict.get("unet_num_filters"),
                 cfg_dict.get("unet_num_pool_layers"),
                 in_chans=2,
@@ -80,21 +74,21 @@ class DUNet(BaseMRIReconstructionModel, ABC):
         data_consistency_term = cfg_dict.get("data_consistency_term")
 
         if data_consistency_term == "GD":
-            dc_layer = DataGDLayer(
+            dc_layer = dc_layers.DataGDLayer(
                 lambda_init=cfg_dict.get("data_consistency_lambda_init"),
                 fft_centered=self.fft_centered,
                 fft_normalization=self.fft_normalization,
                 spatial_dims=self.spatial_dims,
             )
         elif data_consistency_term == "PROX":
-            dc_layer = DataProxCGLayer(
+            dc_layer = dc_layers.DataProxCGLayer(
                 lambda_init=cfg_dict.get("data_consistency_lambda_init"),
                 fft_centered=self.fft_centered,
                 fft_normalization=self.fft_normalization,
                 spatial_dims=self.spatial_dims,
             )
         elif data_consistency_term == "VS":
-            dc_layer = DataVSLayer(
+            dc_layer = dc_layers.DataVSLayer(
                 alpha_init=cfg_dict.get("data_consistency_alpha_init"),
                 beta_init=cfg_dict.get("data_consistency_beta_init"),
                 fft_centered=self.fft_centered,
@@ -102,9 +96,9 @@ class DUNet(BaseMRIReconstructionModel, ABC):
                 spatial_dims=self.spatial_dims,
             )
         else:
-            dc_layer = DataIDLayer()
+            dc_layer = dc_layers.DataIDLayer()
 
-        self.model = SensitivityNetwork(
+        self.model = sensitivity_net.SensitivityNetwork(
             cfg_dict.get("num_iter"),
             reg_model,
             dc_layer,
@@ -113,13 +107,13 @@ class DUNet(BaseMRIReconstructionModel, ABC):
             reset_cache=False,
         )
 
-        self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
+        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
 
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
         self.accumulate_estimates = False
 
-    @typecheck()
+    @common_classes.typecheck()
     def forward(
         self,
         y: torch.Tensor,
@@ -151,16 +145,16 @@ class DUNet(BaseMRIReconstructionModel, ABC):
              If False, returns the final estimate.
         """
         init_pred = torch.sum(
-            complex_mul(
-                ifft2(
+            utils.complex_mul(
+                fft.ifft2(
                     y, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
                 ),
-                complex_conj(sensitivity_maps),
+                utils.complex_conj(sensitivity_maps),
             ),
             self.coil_dim,
         )
         image = self.model(init_pred, y, sensitivity_maps, mask)
-        image = torch.sum(complex_mul(image, complex_conj(sensitivity_maps)), self.coil_dim)
+        image = torch.sum(utils.complex_mul(image, utils.complex_conj(sensitivity_maps)), self.coil_dim)
         image = torch.view_as_complex(image)
-        _, image = center_crop_to_smallest(target, image)
+        _, image = utils.center_crop_to_smallest(target, image)
         return image

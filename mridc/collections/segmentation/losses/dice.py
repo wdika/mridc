@@ -10,7 +10,7 @@ import torch
 from torch import Tensor
 from torch.nn.modules.loss import _Loss
 
-from mridc.collections.common.parts.utils import is_none
+import mridc.collections.common.parts.utils as utils
 
 
 class Dice(_Loss):
@@ -79,7 +79,7 @@ class Dice(_Loss):
             If False, compute Dice loss for the whole batch and return a tensor with shape (1,).
         """
         super().__init__()
-        other_act = None if is_none(other_act) else other_act
+        other_act = None if utils.is_none(other_act) else other_act
         if other_act is not None and not callable(other_act):
             raise TypeError(f"other_act must be None or callable but is {type(other_act).__name__}.")
         if int(sigmoid) + int(softmax) + int(other_act is not None) > 1:

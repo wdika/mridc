@@ -5,8 +5,8 @@ from typing import List, Sequence, Union
 
 import torch
 
-from mridc.collections.common.parts.fft import fft2, ifft2
-from mridc.collections.common.parts.utils import coil_combination, complex_mul
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
 
 
 class RescaleByMax(object):
@@ -153,7 +153,7 @@ class SignalForwardModel(object):
 
 def expand_op(x, sensitivity_maps):
     """Expand a coil-combined image to multicoil."""
-    x = complex_mul(x, sensitivity_maps)
+    x = utils.complex_mul(x, sensitivity_maps)
     if torch.isnan(x).any():
         x[x != x] = 0
     return x
@@ -229,7 +229,7 @@ def analytical_log_likelihood_gradient(
     S0_map_real = S0_map
     S0_map_imag = phi_map
 
-    pred_kspace = fft2(
+    pred_kspace = fft.fft2(
         expand_op(pred.unsqueeze(coil_dim), sensitivity_maps.unsqueeze(0).unsqueeze(coil_dim - 1)),
         fft_centered,
         fft_normalization,
@@ -237,8 +237,8 @@ def analytical_log_likelihood_gradient(
     )
 
     diff_data = (pred_kspace - masked_kspace) * sampling_mask
-    diff_data_inverse = coil_combination(
-        ifft2(diff_data, fft_centered, fft_normalization, spatial_dims),
+    diff_data_inverse = utils.coil_combination(
+        fft.ifft2(diff_data, fft_centered, fft_normalization, spatial_dims),
         sensitivity_maps.unsqueeze(0).unsqueeze(coil_dim - 1),
         method=coil_combination_method,
         dim=coil_dim,

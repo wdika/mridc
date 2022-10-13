@@ -11,9 +11,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from mridc.collections.common.parts.fft import fft2, ifft2
-from mridc.collections.common.parts.utils import complex_conj, complex_mul
-from mridc.collections.reconstruction.models.recurrentvarnet.conv2gru import Conv2dGRU
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.reconstruction.models.recurrentvarnet.conv2gru as conv2gru
 
 
 class RecurrentInit(nn.Module):
@@ -159,7 +159,7 @@ class RecurrentVarNetBlock(nn.Module):
         self.coil_dim = coil_dim
 
         self.learning_rate = nn.Parameter(torch.tensor([1.0]))  # :math:`\alpha_t`
-        self.regularizer = Conv2dGRU(
+        self.regularizer = conv2gru.Conv2dGRU(
             in_channels=in_channels,
             hidden_channels=hidden_channels,
             num_layers=num_layers,
@@ -205,14 +205,14 @@ class RecurrentVarNetBlock(nn.Module):
 
         recurrent_term = torch.cat(
             [
-                complex_mul(
-                    ifft2(
+                utils.complex_mul(
+                    fft.ifft2(
                         kspace,
                         centered=self.fft_centered,
                         normalization=self.fft_normalization,
                         spatial_dims=self.spatial_dims,
                     ),
-                    complex_conj(sensitivity_map),
+                    utils.complex_conj(sensitivity_map),
                 ).sum(self.coil_dim)
                 for kspace in torch.split(current_kspace, 2, -1)
             ],
@@ -224,8 +224,8 @@ class RecurrentVarNetBlock(nn.Module):
 
         recurrent_term = torch.cat(
             [
-                fft2(
-                    complex_mul(image.unsqueeze(self.coil_dim), sensitivity_map),
+                fft.fft2(
+                    utils.complex_mul(image.unsqueeze(self.coil_dim), sensitivity_map),
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,

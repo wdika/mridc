@@ -8,19 +8,18 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
-from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import ifft2
-from mridc.collections.common.parts.utils import coil_combination
-from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel
-from mridc.collections.reconstruction.models.cascadenet.ccnn_block import CascadeNetBlock
-from mridc.collections.reconstruction.models.conv.conv2d import Conv2d
-from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
-from mridc.core.classes.common import typecheck
+import mridc.collections.common.losses.ssim as losses
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.reconstruction.models.base as models_base
+import mridc.collections.reconstruction.models.cascadenet.ccnn_block as ccnn_block
+import mridc.collections.reconstruction.models.conv.conv2d as conv2d
+import mridc.core.classes.common as common_classes
 
 __all__ = ["CascadeNet"]
 
 
-class CascadeNet(BaseMRIReconstructionModel, ABC):
+class CascadeNet(models_base.BaseMRIReconstructionModel, ABC):
     """
     Implementation of the Deep Cascade of Convolutional Neural Networks, as presented in Schlemper, J., \
     Caballero, J., Hajnal, J. V., Price, A., & Rueckert, D.
@@ -52,8 +51,8 @@ class CascadeNet(BaseMRIReconstructionModel, ABC):
         # Cascades of CascadeCNN blocks
         self.cascades = torch.nn.ModuleList(
             [
-                CascadeNetBlock(
-                    Conv2d(
+                ccnn_block.CascadeNetBlock(
+                    conv2d.Conv2d(
                         in_channels=2,
                         out_channels=2,
                         hidden_channels=cfg_dict.get("hidden_channels"),
@@ -74,13 +73,13 @@ class CascadeNet(BaseMRIReconstructionModel, ABC):
 
         # initialize weights if not using pretrained ccnn
         # TODO if not cfg_dict.get("pretrained", False)
-        self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
+        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
 
         self.accumulate_estimates = False
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
 
-    @typecheck()
+    @common_classes.typecheck()
     def forward(
         self,
         y: torch.Tensor,
@@ -115,8 +114,8 @@ class CascadeNet(BaseMRIReconstructionModel, ABC):
         for cascade in self.cascades:
             pred = cascade(pred, y, sensitivity_maps, mask)
         pred = torch.view_as_complex(
-            coil_combination(
-                ifft2(
+            utils.coil_combination(
+                fft.ifft2(
                     pred,
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
@@ -127,5 +126,5 @@ class CascadeNet(BaseMRIReconstructionModel, ABC):
                 dim=self.coil_dim,
             )
         )
-        _, pred = center_crop_to_smallest(target, pred)
+        _, pred = utils.center_crop_to_smallest(target, pred)
         return pred

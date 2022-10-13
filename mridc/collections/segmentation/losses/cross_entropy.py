@@ -1,5 +1,5 @@
 # coding=utf-8
-__author__ = "Dimitrios Karkalousos, Lysander de Jong"
+__author__ = "Dimitrios Karkalousos"
 
 import torch
 from torch import nn as nn

@@ -1,5 +1,5 @@
 # coding=utf-8
-__author__ = "Dimitrios Karkalousos, Lysander de Jong"
+__author__ = "Dimitrios Karkalousos"
 
 import math
 from abc import ABC
@@ -10,22 +10,21 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-from mridc.collections.common.parts.fft import ifft2
-from mridc.collections.common.parts.rnn_utils import rnn_weights_init
-from mridc.collections.common.parts.utils import coil_combination
-from mridc.collections.reconstruction.models.rim.rim_block import RIMBlock
-from mridc.collections.reconstruction.models.unet_base.unet_block import Unet
-from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
-from mridc.collections.segmentation.models.attention_unet_base.attention_unet_block import AttentionUnet
-from mridc.collections.segmentation.models.base import BaseMRIJointReconstructionSegmentationModel
-from mridc.collections.segmentation.models.lambda_unet_base.lambda_unet_block import LambdaBlock
-from mridc.collections.segmentation.models.vnet_base.vnet_block import VNet
-from mridc.core.classes.common import typecheck
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.rnn_utils as rnn_utils
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.reconstruction.models.rim.rim_block as rim_block
+import mridc.collections.reconstruction.models.unet_base.unet_block as unet_block
+import mridc.collections.segmentation.models.attention_unet_base.attention_unet_block as attention_unet_block
+import mridc.collections.segmentation.models.base as base_segmentation_models
+import mridc.collections.segmentation.models.lambda_unet_base.lambda_unet_block as lambda_unet_block
+import mridc.collections.segmentation.models.vnet_base.vnet_block as vnet_block
+import mridc.core.classes.common as common_classes
 
 __all__ = ["JRSCIRIM"]
 
 
-class JRSCIRIM(BaseMRIJointReconstructionSegmentationModel, ABC):
+class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel, ABC):
     """
     Implementation of the Joint Reconstruction & Segmentation Cascades of Independently Recurrent Inference Machines,
     as presented in [placeholder].
@@ -72,7 +71,7 @@ class JRSCIRIM(BaseMRIJointReconstructionSegmentationModel, ABC):
 
         self.reconstruction_module = torch.nn.ModuleList(
             [
-                RIMBlock(
+                rim_block.RIMBlock(
                     recurrent_layer=cfg_dict.get("reconstruction_module_recurrent_layer"),
                     conv_filters=cfg_dict.get("reconstruction_module_conv_filters"),
                     conv_kernels=cfg_dict.get("reconstruction_module_conv_kernels"),
@@ -103,14 +102,14 @@ class JRSCIRIM(BaseMRIJointReconstructionSegmentationModel, ABC):
         # initialize weights if not using pretrained cirim
         if not cfg_dict.get("pretrained", False):
             std_init_range = 1 / reconstruction_module_recurrent_filters[0] ** 0.5
-            self.reconstruction_module.apply(lambda module: rnn_weights_init(module, std_init_range))
+            self.reconstruction_module.apply(lambda module: rnn_utils.rnn_weights_init(module, std_init_range))
 
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
         self.reconstruction_module_accumulate_estimates = cfg_dict.get("reconstruction_module_accumulate_estimates")
 
         segmentation_module = cfg_dict.get("segmentation_module")
         if segmentation_module.lower() == "unet":
-            self.segmentation_module = Unet(
+            self.segmentation_module = unet_block.Unet(
                 in_chans=self.input_channels,
                 out_chans=cfg_dict.get("segmentation_module_output_channels", 2),
                 chans=cfg_dict.get("segmentation_module_channels", 64),
@@ -118,7 +117,7 @@ class JRSCIRIM(BaseMRIJointReconstructionSegmentationModel, ABC):
                 drop_prob=cfg_dict.get("segmentation_module_dropout", 0.0),
             )
         elif segmentation_module.lower() == "attentionunet":
-            self.segmentation_module = AttentionUnet(
+            self.segmentation_module = attention_unet_block.AttentionUnet(
                 in_chans=self.input_channels,
                 out_chans=cfg_dict.get("segmentation_module_output_channels", 2),
                 chans=cfg_dict.get("segmentation_module_channels", 64),
@@ -126,7 +125,7 @@ class JRSCIRIM(BaseMRIJointReconstructionSegmentationModel, ABC):
                 drop_prob=cfg_dict.get("segmentation_module_dropout", 0.0),
             )
         elif segmentation_module.lower() == "lambdaunet":
-            self.segmentation_module = LambdaBlock(
+            self.segmentation_module = lambda_unet_block.LambdaBlock(
                 in_chans=self.input_channels,
                 out_chans=cfg_dict.get("segmentation_module_output_channels", 2),
                 drop_prob=cfg_dict.get("segmentation_module_dropout", 0.0),
@@ -134,7 +133,7 @@ class JRSCIRIM(BaseMRIJointReconstructionSegmentationModel, ABC):
                 num_slices=self.consecutive_slices,
             )
         elif segmentation_module.lower() == "vnet":
-            self.segmentation_module = VNet(
+            self.segmentation_module = vnet_block.VNet(
                 in_chans=self.input_channels,
                 out_chans=cfg_dict.get("segmentation_module_output_channels", 2),
                 act=cfg_dict.get("segmentation_module_activation", "elu"),
@@ -144,7 +143,7 @@ class JRSCIRIM(BaseMRIJointReconstructionSegmentationModel, ABC):
         else:
             raise ValueError(f"Segmentation module {segmentation_module} not implemented.")
 
-    @typecheck()
+    @common_classes.typecheck()
     def forward(
         self,
         y: torch.Tensor,
@@ -305,14 +304,16 @@ class JRSCIRIM(BaseMRIJointReconstructionSegmentationModel, ABC):
         """
         # Take the last time step of the eta
         if not self.no_dc or do_coil_combination:
-            pred = ifft2(
+            pred = fft.ifft2(
                 pred, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
             )
-            pred = coil_combination(pred, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim)
+            pred = utils.coil_combination(
+                pred, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim
+            )
         pred = torch.view_as_complex(pred)
         if target.shape[-1] == 2:
             target = torch.view_as_complex(target)
-        _, pred = center_crop_to_smallest(target, pred)
+        _, pred = utils.center_crop_to_smallest(target, pred)
         return pred
 
     def process_reconstruction_loss(self, target, pred, _loss_fn=None):

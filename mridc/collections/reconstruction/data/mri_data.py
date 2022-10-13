@@ -16,7 +16,7 @@ import yaml  # type: ignore
 from defusedxml.ElementTree import fromstring
 from torch.utils.data import Dataset
 
-from mridc.collections.common.parts.utils import is_none
+import mridc.collections.common.parts.utils as utils
 
 
 def et_query(root: str, qlist: Sequence[str], namespace: str = "https://www.ismrm.org/ISMRMRD") -> str:
@@ -47,84 +47,7 @@ def et_query(root: str, qlist: Sequence[str], namespace: str = "https://www.ismr
     return str(value.text)  # type: ignore
 
 
-class FastMRICombinedSliceDataset(torch.utils.data.Dataset):
-    """A dataset that combines multiple datasets."""
-
-    def __init__(
-        self,
-        roots: Sequence[Path],
-        challenges: Sequence[str],
-        sense_roots: Optional[Sequence[Path]] = None,
-        transforms: Optional[Sequence[Optional[Callable]]] = None,
-        sample_rates: Optional[Sequence[Optional[float]]] = None,
-        volume_sample_rates: Optional[Sequence[Optional[float]]] = None,
-        use_dataset_cache: bool = False,
-        dataset_cache_file: Union[str, Path, os.PathLike] = "dataset_cache.yaml",
-        num_cols: Optional[Tuple[int]] = None,
-    ):
-        """
-        Parameters
-        ----------
-        roots: Paths to the datasets.
-        challenges: "singlecoil" or "multicoil" depending on which challenge to use.
-        sense_roots: Load pre-computed (stored) sensitivity maps.
-        transforms: Optional; A sequence of callable objects that preprocesses the raw data into appropriate form.
-            The transform function should take 'kspace', 'target', 'attributes', 'filename', and 'slice' as inputs.
-            'target' may be null for test data.
-        sample_rates: Optional; A sequence of floats between 0 and 1. This controls what fraction of the slices
-            should be loaded. When creating subsampled datasets either set sample_rates (sample by slices) or
-            volume_sample_rates (sample by volumes) but not both.
-        volume_sample_rates: Optional; A sequence of floats between 0 and 1. This controls what fraction of the
-            volumes should be loaded. When creating subsampled datasets either set sample_rates (sample by slices)
-            or volume_sample_rates (sample by volumes) but not both.
-        use_dataset_cache: Whether to cache dataset metadata. This is very useful for large datasets like the brain
-            data.
-        dataset_cache_file: Optional; A file in which to cache dataset information for faster load times.
-        num_cols: Optional; If provided, only slices with the desired number of columns will be considered.
-        """
-        if sample_rates is not None and volume_sample_rates is not None:
-            raise ValueError(
-                "either set sample_rates (sample by slices) or volume_sample_rates (sample by volumes) but not both"
-            )
-        if transforms is None:
-            transforms = [None] * len(roots)
-        if sample_rates is None:
-            sample_rates = [None] * len(roots)
-        if volume_sample_rates is None:
-            volume_sample_rates = [None] * len(roots)
-        if not len(roots) == len(transforms) == len(challenges) == len(sample_rates) == len(volume_sample_rates):
-            raise ValueError("Lengths of roots, transforms, challenges, sample_rates do not match")
-
-        self.datasets = []
-        self.examples: List[Tuple[Path, int, Dict[str, object]]] = []
-        for i, _ in enumerate(roots):
-            self.datasets.append(
-                FastMRISliceDataset(
-                    root=roots[i],
-                    transform=transforms[i],
-                    sense_root=sense_roots[i] if sense_roots is not None else None,
-                    challenge=challenges[i],
-                    sample_rate=sample_rates[i],
-                    volume_sample_rate=volume_sample_rates[i],
-                    use_dataset_cache=use_dataset_cache,
-                    dataset_cache_file=dataset_cache_file,
-                    num_cols=num_cols,
-                )
-            )
-
-            self.examples += self.datasets[-1].examples
-
-    def __len__(self):
-        return sum(len(dataset) for dataset in self.datasets)
-
-    def __getitem__(self, i):
-        for dataset in self.datasets:
-            if i < len(dataset):
-                return dataset[i]
-            i = i - len(dataset)
-
-
-class FastMRISliceDataset(Dataset):
+class MRISliceDataset(Dataset):
     """A dataset that loads slices from a single dataset."""
 
     def __init__(
@@ -201,7 +124,7 @@ class FastMRISliceDataset(Dataset):
             files = list(Path(root).iterdir())
             for fname in sorted(files):
                 metadata, num_slices = self._retrieve_metadata(fname)
-                if not is_none(num_slices) and not is_none(consecutive_slices):
+                if not utils.is_none(num_slices) and not utils.is_none(consecutive_slices):
                     num_slices = num_slices - (consecutive_slices - 1)
                 self.examples += [(fname, slice_ind, metadata) for slice_ind in range(num_slices)]
 

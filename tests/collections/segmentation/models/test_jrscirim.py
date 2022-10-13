@@ -6,8 +6,8 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import OmegaConf
 
+from mridc.collections.common.parts import utils
 from mridc.collections.reconstruction.data.subsample import RandomMaskFunc
-from mridc.collections.reconstruction.parts import transforms
 from mridc.collections.segmentation.models.jrscirim import JRSCIRIM
 from tests.collections.reconstruction.fastmri.conftest import create_input
 
@@ -579,7 +579,7 @@ def test_jrscirim(shape, cfg, center_fractions, accelerations, dimensionality, s
 
     outputs, masks = [], []
     for i in range(x.shape[0]):
-        output, mask, _ = transforms.apply_mask(x[i : i + 1], mask_func, seed=123)
+        output, mask, _ = utils.apply_mask(x[i : i + 1], mask_func, seed=123)
         outputs.append(output)
         masks.append(mask)
 

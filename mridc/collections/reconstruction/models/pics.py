@@ -8,12 +8,11 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-from mridc.collections.common.parts.fft import ifft2
-from mridc.collections.common.parts.utils import sense
-from mridc.collections.reconstruction.metrics.evaluate import mse, nmse, psnr, ssim
-from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
-from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
-from mridc.core.classes.common import typecheck
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.reconstruction.metrics.evaluate as metrics
+import mridc.collections.reconstruction.models.base as base_models
+import mridc.core.classes.common as common_classes
 
 try:
     import bart
@@ -24,7 +23,7 @@ except:
 __all__ = ["PICS"]
 
 
-class PICS(BaseMRIReconstructionModel, ABC):
+class PICS(base_models.BaseMRIReconstructionModel, ABC):
     """
     Parallel-Imaging Compressed Sensing (PICS) reconstruction using the BART by Uecker, M. et al.
 
@@ -55,10 +54,10 @@ class PICS(BaseMRIReconstructionModel, ABC):
 
         self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
-        # Initialize the sensitivity network if use_sens_net is True
+        # Initialize the sensitivity network, if we set use_sens_net to True
         self.use_sens_net = cfg_dict.get("use_sens_net")
         if self.use_sens_net:
-            self.sens_net = BaseSensitivityModel(
+            self.sens_net = base_models.BaseSensitivityModel(
                 cfg_dict.get("sens_chans"),
                 cfg_dict.get("sens_pools"),
                 fft_centered=self.fft_centered,
@@ -69,7 +68,7 @@ class PICS(BaseMRIReconstructionModel, ABC):
                 normalize=cfg_dict.get("sens_normalize"),
             )
 
-    @typecheck()
+    @common_classes.typecheck()
     def forward(
         self,
         y: torch.Tensor,
@@ -102,7 +101,7 @@ class PICS(BaseMRIReconstructionModel, ABC):
             pred = bart.bart(1, f"pics -d0 -g -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
         else:
             pred = bart.bart(1, f"pics -d0 -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
-        _, pred = center_crop_to_smallest(target, pred)
+        _, pred = utils.center_crop_to_smallest(target, pred)
         return pred
 
     def test_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Tuple[str, int, torch.Tensor]:
@@ -131,8 +130,8 @@ class PICS(BaseMRIReconstructionModel, ABC):
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, mask)
             if self.coil_combination_method.upper() == "SENSE":
-                target = sense(
-                    ifft2(
+                target = utils.sense(
+                    fft.ifft2(
                         kspace,
                         centered=self.fft_centered,
                         normalization=self.fft_normalization,
@@ -173,13 +172,13 @@ class PICS(BaseMRIReconstructionModel, ABC):
 
         target = target.numpy()  # type: ignore
         output = output.numpy()  # type: ignore
-        self.mse_vals[fname][slice_num] = torch.tensor(mse(target, output)).view(1)
-        self.nmse_vals[fname][slice_num] = torch.tensor(nmse(target, output)).view(1)
-        self.ssim_vals[fname][slice_num] = torch.tensor(ssim(target, output, maxval=output.max() - output.min())).view(
-            1
-        )
-        self.psnr_vals[fname][slice_num] = torch.tensor(psnr(target, output, maxval=output.max() - output.min())).view(
-            1
-        )
+        self.mse_vals[fname][slice_num] = torch.tensor(metrics.mse(target, output)).view(1)
+        self.nmse_vals[fname][slice_num] = torch.tensor(metrics.nmse(target, output)).view(1)
+        self.ssim_vals[fname][slice_num] = torch.tensor(
+            metrics.ssim(target, output, maxval=output.max() - output.min())
+        ).view(1)
+        self.psnr_vals[fname][slice_num] = torch.tensor(
+            metrics.psnr(target, output, maxval=output.max() - output.min())
+        ).view(1)
 
         return name, slice_num, prediction.detach().cpu().numpy()

@@ -5,9 +5,9 @@ from typing import Any, List, Optional, Tuple, Union
 
 import torch
 
-from mridc.collections.quantitative.models.qrim.utils import SignalForwardModel, analytical_log_likelihood_gradient
-from mridc.collections.reconstruction.models.rim.conv_layers import ConvNonlinear, ConvRNNStack
-from mridc.collections.reconstruction.models.rim.rnn_cells import ConvGRUCell, ConvMGUCell, IndRNNCell
+import mridc.collections.quantitative.models.qrim.utils as qrim_utils
+import mridc.collections.reconstruction.models.rim.conv_layers as conv_layers
+import mridc.collections.reconstruction.models.rim.rnn_cells as rnn_cells
 
 
 class qRIMBlock(torch.nn.Module):
@@ -64,7 +64,7 @@ class qRIMBlock(torch.nn.Module):
         super(qRIMBlock, self).__init__()
 
         self.linear_forward_model = (
-            SignalForwardModel(sequence="MEGRE") if linear_forward_model is None else linear_forward_model
+            qrim_utils.SignalForwardModel(sequence="MEGRE") if linear_forward_model is None else linear_forward_model
         )
 
         self.input_size = depth * 4
@@ -87,7 +87,7 @@ class qRIMBlock(torch.nn.Module):
             conv_layer = None
 
             if conv_features != 0:
-                conv_layer = ConvNonlinear(
+                conv_layer = conv_layers.ConvNonlinear(
                     self.input_size,
                     conv_features,
                     conv_dim=conv_dim,
@@ -100,11 +100,11 @@ class qRIMBlock(torch.nn.Module):
 
             if rnn_features != 0 and rnn_type is not None:
                 if rnn_type.upper() == "GRU":
-                    rnn_type = ConvGRUCell
+                    rnn_type = rnn_cells.ConvGRUCell
                 elif rnn_type.upper() == "MGU":
-                    rnn_type = ConvMGUCell
+                    rnn_type = rnn_cells.ConvMGUCell
                 elif rnn_type.upper() == "INDRNN":
-                    rnn_type = IndRNNCell
+                    rnn_type = rnn_cells.IndRNNCell
                 else:
                     raise ValueError("Please specify a proper recurrent layer type.")
 
@@ -119,7 +119,7 @@ class qRIMBlock(torch.nn.Module):
 
                 self.input_size = rnn_features
 
-                self.layers.append(ConvRNNStack(conv_layer, rnn_layer))
+                self.layers.append(conv_layers.ConvRNNStack(conv_layer, rnn_layer))
 
         self.final_layer = torch.nn.Sequential(conv_layer)
 
@@ -204,7 +204,7 @@ class qRIMBlock(torch.nn.Module):
         for _ in range(self.time_steps):
             grad_eta = torch.zeros_like(eta)
             for idx in range(batch_size):
-                idx_grad_eta = analytical_log_likelihood_gradient(
+                idx_grad_eta = qrim_utils.analytical_log_likelihood_gradient(
                     self.linear_forward_model,
                     R2star_map_init[idx],
                     S0_map_init[idx],

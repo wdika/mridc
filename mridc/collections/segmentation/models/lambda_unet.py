@@ -8,15 +8,14 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-from mridc.collections.reconstruction.models.unet_base.unet_block import Unet
-from mridc.collections.segmentation.models.base import BaseMRIJointReconstructionSegmentationModel
-from mridc.collections.segmentation.models.lambda_unet_base.lambda_unet_block import LambdaBlock, LambdaUNet
-from mridc.core.classes.common import typecheck
+import mridc.collections.segmentation.models.base as base_segmentation_models
+import mridc.collections.segmentation.models.lambda_unet_base.lambda_unet_block as lambda_unet_block
+import mridc.core.classes.common as common_classes
 
 __all__ = ["SegmentationLambdaUNet"]
 
 
-class SegmentationLambdaUNet(BaseMRIJointReconstructionSegmentationModel, ABC):
+class SegmentationLambdaUNet(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel, ABC):
     """Implementation of the Lambda UNet, as a module."""
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
@@ -43,7 +42,7 @@ class SegmentationLambdaUNet(BaseMRIJointReconstructionSegmentationModel, ABC):
         self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
         self.magnitude_input = cfg_dict.get("magnitude_input", True)
 
-        self.segmentation_module = LambdaUNet(
+        self.segmentation_module = lambda_unet_block.LambdaUNet(
             in_chans=self.input_channels,
             out_chans=cfg_dict.get("segmentation_module_output_channels", 2),
             chans=cfg_dict.get("segmentation_module_channels", 32),
@@ -56,7 +55,7 @@ class SegmentationLambdaUNet(BaseMRIJointReconstructionSegmentationModel, ABC):
             num_slices=self.consecutive_slices,
         )
 
-    @typecheck()
+    @common_classes.typecheck()
     def forward(
         self,
         y: torch.Tensor,

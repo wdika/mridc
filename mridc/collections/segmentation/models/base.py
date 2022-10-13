@@ -15,22 +15,21 @@ from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 from torch.utils.data import DataLoader
 
-from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import ifft2
-from mridc.collections.common.parts.utils import is_none, sense
-from mridc.collections.reconstruction.data.subsample import create_mask_for_mask_type
-from mridc.collections.reconstruction.metrics.evaluate import mse, nmse, psnr, ssim
-from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, DistributedMetricSum
-from mridc.collections.segmentation.data.mri_data import JRSMRISliceDataset
-from mridc.collections.segmentation.losses.cross_entropy import MC_CrossEntropyLoss
-from mridc.collections.segmentation.losses.dice import Dice
-from mridc.collections.segmentation.parts.transforms import JRSMRIDataTransforms
-from mridc.utils.model_utils import convert_model_config_to_dict_config, maybe_update_config_version
+import mridc.collections.common.losses as reconstruction_losses
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.reconstruction.data.subsample as subsample
+import mridc.collections.reconstruction.metrics.evaluate as evaluation_metrics
+import mridc.collections.reconstruction.models.base as base_reconstruction_models
+import mridc.collections.segmentation.data.mri_data as segmentation_mri_data
+import mridc.collections.segmentation.losses as segmentation_losses
+import mridc.collections.segmentation.parts.transforms as transforms
+import mridc.utils.model_utils as model_utils
 
 __all__ = ["BaseMRIJointReconstructionSegmentationModel"]
 
 
-class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, ABC):
+class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.BaseMRIReconstructionModel, ABC):
     """Base class of all MRI Segmentation and Joint Reconstruction & Segmentation models."""
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
@@ -42,8 +41,8 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
         if trainer is not None:
             self.world_size = trainer.num_nodes * trainer.num_devices
 
-        cfg = convert_model_config_to_dict_config(cfg)
-        cfg = maybe_update_config_version(cfg)
+        cfg = model_utils.convert_model_config_to_dict_config(cfg)
+        cfg = model_utils.maybe_update_config_version(cfg)
 
         # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
@@ -55,11 +54,11 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
 
         if "cross_entropy" in segmentation_loss_fn:
             cross_entropy_loss_weight = cfg_dict.get("cross_entropy_loss_weight", None)
-            if not is_none(cross_entropy_loss_weight):
+            if not utils.is_none(cross_entropy_loss_weight):
                 cross_entropy_loss_weight = torch.tensor(cross_entropy_loss_weight)
             else:
                 cross_entropy_loss_weight = None
-            self.segmentation_loss_fn["cross_entropy"] = MC_CrossEntropyLoss(  # type: ignore
+            self.segmentation_loss_fn["cross_entropy"] = segmentation_losses.cross_entropy.MC_CrossEntropyLoss(  # type: ignore
                 num_samples=cfg_dict.get("cross_entropy_loss_num_samples", 50),
                 ignore_index=cfg_dict.get("cross_entropy_loss_ignore_index", -100),
                 reduction=cfg_dict.get("cross_entropy_loss_reduction", "none"),
@@ -68,7 +67,7 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
             )
             self.cross_entropy_loss_weighting_factor = cfg_dict.get("cross_entropy_loss_weighting_factor", 1.0)
         if "dice" in segmentation_loss_fn:
-            self.segmentation_loss_fn["dice"] = Dice(  # type: ignore
+            self.segmentation_loss_fn["dice"] = segmentation_losses.dice.Dice(  # type: ignore
                 include_background=cfg_dict.get("dice_loss_include_background", False),
                 to_onehot_y=cfg_dict.get("dice_loss_to_onehot_y", False),
                 sigmoid=cfg_dict.get("dice_loss_sigmoid", True),
@@ -87,18 +86,18 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
         self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
 
         cross_entropy_metric_weight = cfg_dict.get("cross_entropy_metric_weight", None)
-        if not is_none(cross_entropy_metric_weight):
+        if not utils.is_none(cross_entropy_metric_weight):
             cross_entropy_metric_weight = torch.tensor(cross_entropy_metric_weight)
         else:
             cross_entropy_metric_weight = None
-        self.cross_entropy_metric = MC_CrossEntropyLoss(  # type: ignore
+        self.cross_entropy_metric = segmentation_losses.cross_entropy.MC_CrossEntropyLoss(  # type: ignore
             num_samples=cfg_dict.get("cross_entropy_metric_num_samples", 50),
             ignore_index=cfg_dict.get("cross_entropy_metric_ignore_index", -100),
             reduction=cfg_dict.get("cross_entropy_metric_reduction", "none"),
             label_smoothing=cfg_dict.get("cross_entropy_metric_label_smoothing", 0.0),
             weight=cross_entropy_metric_weight,
         )
-        self.dice_coefficient_metric = Dice(  # type: ignore
+        self.dice_coefficient_metric = segmentation_losses.dice.Dice(  # type: ignore
             include_background=cfg_dict.get("dice_metric_include_background", False),
             to_onehot_y=cfg_dict.get("dice_metric_to_onehot_y", False),
             sigmoid=cfg_dict.get("dice_metric_sigmoid", False),
@@ -113,18 +112,18 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
             batch=cfg_dict.get("dice_metric_batch", True),
         )
 
-        self.CROSS_ENTROPY = DistributedMetricSum()
+        self.CROSS_ENTROPY = base_reconstruction_models.DistributedMetricSum()
         self.cross_entropy_vals: Dict = defaultdict(dict)
 
-        self.DICE = DistributedMetricSum()
+        self.DICE = base_reconstruction_models.DistributedMetricSum()
         self.dice_vals: Dict = defaultdict(dict)
 
         self.use_reconstruction_module = cfg_dict.get("use_reconstruction_module")
         if self.use_reconstruction_module:
             reconstruction_loss_fn = cfg_dict.get("reconstruction_loss_fn")
             if reconstruction_loss_fn == "ssim":
-                self.train_loss_fn = SSIMLoss()
-                self.val_loss_fn = SSIMLoss()
+                self.train_loss_fn = reconstruction_losses.ssim.SSIMLoss()
+                self.val_loss_fn = reconstruction_losses.ssim.SSIMLoss()
             elif reconstruction_loss_fn == "l1":
                 self.train_loss_fn = L1Loss()
                 self.val_loss_fn = L1Loss()
@@ -205,17 +204,14 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
             torch.Tensor, shape [batch_size, nr_classes, n_x, n_y]
         """
         loss_dict = {"cross_entropy_loss": 0.0, "dice_loss": 0.0}
-        num_losses = 0
         if self.segmentation_loss_fn["cross_entropy"] is not None:
             loss_dict["cross_entropy_loss"] = (
                 self.segmentation_loss_fn["cross_entropy"].cpu()(target.argmax(1).detach().cpu(), pred.detach().cpu())
                 * self.cross_entropy_loss_weighting_factor
             )
-            num_losses += 1
         if self.segmentation_loss_fn["dice"] is not None:
             _, loss_dict["dice_loss"] = self.segmentation_loss_fn["dice"](target, pred)
             loss_dict["dice_loss"] = loss_dict["dice_loss"] * self.dice_loss_weighting_factor
-            num_losses += 1
         loss_dict["segmentation_loss"] = loss_dict["cross_entropy_loss"] + loss_dict["dice_loss"]
         return loss_dict
 
@@ -280,8 +276,8 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
             sensitivity_maps = self.sens_net(kspace, mask)
 
             if self.coil_combination_method == "SENSE":
-                init_reconstruction_pred = sense(
-                    ifft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims),
+                init_reconstruction_pred = utils.sense(
+                    fft.ifft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims),
                     sensitivity_maps,
                     self.coil_dim,
                 )
@@ -380,8 +376,8 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
             sensitivity_maps = self.sens_net(kspace, mask)
 
             if self.coil_combination_method == "SENSE":
-                init_reconstruction_pred = sense(
-                    ifft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims),
+                init_reconstruction_pred = utils.sense(
+                    fft.ifft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims),
                     sensitivity_maps,
                     self.coil_dim,
                 )
@@ -441,20 +437,20 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
             target_reconstruction = target_reconstruction.numpy()  # type: ignore
             output_reconstruction = output_reconstruction.numpy()
             self.mse_vals_reconstruction[fname][slice_idx] = torch.tensor(
-                mse(target_reconstruction, output_reconstruction)
+                evaluation_metrics.mse(target_reconstruction, output_reconstruction)
             ).view(1)
             self.nmse_vals_reconstruction[fname][slice_idx] = torch.tensor(
-                nmse(target_reconstruction, output_reconstruction)
+                evaluation_metrics.nmse(target_reconstruction, output_reconstruction)
             ).view(1)
             self.ssim_vals_reconstruction[fname][slice_idx] = torch.tensor(
-                ssim(
+                evaluation_metrics.ssim(
                     target_reconstruction,
                     output_reconstruction,
                     maxval=output_reconstruction.max() - output_reconstruction.min(),
                 )
             ).view(1)
             self.psnr_vals_reconstruction[fname][slice_idx] = torch.tensor(
-                psnr(
+                evaluation_metrics.psnr(
                     target_reconstruction,
                     output_reconstruction,
                     maxval=output_reconstruction.max() - output_reconstruction.min(),
@@ -466,6 +462,7 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
         for class_idx in range(target_segmentation.shape[1]):  # type: ignore
             target_segmentation_class = target_segmentation[:, class_idx]  # type: ignore
             target_segmentation_class = target_segmentation_class / torch.max(torch.abs(target_segmentation_class))
+
             output_segmentation_class = pred_segmentation[:, class_idx]
             output_segmentation_class = output_segmentation_class / torch.max(torch.abs(output_segmentation_class))
 
@@ -551,8 +548,8 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
             sensitivity_maps = self.sens_net(kspace, mask)
 
             if self.coil_combination_method == "SENSE":
-                init_reconstruction_pred = sense(
-                    ifft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims),
+                init_reconstruction_pred = utils.sense(
+                    fft.ifft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims),
                     sensitivity_maps,
                     self.coil_dim,
                 )
@@ -596,20 +593,20 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
             target_reconstruction = target_reconstruction.numpy()  # type: ignore
             output_reconstruction = output_reconstruction.numpy()
             self.mse_vals_reconstruction[fname][slice_idx] = torch.tensor(
-                mse(target_reconstruction, output_reconstruction)
+                evaluation_metrics.mse(target_reconstruction, output_reconstruction)
             ).view(1)
             self.nmse_vals_reconstruction[fname][slice_idx] = torch.tensor(
-                nmse(target_reconstruction, output_reconstruction)
+                evaluation_metrics.nmse(target_reconstruction, output_reconstruction)
             ).view(1)
             self.ssim_vals_reconstruction[fname][slice_idx] = torch.tensor(
-                ssim(
+                evaluation_metrics.ssim(
                     target_reconstruction,
                     output_reconstruction,
                     maxval=output_reconstruction.max() - output_reconstruction.min(),
                 )
             ).view(1)
             self.psnr_vals_reconstruction[fname][slice_idx] = torch.tensor(
-                psnr(
+                evaluation_metrics.psnr(
                     target_reconstruction,
                     output_reconstruction,
                     maxval=output_reconstruction.max() - output_reconstruction.min(),
@@ -619,8 +616,10 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
         for class_idx in range(target_segmentation.shape[1]):  # type: ignore
             target_segmentation_class = target_segmentation[:, class_idx]  # type: ignore
             target_segmentation_class = target_segmentation_class / torch.max(torch.abs(target_segmentation_class))
+
             output_segmentation_class = pred_segmentation[:, class_idx]
             output_segmentation_class = output_segmentation_class / torch.max(torch.abs(output_segmentation_class))
+
             self.log_image(
                 f"{key}/segmentation_classes/target_class_{class_idx}",
                 target_segmentation_class,  # type: ignore
@@ -868,23 +867,23 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
         mask_func = None  # type: ignore
         mask_center_scale = 0.02
 
-        if is_none(mask_root) and not is_none(mask_type):
+        if utils.is_none(mask_root) and not utils.is_none(mask_type):
             accelerations = mask_args.get("accelerations")
             center_fractions = mask_args.get("center_fractions")
             mask_center_scale = mask_args.get("scale")
 
             mask_func = (
                 [
-                    create_mask_for_mask_type(mask_type, [cf] * 2, [acc] * 2)
+                    subsample.create_mask_for_mask_type(mask_type, [cf] * 2, [acc] * 2)
                     for acc, cf in zip(accelerations, center_fractions)
                 ]
                 if len(accelerations) >= 2
-                else [create_mask_for_mask_type(mask_type, center_fractions, accelerations)]
+                else [subsample.create_mask_for_mask_type(mask_type, center_fractions, accelerations)]
             )
 
         complex_data = cfg.get("complex_data", True)
 
-        dataset = JRSMRISliceDataset(
+        dataset = segmentation_mri_data.JRSMRISliceDataset(
             root=cfg.get("data_path"),
             sense_root=cfg.get("sense_path"),
             mask_root=cfg.get("mask_path"),
@@ -901,7 +900,7 @@ class BaseMRIJointReconstructionSegmentationModel(BaseMRIReconstructionModel, AB
             segmentation_classes_to_separate=cfg.get("segmentation_classes_to_separate", None),
             complex_data=complex_data,
             data_saved_per_slice=cfg.get("data_saved_per_slice", False),
-            transform=JRSMRIDataTransforms(
+            transform=transforms.JRSMRIDataTransforms(
                 complex_data=complex_data,
                 apply_prewhitening=cfg.get("apply_prewhitening", False),
                 prewhitening_scale_factor=cfg.get("prewhitening_scale_factor", 1.0),

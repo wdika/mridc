@@ -10,11 +10,10 @@ from skimage.restoration import unwrap_phase
 from torch import Tensor
 from torch.nn import functional as F
 
-from mridc.collections.common.parts.fft import fft2, ifft2
-from mridc.collections.common.parts.utils import is_none, rss, sense, to_tensor
-from mridc.collections.reconstruction.data.subsample import MaskFunc
-from mridc.collections.reconstruction.parts.transforms import GeometricDecompositionCoilCompression, NoisePreWhitening
-from mridc.collections.reconstruction.parts.utils import apply_mask, center_crop, complex_center_crop
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.reconstruction.data.subsample as subsample
+import mridc.collections.reconstruction.parts.transforms as reconstruction_transforms
 
 __all__ = ["qMRIDataTransforms"]
 
@@ -36,7 +35,7 @@ class qMRIDataTransforms:
         gcc_align_data: bool = True,
         coil_combination_method: str = "SENSE",
         dimensionality: int = 2,
-        mask_func: Optional[List[MaskFunc]] = None,
+        mask_func: Optional[List[subsample.MaskFunc]] = None,
         shift_mask: bool = False,
         mask_center_scale: Optional[float] = 0.02,
         half_scan_percentage: float = 0.0,
@@ -84,7 +83,7 @@ class qMRIDataTransforms:
         dimensionality: Dimensionality.
             int
         mask_func: Mask function.
-            List[MaskFunc]
+            List[subsample.MaskFunc]
         shift_mask: Shift mask.
             bool
         mask_center_scale: Mask center scale.
@@ -145,7 +144,7 @@ class qMRIDataTransforms:
 
         self.apply_prewhitening = apply_prewhitening
         self.prewhitening = (
-            NoisePreWhitening(
+            reconstruction_transforms.NoisePreWhitening(
                 patch_size=[
                     prewhitening_patch_start,
                     prewhitening_patch_length + prewhitening_patch_start,
@@ -159,7 +158,7 @@ class qMRIDataTransforms:
         )
 
         self.gcc = (
-            GeometricDecompositionCoilCompression(
+            reconstruction_transforms.GeometricDecompositionCoilCompression(
                 virtual_coils=gcc_virtual_coils,
                 calib_lines=gcc_calib_lines,
                 align_data=gcc_align_data,
@@ -224,11 +223,11 @@ class qMRIDataTransforms:
         -------
         The transformed data.
         """
-        kspace = to_tensor(kspace)
+        kspace = utils.to_tensor(kspace)
 
         # This condition is necessary in case of auto estimation of sense maps.
         if sensitivity_map is not None and sensitivity_map.size != 0:
-            sensitivity_map = to_tensor(sensitivity_map)
+            sensitivity_map = utils.to_tensor(sensitivity_map)
 
         mask_head = mask[2]
         mask_brain = mask[1]
@@ -253,9 +252,9 @@ class qMRIDataTransforms:
         if self.gcc is not None:
             kspace = torch.stack([self.gcc(kspace[echo]) for echo in range(kspace.shape[0])], dim=0)
             if isinstance(sensitivity_map, torch.Tensor):
-                sensitivity_map = ifft2(
+                sensitivity_map = fft.ifft2(
                     self.gcc(
-                        fft2(
+                        fft.fft2(
                             sensitivity_map,
                             centered=self.fft_centered,
                             normalization=self.fft_normalization,
@@ -280,7 +279,7 @@ class qMRIDataTransforms:
             )
             kspace = torch.view_as_real(kspace)
 
-            sensitivity_map = fft2(
+            sensitivity_map = fft.fft2(
                 sensitivity_map,
                 centered=self.fft_centered,
                 normalization=self.fft_normalization,
@@ -294,7 +293,7 @@ class qMRIDataTransforms:
                 value=0,
             )
             sensitivity_map = torch.view_as_real(sensitivity_map)
-            sensitivity_map = ifft2(
+            sensitivity_map = fft.ifft2(
                 sensitivity_map,
                 centered=self.fft_centered,
                 normalization=self.fft_normalization,
@@ -302,12 +301,12 @@ class qMRIDataTransforms:
             )
 
         # Initial estimation
-        eta = to_tensor(eta) if eta is not None and eta.size != 0 else torch.tensor([])
+        eta = utils.to_tensor(eta) if eta is not None and eta.size != 0 else torch.tensor([])
 
         # If the target is not given, we need to compute it.
         if self.coil_combination_method.upper() == "RSS":
-            target = rss(
-                ifft2(
+            target = utils.rss(
+                fft.ifft2(
                     kspace,
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
@@ -317,8 +316,8 @@ class qMRIDataTransforms:
             )
         elif self.coil_combination_method.upper() == "SENSE":
             if sensitivity_map is not None and sensitivity_map.size != 0:
-                target = sense(
-                    ifft2(
+                target = utils.sense(
+                    fft.ifft2(
                         kspace,
                         centered=self.fft_centered,
                         normalization=self.fft_normalization,
@@ -328,7 +327,7 @@ class qMRIDataTransforms:
                     dim=self.coil_dim,
                 )
         elif target is not None and target.size != 0:
-            target = to_tensor(target)
+            target = utils.to_tensor(target)
         elif "target" in attrs or "target_rss" in attrs:
             target = torch.tensor(attrs["target"])
         else:
@@ -357,13 +356,13 @@ class qMRIDataTransforms:
 
             self.crop_size = (int(h), int(w))
 
-            target = center_crop(target, self.crop_size)
+            target = utils.center_crop(target, self.crop_size)
 
             if sensitivity_map is not None and sensitivity_map.size != 0:
                 sensitivity_map = (
-                    ifft2(
-                        complex_center_crop(
-                            fft2(
+                    fft.ifft2(
+                        utils.complex_center_crop(
+                            fft.fft2(
                                 sensitivity_map,
                                 centered=self.fft_centered,
                                 normalization=self.fft_normalization,
@@ -376,14 +375,14 @@ class qMRIDataTransforms:
                         spatial_dims=self.spatial_dims,
                     )
                     if self.kspace_crop
-                    else complex_center_crop(sensitivity_map, self.crop_size)
+                    else utils.complex_center_crop(sensitivity_map, self.crop_size)
                 )
 
             if eta is not None and eta.ndim > 2:
                 eta = (
-                    ifft2(
-                        complex_center_crop(
-                            fft2(
+                    fft.ifft2(
+                        utils.complex_center_crop(
+                            fft.fft2(
                                 eta,
                                 centered=self.fft_centered,
                                 normalization=self.fft_normalization,
@@ -396,20 +395,20 @@ class qMRIDataTransforms:
                         spatial_dims=self.spatial_dims,
                     )
                     if self.kspace_crop
-                    else complex_center_crop(eta, self.crop_size)
+                    else utils.complex_center_crop(eta, self.crop_size)
                 )
 
             if mask_brain.dim() != 0:
-                mask_brain = center_crop(mask_brain, self.crop_size)
+                mask_brain = utils.center_crop(mask_brain, self.crop_size)
 
         # Cropping before masking will maintain the shape of original kspace intact for masking.
         if self.crop_size is not None and self.crop_size not in ("", "None") and self.crop_before_masking:
             kspace = (
-                complex_center_crop(kspace, self.crop_size)
+                utils.complex_center_crop(kspace, self.crop_size)
                 if self.kspace_crop
-                else fft2(
-                    complex_center_crop(
-                        ifft2(
+                else fft.fft2(
+                    utils.complex_center_crop(
+                        fft.ifft2(
                             kspace,
                             centered=self.fft_centered,
                             normalization=self.fft_normalization,
@@ -423,7 +422,7 @@ class qMRIDataTransforms:
                 )
             )
 
-        if is_none(self.mask_func):
+        if utils.is_none(self.mask_func):
             masked_kspace = kspace.clone()
             acc = torch.tensor([1])
 
@@ -447,7 +446,7 @@ class qMRIDataTransforms:
             else:  # 2D mask
                 # Crop loaded mask.
                 if self.crop_size is not None and self.crop_size not in ("", "None"):
-                    mask = center_crop(mask, self.crop_size)
+                    mask = utils.center_crop(mask, self.crop_size)
                 mask = mask.unsqueeze(0).unsqueeze(-1)
 
             if self.shift_mask:
@@ -461,7 +460,7 @@ class qMRIDataTransforms:
             accs = []
             for m in self.mask_func:
                 if self.dimensionality == 2:
-                    _masked_kspace, _mask, _acc = apply_mask(
+                    _masked_kspace, _mask, _acc = utils.apply_mask(
                         kspace,
                         m,
                         seed,
@@ -474,7 +473,7 @@ class qMRIDataTransforms:
                     _masked_kspace = []
                     _mask = None
                     for i in range(kspace.shape[0]):
-                        _i_masked_kspace, _i_mask, _i_acc = apply_mask(
+                        _i_masked_kspace, _i_mask, _i_acc = utils.apply_mask(
                             kspace[i],
                             m,
                             seed,
@@ -507,7 +506,7 @@ class qMRIDataTransforms:
                     _mask = _mask.unsqueeze(0).unsqueeze(-1)
 
                 padding = (acq_start, acq_end)
-                if (not is_none(padding[0]) and not is_none(padding[1])) and padding[0] != 0:
+                if (not utils.is_none(padding[0]) and not utils.is_none(padding[1])) and padding[0] != 0:
                     _mask[:, :, : padding[0]] = 0
                     _mask[:, :, padding[1] :] = 0  # padding value inclusive on right of zeros
 
@@ -518,21 +517,21 @@ class qMRIDataTransforms:
                     _mask = torch.fft.fftshift(_mask, dim=(self.spatial_dims[0] - 1, self.spatial_dims[1] - 1))
 
                 if self.crop_size is not None and self.crop_size not in ("", "None") and self.crop_before_masking:
-                    _mask = complex_center_crop(_mask, self.crop_size)
+                    _mask = utils.complex_center_crop(_mask, self.crop_size)
 
                 masked_kspaces.append(kspace * _mask + 0.0)
                 masks.append(_mask)
             masked_kspace = masked_kspaces
             mask = masks
             acc = 1
-        elif not is_none(mask) and mask.ndim != 0:  # and not is_none(self.mask_func):
+        elif not utils.is_none(mask) and mask.ndim != 0:  # and not is_none(self.mask_func):
             for _mask in mask:
                 if list(_mask.shape) == [kspace.shape[-3], kspace.shape[-2]]:
                     mask = torch.from_numpy(_mask).unsqueeze(0).unsqueeze(-1)
                     break
 
             padding = (acq_start, acq_end)
-            if (not is_none(padding[0]) and not is_none(padding[1])) and padding[0] != 0:
+            if (not utils.is_none(padding[0]) and not utils.is_none(padding[1])) and padding[0] != 0:
                 mask[:, :, : padding[0]] = 0
                 mask[:, :, padding[1] :] = 0  # padding value inclusive on right of zeros
 
@@ -543,13 +542,13 @@ class qMRIDataTransforms:
                 mask = torch.fft.fftshift(mask, dim=(self.spatial_dims[0] - 1, self.spatial_dims[1] - 1))
 
             if self.crop_size is not None and self.crop_size not in ("", "None") and self.crop_before_masking:
-                mask = complex_center_crop(mask, self.crop_size)
+                mask = utils.complex_center_crop(mask, self.crop_size)
 
             masked_kspace = kspace * mask + 0.0  # the + 0.0 removes the sign of the zeros
 
             acc = 1
         else:
-            masked_kspace, mask, acc = apply_mask(
+            masked_kspace, mask, acc = utils.apply_mask(
                 kspace,
                 self.mask_func[0],  # type: ignore
                 seed,
@@ -563,11 +562,11 @@ class qMRIDataTransforms:
         # Cropping after masking.
         if self.crop_size is not None and self.crop_size not in ("", "None") and not self.crop_before_masking:
             kspace = (
-                complex_center_crop(kspace, self.crop_size)
+                utils.complex_center_crop(kspace, self.crop_size)
                 if self.kspace_crop
-                else fft2(
-                    complex_center_crop(
-                        ifft2(
+                else fft.fft2(
+                    utils.complex_center_crop(
+                        fft.ifft2(
                             kspace,
                             centered=self.fft_centered,
                             normalization=self.fft_normalization,
@@ -582,11 +581,11 @@ class qMRIDataTransforms:
             )
 
             masked_kspace = (
-                complex_center_crop(masked_kspace, self.crop_size)
+                utils.complex_center_crop(masked_kspace, self.crop_size)
                 if self.kspace_crop
-                else fft2(
-                    complex_center_crop(
-                        ifft2(
+                else fft.fft2(
+                    utils.complex_center_crop(
+                        fft.ifft2(
                             masked_kspace,
                             centered=self.fft_centered,
                             normalization=self.fft_normalization,
@@ -600,7 +599,7 @@ class qMRIDataTransforms:
                 )
             )
 
-            mask = center_crop(mask.squeeze(-1), self.crop_size).unsqueeze(-1)
+            mask = utils.center_crop(mask.squeeze(-1), self.crop_size).unsqueeze(-1)
 
         mask_head = torch.ones_like(mask_brain)
 
@@ -611,8 +610,8 @@ class qMRIDataTransforms:
             phi_maps_init = []
             etas = []
             for y in masked_kspace:
-                eta = sense(
-                    ifft2(
+                eta = utils.sense(
+                    fft.ifft2(
                         y,
                         centered=self.fft_centered,
                         normalization=self.fft_normalization,
@@ -647,8 +646,8 @@ class qMRIDataTransforms:
 
             mask_brain_tmp = torch.ones_like(torch.abs(mask_brain))
             mask_brain_tmp = mask_brain_tmp.unsqueeze(0) if mask_brain.dim() == 2 else mask_brain_tmp
-            imspace = sense(
-                ifft2(
+            imspace = utils.sense(
+                fft.ifft2(
                     kspace,
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
@@ -699,7 +698,7 @@ class qMRIDataTransforms:
         if self.normalize_inputs:
             if isinstance(self.mask_func, list):
                 if self.fft_normalization in ("backward", "ortho", "forward"):
-                    imspace = ifft2(
+                    imspace = fft.ifft2(
                         kspace,
                         centered=self.fft_centered,
                         normalization=self.fft_normalization,
@@ -707,7 +706,7 @@ class qMRIDataTransforms:
                     )
                     if self.max_norm:
                         imspace = imspace / torch.max(torch.abs(imspace))
-                    kspace = fft2(
+                    kspace = fft.fft2(
                         imspace,
                         centered=self.fft_centered,
                         normalization=self.fft_normalization,
@@ -721,7 +720,7 @@ class qMRIDataTransforms:
                 masked_kspaces = []
                 for y in masked_kspace:
                     if self.fft_normalization in ("backward", "ortho", "forward"):
-                        imspace = ifft2(
+                        imspace = fft.ifft2(
                             y,
                             centered=self.fft_centered,
                             normalization=self.fft_normalization,
@@ -729,7 +728,7 @@ class qMRIDataTransforms:
                         )
                         if self.max_norm:
                             imspace = imspace / torch.max(torch.abs(imspace))
-                        y = fft2(
+                        y = fft.fft2(
                             imspace,
                             centered=self.fft_centered,
                             normalization=self.fft_normalization,
@@ -742,7 +741,7 @@ class qMRIDataTransforms:
                     masked_kspaces.append(y)
                 masked_kspace = masked_kspaces
             elif self.fft_normalization in ("backward", "ortho", "forward"):
-                imspace = ifft2(
+                imspace = fft.ifft2(
                     kspace,
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
@@ -750,13 +749,13 @@ class qMRIDataTransforms:
                 )
                 if self.max_norm:
                     imspace = imspace / torch.max(torch.abs(imspace))
-                kspace = fft2(
+                kspace = fft.fft2(
                     imspace,
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,
                 )
-                imspace = ifft2(
+                imspace = fft.ifft2(
                     masked_kspace,
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
@@ -764,7 +763,7 @@ class qMRIDataTransforms:
                 )
                 if self.max_norm:
                     imspace = imspace / torch.max(torch.abs(imspace))
-                masked_kspace = fft2(
+                masked_kspace = fft.fft2(
                     imspace,
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
@@ -907,9 +906,9 @@ class GaussianSmoothing(torch.nn.Module):
         """
         if self.shift:
             input = input.permute(0, 2, 3, 1)
-            input = ifft2(
+            input = fft.ifft2(
                 torch.fft.fftshift(
-                    fft2(
+                    fft.fft2(
                         torch.view_as_real(input[..., 0] + 1j * input[..., 1]),
                         self.fft_centered,
                         self.fft_normalization,
@@ -925,9 +924,9 @@ class GaussianSmoothing(torch.nn.Module):
 
         if self.shift:
             x = x.permute(0, 2, 3, 1)
-            x = ifft2(
+            x = fft.ifft2(
                 torch.fft.fftshift(
-                    fft2(
+                    fft.fft2(
                         torch.view_as_real(x[..., 0] + 1j * x[..., 1]),
                         self.fft_centered,
                         self.fft_normalization,
@@ -1158,8 +1157,8 @@ def B0_phi_mapping(
     prediction = prediction.permute([0, 1, 3, 4, 2]).squeeze(1)
 
     if shift:
-        prediction = ifft2(
-            torch.fft.fftshift(fft2(prediction, fft_centered, fft_normalization, spatial_dims), dim=(1, 2)),
+        prediction = fft.ifft2(
+            torch.fft.fftshift(fft.fft2(prediction, fft_centered, fft_normalization, spatial_dims), dim=(1, 2)),
             fft_centered,
             fft_normalization,
             spatial_dims,
@@ -1274,8 +1273,8 @@ def S0_mapping_complex(
     S0_map = torch.view_as_real(S0_map.reshape(prediction.shape[1:]))
 
     if shift:
-        S0_map = ifft2(
-            torch.fft.fftshift(fft2(S0_map, fft_centered, fft_normalization, spatial_dims), dim=(0, 1)),
+        S0_map = fft.ifft2(
+            torch.fft.fftshift(fft.fft2(S0_map, fft_centered, fft_normalization, spatial_dims), dim=(0, 1)),
             fft_centered,
             fft_normalization,
             spatial_dims,

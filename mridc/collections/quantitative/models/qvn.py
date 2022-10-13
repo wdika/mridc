@@ -9,20 +9,20 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch import Tensor
 
-from mridc.collections.common.parts.fft import fft2, ifft2
-from mridc.collections.common.parts.utils import coil_combination, complex_mul
-from mridc.collections.quantitative.models.base import BaseqMRIReconstructionModel
-from mridc.collections.quantitative.models.qrim.utils import RescaleByMax, SignalForwardModel
-from mridc.collections.quantitative.models.qvarnet.qvn_block import qVarNetBlock
-from mridc.collections.quantitative.parts.transforms import R2star_B0_real_S0_complex_mapping
-from mridc.collections.reconstruction.models.unet_base.unet_block import NormUnet
-from mridc.collections.reconstruction.models.varnet.vn_block import VarNetBlock
-from mridc.core.classes.common import typecheck
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.rnn_utils as rnn_utils
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.quantitative.models.base as base_quantitative_models
+import mridc.collections.quantitative.models.qrim.utils as qrim_utils
+import mridc.collections.quantitative.models.qvarnet.qvn_block as qvn_block
+import mridc.collections.quantitative.parts.transforms as transforms
+import mridc.collections.reconstruction.models.unet_base.unet_block as unet_block
+import mridc.core.classes.common as common_classes
 
 __all__ = ["qVarNet"]
 
 
-class qVarNet(BaseqMRIReconstructionModel, ABC):
+class qVarNet(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
     """
     Implementation of the quantitative End-to-end Variational Network (qVN), as presented in Zhang, C. et al.
 
@@ -63,8 +63,8 @@ class qVarNet(BaseqMRIReconstructionModel, ABC):
 
             for _ in range(self.reconstruction_module_num_cascades):
                 self.vn.append(
-                    VarNetBlock(
-                        NormUnet(
+                    qvn_block.qVarNetBlock(
+                        unet_block.NormUnet(
                             chans=cfg_dict.get("reconstruction_module_channels"),
                             num_pools=cfg_dict.get("reconstruction_module_pooling_layers"),
                             in_chans=cfg_dict.get("reconstruction_module_in_channels"),
@@ -88,8 +88,8 @@ class qVarNet(BaseqMRIReconstructionModel, ABC):
         quantitative_module_num_cascades = cfg_dict.get("quantitative_module_num_cascades")
         self.qvn = torch.nn.ModuleList(
             [
-                qVarNetBlock(
-                    NormUnet(
+                qvn_block.qVarNetBlock(
+                    unet_block.NormUnet(
                         chans=cfg_dict.get("quantitative_module_channels"),
                         num_pools=cfg_dict.get("quantitative_module_pooling_layers"),
                         in_chans=cfg_dict.get("quantitative_module_in_channels"),
@@ -102,7 +102,7 @@ class qVarNet(BaseqMRIReconstructionModel, ABC):
                     spatial_dims=self.spatial_dims,
                     coil_dim=self.coil_dim,
                     no_dc=cfg_dict.get("quantitative_module_no_dc"),
-                    linear_forward_model=SignalForwardModel(
+                    linear_forward_model=qrim_utils.SignalForwardModel(
                         sequence=cfg_dict.get("quantitative_module_signal_forward_model_sequence")
                     ),
                 )
@@ -113,9 +113,9 @@ class qVarNet(BaseqMRIReconstructionModel, ABC):
         self.accumulate_estimates = cfg_dict.get("quantitative_module_accumulate_estimates")
 
         self.gamma = torch.tensor(cfg_dict.get("quantitative_module_gamma_regularization_factors"))
-        self.preprocessor = RescaleByMax
+        self.preprocessor = qrim_utils.RescaleByMax
 
-    @typecheck()
+    @common_classes.typecheck()
     def forward(
         self,
         R2star_map_init: torch.Tensor,
@@ -166,13 +166,13 @@ class qVarNet(BaseqMRIReconstructionModel, ABC):
                 for cascade in self.vn:
                     # Forward pass through the cascades
                     prediction = cascade(prediction, y[:, echo, ...], sensitivity_maps, sampling_mask.squeeze(1))
-                estimation = ifft2(
+                estimation = fft.ifft2(
                     prediction,
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,
                 )
-                estimation = coil_combination(
+                estimation = utils.coil_combination(
                     estimation, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim - 1
                 )
                 cascades_echoes_etas.append(torch.view_as_complex(estimation))
@@ -180,8 +180,8 @@ class qVarNet(BaseqMRIReconstructionModel, ABC):
             eta = torch.stack(cascades_echoes_etas, dim=1)
             if eta.shape[-1] != 2:
                 eta = torch.view_as_real(eta)
-            y = fft2(
-                complex_mul(eta.unsqueeze(self.coil_dim), sensitivity_maps.unsqueeze(self.coil_dim - 1)),
+            y = fft.fft2(
+                utils.complex_mul(eta.unsqueeze(self.coil_dim), sensitivity_maps.unsqueeze(self.coil_dim - 1)),
                 self.fft_centered,
                 self.fft_normalization,
                 self.spatial_dims,
@@ -193,7 +193,7 @@ class qVarNet(BaseqMRIReconstructionModel, ABC):
             B0_maps_init = []
             phi_maps_init = []
             for batch_idx in range(eta.shape[0]):
-                R2star_map_init, S0_map_init, B0_map_init, phi_map_init = R2star_B0_real_S0_complex_mapping(
+                R2star_map_init, S0_map_init, B0_map_init, phi_map_init = transforms.R2star_B0_real_S0_complex_mapping(
                     eta[batch_idx],
                     TEs,
                     mask_brain,

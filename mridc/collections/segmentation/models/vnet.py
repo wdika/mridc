@@ -8,15 +8,14 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-from mridc.collections.reconstruction.models.unet_base.unet_block import Unet
-from mridc.collections.segmentation.models.base import BaseMRIJointReconstructionSegmentationModel
-from mridc.collections.segmentation.models.vnet_base.vnet_block import VNet
-from mridc.core.classes.common import typecheck
+import mridc.collections.segmentation.models.base as base_segmentation_models
+import mridc.collections.segmentation.models.vnet_base.vnet_block as vnet_block
+import mridc.core.classes.common as common_classes
 
 __all__ = ["SegmentationVNet"]
 
 
-class SegmentationVNet(BaseMRIJointReconstructionSegmentationModel, ABC):
+class SegmentationVNet(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel, ABC):
     """Implementation of the V-Net as a module."""
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
@@ -40,7 +39,7 @@ class SegmentationVNet(BaseMRIJointReconstructionSegmentationModel, ABC):
                 "Segmentation module input channels must be either 1 or 2. Found: {}".format(self.input_channels)
             )
 
-        self.segmentation_module = VNet(
+        self.segmentation_module = vnet_block.VNet(
             in_chans=self.input_channels,
             out_chans=cfg_dict.get("segmentation_module_output_channels", 2),
             act=cfg_dict.get("segmentation_module_activation", "elu"),
@@ -51,7 +50,7 @@ class SegmentationVNet(BaseMRIJointReconstructionSegmentationModel, ABC):
         self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
         self.magnitude_input = cfg_dict.get("magnitude_input", True)
 
-    @typecheck()
+    @common_classes.typecheck()
     def forward(
         self,
         y: torch.Tensor,

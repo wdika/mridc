@@ -1,5 +1,5 @@
 # coding=utf-8
-__author__ = "Dimitrios Karkalousos, Lysander de Jong"
+__author__ = "Dimitrios Karkalousos"
 
 from abc import ABC
 from typing import Any, Tuple
@@ -8,14 +8,14 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-from mridc.collections.segmentation.models.attention_unet_base.attention_unet_block import AttentionUnet
-from mridc.collections.segmentation.models.base import BaseMRIJointReconstructionSegmentationModel
-from mridc.core.classes.common import typecheck
+import mridc.collections.segmentation.models.attention_unet_base.attention_unet_block as attention_unet_block
+import mridc.collections.segmentation.models.base as base_segmentation_models
+import mridc.core.classes.common as common_classes
 
 __all__ = ["SegmentationAttentionUNet"]
 
 
-class SegmentationAttentionUNet(BaseMRIJointReconstructionSegmentationModel, ABC):
+class SegmentationAttentionUNet(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel, ABC):
     """Implementation of the Attention UNet as module."""
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
@@ -39,7 +39,7 @@ class SegmentationAttentionUNet(BaseMRIJointReconstructionSegmentationModel, ABC
                 "Segmentation module input channels must be either 1 or 2. Found: {}".format(self.input_channels)
             )
 
-        self.segmentation_module = AttentionUnet(
+        self.segmentation_module = attention_unet_block.AttentionUnet(
             in_chans=self.input_channels,
             out_chans=cfg_dict.get("segmentation_module_output_channels", 2),
             chans=cfg_dict.get("segmentation_module_channels", 64),
@@ -50,7 +50,7 @@ class SegmentationAttentionUNet(BaseMRIJointReconstructionSegmentationModel, ABC
         self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
         self.magnitude_input = cfg_dict.get("magnitude_input", True)
 
-    @typecheck()
+    @common_classes.typecheck()
     def forward(
         self,
         y: torch.Tensor,

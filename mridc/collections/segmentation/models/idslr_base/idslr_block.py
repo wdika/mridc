@@ -1,5 +1,5 @@
 # coding=utf-8
-__author__ = "Dimitrios Karkalousos, Lysander de Jong"
+__author__ = "Dimitrios Karkalousos"
 
 import math
 from typing import List, Optional, Tuple
@@ -7,9 +7,7 @@ from typing import List, Optional, Tuple
 import torch
 from torch import nn
 
-from mridc.collections.common.parts.fft import fft2, ifft2
-from mridc.collections.common.parts.utils import coil_combination, rss_complex
-from mridc.collections.reconstruction.models.unet_base.unet_block import ConvBlock, TransposeConvBlock
+import mridc.collections.reconstruction.models.unet_base.unet_block as unet_block
 
 
 class DC(nn.Module):
@@ -73,12 +71,12 @@ class UnetEncoder(nn.Module):
         self.normalize = normalize
         self.norm_groups = norm_groups
 
-        self.down_sample_layers = torch.nn.ModuleList([ConvBlock(in_chans, chans, drop_prob)])
+        self.down_sample_layers = torch.nn.ModuleList([unet_block.ConvBlock(in_chans, chans, drop_prob)])
         ch = chans
         for _ in range(num_pools - 1):
-            self.down_sample_layers.append(ConvBlock(ch, ch * 2, drop_prob))
+            self.down_sample_layers.append(unet_block.ConvBlock(ch, ch * 2, drop_prob))
             ch *= 2
-        self.conv = ConvBlock(ch, ch * 2, drop_prob)
+        self.conv = unet_block.ConvBlock(ch, ch * 2, drop_prob)
 
     @staticmethod
     def complex_to_chan_dim(x: torch.Tensor) -> torch.Tensor:
@@ -192,14 +190,14 @@ class UnetDecoder(nn.Module):
         self.up_conv = torch.nn.ModuleList()
         self.up_transpose_conv = torch.nn.ModuleList()
         for _ in range(num_pools - 1):
-            self.up_transpose_conv.append(TransposeConvBlock(ch * 2, ch))
-            self.up_conv.append(ConvBlock(ch * 2, ch, drop_prob))
+            self.up_transpose_conv.append(unet_block.TransposeConvBlock(ch * 2, ch))
+            self.up_conv.append(unet_block.ConvBlock(ch * 2, ch, drop_prob))
             ch //= 2
 
-        self.up_transpose_conv.append(TransposeConvBlock(ch * 2, ch))
+        self.up_transpose_conv.append(unet_block.TransposeConvBlock(ch * 2, ch))
         self.up_conv.append(
             torch.nn.Sequential(
-                ConvBlock(ch * 2, ch, drop_prob),
+                unet_block.ConvBlock(ch * 2, ch, drop_prob),
                 torch.nn.Conv2d(ch, self.out_chans, kernel_size=1, stride=1),
             )
         )

@@ -8,17 +8,16 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-from mridc.collections.common.parts.fft import ifft2
-from mridc.collections.common.parts.utils import check_stacked_complex, coil_combination, sense
-from mridc.collections.reconstruction.metrics.evaluate import mse, nmse, psnr, ssim
-from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
-from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
-from mridc.core.classes.common import typecheck
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.reconstruction.metrics.evaluate as metrics
+import mridc.collections.reconstruction.models.base as base_models
+import mridc.core.classes.common as common_classes
 
 __all__ = ["ZF"]
 
 
-class ZF(BaseMRIReconstructionModel, ABC):
+class ZF(base_models.BaseMRIReconstructionModel, ABC):
     """
     Zero-Filled reconstruction using either root-sum-of-squares (RSS) or SENSE (SENSitivity Encoding), as presented \
     in Pruessmann KP, Weiger M, Scheidegger MB, Boesiger P.
@@ -48,7 +47,7 @@ class ZF(BaseMRIReconstructionModel, ABC):
         # Initialize the sensitivity network if use_sens_net is True
         self.use_sens_net = cfg_dict.get("use_sens_net")
         if self.use_sens_net:
-            self.sens_net = BaseSensitivityModel(
+            self.sens_net = base_models.BaseSensitivityModel(
                 cfg_dict.get("sens_chans"),
                 cfg_dict.get("sens_pools"),
                 fft_centered=self.fft_centered,
@@ -59,7 +58,7 @@ class ZF(BaseMRIReconstructionModel, ABC):
                 normalize=cfg_dict.get("sens_normalize"),
             )
 
-    @typecheck()
+    @common_classes.typecheck()
     def forward(
         self,
         y: torch.Tensor,
@@ -88,14 +87,16 @@ class ZF(BaseMRIReconstructionModel, ABC):
         pred: torch.Tensor, shape [batch_size, n_x, n_y, 2]
             Predicted data.
         """
-        pred = coil_combination(
-            ifft2(y, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims),
+        pred = utils.coil_combination(
+            fft.ifft2(
+                y, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
+            ),
             sensitivity_maps,
             method=self.coil_combination_method.upper(),
             dim=self.coil_dim,
         )
-        pred = check_stacked_complex(pred)
-        _, pred = center_crop_to_smallest(target, pred)
+        pred = utils.check_stacked_complex(pred)
+        _, pred = utils.center_crop_to_smallest(target, pred)
         return pred
 
     def test_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Tuple[str, int, torch.Tensor]:
@@ -124,8 +125,8 @@ class ZF(BaseMRIReconstructionModel, ABC):
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, mask)
             if self.coil_combination_method.upper() == "SENSE":
-                target = sense(
-                    ifft2(
+                target = utils.sense(
+                    fft.ifft2(
                         kspace,
                         centered=self.fft_centered,
                         normalization=self.fft_normalization,
@@ -151,13 +152,13 @@ class ZF(BaseMRIReconstructionModel, ABC):
 
         target = target.numpy()  # type: ignore
         output = output.numpy()  # type: ignore
-        self.mse_vals[fname][slice_num] = torch.tensor(mse(target, output)).view(1)
-        self.nmse_vals[fname][slice_num] = torch.tensor(nmse(target, output)).view(1)
-        self.ssim_vals[fname][slice_num] = torch.tensor(ssim(target, output, maxval=output.max() - output.min())).view(
-            1
-        )
-        self.psnr_vals[fname][slice_num] = torch.tensor(psnr(target, output, maxval=output.max() - output.min())).view(
-            1
-        )
+        self.mse_vals[fname][slice_num] = torch.tensor(metrics.mse(target, output)).view(1)
+        self.nmse_vals[fname][slice_num] = torch.tensor(metrics.nmse(target, output)).view(1)
+        self.ssim_vals[fname][slice_num] = torch.tensor(
+            metrics.ssim(target, output, maxval=output.max() - output.min())
+        ).view(1)
+        self.psnr_vals[fname][slice_num] = torch.tensor(
+            metrics.psnr(target, output, maxval=output.max() - output.min())
+        ).view(1)
 
         return name, slice_num, prediction.detach().cpu().numpy()

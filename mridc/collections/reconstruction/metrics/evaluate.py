@@ -17,9 +17,8 @@ from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 from skimage.morphology import convex_hull_image
 from tqdm import tqdm
 
-from mridc.collections.common.parts.fft import ifft2
-from mridc.collections.common.parts.utils import complex_conj, complex_mul, tensor_to_complex_np, to_tensor
-from mridc.collections.reconstruction.parts.utils import center_crop
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
 
 
 def mse(gt: np.ndarray, pred: np.ndarray) -> float:
@@ -112,7 +111,7 @@ class Metrics:
         return res
 
 
-def evaluate(
+def run_evaluation(
     arguments,
     reconstruction_key,
     mask_background,
@@ -164,11 +163,11 @@ def evaluate(
                     sense = np.transpose(sense, (0, 3, 1, 2))
 
                 target = np.abs(
-                    tensor_to_complex_np(
+                    utils.tensor_to_complex_np(
                         torch.sum(
-                            complex_mul(
-                                ifft2(to_tensor(kspace), centered="fastmri" in str(arguments.sense_path).lower()),
-                                complex_conj(to_tensor(sense)),
+                            utils.complex_mul(
+                                fft.ifft2(utils.to_tensor(kspace)),
+                                utils.complex_conj(utils.to_tensor(sense)),
                             ),
                             coil_dim,
                         )
@@ -187,8 +186,8 @@ def evaluate(
                     crop_size[0] = min(recons.shape[-2], int(crop_size[0]))
                     crop_size[1] = min(recons.shape[-1], int(crop_size[1]))
 
-                    target = center_crop(target, crop_size)
-                    recons = center_crop(recons, crop_size)
+                    target = utils.center_crop(target, crop_size)
+                    recons = utils.center_crop(recons, crop_size)
 
                 if mask_background:
                     for sl in range(target.shape[0]):
@@ -286,7 +285,7 @@ if __name__ == "__main__":
     else:
         recons_key = "reconstruction"
 
-    metrics = evaluate(
+    metrics = run_evaluation(
         args,
         recons_key,
         args.mask_background,

@@ -5,8 +5,8 @@ from typing import Optional, Tuple
 
 import torch
 
-from mridc.collections.common.parts.fft import fft2, ifft2
-from mridc.collections.common.parts.utils import complex_conj, complex_mul
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
 
 
 class CascadeNetBlock(torch.nn.Module):
@@ -70,8 +70,8 @@ class CascadeNetBlock(torch.nn.Module):
         SENSE reconstruction expanded to the same size as the input.
             torch.Tensor, shape [batch_size, n_coils, height, width, 2]
         """
-        return fft2(
-            complex_mul(x, sens_maps),
+        return fft.fft2(
+            utils.complex_mul(x, sens_maps),
             centered=self.fft_centered,
             normalization=self.fft_normalization,
             spatial_dims=self.spatial_dims,
@@ -93,8 +93,10 @@ class CascadeNetBlock(torch.nn.Module):
         SENSE reconstruction.
             torch.Tensor, shape [batch_size, height, width, 2]
         """
-        x = ifft2(x, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims)
-        return complex_mul(x, complex_conj(sens_maps)).sum(dim=self.coil_dim, keepdim=True)
+        x = fft.ifft2(
+            x, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
+        )
+        return utils.complex_mul(x, utils.complex_conj(sens_maps)).sum(dim=self.coil_dim, keepdim=True)
 
     def forward(
         self,

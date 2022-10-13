@@ -8,8 +8,8 @@ from typing import Optional, Tuple
 
 import torch
 
-from mridc.collections.common.parts.fft import fft2, ifft2
-from mridc.collections.common.parts.utils import complex_abs, complex_conj, complex_mul
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
 
 
 class DataIDLayer(torch.nn.Module):
@@ -68,8 +68,8 @@ class DataGDLayer(torch.nn.Module):
         """
         A_x_y = (
             torch.sum(
-                fft2(
-                    complex_mul(x.unsqueeze(-5).expand_as(smaps), smaps),
+                fft.fft2(
+                    utils.complex_mul(x.unsqueeze(-5).expand_as(smaps), smaps),
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,
@@ -81,14 +81,14 @@ class DataGDLayer(torch.nn.Module):
             - y
         )
         gradD_x = torch.sum(
-            complex_mul(
-                ifft2(
+            utils.complex_mul(
+                fft.ifft2(
                     A_x_y * mask,
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,
                 ),
-                complex_conj(smaps),
+                utils.complex_conj(smaps),
             ),
             dim=(-5),
         )
@@ -162,7 +162,7 @@ class ConjugateGradient(torch.autograd.Function):
     def complexDot(data1, data2):
         """Complex dot product of two tensors."""
         nBatch = data1.shape[0]
-        mult = complex_mul(data1, complex_conj(data2))
+        mult = utils.complex_mul(data1, utils.complex_conj(data2))
         re, im = torch.unbind(mult, dim=-1)
         return torch.stack([torch.sum(re.view(nBatch, -1), dim=-1), torch.sum(im.view(nBatch, -1), dim=-1)], -1)
 
@@ -186,13 +186,13 @@ class ConjugateGradient(torch.autograd.Function):
 
             re1, im1 = torch.unbind(data1, -1)
             re2, im2 = torch.unbind(data2, -1)
-            alpha = torch.stack([re1 * re2 + im1 * im2, im1 * re2 - re1 * im2], -1) / complex_abs(data2) ** 2
+            alpha = torch.stack([re1 * re2 + im1 * im2, im1 * re2 - re1 * im2], -1) / utils.complex_abs(data2) ** 2
 
-            x += complex_mul(alpha.reshape(nBatch, 1, 1, 1, -1), p.clone())
-            r -= complex_mul(alpha.reshape(nBatch, 1, 1, 1, -1), q.clone())
+            x += utils.complex_mul(alpha.reshape(nBatch, 1, 1, 1, -1), p.clone())
+            r -= utils.complex_mul(alpha.reshape(nBatch, 1, 1, 1, -1), q.clone())
             rr_new = torch.stack([(r.pow(2)).view(nBatch, -1).sum(-1), torch.zeros(nBatch).to(x0.device)], dim=-1)
             beta = torch.stack([rr_new[..., 0] / rr[..., 0], torch.zeros(nBatch).to(x0.device)], dim=-1)
-            p = r.clone() + complex_mul(beta.reshape(nBatch, 1, 1, 1, -1), p)
+            p = r.clone() + utils.complex_mul(beta.reshape(nBatch, 1, 1, 1, -1), p)
             rr = rr_new.clone()
         return x
 
@@ -227,8 +227,8 @@ class ConjugateGradient(torch.autograd.Function):
 
         def A(x):
             x = (
-                fft2(
-                    complex_mul(x.expand_as(smaps), smaps),
+                fft.fft2(
+                    utils.complex_mul(x.expand_as(smaps), smaps),
                     centered=fft_centered,
                     normalization=fft_normalization,
                     spatial_dims=spatial_dims,
@@ -239,9 +239,11 @@ class ConjugateGradient(torch.autograd.Function):
 
         def AT(x):
             return torch.sum(
-                complex_mul(
-                    ifft2(x * mask, centered=fft_centered, normalization=fft_normalization, spatial_dims=spatial_dims),
-                    complex_conj(smaps),
+                utils.complex_mul(
+                    fft.ifft2(
+                        x * mask, centered=fft_centered, normalization=fft_normalization, spatial_dims=spatial_dims
+                    ),
+                    utils.complex_conj(smaps),
                 ),
                 dim=(-5),
             )
@@ -272,8 +274,8 @@ class ConjugateGradient(torch.autograd.Function):
 
         def A(x):
             x = (
-                fft2(
-                    complex_mul(x.expand_as(smaps), smaps),
+                fft.fft2(
+                    utils.complex_mul(x.expand_as(smaps), smaps),
                     centered=ctx.fft_centered,
                     normalization=ctx.fft_normalization,
                     spatial_dims=ctx.spatial_dims,
@@ -284,14 +286,14 @@ class ConjugateGradient(torch.autograd.Function):
 
         def AT(x):
             return torch.sum(
-                complex_mul(
-                    ifft2(
+                utils.complex_mul(
+                    fft.ifft2(
                         x * mask,
                         centered=ctx.fft_centered,
                         normalization=ctx.fft_normalization,
                         spatial_dims=ctx.spatial_dimso,
                     ),
-                    complex_conj(smaps),
+                    utils.complex_conj(smaps),
                 ),
                 dim=(-5),
             )
@@ -305,17 +307,17 @@ class ConjugateGradient(torch.autograd.Function):
         grad_z = Qe
 
         grad_lambdaa = (
-            complex_mul(
-                ifft2(
+            utils.complex_mul(
+                fft.ifft2(
                     Qe, centered=ctx.fft_centered, normalization=ctx.fft_normalization, spatial_dims=ctx.spatial_dims
                 ),
-                complex_conj(ATy),
+                utils.complex_conj(ATy),
             ).sum()
-            - complex_mul(
-                ifft2(
+            - utils.complex_mul(
+                fft.ifft2(
                     QQe, centered=ctx.fft_centered, normalization=ctx.fft_normalization, spatial_dims=ctx.spatial_dims
                 ),
-                complex_conj(rhs),
+                utils.complex_conj(rhs),
             ).sum()
         )
 
@@ -376,8 +378,8 @@ class DataVSLayer(torch.nn.Module):
         Output image.
         """
         A_x = torch.sum(
-            fft2(
-                complex_mul(x.unsqueeze(-5).expand_as(smaps), smaps),
+            fft.fft2(
+                utils.complex_mul(x.unsqueeze(-5).expand_as(smaps), smaps),
                 centered=self.fft_centered,
                 normalization=self.fft_normalization,
                 spatial_dims=self.spatial_dims,
@@ -387,14 +389,14 @@ class DataVSLayer(torch.nn.Module):
         )
         k_dc = (1 - mask) * A_x + mask * (self.alpha * A_x + (1 - self.alpha) * y)
         x_dc = torch.sum(
-            complex_mul(
-                ifft2(
+            utils.complex_mul(
+                fft.ifft2(
                     k_dc,
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,
                 ),
-                complex_conj(smaps),
+                utils.complex_conj(smaps),
             ),
             dim=(-5),
         )
@@ -460,9 +462,11 @@ class DCLayer(torch.nn.Module):
         -------
         Output image.
         """
-        A_x = fft2(x, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims)
+        A_x = fft.fft2(
+            x, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
+        )
         k_dc = (1 - mask) * A_x + mask * (self.lambda_ * A_x + (1 - self.lambda_) * y)
-        return ifft2(
+        return fft.ifft2(
             k_dc, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
         )
 

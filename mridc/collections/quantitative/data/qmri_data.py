@@ -12,7 +12,7 @@ import numpy as np
 import yaml  # type: ignore
 from torch.utils.data import Dataset
 
-from mridc.collections.common.parts.utils import is_none
+import mridc.collections.common.parts.utils as utils
 
 
 class qMRISliceDataset(Dataset):
@@ -105,7 +105,7 @@ class qMRISliceDataset(Dataset):
             files = list(Path(root).iterdir())
             for fname in sorted(files):
                 metadata, num_slices = self._retrieve_metadata(fname, data_saved_per_slice=self.data_saved_per_slice)
-                if not is_none(num_slices) and not is_none(consecutive_slices):
+                if not utils.is_none(num_slices) and not utils.is_none(consecutive_slices):
                     num_slices = num_slices - (consecutive_slices - 1)
                 self.examples += [(fname, slice_ind, metadata) for slice_ind in range(num_slices)]
 

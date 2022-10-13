@@ -5,11 +5,11 @@ from typing import Any, Optional, Tuple, Union
 
 import torch
 
-from mridc.collections.common.parts.fft import fft2, ifft2
-from mridc.collections.common.parts.utils import complex_conj, complex_mul
-from mridc.collections.reconstruction.models.rim.conv_layers import ConvNonlinear, ConvRNNStack
-from mridc.collections.reconstruction.models.rim.rnn_cells import ConvGRUCell, ConvMGUCell, IndRNNCell
-from mridc.collections.reconstruction.models.rim.utils import log_likelihood_gradient
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.reconstruction.models.rim.conv_layers as conv_layers
+import mridc.collections.reconstruction.models.rim.rim_utils as rim_utils
+import mridc.collections.reconstruction.models.rim.rnn_cells as rnn_cells
 
 
 class RIMBlock(torch.nn.Module):
@@ -84,7 +84,7 @@ class RIMBlock(torch.nn.Module):
             conv_layer = None
 
             if conv_features != 0:
-                conv_layer = ConvNonlinear(
+                conv_layer = conv_layers.ConvNonlinear(
                     self.input_size,
                     conv_features,
                     conv_dim=conv_dim,
@@ -97,11 +97,11 @@ class RIMBlock(torch.nn.Module):
 
             if rnn_features != 0 and rnn_type is not None:
                 if rnn_type.upper() == "GRU":
-                    rnn_type = ConvGRUCell
+                    rnn_type = rnn_cells.ConvGRUCell
                 elif rnn_type.upper() == "MGU":
-                    rnn_type = ConvMGUCell
+                    rnn_type = rnn_cells.ConvMGUCell
                 elif rnn_type.upper() == "INDRNN":
-                    rnn_type = IndRNNCell
+                    rnn_type = rnn_cells.IndRNNCell
                 else:
                     raise ValueError("Please specify a proper recurrent layer type.")
 
@@ -116,7 +116,7 @@ class RIMBlock(torch.nn.Module):
 
                 self.input_size = rnn_features
 
-                self.layers.append(ConvRNNStack(conv_layer, rnn_layer))
+                self.layers.append(conv_layers.ConvRNNStack(conv_layer, rnn_layer))
 
         self.final_layer = torch.nn.Sequential(conv_layer)
 
@@ -197,14 +197,14 @@ class RIMBlock(torch.nn.Module):
                 pred
                 if keep_eta
                 else torch.sum(
-                    complex_mul(
-                        ifft2(
+                    utils.complex_mul(
+                        fft.ifft2(
                             pred,
                             centered=self.fft_centered,
                             normalization=self.fft_normalization,
                             spatial_dims=self.spatial_dims,
                         ),
-                        complex_conj(sense),
+                        utils.complex_conj(sense),
                     ),
                     self.coil_dim,
                 )
@@ -215,7 +215,7 @@ class RIMBlock(torch.nn.Module):
 
         etas = []
         for _ in range(self.time_steps):
-            grad_eta = log_likelihood_gradient(
+            grad_eta = rim_utils.log_likelihood_gradient(
                 eta,
                 masked_kspace,
                 sense,
@@ -257,8 +257,8 @@ class RIMBlock(torch.nn.Module):
         current_kspace = [
             masked_kspace
             - soft_dc
-            - fft2(
-                complex_mul(e.unsqueeze(self.coil_dim), sense),
+            - fft.fft2(
+                utils.complex_mul(e.unsqueeze(self.coil_dim), sense),
                 centered=self.fft_centered,
                 normalization=self.fft_normalization,
                 spatial_dims=self.spatial_dims,

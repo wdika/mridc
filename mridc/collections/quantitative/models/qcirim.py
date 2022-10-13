@@ -10,20 +10,20 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-from mridc.collections.common.parts.fft import fft2
-from mridc.collections.common.parts.rnn_utils import rnn_weights_init
-from mridc.collections.common.parts.utils import complex_mul
-from mridc.collections.quantitative.models.base import BaseqMRIReconstructionModel
-from mridc.collections.quantitative.models.qrim.qrim_block import qRIMBlock
-from mridc.collections.quantitative.models.qrim.utils import RescaleByMax, SignalForwardModel
-from mridc.collections.quantitative.parts.transforms import R2star_B0_real_S0_complex_mapping
-from mridc.collections.reconstruction.models.rim.rim_block import RIMBlock
-from mridc.core.classes.common import typecheck
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.rnn_utils as rnn_utils
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.quantitative.models.base as base_quantitative_models
+import mridc.collections.quantitative.models.qrim.qrim_block as qrim_block
+import mridc.collections.quantitative.models.qrim.utils as qrim_utils
+import mridc.collections.quantitative.parts.transforms as transforms
+import mridc.collections.reconstruction.models.rim.rim_block as rim_block
+import mridc.core.classes.common as common_classes
 
 __all__ = ["qCIRIM"]
 
 
-class qCIRIM(BaseqMRIReconstructionModel, ABC):
+class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
     """
     Implementation of the quantitative Recurrent Inference Machines (qRIM), as presented in Zhang, C. et al.
 
@@ -70,7 +70,7 @@ class qCIRIM(BaseqMRIReconstructionModel, ABC):
 
             for _ in range(self.reconstruction_module_num_cascades):
                 self.cirim.append(
-                    RIMBlock(
+                    rim_block.RIMBlock(
                         recurrent_layer=cfg_dict.get("reconstruction_module_recurrent_layer"),
                         conv_filters=cfg_dict.get("reconstruction_module_conv_filters"),
                         conv_kernels=cfg_dict.get("reconstruction_module_conv_kernels"),
@@ -98,7 +98,7 @@ class qCIRIM(BaseqMRIReconstructionModel, ABC):
             # initialize weights if not using pretrained cirim
             if not cfg_dict.get("pretrained", False):
                 std_init_range = 1 / self.reconstruction_module_recurrent_filters[0] ** 0.5
-                self.cirim.apply(lambda module: rnn_weights_init(module, std_init_range))
+                self.cirim.apply(lambda module: rnn_utils.rnn_weights_init(module, std_init_range))
 
             self.dc_weight = torch.nn.Parameter(torch.ones(1))
             self.reconstruction_module_accumulate_estimates = cfg_dict.get(
@@ -108,7 +108,7 @@ class qCIRIM(BaseqMRIReconstructionModel, ABC):
         quantitative_module_num_cascades = cfg_dict.get("quantitative_module_num_cascades")
         self.qcirim = torch.nn.ModuleList(
             [
-                qRIMBlock(
+                qrim_block.qRIMBlock(
                     recurrent_layer=cfg_dict.get("quantitative_module_recurrent_layer"),
                     conv_filters=cfg_dict.get("quantitative_module_conv_filters"),
                     conv_kernels=cfg_dict.get("quantitative_module_conv_kernels"),
@@ -122,7 +122,7 @@ class qCIRIM(BaseqMRIReconstructionModel, ABC):
                     time_steps=cfg_dict.get("quantitative_module_time_steps"),
                     conv_dim=cfg_dict.get("quantitative_module_conv_dim"),
                     no_dc=cfg_dict.get("quantitative_module_no_dc"),
-                    linear_forward_model=SignalForwardModel(
+                    linear_forward_model=qrim_utils.SignalForwardModel(
                         sequence=cfg_dict.get("quantitative_module_signal_forward_model_sequence")
                     ),
                     fft_centered=self.fft_centered,
@@ -139,9 +139,9 @@ class qCIRIM(BaseqMRIReconstructionModel, ABC):
         self.accumulate_estimates = cfg_dict.get("quantitative_module_accumulate_estimates")
 
         self.gamma = torch.tensor(cfg_dict.get("quantitative_module_gamma_regularization_factors"))
-        self.preprocessor = RescaleByMax
+        self.preprocessor = qrim_utils.RescaleByMax
 
-    @typecheck()
+    @common_classes.typecheck()
     def forward(
         self,
         R2star_map_init: torch.Tensor,
@@ -213,8 +213,8 @@ class qCIRIM(BaseqMRIReconstructionModel, ABC):
             eta = torch.stack(echoes_etas, dim=1)
             if eta.shape[-1] != 2:
                 eta = torch.view_as_real(eta)
-            y = fft2(
-                complex_mul(eta.unsqueeze(self.coil_dim), sensitivity_maps.unsqueeze(self.coil_dim - 1)),
+            y = fft.fft2(
+                utils.complex_mul(eta.unsqueeze(self.coil_dim), sensitivity_maps.unsqueeze(self.coil_dim - 1)),
                 self.fft_centered,
                 self.fft_normalization,
                 self.spatial_dims,
@@ -225,7 +225,7 @@ class qCIRIM(BaseqMRIReconstructionModel, ABC):
             B0_maps_init = []
             phi_maps_init = []
             for batch_idx in range(eta.shape[0]):
-                R2star_map_init, S0_map_init, B0_map_init, phi_map_init = R2star_B0_real_S0_complex_mapping(
+                R2star_map_init, S0_map_init, B0_map_init, phi_map_init = transforms.R2star_B0_real_S0_complex_mapping(
                     eta[batch_idx],
                     TEs,
                     mask_brain,

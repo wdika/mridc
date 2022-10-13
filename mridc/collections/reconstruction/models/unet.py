@@ -8,18 +8,17 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
-from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import ifft2
-from mridc.collections.common.parts.utils import coil_combination
-from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel
-from mridc.collections.reconstruction.models.unet_base.unet_block import NormUnet
-from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
-from mridc.core.classes.common import typecheck
+import mridc.collections.common.losses.ssim as losses
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.reconstruction.models.base as base_models
+import mridc.collections.reconstruction.models.unet_base.unet_block as unet_block
+import mridc.core.classes.common as common_classes
 
 __all__ = ["UNet"]
 
 
-class UNet(BaseMRIReconstructionModel, ABC):
+class UNet(base_models.BaseMRIReconstructionModel, ABC):
     """
     Implementation of the UNet, as presented in O. Ronneberger, P. Fischer, and Thomas Brox.
 
@@ -44,7 +43,7 @@ class UNet(BaseMRIReconstructionModel, ABC):
         self.spatial_dims = cfg_dict.get("spatial_dims")
         self.coil_dim = cfg_dict.get("coil_dim")
 
-        self.unet = NormUnet(
+        self.unet = unet_block.NormUnet(
             chans=cfg_dict.get("channels"),
             num_pools=cfg_dict.get("pooling_layers"),
             padding_size=cfg_dict.get("padding_size"),
@@ -56,12 +55,12 @@ class UNet(BaseMRIReconstructionModel, ABC):
         # initialize weights if not using pretrained unet
         # TODO if not cfg_dict.get("pretrained", False):
 
-        self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
+        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
 
         self.accumulate_estimates = False
 
-    @typecheck()
+    @common_classes.typecheck()
     def forward(
         self,
         y: torch.Tensor,
@@ -93,8 +92,8 @@ class UNet(BaseMRIReconstructionModel, ABC):
              If False, returns the final estimate.
         """
         eta = torch.view_as_complex(
-            coil_combination(
-                ifft2(
+            utils.coil_combination(
+                fft.ifft2(
                     y, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
                 ),
                 sensitivity_maps,
@@ -102,7 +101,7 @@ class UNet(BaseMRIReconstructionModel, ABC):
                 dim=self.coil_dim,
             )
         )
-        _, eta = center_crop_to_smallest(target, eta)
+        _, eta = utils.center_crop_to_smallest(target, eta)
         return torch.view_as_complex(self.unet(torch.view_as_real(eta.unsqueeze(self.coil_dim)))).squeeze(
             self.coil_dim
         )

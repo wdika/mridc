@@ -15,19 +15,19 @@ from pytorch_lightning import Trainer
 from torch.nn import L1Loss, MSELoss
 from torch.utils.data import DataLoader
 
-from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.utils import is_none
-from mridc.collections.quantitative.data.qmri_data import qMRISliceDataset
-from mridc.collections.quantitative.parts.transforms import qMRIDataTransforms
-from mridc.collections.reconstruction.data.subsample import create_mask_for_mask_type
-from mridc.collections.reconstruction.metrics.evaluate import mse, nmse, psnr, ssim
-from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, DistributedMetricSum
-from mridc.utils.model_utils import convert_model_config_to_dict_config, maybe_update_config_version
+import mridc.collections.common.losses as reconstruction_losses
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.quantitative.data.qmri_data as qmri_data
+import mridc.collections.quantitative.parts.transforms as quantitative_transforms
+import mridc.collections.reconstruction.data.subsample as subsample
+import mridc.collections.reconstruction.metrics.evaluate as evaluation_metrics
+import mridc.collections.reconstruction.models.base as base_reconstruction_models
+import mridc.utils.model_utils as model_utils
 
 __all__ = ["BaseqMRIReconstructionModel"]
 
 
-class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
+class BaseqMRIReconstructionModel(base_reconstruction_models.BaseMRIReconstructionModel, ABC):
     """Base class of all quantitative MRIReconstruction models."""
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
@@ -39,8 +39,8 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         if trainer is not None:
             self.world_size = trainer.num_nodes * trainer.num_devices
 
-        cfg = convert_model_config_to_dict_config(cfg)
-        cfg = maybe_update_config_version(cfg)
+        cfg = model_utils.convert_model_config_to_dict_config(cfg)
+        cfg = model_utils.maybe_update_config_version(cfg)
 
         # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
@@ -48,8 +48,8 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
         if cfg_dict.get("loss_fn") == "ssim":
-            self.train_loss_fn = SSIMLoss()
-            self.eval_loss_fn = SSIMLoss()
+            self.train_loss_fn = reconstruction_losses.ssim.SSIMLoss()
+            self.eval_loss_fn = reconstruction_losses.ssim.SSIMLoss()
         elif cfg_dict.get("loss_fn") == "mse":
             self.train_loss_fn = MSELoss(reduction="none")
             self.eval_loss_fn = MSELoss(reduction="none")
@@ -65,11 +65,11 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
             "phi": loss_regularization_factors[3]["phi"],
         }
 
-        self.MSE = DistributedMetricSum()
-        self.NMSE = DistributedMetricSum()
-        self.SSIM = DistributedMetricSum()
-        self.PSNR = DistributedMetricSum()
-        self.TotExamples = DistributedMetricSum()
+        self.MSE = base_reconstruction_models.DistributedMetricSum()
+        self.NMSE = base_reconstruction_models.DistributedMetricSum()
+        self.SSIM = base_reconstruction_models.DistributedMetricSum()
+        self.PSNR = base_reconstruction_models.DistributedMetricSum()
+        self.TotExamples = base_reconstruction_models.DistributedMetricSum()
 
         # Set evaluation metrics dictionaries
         self.mse_vals_reconstruction: Dict = defaultdict(dict)
@@ -697,14 +697,22 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
             psnrs = []
             for echo_time in range(target.shape[1]):  # type: ignore
                 mses.append(
-                    torch.tensor(mse(target[:, echo_time, ...], recon_pred[:, echo_time, ...])).view(1)  # type: ignore
-                )  # type: ignore
+                    torch.tensor(
+                        evaluation_metrics.mse(
+                            target[:, echo_time, ...], recon_pred[:, echo_time, ...]  # type: ignore
+                        )
+                    ).view(1)
+                )
                 nmses.append(
-                    torch.tensor(nmse(target[:, echo_time, ...], recon_pred[:, echo_time, ...])).view(1)  # type: ignore
-                )  # type: ignore
+                    torch.tensor(
+                        evaluation_metrics.nmse(
+                            target[:, echo_time, ...], recon_pred[:, echo_time, ...]  # type: ignore
+                        )
+                    ).view(1)
+                )
                 ssims.append(
                     torch.tensor(
-                        ssim(
+                        evaluation_metrics.ssim(
                             target[:, echo_time, ...],  # type: ignore
                             recon_pred[:, echo_time, ...],
                             maxval=recon_pred[:, echo_time, ...].max() - recon_pred[:, echo_time, ...].min(),
@@ -713,7 +721,7 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
                 )
                 psnrs.append(
                     torch.tensor(
-                        psnr(
+                        evaluation_metrics.psnr(
                             target[:, echo_time, ...],  # type: ignore
                             recon_pred[:, echo_time, ...],
                             maxval=recon_pred[:, echo_time, ...].max() - recon_pred[:, echo_time, ...].min(),
@@ -741,40 +749,56 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         B0_map_target = B0_map_target.numpy()  # type: ignore
         phi_map_target = phi_map_target.numpy()  # type: ignore
 
-        self.mse_vals_R2star[fname][slice_num] = torch.tensor(mse(R2star_map_target, R2star_map_output)).view(1)
-        self.nmse_vals_R2star[fname][slice_num] = torch.tensor(nmse(R2star_map_target, R2star_map_output)).view(1)
+        self.mse_vals_R2star[fname][slice_num] = torch.tensor(
+            evaluation_metrics.mse(R2star_map_target, R2star_map_output)
+        ).view(1)
+        self.nmse_vals_R2star[fname][slice_num] = torch.tensor(
+            evaluation_metrics.nmse(R2star_map_target, R2star_map_output)
+        ).view(1)
         self.ssim_vals_R2star[fname][slice_num] = torch.tensor(
-            ssim(R2star_map_target, R2star_map_output, maxval=R2star_map_output.max() - R2star_map_output.min())
+            evaluation_metrics.ssim(
+                R2star_map_target, R2star_map_output, maxval=R2star_map_output.max() - R2star_map_output.min()
+            )
         ).view(1)
         self.psnr_vals_R2star[fname][slice_num] = torch.tensor(
-            psnr(R2star_map_target, R2star_map_output, maxval=R2star_map_output.max() - R2star_map_output.min())
+            evaluation_metrics.psnr(
+                R2star_map_target, R2star_map_output, maxval=R2star_map_output.max() - R2star_map_output.min()
+            )
         ).view(1)
 
-        self.mse_vals_S0[fname][slice_num] = torch.tensor(mse(S0_map_target, S0_map_output)).view(1)
-        self.nmse_vals_S0[fname][slice_num] = torch.tensor(nmse(S0_map_target, S0_map_output)).view(1)
+        self.mse_vals_S0[fname][slice_num] = torch.tensor(evaluation_metrics.mse(S0_map_target, S0_map_output)).view(1)
+        self.nmse_vals_S0[fname][slice_num] = torch.tensor(evaluation_metrics.nmse(S0_map_target, S0_map_output)).view(
+            1
+        )
         self.ssim_vals_S0[fname][slice_num] = torch.tensor(
-            ssim(S0_map_target, S0_map_output, maxval=S0_map_output.max() - S0_map_output.min())
+            evaluation_metrics.ssim(S0_map_target, S0_map_output, maxval=S0_map_output.max() - S0_map_output.min())
         ).view(1)
         self.psnr_vals_S0[fname][slice_num] = torch.tensor(
-            psnr(S0_map_target, S0_map_output, maxval=S0_map_output.max() - S0_map_output.min())
+            evaluation_metrics.psnr(S0_map_target, S0_map_output, maxval=S0_map_output.max() - S0_map_output.min())
         ).view(1)
 
-        self.mse_vals_B0[fname][slice_num] = torch.tensor(mse(B0_map_target, B0_map_output)).view(1)
-        self.nmse_vals_B0[fname][slice_num] = torch.tensor(nmse(B0_map_target, B0_map_output)).view(1)
+        self.mse_vals_B0[fname][slice_num] = torch.tensor(evaluation_metrics.mse(B0_map_target, B0_map_output)).view(1)
+        self.nmse_vals_B0[fname][slice_num] = torch.tensor(evaluation_metrics.nmse(B0_map_target, B0_map_output)).view(
+            1
+        )
         self.ssim_vals_B0[fname][slice_num] = torch.tensor(
-            ssim(B0_map_target, B0_map_output, maxval=B0_map_output.max() - B0_map_output.min())
+            evaluation_metrics.ssim(B0_map_target, B0_map_output, maxval=B0_map_output.max() - B0_map_output.min())
         ).view(1)
         self.psnr_vals_B0[fname][slice_num] = torch.tensor(
-            psnr(B0_map_target, B0_map_output, maxval=B0_map_output.max() - B0_map_output.min())
+            evaluation_metrics.psnr(B0_map_target, B0_map_output, maxval=B0_map_output.max() - B0_map_output.min())
         ).view(1)
 
-        self.mse_vals_phi[fname][slice_num] = torch.tensor(mse(phi_map_target, phi_map_output)).view(1)
-        self.nmse_vals_phi[fname][slice_num] = torch.tensor(nmse(phi_map_target, phi_map_output)).view(1)
+        self.mse_vals_phi[fname][slice_num] = torch.tensor(
+            evaluation_metrics.mse(phi_map_target, phi_map_output)
+        ).view(1)
+        self.nmse_vals_phi[fname][slice_num] = torch.tensor(
+            evaluation_metrics.nmse(phi_map_target, phi_map_output)
+        ).view(1)
         self.ssim_vals_phi[fname][slice_num] = torch.tensor(
-            ssim(phi_map_target, phi_map_output, maxval=phi_map_output.max() - phi_map_output.min())
+            evaluation_metrics.ssim(phi_map_target, phi_map_output, maxval=phi_map_output.max() - phi_map_output.min())
         ).view(1)
         self.psnr_vals_phi[fname][slice_num] = torch.tensor(
-            psnr(phi_map_target, phi_map_output, maxval=phi_map_output.max() - phi_map_output.min())
+            evaluation_metrics.psnr(phi_map_target, phi_map_output, maxval=phi_map_output.max() - phi_map_output.min())
         ).view(1)
 
         return {"val_loss": val_loss}
@@ -975,14 +999,22 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
             psnrs = []
             for echo_time in range(target.shape[1]):  # type: ignore
                 mses.append(
-                    torch.tensor(mse(target[:, echo_time, ...], recon_pred[:, echo_time, ...])).view(1)  # type: ignore
-                )  # type: ignore
+                    torch.tensor(
+                        evaluation_metrics.mse(
+                            target[:, echo_time, ...], recon_pred[:, echo_time, ...]  # type: ignore
+                        )
+                    ).view(1)
+                )
                 nmses.append(
-                    torch.tensor(nmse(target[:, echo_time, ...], recon_pred[:, echo_time, ...])).view(1)  # type: ignore
+                    torch.tensor(
+                        evaluation_metrics.nmse(
+                            target[:, echo_time, ...], recon_pred[:, echo_time, ...]  # type: ignore
+                        )
+                    ).view(1)
                 )  # type: ignore
                 ssims.append(
                     torch.tensor(
-                        ssim(
+                        evaluation_metrics.ssim(
                             target[:, echo_time, ...],  # type: ignore
                             recon_pred[:, echo_time, ...],
                             maxval=recon_pred[:, echo_time, ...].max() - recon_pred[:, echo_time, ...].min(),
@@ -991,7 +1023,7 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
                 )
                 psnrs.append(
                     torch.tensor(
-                        psnr(
+                        evaluation_metrics.psnr(
                             target[:, echo_time, ...],  # type: ignore
                             recon_pred[:, echo_time, ...],
                             maxval=recon_pred[:, echo_time, ...].max() - recon_pred[:, echo_time, ...].min(),
@@ -1019,40 +1051,56 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         B0_map_target = B0_map_target.numpy()  # type: ignore
         phi_map_target = phi_map_target.numpy()  # type: ignore
 
-        self.mse_vals_R2star[fname][slice_num] = torch.tensor(mse(R2star_map_target, R2star_map_output)).view(1)
-        self.nmse_vals_R2star[fname][slice_num] = torch.tensor(nmse(R2star_map_target, R2star_map_output)).view(1)
+        self.mse_vals_R2star[fname][slice_num] = torch.tensor(
+            evaluation_metrics.mse(R2star_map_target, R2star_map_output)
+        ).view(1)
+        self.nmse_vals_R2star[fname][slice_num] = torch.tensor(
+            evaluation_metrics.nmse(R2star_map_target, R2star_map_output)
+        ).view(1)
         self.ssim_vals_R2star[fname][slice_num] = torch.tensor(
-            ssim(R2star_map_target, R2star_map_output, maxval=R2star_map_output.max() - R2star_map_output.min())
+            evaluation_metrics.ssim(
+                R2star_map_target, R2star_map_output, maxval=R2star_map_output.max() - R2star_map_output.min()
+            )
         ).view(1)
         self.psnr_vals_R2star[fname][slice_num] = torch.tensor(
-            psnr(R2star_map_target, R2star_map_output, maxval=R2star_map_output.max() - R2star_map_output.min())
+            evaluation_metrics.psnr(
+                R2star_map_target, R2star_map_output, maxval=R2star_map_output.max() - R2star_map_output.min()
+            )
         ).view(1)
 
-        self.mse_vals_S0[fname][slice_num] = torch.tensor(mse(S0_map_target, S0_map_output)).view(1)
-        self.nmse_vals_S0[fname][slice_num] = torch.tensor(nmse(S0_map_target, S0_map_output)).view(1)
+        self.mse_vals_S0[fname][slice_num] = torch.tensor(evaluation_metrics.mse(S0_map_target, S0_map_output)).view(1)
+        self.nmse_vals_S0[fname][slice_num] = torch.tensor(evaluation_metrics.nmse(S0_map_target, S0_map_output)).view(
+            1
+        )
         self.ssim_vals_S0[fname][slice_num] = torch.tensor(
-            ssim(S0_map_target, S0_map_output, maxval=S0_map_output.max() - S0_map_output.min())
+            evaluation_metrics.ssim(S0_map_target, S0_map_output, maxval=S0_map_output.max() - S0_map_output.min())
         ).view(1)
         self.psnr_vals_S0[fname][slice_num] = torch.tensor(
-            psnr(S0_map_target, S0_map_output, maxval=S0_map_output.max() - S0_map_output.min())
+            evaluation_metrics.psnr(S0_map_target, S0_map_output, maxval=S0_map_output.max() - S0_map_output.min())
         ).view(1)
 
-        self.mse_vals_B0[fname][slice_num] = torch.tensor(mse(B0_map_target, B0_map_output)).view(1)
-        self.nmse_vals_B0[fname][slice_num] = torch.tensor(nmse(B0_map_target, B0_map_output)).view(1)
+        self.mse_vals_B0[fname][slice_num] = torch.tensor(evaluation_metrics.mse(B0_map_target, B0_map_output)).view(1)
+        self.nmse_vals_B0[fname][slice_num] = torch.tensor(evaluation_metrics.nmse(B0_map_target, B0_map_output)).view(
+            1
+        )
         self.ssim_vals_B0[fname][slice_num] = torch.tensor(
-            ssim(B0_map_target, B0_map_output, maxval=B0_map_output.max() - B0_map_output.min())
+            evaluation_metrics.ssim(B0_map_target, B0_map_output, maxval=B0_map_output.max() - B0_map_output.min())
         ).view(1)
         self.psnr_vals_B0[fname][slice_num] = torch.tensor(
-            psnr(B0_map_target, B0_map_output, maxval=B0_map_output.max() - B0_map_output.min())
+            evaluation_metrics.psnr(B0_map_target, B0_map_output, maxval=B0_map_output.max() - B0_map_output.min())
         ).view(1)
 
-        self.mse_vals_phi[fname][slice_num] = torch.tensor(mse(phi_map_target, phi_map_output)).view(1)
-        self.nmse_vals_phi[fname][slice_num] = torch.tensor(nmse(phi_map_target, phi_map_output)).view(1)
+        self.mse_vals_phi[fname][slice_num] = torch.tensor(
+            evaluation_metrics.mse(phi_map_target, phi_map_output)
+        ).view(1)
+        self.nmse_vals_phi[fname][slice_num] = torch.tensor(
+            evaluation_metrics.nmse(phi_map_target, phi_map_output)
+        ).view(1)
         self.ssim_vals_phi[fname][slice_num] = torch.tensor(
-            ssim(phi_map_target, phi_map_output, maxval=phi_map_output.max() - phi_map_output.min())
+            evaluation_metrics.ssim(phi_map_target, phi_map_output, maxval=phi_map_output.max() - phi_map_output.min())
         ).view(1)
         self.psnr_vals_phi[fname][slice_num] = torch.tensor(
-            psnr(phi_map_target, phi_map_output, maxval=phi_map_output.max() - phi_map_output.min())
+            evaluation_metrics.psnr(phi_map_target, phi_map_output, maxval=phi_map_output.max() - phi_map_output.min())
         ).view(1)
 
         return (
@@ -1553,26 +1601,26 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         mask_func = None  # type: ignore
         mask_center_scale = 0.02
 
-        if is_none(mask_root) and not is_none(mask_type):
+        if utils.is_none(mask_root) and not utils.is_none(mask_type):
             accelerations = mask_args.get("accelerations")
             center_fractions = mask_args.get("center_fractions")
             mask_center_scale = mask_args.get("scale")
 
             mask_func = (
                 [
-                    create_mask_for_mask_type(mask_type, [cf] * 2, [acc] * 2)
+                    subsample.create_mask_for_mask_type(mask_type, [cf] * 2, [acc] * 2)
                     for acc, cf in zip(accelerations, center_fractions)
                 ]
                 if len(accelerations) >= 2
-                else [create_mask_for_mask_type(mask_type, center_fractions, accelerations)]
+                else [subsample.create_mask_for_mask_type(mask_type, center_fractions, accelerations)]
             )
 
-        dataset = qMRISliceDataset(
+        dataset = qmri_data.qMRISliceDataset(
             root=cfg.get("data_path"),
             sense_root=cfg.get("sense_path"),
             mask_root=cfg.get("mask_path"),
             sequence=cfg.get("sequence"),
-            transform=qMRIDataTransforms(
+            transform=quantitative_transforms.qMRIDataTransforms(
                 TEs=cfg.get("TEs"),
                 precompute_quantitative_maps=cfg.get("precompute_quantitative_maps"),
                 coil_combination_method=cfg.get("coil_combination_method"),

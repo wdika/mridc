@@ -1,5 +1,5 @@
 # coding=utf-8
-__author__ = "Dimitrios Karkalousos, Lysander de Jong"
+__author__ = "Dimitrios Karkalousos"
 
 import math
 from abc import ABC
@@ -10,17 +10,16 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch import nn
 
-from mridc.collections.common.parts.fft import fft2, ifft2
-from mridc.collections.common.parts.utils import coil_combination
-from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
-from mridc.collections.segmentation.models.base import BaseMRIJointReconstructionSegmentationModel
-from mridc.collections.segmentation.models.idslr_base.idslr_block import DC, UnetDecoder, UnetEncoder
-from mridc.core.classes.common import typecheck
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.segmentation.models.base as base_segmentation_models
+import mridc.collections.segmentation.models.idslr_base.idslr_block as idslr_block
+import mridc.core.classes.common as common_classes
 
 __all__ = ["IDSLR"]
 
 
-class IDSLR(BaseMRIJointReconstructionSegmentationModel, ABC):
+class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel, ABC):
     """
     Implementation of the Image domain Deep Structured Low-Rank network, as described in, as presented in \
     Aniket Pramanik, Xiaodong Wu, and Mathews Jacob.
@@ -67,7 +66,7 @@ class IDSLR(BaseMRIJointReconstructionSegmentationModel, ABC):
 
         self.encoders = nn.ModuleList(
             [
-                UnetEncoder(
+                idslr_block.UnetEncoder(
                     chans=chans,
                     num_pools=num_pools,
                     in_chans=self.input_channels,
@@ -81,7 +80,7 @@ class IDSLR(BaseMRIJointReconstructionSegmentationModel, ABC):
         )
         self.decoders = nn.ModuleList(
             [
-                UnetDecoder(
+                idslr_block.UnetDecoder(
                     chans=chans,
                     num_pools=num_pools,
                     out_chans=out_chans,
@@ -93,7 +92,7 @@ class IDSLR(BaseMRIJointReconstructionSegmentationModel, ABC):
                 for _ in range(num_cascades)
             ]
         )
-        self.seg_head = UnetDecoder(
+        self.seg_head = idslr_block.UnetDecoder(
             chans=chans,
             num_pools=num_pools,
             out_chans=seg_out_chans,
@@ -103,7 +102,7 @@ class IDSLR(BaseMRIJointReconstructionSegmentationModel, ABC):
             norm_groups=norm_groups,
         )
 
-        self.dc = nn.ModuleList([DC(soft_dc=soft_dc) for _ in range(num_cascades)])
+        self.dc = nn.ModuleList([idslr_block.DC(soft_dc=soft_dc) for _ in range(num_cascades)])
         self.num_iters = num_iters
 
         self.use_reconstruction_module = True
@@ -111,7 +110,7 @@ class IDSLR(BaseMRIJointReconstructionSegmentationModel, ABC):
             "reconstruction_module_accumulate_estimates", False
         )
 
-    @typecheck()
+    @common_classes.typecheck()
     def forward(
         self,
         y: torch.Tensor,
@@ -155,10 +154,10 @@ class IDSLR(BaseMRIJointReconstructionSegmentationModel, ABC):
         for encoder, decoder, dc in zip(self.encoders, self.decoders, self.dc):
             tmp = []
             for _ in range(self.num_iters):
-                image_space = ifft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims)
+                image_space = fft.ifft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims)
                 output = encoder(image_space)
                 pred_reconstruction, pad_sizes = output[0].copy(), output[2]
-                pred_kspace = fft2(
+                pred_kspace = fft.fft2(
                     image_space - decoder(*output), self.fft_centered, self.fft_normalization, self.spatial_dims
                 )
                 y = dc(pred_kspace, y, mask)
@@ -199,12 +198,14 @@ class IDSLR(BaseMRIJointReconstructionSegmentationModel, ABC):
         """
         # Take the last time step of the eta
         if do_coil_combination:
-            pred = ifft2(
+            pred = fft.ifft2(
                 pred, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
             )
-            pred = coil_combination(pred, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim)
+            pred = utils.coil_combination(
+                pred, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim
+            )
         pred = torch.view_as_complex(pred)
         if target.shape[-1] == 2:
             target = torch.view_as_complex(target)
-        _, pred = center_crop_to_smallest(target, pred)
+        _, pred = utils.center_crop_to_smallest(target, pred)
         return pred

@@ -5,7 +5,7 @@ from typing import Sequence
 
 import torch
 
-from mridc.collections.common.parts.fft import fft2, ifft2
+import mridc.collections.common.parts.fft as fft
 
 
 def log_likelihood_gradient(
@@ -47,9 +47,9 @@ def log_likelihood_gradient(
     im_se = eta_real * sense_imag + eta_imag * sense_real
     pred = torch.cat((re_se, im_se), -1)
 
-    pred = fft2(pred, centered=fft_centered, normalization=fft_normalization, spatial_dims=spatial_dims)
+    pred = fft.fft2(pred, centered=fft_centered, normalization=fft_normalization, spatial_dims=spatial_dims)
 
-    pred = ifft2(
+    pred = fft.ifft2(
         mask * (pred - masked_kspace),
         centered=fft_centered,
         normalization=fft_normalization,

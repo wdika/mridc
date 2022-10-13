@@ -11,19 +11,18 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
-from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import ifft2
-from mridc.collections.common.parts.rnn_utils import rnn_weights_init
-from mridc.collections.common.parts.utils import coil_combination
-from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel
-from mridc.collections.reconstruction.models.rim.rim_block import RIMBlock
-from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
-from mridc.core.classes.common import typecheck
+import mridc.collections.common.losses.ssim as losses
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.rnn_utils as rnn_utils
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.reconstruction.models.base as base_models
+import mridc.collections.reconstruction.models.rim.rim_block as rim_block
+import mridc.core.classes.common as common_classes
 
 __all__ = ["CIRIM"]
 
 
-class CIRIM(BaseMRIReconstructionModel, ABC):
+class CIRIM(base_models.BaseMRIReconstructionModel, ABC):
     """
     Implementation of the Cascades of Independently Recurrent Inference Machines, as presented in \
     Karkalousos, D. et al.
@@ -60,7 +59,7 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
 
         self.cirim = torch.nn.ModuleList(
             [
-                RIMBlock(
+                rim_block.RIMBlock(
                     recurrent_layer=cfg_dict.get("recurrent_layer"),
                     conv_filters=cfg_dict.get("conv_filters"),
                     conv_kernels=cfg_dict.get("conv_kernels"),
@@ -91,15 +90,15 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
         # initialize weights if not using pretrained cirim
         if not cfg_dict.get("pretrained", False):
             std_init_range = 1 / self.recurrent_filters[0] ** 0.5
-            self.cirim.apply(lambda module: rnn_weights_init(module, std_init_range))
+            self.cirim.apply(lambda module: rnn_utils.rnn_weights_init(module, std_init_range))
 
-        self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
+        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
 
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
         self.accumulate_estimates = True
 
-    @typecheck()
+    @common_classes.typecheck()
     def forward(
         self,
         y: torch.Tensor,
@@ -173,12 +172,14 @@ class CIRIM(BaseMRIReconstructionModel, ABC):
         """
         # Take the last time step of the eta
         if not self.no_dc or do_coil_combination:
-            pred = ifft2(
+            pred = fft.ifft2(
                 pred, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
             )
-            pred = coil_combination(pred, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim)
+            pred = utils.coil_combination(
+                pred, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim
+            )
         pred = torch.view_as_complex(pred)
-        _, pred = center_crop_to_smallest(target, pred)
+        _, pred = utils.center_crop_to_smallest(target, pred)
         return pred
 
     def process_loss(self, target, pred, _loss_fn=None, mask=None):

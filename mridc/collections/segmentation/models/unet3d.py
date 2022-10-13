@@ -8,14 +8,14 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-from mridc.collections.segmentation.models.base import BaseMRIJointReconstructionSegmentationModel
-from mridc.collections.segmentation.models.unet3d_base.unet3d_block import UNet3D
-from mridc.core.classes.common import typecheck
+import mridc.collections.segmentation.models.base as base_segmentation_models
+import mridc.collections.segmentation.models.unet3d_base.unet3d_block as unet3d_block
+import mridc.core.classes.common as common_classes
 
 __all__ = ["Segmentation3DUNet"]
 
 
-class Segmentation3DUNet(BaseMRIJointReconstructionSegmentationModel, ABC):
+class Segmentation3DUNet(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel, ABC):
     """
     Implementation of the UNet, as presented in O. Ronneberger, P. Fischer, and Thomas Brox.
 
@@ -50,7 +50,7 @@ class Segmentation3DUNet(BaseMRIJointReconstructionSegmentationModel, ABC):
                 "Segmentation module input channels must be either 1 or 2. Found: {}".format(self.input_channels)
             )
 
-        self.segmentation_module = UNet3D(
+        self.segmentation_module = unet3d_block.UNet3D(
             in_chans=self.input_channels,
             out_chans=cfg_dict.get("segmentation_module_output_channels", 2),
             chans=cfg_dict.get("segmentation_module_channels", 64),
@@ -61,7 +61,7 @@ class Segmentation3DUNet(BaseMRIJointReconstructionSegmentationModel, ABC):
         self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
         self.magnitude_input = cfg_dict.get("magnitude_input", True)
 
-    @typecheck()
+    @common_classes.typecheck()
     def forward(
         self,
         y: torch.Tensor,
