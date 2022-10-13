@@ -1,0 +1,8 @@
+schemaVersion: 2.2.0
+metadata:
+ name: 'MRIDC config'
+attributes:
+ space:
+  instanceType: regular
+  editor:
+   type: Idea
