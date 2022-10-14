@@ -33,7 +33,7 @@ class GlobalAverageLossMetric(Metric):
     values of :meth:`update` method ``loss`` argument has to be a sum of losses. default: ``True``
     """
 
-    full_state_update = True
+    full_state_update: bool = True
 
     def __init__(self, compute_on_step=True, dist_sync_on_step=False, process_group=None, take_avg_loss=True):
         super().__init__(

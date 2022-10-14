@@ -44,6 +44,8 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
+        self.use_reconstruction_module = cfg_dict.get("use_reconstruction_module", True)
+
         self.fft_centered = cfg_dict.get("fft_centered")
         self.fft_normalization = cfg_dict.get("fft_normalization")
         self.spatial_dims = cfg_dict.get("spatial_dims")
@@ -55,8 +57,6 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
             raise NotImplementedError(f"Currently only 2D is supported for segmentation, got {self.dimensionality}D.")
         self.input_channels = cfg_dict.get("segmentation_module_input_channels", 2)
         self.magnitude_input = cfg_dict.get("magnitude_input", True)
-
-        self.use_reconstruction_module = True
 
         reconstruction_module_recurrent_filters = cfg_dict.get("reconstruction_module_recurrent_filters")
         reconstruction_module_num_cascades = cfg_dict.get("reconstruction_module_num_cascades")
@@ -335,6 +335,7 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
         loss: torch.FloatTensor, shape [1]
             If self.accumulate_loss is True, returns an accumulative result of all intermediate losses.
         """
+        target = target.to(self.device)
         target = torch.abs(target / torch.max(torch.abs(target)))
 
         if "ssim" in str(_loss_fn).lower():

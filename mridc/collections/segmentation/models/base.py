@@ -50,8 +50,8 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
         self.segmentation_loss_fn = {"cross_entropy": None, "dice": None}
+        self.total_segmentation_loss_weight = cfg_dict.get("total_segmentation_loss_weight", 1.0)
         segmentation_loss_fn = cfg_dict.get("segmentation_loss_fn")
-
         if "cross_entropy" in segmentation_loss_fn:
             cross_entropy_loss_weight = cfg_dict.get("cross_entropy_loss_weight", None)
             if not utils.is_none(cross_entropy_loss_weight):
@@ -120,6 +120,7 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
 
         self.use_reconstruction_module = cfg_dict.get("use_reconstruction_module")
         if self.use_reconstruction_module:
+            self.total_reconstruction_loss_weight = cfg_dict.get("total_reconstruction_loss_weight", 1.0)
             reconstruction_loss_fn = cfg_dict.get("reconstruction_loss_fn")
             if reconstruction_loss_fn == "ssim":
                 self.train_loss_fn = reconstruction_losses.ssim.SSIMLoss()
@@ -306,9 +307,12 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             )
             if self.reconstruction_module_accumulate_estimates:
                 reconstruction_loss = sum(reconstruction_loss)
-            train_loss = segmentation_loss + reconstruction_loss
+            train_loss = (
+                self.total_segmentation_loss_weight * segmentation_loss
+                + self.total_reconstruction_loss_weight * reconstruction_loss
+            )
         else:
-            train_loss = segmentation_loss
+            train_loss = self.total_segmentation_loss_weight * segmentation_loss
 
         self.acc = r if r != 0 else acc
         tensorboard_logs = {
@@ -415,7 +419,11 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             )
             if self.reconstruction_module_accumulate_estimates:
                 reconstruction_loss = sum(reconstruction_loss)
-            val_loss = segmentation_loss + reconstruction_loss
+
+            val_loss = (
+                self.total_segmentation_loss_weight * segmentation_loss
+                + self.total_reconstruction_loss_weight * reconstruction_loss
+            )
 
             # Cascades
             if isinstance(pred_reconstruction, list):
@@ -457,7 +465,7 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
                 )
             ).view(1)
         else:
-            val_loss = segmentation_loss
+            val_loss = self.total_segmentation_loss_weight * segmentation_loss
 
         for class_idx in range(target_segmentation.shape[1]):  # type: ignore
             target_segmentation_class = target_segmentation[:, class_idx]  # type: ignore

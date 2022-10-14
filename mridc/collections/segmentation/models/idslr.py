@@ -40,6 +40,8 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
+        self.use_reconstruction_module = cfg_dict.get("use_reconstruction_module", True)
+
         self.fft_centered = cfg_dict.get("fft_centered")
         self.fft_normalization = cfg_dict.get("fft_normalization")
         self.spatial_dims = cfg_dict.get("spatial_dims")
@@ -105,7 +107,6 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
         self.dc = nn.ModuleList([idslr_block.DC(soft_dc=soft_dc) for _ in range(num_cascades)])
         self.num_iters = num_iters
 
-        self.use_reconstruction_module = True
         self.reconstruction_module_accumulate_estimates = cfg_dict.get(
             "reconstruction_module_accumulate_estimates", False
         )

@@ -10,6 +10,7 @@ from typing import Dict, Optional, Sequence, Tuple
 import h5py
 import numpy as np
 import torch
+
 import wandb
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
@@ -27,6 +28,8 @@ import mridc.collections.reconstruction.parts.transforms as transforms
 import mridc.core.classes.modelPT as modelPT
 import mridc.utils.model_utils as model_utils
 
+wandb.require("service")
+
 __all__ = ["BaseMRIReconstructionModel", "BaseSensitivityModel", "DistributedMetricSum"]
 
 
@@ -36,9 +39,10 @@ class DistributedMetricSum(Metric):
     Taken from: https://github.com/facebookresearch/fastMRI/blob/main/fastmri/pl_modules/mri_module.py
     """
 
+    full_state_update: bool = True
+
     def __init__(self, dist_sync_on_step=True):
         super().__init__(dist_sync_on_step=dist_sync_on_step)
-
         self.add_state("quantity", default=torch.tensor(0.0), dist_reduce_fx="sum")
 
     def update(self, batch: torch.Tensor):  # type: ignore

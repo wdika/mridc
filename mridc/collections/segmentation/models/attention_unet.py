@@ -24,13 +24,14 @@ class SegmentationAttentionUNet(base_segmentation_models.BaseMRIJointReconstruct
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
+        self.use_reconstruction_module = cfg_dict.get("use_reconstruction_module", False)
+
         self.fft_centered = cfg_dict.get("fft_centered")
         self.fft_normalization = cfg_dict.get("fft_normalization")
         self.spatial_dims = cfg_dict.get("spatial_dims")
         self.coil_dim = cfg_dict.get("coil_dim")
         self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
-        self.use_reconstruction_module = False
         self.input_channels = cfg_dict.get("segmentation_module_input_channels", 2)
         if self.input_channels == 0:
             raise ValueError("Segmentation module input channels cannot be 0.")
