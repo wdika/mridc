@@ -5,6 +5,7 @@ import math
 from abc import ABC
 from typing import Any, Tuple
 
+import numpy as np
 import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
@@ -53,7 +54,7 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
         if self.dimensionality != 2:
             raise NotImplementedError(f"Currently only 2D is supported for segmentation, got {self.dimensionality}D.")
 
-        self.input_channels = cfg_dict.get("reconstruction_module_input_channels", 2)
+        self.reconstruction_module_input_channels = cfg_dict.get("reconstruction_module_input_channels", 2)
         out_chans = cfg_dict.get("reconstruction_module_output_channels", 2)
         seg_out_chans = cfg_dict.get("segmentation_module_output_channels", 2)
         num_iters = cfg_dict.get("num_iters", 5)
@@ -71,7 +72,7 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
                 idslr_block.UnetEncoder(
                     chans=chans,
                     num_pools=num_pools,
-                    in_chans=self.input_channels,
+                    in_chans=self.reconstruction_module_input_channels,
                     drop_prob=drop_prob,
                     padding_size=padding_size,
                     normalize=normalize,
@@ -151,6 +152,16 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
             )
             mask = mask.reshape(mask.shape[0] * mask.shape[1], *mask.shape[2:])  # type: ignore
 
+        # In case of deviating number of coils, we need to pad up to maximum number of coils == number of input \
+        # channels for the reconstruction module
+        num_coils = y.shape[1]
+        if num_coils * 2 != self.reconstruction_module_input_channels:
+            num_coils_to_add = (self.reconstruction_module_input_channels - num_coils * 2) // 2
+            dummy_coil_data = torch.zeros_like(torch.movedim(y, self.coil_dim, 0)[0]).unsqueeze(self.coil_dim)
+            for _ in range(num_coils_to_add):
+                y = torch.cat([y, dummy_coil_data], dim=self.coil_dim)
+                sensitivity_maps = torch.cat([sensitivity_maps, dummy_coil_data], dim=self.coil_dim)
+
         preds = []
         for encoder, decoder, dc in zip(self.encoders, self.decoders, self.dc):
             tmp = []
@@ -210,3 +221,57 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
             target = torch.view_as_complex(target)
         _, pred = utils.center_crop_to_smallest(target, pred)
         return pred
+
+    def process_reconstruction_loss(self, target, pred, _loss_fn=None):
+        """
+        Process the loss.
+
+        Parameters
+        ----------
+        target: Target data.
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        pred: Final prediction(s).
+            list of torch.Tensor, shape [batch_size, n_x, n_y, 2], or
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        _loss_fn: Loss function.
+            torch.nn.Module, default torch.nn.L1Loss()
+
+        Returns
+        -------
+        loss: torch.FloatTensor, shape [1]
+            If self.accumulate_loss is True, returns an accumulative result of all intermediate losses.
+        """
+        target = target.to(self.device)
+        target = torch.abs(target / torch.max(torch.abs(target)))
+
+        if "ssim" in str(_loss_fn).lower():
+            max_value = np.array(torch.max(torch.abs(target)).item()).astype(np.float32)
+
+            def loss_fn(x, y):
+                """Calculate the ssim loss."""
+                y = torch.abs(y / torch.max(torch.abs(y)))
+                return _loss_fn(
+                    x,
+                    y,
+                    data_range=torch.tensor(max_value).unsqueeze(dim=0).to(x.device),
+                )
+
+        else:
+
+            def loss_fn(x, y):
+                """Calculate other loss."""
+                x = torch.abs(x / torch.max(torch.abs(x)))
+                y = torch.abs(y / torch.max(torch.abs(y)))
+                return _loss_fn(x, y)
+
+        if self.reconstruction_module_accumulate_estimates:
+            cascades_loss = []
+            for cascade_pred in pred:
+                time_steps_loss = [loss_fn(target, time_step_pred) for time_step_pred in cascade_pred]
+                _loss = [
+                    x * torch.logspace(-1, 0, steps=self.num_iters).to(time_steps_loss[0]) for x in time_steps_loss
+                ]
+                cascades_loss.append(sum(sum(_loss) / self.num_iters))
+            yield sum(list(cascades_loss)) / len(pred)
+        else:
+            return loss_fn(target, pred)

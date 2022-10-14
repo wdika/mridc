@@ -158,6 +158,7 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
         loss: torch.FloatTensor, shape [1]
             If self.accumulate_loss is True, returns an accumulative result of all intermediate losses.
         """
+        target = target.to(self.device)
         target = torch.abs(target / torch.max(torch.abs(target)))
 
         if "ssim" in str(_loss_fn).lower():
