@@ -28,8 +28,7 @@ class ExportFormat(Enum):
     TORCHSCRIPT = (2,)
 
 
-_EXT_DICT = {".pt": ExportFormat.TORCHSCRIPT,
-             ".ts": ExportFormat.TORCHSCRIPT, ".onnx": ExportFormat.ONNX}
+_EXT_DICT = {".pt": ExportFormat.TORCHSCRIPT, ".ts": ExportFormat.TORCHSCRIPT, ".onnx": ExportFormat.ONNX}
 
 
 def cast_tensor(x, from_dtype=torch.float16, to_dtype=torch.float32):
@@ -57,8 +56,7 @@ class CastToFloat(nn.Module):
     def forward(self, x):
         """Forward pass"""
         return (
-            self.mod.forward(x.to(torch.float32).to(
-                x.dtype)) if torch.is_autocast_enabled() else self.mod.forward(x)
+            self.mod.forward(x.to(torch.float32).to(x.dtype)) if torch.is_autocast_enabled() else self.mod.forward(x)
         )
 
 
@@ -68,8 +66,7 @@ def get_export_format(filename: str):
     try:
         return _EXT_DICT[ext]
     except KeyError as e:
-        raise ValueError(
-            f"Export file {filename} extension does not correspond to any export format!") from e
+        raise ValueError(f"Export file {filename} extension does not correspond to any export format!") from e
 
 
 def augment_filename(output: str, prepend: str):
@@ -139,8 +136,7 @@ def verify_runtime(
     # skipcq: PYL-W0622
     global ort_available
     if not ort_available:
-        logging.warning(
-            f"ONNX generated at {output}, not verified - please install onnxruntime_gpu package.\n")
+        logging.warning(f"ONNX generated at {output}, not verified - please install onnxruntime_gpu package.\n")
         onnx.checker.check_model(onnx_model, full_check=True)
         return
 
@@ -154,13 +150,10 @@ def verify_runtime(
     for input_example in input_examples:
         input_list, input_dict = parse_input_example(input_example)
         output_example = model.forward(*input_list, **input_dict)
-        ort_input = to_onnxrt_input(
-            ort_input_names, input_names, input_dict, input_list)
-        all_good = all_good and run_ort_and_compare(
-            sess, ort_input, output_example, check_tolerance)
+        ort_input = to_onnxrt_input(ort_input_names, input_names, input_dict, input_list)
+        all_good = all_good and run_ort_and_compare(sess, ort_input, output_example, check_tolerance)
     status = "SUCCESS" if all_good else "FAIL"
-    logging.info(
-        f"ONNX generated at {output} verified with onnxruntime : {status}")
+    logging.info(f"ONNX generated at {output} verified with onnxruntime : {status}")
     return all_good
 
 
@@ -172,12 +165,10 @@ def run_ort_and_compare(sess, ort_input, output_example, check_tolerance=0.01):
         expected = output_example[i]
         if torch.is_tensor(expected):
             tout = torch.from_numpy(out)
-            logging.info(
-                f"Checking output {i}, shape: {expected.shape}:\n{expected}\n{tout}")
+            logging.info(f"Checking output {i}, shape: {expected.shape}:\n{expected}\n{tout}")
             if not torch.allclose(tout, expected.cpu(), rtol=check_tolerance, atol=100 * check_tolerance):
                 all_good = False
-                logging.info(
-                    f"onnxruntime results mismatch! PyTorch(expected):\n{expected}\nONNXruntime:\n{tout}")
+                logging.info(f"onnxruntime results mismatch! PyTorch(expected):\n{expected}\nONNXruntime:\n{tout}")
     return all_good
 
 

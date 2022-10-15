@@ -58,8 +58,7 @@ def test_conv(shape, out_channels, hidden_channels, n_convs, act, batchnorm):
     Returns:
         None
     """
-    model = Conv2d(shape[1], out_channels,
-                   hidden_channels, n_convs, act, batchnorm)
+    model = Conv2d(shape[1], out_channels, hidden_channels, n_convs, act, batchnorm)
 
     data = create_input(shape).cpu()
 

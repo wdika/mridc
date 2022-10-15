@@ -32,8 +32,7 @@ def test_case_1():
         bool_0 = True
         set_0 = None
         float_1 = -968.98
-        conv2d_0 = module_0.Conv2d(
-            bool_0, set_0, set_0, list_0, float_0, float_1)
+        conv2d_0 = module_0.Conv2d(bool_0, set_0, set_0, list_0, float_0, float_1)
     except BaseException:
         pass
 
@@ -75,8 +74,7 @@ def test_case_7():
         tuple_0 = ()
         dict_0 = {tuple_0: str_1, str_1: set_0, tuple_0: tuple_0}
         bytes_0 = b"\xfc(\x9b'\x04\x15\xf3\x9f\xa1\x0f\xccL\xc9\x97(\x94D\xd13r"
-        conv2d_0 = module_0.Conv2d(
-            str_0, set_0, str_1, dict_0, tuple_0, bytes_0)
+        conv2d_0 = module_0.Conv2d(str_0, set_0, str_1, dict_0, tuple_0, bytes_0)
     except BaseException:
         pass
 
@@ -111,7 +109,6 @@ def test_case_9():
         int_0 = 2827
         float_1 = 1595.102808
         tuple_1 = str_2, str_3, int_0, float_1
-        conv2d_1 = module_0.Conv2d(
-            str_0, tuple_0, conv2d_0, tuple_1, int_0, int_0)
+        conv2d_1 = module_0.Conv2d(str_0, tuple_0, conv2d_0, tuple_1, int_0, int_0)
     except BaseException:
         pass

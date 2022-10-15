@@ -19,8 +19,7 @@ class TestHydraRunner:
 
         with pytest.raises(subprocess.CalledProcessError):
             # Run the call as subprocess.
-            subprocess.check_call(
-                call, shell=True, stdout=sys.stdout, stderr=sys.stdout)
+            subprocess.check_call(call, shell=True, stdout=sys.stdout, stderr=sys.stdout)
 
     @pytest.mark.integration
     def test_config1(self):
@@ -31,8 +30,7 @@ class TestHydraRunner:
         # Run the call as subprocess.
         with pytest.raises(subprocess.CalledProcessError):
             # Run the call as subprocess.
-            subprocess.check_call(
-                call, shell=True, stdout=sys.stdout, stderr=sys.stdout)
+            subprocess.check_call(call, shell=True, stdout=sys.stdout, stderr=sys.stdout)
 
         # Make sure that .hydra dir is not present.
         assert not path.exists(".hydra")
@@ -47,8 +45,7 @@ class TestHydraRunner:
 
         with pytest.raises(subprocess.CalledProcessError):
             # Run the call as subprocess.
-            subprocess.check_call(
-                call, shell=True, stdout=sys.stdout, stderr=sys.stdout)
+            subprocess.check_call(call, shell=True, stdout=sys.stdout, stderr=sys.stdout)
 
     @pytest.mark.integration
     def test_config2(self):
@@ -59,8 +56,7 @@ class TestHydraRunner:
         # Run the call as subprocess.
         with pytest.raises(subprocess.CalledProcessError):
             # Run the call as subprocess.
-            subprocess.check_call(
-                call, shell=True, stdout=sys.stdout, stderr=sys.stdout)
+            subprocess.check_call(call, shell=True, stdout=sys.stdout, stderr=sys.stdout)
 
         # Make sure that .hydra dir is not present.
         assert not path.exists(".hydra")
@@ -75,8 +71,7 @@ class TestHydraRunner:
 
         with pytest.raises(subprocess.CalledProcessError):
             # Run the call as subprocess.
-            subprocess.check_call(
-                call, shell=True, stdout=sys.stdout, stderr=sys.stdout)
+            subprocess.check_call(call, shell=True, stdout=sys.stdout, stderr=sys.stdout)
 
     @pytest.mark.integration
     def test_config2_filepath_schema(self):
@@ -86,5 +81,4 @@ class TestHydraRunner:
 
         with pytest.raises(subprocess.CalledProcessError):
             # Run the call as subprocess.
-            subprocess.check_call(
-                call, shell=True, stdout=sys.stdout, stderr=sys.stdout)
+            subprocess.check_call(call, shell=True, stdout=sys.stdout, stderr=sys.stdout)

@@ -47,8 +47,7 @@ class Dataset(data.Dataset, Typing, Serialization, ABC):
         Collated batch, with or without types.
         """
         if self.input_types is not None:
-            raise TypeError(
-                "Datasets should not implement `input_types` as they are not checked")
+            raise TypeError("Datasets should not implement `input_types` as they are not checked")
 
         # Simply forward the inner `_collate_fn`
         return self._collate_fn(batch)
@@ -89,8 +88,7 @@ class IterableDataset(data.IterableDataset, Typing, Serialization, ABC):
         Collated batch, with or without types.
         """
         if self.input_types is not None:
-            raise TypeError(
-                "Datasets should not implement `input_types` as they are not checked")
+            raise TypeError("Datasets should not implement `input_types` as they are not checked")
 
         # Simply forward the inner `_collate_fn`
         return self._collate_fn(batch)

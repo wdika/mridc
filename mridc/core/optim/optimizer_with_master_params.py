@@ -43,8 +43,7 @@ def _multi_tensor_copy_this_to_that(this, that, overflow_buf):
     """
     if overflow_buf:
         # Scaling with factor `1.0` is equivalent to copy.
-        multi_tensor_applier(amp_C.multi_tensor_scale,
-                             overflow_buf, [this, that], 1.0)
+        multi_tensor_applier(amp_C.multi_tensor_scale, overflow_buf, [this, that], 1.0)
     else:
         # FIXME: use multi-tensor applier for bf16
         for this_, that_ in zip(this, that):
@@ -56,12 +55,10 @@ class GradBucket:
 
     def __init__(self, numel, chunk_size_mb):
         if not HAVE_APEX:
-            raise ImportError(
-                "Apex was not found. Using model parallel models will error out.")
+            raise ImportError("Apex was not found. Using model parallel models will error out.")
 
         self.numel = numel
-        self.data = torch.zeros(self.numel, dtype=torch.float,
-                                device=torch.cuda.current_device(), requires_grad=False)
+        self.data = torch.zeros(self.numel, dtype=torch.float, device=torch.cuda.current_device(), requires_grad=False)
 
         self.chunk_size_mb = chunk_size_mb
         if self.chunk_size_mb > 0:
@@ -73,8 +70,7 @@ class GradBucket:
                 self.num_chunks += 1
                 self.numel_per_chunk.append(self.numel % self.chunk_size_numel)
 
-            self.start_index_per_chunk = torch.cumsum(
-                torch.tensor([0] + self.numel_per_chunk[:-1]), dim=0)
+            self.start_index_per_chunk = torch.cumsum(torch.tensor([0] + self.numel_per_chunk[:-1]), dim=0)
             self.current_chunk = 0
             self.computed_numel_per_chunk = [0] * self.num_chunks
 
@@ -85,15 +81,13 @@ class GradBucket:
     def allreduce_buffer(self):
         """Synchronous buffer data allreduce"""
         self.data.div_(get_data_parallel_world_size())
-        torch.distributed.all_reduce(
-            self.data, group=get_data_parallel_group())  # type: ignore
+        torch.distributed.all_reduce(self.data, group=get_data_parallel_group())  # type: ignore
 
     def get(self, shape, start_index):
         """Return a tensor with the input `shape` as a view into the 1-D data starting at `start_index`."""
         end_index = start_index + shape.numel()
         if end_index > self.numel:
-            raise AssertionError(
-                "requested tensor is out of the buffer range.")
+            raise AssertionError("requested tensor is out of the buffer range.")
         buffer_tensor = self.data[start_index:end_index]
         buffer_tensor = buffer_tensor.view(shape)
 
@@ -102,15 +96,12 @@ class GradBucket:
             chunk = start_index // self.chunk_size_numel
             chunk_start_index = self.start_index_per_chunk[chunk]
             chunk_end_index = chunk_start_index + self.numel_per_chunk[chunk]
-            grad_chunk_info = {chunk: min(
-                chunk_end_index, end_index) - start_index}
+            grad_chunk_info = {chunk: min(chunk_end_index, end_index) - start_index}
             while chunk_end_index < end_index:
                 chunk += 1
                 chunk_start_index = self.start_index_per_chunk[chunk]
-                chunk_end_index = chunk_start_index + \
-                    self.numel_per_chunk[chunk]
-                grad_chunk_info[chunk] = min(
-                    chunk_end_index, end_index) - chunk_start_index
+                chunk_end_index = chunk_start_index + self.numel_per_chunk[chunk]
+                grad_chunk_info[chunk] = min(chunk_end_index, end_index) - chunk_start_index
 
         return buffer_tensor, grad_chunk_info
 
@@ -125,8 +116,7 @@ class GradBucket:
             return None
 
         chunk_start_index = self.start_index_per_chunk[self.current_chunk]
-        chunk_end_index = chunk_start_index + \
-            self.numel_per_chunk[self.current_chunk]
+        chunk_end_index = chunk_start_index + self.numel_per_chunk[self.current_chunk]
         self.computed_numel_per_chunk[self.current_chunk] = 0
         self.current_chunk += 1
         if self.current_chunk == self.num_chunks:
@@ -162,15 +152,13 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
     ):
         super().__init__(optimizer.param_groups)
         if not HAVE_APEX:
-            raise ImportError(
-                "Apex was not found. Using model parallel models will error out.")
+            raise ImportError("Apex was not found. Using model parallel models will error out.")
 
         self.optimizer = optimizer
         if not self.optimizer:
             raise AssertionError("no optimizer is provided.")
         if contiguous_grad_bucket and not fp32_grad_accum:
-            raise AssertionError(
-                "contiguous gradient buffer assumes using fp32 grad.")
+            raise AssertionError("contiguous gradient buffer assumes using fp32 grad.")
         if async_grad_allreduce:
             if not fp32_grad_accum:
                 raise AssertionError(
@@ -211,12 +199,10 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
             for i, param_group in enumerate(self.optimizer.param_groups):
                 for param in param_group["params"]:
                     if param.requires_grad:
-                        num_elements[i] = num_elements.get(
-                            i, 0) + param.data.nelement()
+                        num_elements[i] = num_elements.get(i, 0) + param.data.nelement()
 
                 # Allocate gradient memory buffers for each data type
-                self._main_grad_buffers[i] = GradBucket(
-                    num_elements[i], self._grad_allreduce_chunk_size_mb)
+                self._main_grad_buffers[i] = GradBucket(num_elements[i], self._grad_allreduce_chunk_size_mb)
 
         # Three groups of parameters:
         self.float16_groups = []  # original float16 parameters
@@ -243,8 +229,7 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
                         main_param = param.detach().clone().float()
 
                         # Copy tensor model parallel attributes.
-                        copy_tensor_model_parallel_attributes(
-                            main_param, param)
+                        copy_tensor_model_parallel_attributes(main_param, param)
                         if hasattr(param, "shared"):
                             main_param.shared = param.shared
 
@@ -261,8 +246,7 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
                         fp32_from_float16_params_this_group.append(main_param)
                         # Reset existing state dict key to the new main param.
                         if param in self.optimizer.state:
-                            self.optimizer.state[main_param] = self.optimizer.state.pop(
-                                param)
+                            self.optimizer.state[main_param] = self.optimizer.state.pop(param)
                     elif param.type() == "torch.cuda.FloatTensor":
                         fp32_params_this_group.append(param)
                         param_group["params"][j] = param
@@ -279,13 +263,11 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
                     param_tmp = param.expand_as(param)
                     # Get the gradient accumulator function.
                     grad_acc = param_tmp.grad_fn.next_functions[0][0]
-                    grad_acc.register_hook(self._make_param_hook(
-                        param, main_param, i, grad_chunk_info))
+                    grad_acc.register_hook(self._make_param_hook(param, main_param, i, grad_chunk_info))
                     self.grad_accs.append(grad_acc)
 
             self.float16_groups.append(float16_params_this_group)
-            self.fp32_from_float16_groups.append(
-                fp32_from_float16_params_this_group)
+            self.fp32_from_float16_groups.append(fp32_from_float16_params_this_group)
             self.fp32_from_fp32_groups.append(fp32_params_this_group)
 
         # Leverage state_dict() and load_state_dict() to
@@ -309,11 +291,9 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
             # Asynchronous gradients allreduce across data_parallel ranks
             if self._require_backward_grad_sync:
                 if self._grad_allreduce_chunk_size_mb > 0:
-                    self._main_grad_buffers[i].update_chunk_info(
-                        grad_chunk_info)
+                    self._main_grad_buffers[i].update_chunk_info(grad_chunk_info)
                     while True:
-                        allreduce_tensor = self._main_grad_buffers[i].get_allreduce_tensor(
-                        )
+                        allreduce_tensor = self._main_grad_buffers[i].get_allreduce_tensor()
                         if allreduce_tensor is None:
                             break
                         if self._grad_div_ar_fusion:
@@ -321,12 +301,10 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
                                 allreduce_tensor,
                                 group=get_data_parallel_group(),
                                 async_op=True,
-                                op=torch.distributed.make_nccl_premul_sum(
-                                    self._grad_divisor),
+                                op=torch.distributed.make_nccl_premul_sum(self._grad_divisor),
                             )
                         else:
-                            allreduce_tensor.div_(
-                                get_data_parallel_world_size())
+                            allreduce_tensor.div_(get_data_parallel_world_size())
                             torch.distributed.all_reduce(
                                 allreduce_tensor,
                                 group=get_data_parallel_group(),
@@ -338,8 +316,7 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
                             main_param.grad,
                             group=get_data_parallel_group(),
                             async_op=True,
-                            op=torch.distributed.make_nccl_premul_sum(
-                                self._grad_divisor),
+                            op=torch.distributed.make_nccl_premul_sum(self._grad_divisor),
                         )
                     else:
                         main_param.grad.div_(get_data_parallel_world_size())
@@ -398,8 +375,7 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
         """Set overflow buffer."""
         if half_dtype == torch.float16:
             if self._dummy_overflow_buf is None:
-                self._dummy_overflow_buf = torch.cuda.IntTensor(
-                    [0])  # type: ignore
+                self._dummy_overflow_buf = torch.cuda.IntTensor([0])  # type: ignore
             else:
                 self._dummy_overflow_buf.fill_(0)
 
@@ -408,16 +384,14 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
         # Only needed for the float16 params.
         model_data, main_data, half_dtype = self._get_model_and_main_params_data_float16()
         self._set_overflow_buffer(half_dtype)
-        _multi_tensor_copy_this_to_that(
-            this=main_data, that=model_data, overflow_buf=self._dummy_overflow_buf)
+        _multi_tensor_copy_this_to_that(this=main_data, that=model_data, overflow_buf=self._dummy_overflow_buf)
 
     def _copy_model_params_to_main_params(self):
         """Copy model params to main params."""
         # Only needed for the float16 params.
         model_data, main_data, half_dtype = self._get_model_and_main_params_data_float16()
         self._set_overflow_buffer(half_dtype)
-        _multi_tensor_copy_this_to_that(
-            this=model_data, that=main_data, overflow_buf=self._dummy_overflow_buf)
+        _multi_tensor_copy_this_to_that(this=model_data, that=main_data, overflow_buf=self._dummy_overflow_buf)
 
     def reload_model_params(self):
         """Reload model params."""
@@ -448,8 +422,7 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
         optimizer_key = "optimizer"
         if optimizer_key not in state_dict:
             optimizer_key = "optimizer_state_dict"
-            logging.info(
-                "***WARNING*** loading optimizer from " "an old checkpoint ...")
+            logging.info("***WARNING*** loading optimizer from " "an old checkpoint ...")
         self.optimizer.load_state_dict(state_dict[optimizer_key])
 
         # Copy data for the main params.

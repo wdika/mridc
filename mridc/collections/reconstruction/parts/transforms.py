@@ -119,8 +119,7 @@ class MRIDataTransforms:
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
         self.max_norm = max_norm
-        self.spatial_dims = spatial_dims if spatial_dims is not None else [
-            -2, -1]
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
         self.coil_dim = coil_dim - 1 if self.dimensionality == 2 else coil_dim
 
         self.apply_prewhitening = apply_prewhitening
@@ -220,11 +219,9 @@ class MRIDataTransforms:
 
         # Apply zero-filling on kspace
         if self.kspace_zero_filling_size is not None and self.kspace_zero_filling_size not in ("", "None"):
-            padding_top = np.floor_divide(
-                abs(int(self.kspace_zero_filling_size[0]) - kspace.shape[1]), 2)
+            padding_top = np.floor_divide(abs(int(self.kspace_zero_filling_size[0]) - kspace.shape[1]), 2)
             padding_bottom = padding_top
-            padding_left = np.floor_divide(
-                abs(int(self.kspace_zero_filling_size[1]) - kspace.shape[2]), 2)
+            padding_left = np.floor_divide(abs(int(self.kspace_zero_filling_size[1]) - kspace.shape[2]), 2)
             padding_right = padding_left
 
             kspace = torch.view_as_complex(kspace)
@@ -255,8 +252,7 @@ class MRIDataTransforms:
             )
 
         # Initial estimation
-        eta = utils.to_tensor(
-            eta) if eta is not None and eta.size != 0 else torch.tensor([])
+        eta = utils.to_tensor(eta) if eta is not None and eta.size != 0 else torch.tensor([])
 
         # If the target is not given, we need to compute it.
         if self.coil_combination_method.upper() == "RSS":
@@ -383,14 +379,13 @@ class MRIDataTransforms:
             if (not utils.is_none(padding[0]) and not utils.is_none(padding[1])) and padding[0] != 0:
                 mask[:, :, : padding[0]] = 0
                 # padding value inclusive on right of zeros
-                mask[:, :, padding[1]:] = 0
+                mask[:, :, padding[1] :] = 0
 
             if isinstance(mask, np.ndarray):
                 mask = torch.from_numpy(mask).unsqueeze(0).unsqueeze(-1)
 
             if self.shift_mask:
-                mask = torch.fft.fftshift(mask, dim=(
-                    self.spatial_dims[0] - 1, self.spatial_dims[1] - 1))
+                mask = torch.fft.fftshift(mask, dim=(self.spatial_dims[0] - 1, self.spatial_dims[1] - 1))
 
             if self.crop_size is not None and self.crop_size not in ("", "None") and self.crop_before_masking:
                 mask = utils.complex_center_crop(mask, self.crop_size)
@@ -403,8 +398,7 @@ class MRIDataTransforms:
             acc = torch.tensor([1])
 
             if mask is None:
-                mask = torch.ones(
-                    masked_kspace.shape[-3], masked_kspace.shape[-2]).type(torch.float32)
+                mask = torch.ones(masked_kspace.shape[-3], masked_kspace.shape[-2]).type(torch.float32)
             else:
                 mask = torch.from_numpy(mask)
 
@@ -415,8 +409,7 @@ class MRIDataTransforms:
                     mask = mask.permute(1, 0)
                 elif mask.shape[0] != masked_kspace.shape[1]:  # type: ignore
                     mask = torch.ones(
-                        [masked_kspace.shape[-3], masked_kspace.shape[-2]
-                         ], dtype=torch.float32  # type: ignore
+                        [masked_kspace.shape[-3], masked_kspace.shape[-2]], dtype=torch.float32  # type: ignore
                     )
 
             if mask.shape[-2] == 1:  # 1D mask
@@ -469,8 +462,7 @@ class MRIDataTransforms:
                     _masked_kspace = torch.stack(_masked_kspace, dim=0)
                     _mask = _i_mask.unsqueeze(0)
                 else:
-                    raise ValueError(
-                        f"Unsupported data dimensionality {self.dimensionality}D.")
+                    raise ValueError(f"Unsupported data dimensionality {self.dimensionality}D.")
                 masked_kspaces.append(_masked_kspace)
                 masks.append(_mask.byte())
                 accs.append(_acc)
@@ -529,8 +521,7 @@ class MRIDataTransforms:
                 )
             )
 
-            mask = utils.center_crop(
-                mask.squeeze(-1), self.crop_size).unsqueeze(-1)
+            mask = utils.center_crop(mask.squeeze(-1), self.crop_size).unsqueeze(-1)
 
         # Normalize by the max value.
         if self.normalize_inputs:
@@ -551,11 +542,9 @@ class MRIDataTransforms:
                         spatial_dims=self.spatial_dims,
                     )
                 elif self.fft_normalization in ("none", None) and self.max_norm:
-                    imspace = torch.fft.ifftn(torch.view_as_complex(
-                        kspace), dim=list(self.spatial_dims), norm=None)
+                    imspace = torch.fft.ifftn(torch.view_as_complex(kspace), dim=list(self.spatial_dims), norm=None)
                     imspace = imspace / torch.max(torch.abs(imspace))
-                    kspace = torch.view_as_real(torch.fft.fftn(
-                        imspace, dim=list(self.spatial_dims), norm=None))
+                    kspace = torch.view_as_real(torch.fft.fftn(imspace, dim=list(self.spatial_dims), norm=None))
 
                 masked_kspaces = []
                 for y in masked_kspace:
@@ -575,11 +564,9 @@ class MRIDataTransforms:
                             spatial_dims=self.spatial_dims,
                         )
                     elif self.fft_normalization in ("none", None) and self.max_norm:
-                        imspace = torch.fft.ifftn(torch.view_as_complex(
-                            y), dim=list(self.spatial_dims), norm=None)
+                        imspace = torch.fft.ifftn(torch.view_as_complex(y), dim=list(self.spatial_dims), norm=None)
                         imspace = imspace / torch.max(torch.abs(imspace))
-                        y = torch.view_as_real(torch.fft.fftn(
-                            imspace, dim=list(self.spatial_dims), norm=None))
+                        y = torch.view_as_real(torch.fft.fftn(imspace, dim=list(self.spatial_dims), norm=None))
                     masked_kspaces.append(y)
                 masked_kspace = masked_kspaces
             elif self.fft_normalization in ("backward", "ortho", "forward"):
@@ -612,22 +599,17 @@ class MRIDataTransforms:
                     spatial_dims=self.spatial_dims,
                 )
             elif self.fft_normalization in ("none", None) and self.max_norm:
-                imspace = torch.fft.ifftn(torch.view_as_complex(
-                    masked_kspace), dim=list(self.spatial_dims), norm=None)
+                imspace = torch.fft.ifftn(torch.view_as_complex(masked_kspace), dim=list(self.spatial_dims), norm=None)
                 imspace = imspace / torch.max(torch.abs(imspace))
-                masked_kspace = torch.view_as_real(torch.fft.fftn(
-                    imspace, dim=list(self.spatial_dims), norm=None))
+                masked_kspace = torch.view_as_real(torch.fft.fftn(imspace, dim=list(self.spatial_dims), norm=None))
 
-                imspace = torch.fft.ifftn(torch.view_as_complex(
-                    kspace), dim=list(self.spatial_dims), norm=None)
+                imspace = torch.fft.ifftn(torch.view_as_complex(kspace), dim=list(self.spatial_dims), norm=None)
                 imspace = imspace / torch.max(torch.abs(imspace))
-                kspace = torch.view_as_real(torch.fft.fftn(
-                    imspace, dim=list(self.spatial_dims), norm=None))
+                kspace = torch.view_as_real(torch.fft.fftn(imspace, dim=list(self.spatial_dims), norm=None))
 
             if self.max_norm:
                 if sensitivity_map.size != 0:
-                    sensitivity_map = sensitivity_map / \
-                        torch.max(torch.abs(sensitivity_map))
+                    sensitivity_map = sensitivity_map / torch.max(torch.abs(sensitivity_map))
 
                 if eta.size != 0 and eta.ndim > 2:
                     eta = eta / torch.max(torch.abs(eta))
@@ -662,25 +644,19 @@ class NoisePreWhitening:
 
     def __call__(self, data):
         if not self.patch_size:
-            raise ValueError(
-                "Patch size must be defined for noise prewhitening.")
+            raise ValueError("Patch size must be defined for noise prewhitening.")
 
         if data.shape[-1] != 2:
             data = torch.view_as_real(data)
 
-        noise = data[:, self.patch_size[0]: self.patch_size[1],
-                     self.patch_size[-2]: self.patch_size[-1]]
-        noise_int = torch.reshape(
-            noise, (noise.shape[0], int(torch.numel(noise) / noise.shape[0])))
+        noise = data[:, self.patch_size[0] : self.patch_size[1], self.patch_size[-2] : self.patch_size[-1]]
+        noise_int = torch.reshape(noise, (noise.shape[0], int(torch.numel(noise) / noise.shape[0])))
 
-        deformation_matrix = (
-            1 / (float(noise_int.shape[1]) - 1)) * torch.mm(noise_int, torch.conj(noise_int).t())
-        psi = torch.linalg.inv(torch.linalg.cholesky(
-            deformation_matrix)) * sqrt(2) * sqrt(self.scale_factor)
+        deformation_matrix = (1 / (float(noise_int.shape[1]) - 1)) * torch.mm(noise_int, torch.conj(noise_int).t())
+        psi = torch.linalg.inv(torch.linalg.cholesky(deformation_matrix)) * sqrt(2) * sqrt(self.scale_factor)
 
         return torch.reshape(
-            torch.mm(psi, torch.reshape(data, (data.shape[0], int(
-                torch.numel(data) / data.shape[0])))), data.shape
+            torch.mm(psi, torch.reshape(data, (data.shape[0], int(torch.numel(data) / data.shape[0])))), data.shape
         )
 
 
@@ -720,8 +696,7 @@ class GeometricDecompositionCoilCompression:
 
     def __call__(self, data):
         if not self.virtual_coils:
-            raise ValueError(
-                "Number of virtual coils must be defined for geometric decomposition coil compression.")
+            raise ValueError("Number of virtual coils must be defined for geometric decomposition coil compression.")
 
         self.data = data
         if self.data.shape[-1] == 2:
@@ -753,11 +728,9 @@ class GeometricDecompositionCoilCompression:
 
         if self.align_data:
             self.align_compressed_coils()
-            rotated_compressed_data = self.rotate_and_compress(
-                data_to_cc=self.aligned_data)
+            rotated_compressed_data = self.rotate_and_compress(data_to_cc=self.aligned_data)
         else:
-            rotated_compressed_data = self.rotate_and_compress(
-                data_to_cc=self.unaligned_data)
+            rotated_compressed_data = self.rotate_and_compress(data_to_cc=self.unaligned_data)
         rotated_compressed_data = torch.flip(rotated_compressed_data, dims=[1])
 
         return fft.fft2(
@@ -782,7 +755,7 @@ class GeometricDecompositionCoilCompression:
         ]
 
         self.data = (
-            self.data[idx[0][0]: idx[0][-1], idx[1][0]: idx[1][-1], idx[2][0]: idx[2][-1]]
+            self.data[idx[0][0] : idx[0][-1], idx[1][0] : idx[1][-1], idx[2][0] : idx[2][-1]]
             .unsqueeze(-2)
             .permute(1, 0, 2, 3)
         )
@@ -794,30 +767,24 @@ class GeometricDecompositionCoilCompression:
         Nx, Ny, Nz, Nc = self.data.shape
 
         im = torch.view_as_complex(
-            fft.ifft2(torch.view_as_real(self.data), self.fft_centered,
-                      self.fft_normalization, spatial_dims=0)
+            fft.ifft2(torch.view_as_real(self.data), self.fft_centered, self.fft_normalization, spatial_dims=0)
         )
 
         s = torch.as_tensor([Nx + ws - 1, Ny, Nz, Nc])
         idx = [
             torch.arange(
-                abs(int(im.shape[n] // 2 +
-                    torch.ceil((-s[n] / 2).clone().detach()))),
-                abs(int(im.shape[n] // 2 +
-                    torch.ceil((s[n] / 2).clone().detach())) + 1),
+                abs(int(im.shape[n] // 2 + torch.ceil((-s[n] / 2).clone().detach()))),
+                abs(int(im.shape[n] // 2 + torch.ceil((s[n] / 2).clone().detach())) + 1),
             )
             for n in range(len(s))
         ]
 
         zpim = torch.zeros((Nx + ws - 1, Ny, Nz, Nc)).type(im.dtype)
-        zpim[idx[0][0]: idx[0][-1], idx[1][0]: idx[1][-1],
-             idx[2][0]: idx[2][-1], idx[3][0]: idx[3][-1]] = im
+        zpim[idx[0][0] : idx[0][-1], idx[1][0] : idx[1][-1], idx[2][0] : idx[2][-1], idx[3][0] : idx[3][-1]] = im
 
-        self.unaligned_data = torch.zeros(
-            (Nc, min(Nc, ws * Ny * Nz), Nx)).type(im.dtype)
+        self.unaligned_data = torch.zeros((Nc, min(Nc, ws * Ny * Nz), Nx)).type(im.dtype)
         for n in range(Nx):
-            tmpc = utils.reshape_fortran(
-                zpim[n: n + ws, :, :, :], (ws * Ny * Nz, Nc))
+            tmpc = utils.reshape_fortran(zpim[n : n + ws, :, :, :], (ws * Ny * Nz, Nc))
             _, _, v = torch.svd(tmpc, some=False)
             self.unaligned_data[:, :, n] = v
 
@@ -861,21 +828,17 @@ class GeometricDecompositionCoilCompression:
 
         Nx, Ny, Nz, Nc = _data.shape
         im = torch.view_as_complex(
-            fft.ifft2(torch.view_as_real(_data), self.fft_centered,
-                      self.fft_normalization, spatial_dims=0)
+            fft.ifft2(torch.view_as_real(_data), self.fft_centered, self.fft_normalization, spatial_dims=0)
         )
 
-        ccdata = torch.zeros((Nx, Ny, Nz, _ncc)).type(
-            _data.dtype).to(_data.device)
+        ccdata = torch.zeros((Nx, Ny, Nz, _ncc)).type(_data.dtype).to(_data.device)
         for n in range(Nx):
             tmpc = im[n, :, :, :].squeeze().reshape(Ny * Nz, Nc)
-            ccdata[n, :, :, :] = (tmpc @ data_to_cc[:, :, n]
-                                  ).reshape(Ny, Nz, _ncc).unsqueeze(0)
+            ccdata[n, :, :, :] = (tmpc @ data_to_cc[:, :, n]).reshape(Ny, Nz, _ncc).unsqueeze(0)
 
         ccdata = (
             torch.view_as_complex(
-                fft.fft2(torch.view_as_real(ccdata), self.fft_centered,
-                         self.fft_normalization, spatial_dims=0)
+                fft.fft2(torch.view_as_real(ccdata), self.fft_centered, self.fft_normalization, spatial_dims=0)
             )
             .permute(1, 0, 2, 3)
             .squeeze()
@@ -889,8 +852,7 @@ class GeometricDecompositionCoilCompression:
         for n in range(ccdata.shape[-1]):
             gcc[:, :, n] = torch.view_as_complex(
                 fft.ifft2(
-                    torch.view_as_real(
-                        ccdata[:, :, n]), self.fft_centered, self.fft_normalization, self.spatial_dims
+                    torch.view_as_real(ccdata[:, :, n]), self.fft_centered, self.fft_normalization, self.spatial_dims
                 )
             )
 

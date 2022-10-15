@@ -90,13 +90,10 @@ class CIRIM(base_models.BaseMRIReconstructionModel, ABC):
         # initialize weights if not using pretrained cirim
         if not cfg_dict.get("pretrained", False):
             std_init_range = 1 / self.recurrent_filters[0] ** 0.5
-            self.cirim.apply(lambda module: rnn_utils.rnn_weights_init(
-                module, std_init_range))
+            self.cirim.apply(lambda module: rnn_utils.rnn_weights_init(module, std_init_range))
 
-        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get(
-            "train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get(
-            "eval_loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
+        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
 
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
         self.accumulate_estimates = True
@@ -149,8 +146,7 @@ class CIRIM(base_models.BaseMRIReconstructionModel, ABC):
                 sigma,
                 keep_eta=False if i == 0 else self.keep_eta,
             )
-            time_steps_etas = [self.process_intermediate_pred(
-                pred, sensitivity_maps, target) for pred in prediction]
+            time_steps_etas = [self.process_intermediate_pred(pred, sensitivity_maps, target) for pred in prediction]
             cascades_etas.append(time_steps_etas)
         yield cascades_etas
 
@@ -208,8 +204,7 @@ class CIRIM(base_models.BaseMRIReconstructionModel, ABC):
         target = torch.abs(target / torch.max(torch.abs(target)))
 
         if "ssim" in str(_loss_fn).lower():
-            max_value = np.array(
-                torch.max(torch.abs(target)).item()).astype(np.float32)
+            max_value = np.array(torch.max(torch.abs(target)).item()).astype(np.float32)
 
             def loss_fn(x, y, m):
                 """Calculate the ssim loss."""
@@ -217,8 +212,7 @@ class CIRIM(base_models.BaseMRIReconstructionModel, ABC):
                 return _loss_fn(
                     x.unsqueeze(dim=self.coil_dim),
                     y.unsqueeze(dim=self.coil_dim),
-                    data_range=torch.tensor(
-                        max_value).unsqueeze(dim=0).to(x.device),
+                    data_range=torch.tensor(max_value).unsqueeze(dim=0).to(x.device),
                 )
 
         else:
@@ -231,8 +225,7 @@ class CIRIM(base_models.BaseMRIReconstructionModel, ABC):
         if self.accumulate_estimates:
             cascades_loss = []
             for cascade_pred in pred:
-                time_steps_loss = [loss_fn(target, time_step_pred, mask)
-                                   for time_step_pred in cascade_pred]
+                time_steps_loss = [loss_fn(target, time_step_pred, mask) for time_step_pred in cascade_pred]
                 _loss = [
                     x * torch.logspace(-1, 0, steps=self.time_steps).to(time_steps_loss[0]) for x in time_steps_loss
                 ]

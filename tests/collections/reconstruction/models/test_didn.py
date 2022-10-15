@@ -57,8 +57,7 @@ def test_didn(shape, out_channels, hidden_channels, n_dubs, num_convs_recon, ski
     Returns:
         None
     """
-    model = DIDN(shape[1], out_channels, hidden_channels,
-                 n_dubs, num_convs_recon, skip)
+    model = DIDN(shape[1], out_channels, hidden_channels, n_dubs, num_convs_recon, skip)
 
     data = create_input(shape).cpu()
 
