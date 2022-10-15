@@ -875,7 +875,7 @@ class ModelPT(LightningModule, Model):
                     f"The following parameters were excluded when loading from {load_from_string} : "
                     f"{excluded_param_names}"
                 )
-                logging.info(f"Make sure that this is what you wanted!")
+                logging.info("Make sure that this is what you wanted!")
         else:
             if len(excluded_param_names) > 0:
                 logging.info(
