@@ -126,5 +126,5 @@ The following papers use the MRIDC repo:
 [1] [Karkalousos, D. et al. (2021) ‘Assessment of Data Consistency through Cascades of Independently Recurrent
 Inference Machines for fast and robust accelerated MRI reconstruction’](https://iopscience.iop.org/article/10.1088/1361-6560/ac6cc2)
 
-[2] [Zhang C, Karkalousos D, Bazin PL, Coolen BF, Vrenken H, Sonke JJ, Forstmann BU, Poot DHJ, Caan MWA. ‘A unified 
+[2] [Zhang C, Karkalousos D, Bazin PL, Coolen BF, Vrenken H, Sonke JJ, Forstmann BU, Poot DHJ, Caan MWA. ‘A unified
 model for reconstruction and R2* mapping of accelerated 7T data using the quantitative Recurrent Inference Machine’](https://pubmed.ncbi.nlm.nih.gov/36240989/)
