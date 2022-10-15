@@ -85,7 +85,8 @@ def test_complex_center_crop(x, crop_size):
 
 
 @pytest.mark.parametrize(
-    "x, y", [(torch.zeros([1, 320, 320]).type(torch.complex64), torch.zeros([1, 160, 160]).type(torch.complex64))]
+    "x, y", [(torch.zeros([1, 320, 320]).type(torch.complex64),
+              torch.zeros([1, 160, 160]).type(torch.complex64))]
 )
 def test_center_crop_to_smallest(x, y):
     """

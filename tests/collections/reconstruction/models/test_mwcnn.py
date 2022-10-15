@@ -58,7 +58,8 @@ def test_mwcnn(shape, first_conv_hidden_channels, n_scales, bias, batchnorm, act
     Returns:
         None.
     """
-    model = MWCNN(shape[1], first_conv_hidden_channels, n_scales, bias, batchnorm, act)
+    model = MWCNN(shape[1], first_conv_hidden_channels,
+                  n_scales, bias, batchnorm, act)
 
     data = create_input(shape).cpu()
 

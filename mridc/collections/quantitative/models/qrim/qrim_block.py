@@ -64,7 +64,8 @@ class qRIMBlock(torch.nn.Module):
         super(qRIMBlock, self).__init__()
 
         self.linear_forward_model = (
-            qrim_utils.SignalForwardModel(sequence="MEGRE") if linear_forward_model is None else linear_forward_model
+            qrim_utils.SignalForwardModel(
+                sequence="MEGRE") if linear_forward_model is None else linear_forward_model
         )
 
         self.input_size = depth * 4
@@ -75,7 +76,8 @@ class qRIMBlock(torch.nn.Module):
             (conv_features, conv_k_size, conv_dilation, l_conv_bias, nonlinear),
             (rnn_features, rnn_k_size, rnn_dilation, rnn_bias, rnn_type),
         ) in zip(
-            zip(conv_filters, conv_kernels, conv_dilations, conv_bias, ["relu", "relu", None]),
+            zip(conv_filters, conv_kernels, conv_dilations,
+                conv_bias, ["relu", "relu", None]),
             zip(
                 recurrent_filters,
                 recurrent_kernels,
@@ -106,7 +108,8 @@ class qRIMBlock(torch.nn.Module):
                 elif rnn_type.upper() == "INDRNN":
                     rnn_type = rnn_cells.IndRNNCell
                 else:
-                    raise ValueError("Please specify a proper recurrent layer type.")
+                    raise ValueError(
+                        "Please specify a proper recurrent layer type.")
 
                 rnn_layer = rnn_type(
                     self.input_size,
@@ -119,7 +122,8 @@ class qRIMBlock(torch.nn.Module):
 
                 self.input_size = rnn_features
 
-                self.layers.append(conv_layers.ConvRNNStack(conv_layer, rnn_layer))
+                self.layers.append(
+                    conv_layers.ConvRNNStack(conv_layer, rnn_layer))
 
         self.final_layer = torch.nn.Sequential(conv_layer)
 
@@ -127,7 +131,8 @@ class qRIMBlock(torch.nn.Module):
 
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
-        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [
+            -2, -1]
         self.coil_dim = coil_dim
         self.coil_combination_method = coil_combination_method
 
@@ -186,11 +191,13 @@ class qRIMBlock(torch.nn.Module):
             pred = pred[-1].detach()
 
         if eta is None:
-            eta = torch.stack([R2star_map_init, S0_map_init, B0_map_init, phi_map_init], dim=1)
+            eta = torch.stack([R2star_map_init, S0_map_init,
+                              B0_map_init, phi_map_init], dim=1)
 
         if hx is None:
             hx = [
-                eta.new_zeros((eta.size(0), f, *eta.size()[2:])).to(masked_kspace)
+                eta.new_zeros(
+                    (eta.size(0), f, *eta.size()[2:])).to(masked_kspace)
                 for f in self.recurrent_filters
                 if f != 0
             ]
@@ -223,7 +230,8 @@ class qRIMBlock(torch.nn.Module):
                 grad_eta[idx] = idx_grad_eta / 100
                 grad_eta[grad_eta != grad_eta] = 0.0
 
-            grad_eta = torch.cat([grad_eta, eta], dim=self.coil_dim - 1).to(masked_kspace)
+            grad_eta = torch.cat(
+                [grad_eta, eta], dim=self.coil_dim - 1).to(masked_kspace)
 
             for h, convrnn in enumerate(self.layers):
                 hx[h] = convrnn(grad_eta, hx[h])

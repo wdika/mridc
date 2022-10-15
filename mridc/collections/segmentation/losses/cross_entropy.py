@@ -47,9 +47,12 @@ class MC_CrossEntropyLoss(nn.Module):
 
         pred_shape = [self.mc_samples, *input.shape]
         noise = torch.randn(pred_shape, device=input.device)
-        noisy_pred = input.unsqueeze(0) + torch.sqrt(torch.exp(pred_log_var)).unsqueeze(0) * noise
+        noisy_pred = input.unsqueeze(
+            0) + torch.sqrt(torch.exp(pred_log_var)).unsqueeze(0) * noise
         noisy_pred = noisy_pred.view(-1, *input.shape[1:])
-        tiled_target = target.unsqueeze(0).tile((self.mc_samples,)).view(-1, *target.shape[1:])
+        tiled_target = target.unsqueeze(0).tile(
+            (self.mc_samples,)).view(-1, *target.shape[1:])
 
-        loss = self.cross_entropy(noisy_pred, tiled_target).view(self.mc_samples, -1, *input.shape[-2:]).mean(0)
+        loss = self.cross_entropy(noisy_pred, tiled_target).view(
+            self.mc_samples, -1, *input.shape[-2:]).mean(0)
         return loss.mean()

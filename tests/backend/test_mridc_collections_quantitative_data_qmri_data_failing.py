@@ -13,7 +13,8 @@ Train config :
         str_1 = ",F\x0b}9B"
         int_0 = 47
         set_0 = set()
-        q_m_r_i_slice_dataset_0 = module_0.qMRISliceDataset(str_0, str_0, str_1, set_0, int_0)
+        q_m_r_i_slice_dataset_0 = module_0.qMRISliceDataset(
+            str_0, str_0, str_1, set_0, int_0)
     except BaseException:
         pass
 
@@ -22,7 +23,8 @@ def test_case_1():
     try:
         str_0 = "p:1nJ"
         bool_0 = False
-        q_m_r_i_slice_dataset_0 = module_0.qMRISliceDataset(str_0, str_0, bool_0, str_0)
+        q_m_r_i_slice_dataset_0 = module_0.qMRISliceDataset(
+            str_0, str_0, bool_0, str_0)
     except BaseException:
         pass
 
@@ -57,6 +59,7 @@ def test_case_5():
         str_0 = "M?"
         bytes_0 = None
         float_0 = -180.609
-        q_m_r_i_slice_dataset_0 = module_0.qMRISliceDataset(str_0, bytes_0, str_0, str_0, str_0, float_0)
+        q_m_r_i_slice_dataset_0 = module_0.qMRISliceDataset(
+            str_0, bytes_0, str_0, str_0, str_0, float_0)
     except BaseException:
         pass
