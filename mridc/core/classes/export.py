@@ -258,7 +258,8 @@ class Exportable(ABC):
         """Returns Exportable subnet model/module to export"""
         return self if subnet is None or subnet == "self" else getattr(self, subnet)
 
-    def list_export_subnets(self):
+    @staticmethod
+    def list_export_subnets():
         """
         Returns default set of subnet names exported for this model.
         First goes the one receiving input (input_example).
