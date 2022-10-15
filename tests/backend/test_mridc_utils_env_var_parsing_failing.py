@@ -18,7 +18,8 @@ def test_case_1():
         Users should override this method to define custom data loaders.
         """
         int_0 = -566
-        required_setting_missing_error_0 = module_0.RequiredSettingMissingError(int_0)
+        required_setting_missing_error_0 = module_0.RequiredSettingMissingError(
+            int_0)
         assert required_setting_missing_error_0 is not None
         str_1 = "ERROR"
         list_0 = [str_1]
@@ -33,7 +34,8 @@ def test_case_1():
 def test_case_2():
     try:
         str_0 = "Adafactor"
-        required_setting_missing_error_0 = module_0.RequiredSettingMissingError(str_0)
+        required_setting_missing_error_0 = module_0.RequiredSettingMissingError(
+            str_0)
         assert required_setting_missing_error_0 is not None
         str_1 = "U5N~Ux!|u~!6so?"
         var_0 = module_0.get_envfloat(str_1)
@@ -81,7 +83,8 @@ def test_case_7():
     try:
         int_0 = 1582
         set_0 = {int_0, int_0, int_0, int_0}
-        required_setting_missing_error_0 = module_0.RequiredSettingMissingError(set_0)
+        required_setting_missing_error_0 = module_0.RequiredSettingMissingError(
+            set_0)
         assert required_setting_missing_error_0 is not None
         float_0 = -16.23486
         var_0 = module_0.get_envlist(float_0)
@@ -93,7 +96,8 @@ def test_case_8():
     try:
         int_0 = None
         set_0 = {int_0}
-        required_setting_missing_error_0 = module_0.RequiredSettingMissingError(set_0)
+        required_setting_missing_error_0 = module_0.RequiredSettingMissingError(
+            set_0)
         assert required_setting_missing_error_0 is not None
         str_0 = "\t.Fc[LV.T"
         var_0 = module_0.get_envdecimal(str_0)
@@ -114,7 +118,8 @@ def test_case_9():
 def test_case_10():
     try:
         bool_0 = None
-        required_setting_missing_error_0 = module_0.RequiredSettingMissingError(bool_0)
+        required_setting_missing_error_0 = module_0.RequiredSettingMissingError(
+            bool_0)
         assert required_setting_missing_error_0 is not None
         bytes_0 = None
         list_0 = [bytes_0, bytes_0, bytes_0, bytes_0]

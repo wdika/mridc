@@ -117,7 +117,8 @@ def test_case_1():
         int_1 = None
         bool_2 = False
         any_0 = None
-        data_loader_config_1 = module_0.DataLoaderConfig(int_1, bool_2, int_1, any_0)
+        data_loader_config_1 = module_0.DataLoaderConfig(
+            int_1, bool_2, int_1, any_0)
         assert data_loader_config_1.batch_size is None
         assert data_loader_config_1.shuffle is False
         assert data_loader_config_1.sampler is None

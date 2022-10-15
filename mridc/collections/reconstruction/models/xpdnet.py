@@ -96,8 +96,10 @@ class XPDNet(base_models.BaseMRIReconstructionModel, ABC):
                             cfg_dict.get("kspace_unet_num_pool_layers"),
                             in_chans=2 * (num_dual + num_primal + 1),
                             out_chans=2 * num_dual,
-                            drop_prob=cfg_dict.get("kspace_unet_dropout_probability"),
-                            padding_size=cfg_dict.get("kspace_unet_padding_size"),
+                            drop_prob=cfg_dict.get(
+                                "kspace_unet_dropout_probability"),
+                            padding_size=cfg_dict.get(
+                                "kspace_unet_padding_size"),
                             normalize=cfg_dict.get("kspace_unet_normalize"),
                         ),
                         coil_to_batch=True,
@@ -128,7 +130,8 @@ class XPDNet(base_models.BaseMRIReconstructionModel, ABC):
                             bias=mwcnn_bias,
                             batchnorm=mwcnn_batchnorm,
                         ),
-                        torch.nn.Conv2d(2 * (num_primal + num_dual), 2 * num_primal, kernel_size=3, padding=1),
+                        torch.nn.Conv2d(2 * (num_primal + num_dual),
+                                        2 * num_primal, kernel_size=3, padding=1),
                     )
                     for _ in range(num_iter)
                 ]
@@ -141,7 +144,8 @@ class XPDNet(base_models.BaseMRIReconstructionModel, ABC):
                         cfg_dict.get("imspace_unet_num_pool_layers"),
                         in_chans=2 * (num_primal + num_dual),
                         out_chans=2 * num_primal,
-                        drop_prob=cfg_dict.get("imspace_unet_dropout_probability"),
+                        drop_prob=cfg_dict.get(
+                            "imspace_unet_dropout_probability"),
                         padding_size=cfg_dict.get("imspace_unet_padding_size"),
                         normalize=cfg_dict.get("imspace_unet_normalize"),
                     )
@@ -149,7 +153,8 @@ class XPDNet(base_models.BaseMRIReconstructionModel, ABC):
                 ]
             )
         else:
-            raise NotImplementedError(f"Image model architecture {image_model_architecture} not found for XPDNet.")
+            raise NotImplementedError(
+                f"Image model architecture {image_model_architecture} not found for XPDNet.")
 
         self.fft_normalization = cfg_dict.get("fft_normalization")
         self.spatial_dims = cfg_dict.get("spatial_dims")
@@ -169,8 +174,10 @@ class XPDNet(base_models.BaseMRIReconstructionModel, ABC):
             coil_dim=self.coil_dim,
         )
 
-        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get(
+            "train_loss_fn") == "ssim" else L1Loss()
+        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get(
+            "eval_loss_fn") == "ssim" else L1Loss()
 
         self.accumulate_estimates = False
 

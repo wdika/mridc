@@ -9,7 +9,8 @@ def test_case_0():
         set_0 = {log_epoch_time_callback_0, log_epoch_time_callback_0}
         bool_0 = False
         list_0 = [log_epoch_time_callback_0]
-        var_0 = log_epoch_time_callback_0.on_train_epoch_start(list_0, log_epoch_time_callback_0)
+        var_0 = log_epoch_time_callback_0.on_train_epoch_start(
+            list_0, log_epoch_time_callback_0)
         log_epoch_time_callback_1 = module_0.LogEpochTimeCallback()
         var_1 = log_epoch_time_callback_1.on_train_epoch_start(set_0, bool_0)
         str_0 = ":"
@@ -21,7 +22,8 @@ def test_case_0():
         bool_2 = True
         log_epoch_time_callback_3 = module_0.LogEpochTimeCallback()
         dict_0 = {log_epoch_time_callback_2: bool_2}
-        var_3 = log_epoch_time_callback_2.on_train_epoch_start(dict_0, log_epoch_time_callback_2)
+        var_3 = log_epoch_time_callback_2.on_train_epoch_start(
+            dict_0, log_epoch_time_callback_2)
         var_4 = log_epoch_time_callback_2.on_train_epoch_end(str_0, float_0)
     except BaseException:
         pass
