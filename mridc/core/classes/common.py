@@ -765,11 +765,9 @@ class typecheck:
 
     @wrapt.decorator(enabled=is_typecheck_enabled)
     def __call__(self, wrapped, instance: Typing, args, kwargs):
-        """
-        Wrapper method that can be used on any function of a class that implements :class:`~mridc.core.Typing`. By \
+        """Wrapper method that can be used on any function of a class that implements :class:`~mridc.core.Typing`. By \
         default, it will utilize the `input_types` and `output_types` properties of the class inheriting Typing. \
-        Local function level overrides can be provided by supplying dictionaries as arguments to the decorator.
-        """
+        Local function level overrides can be provided by supplying dictionaries as arguments to the decorator."""
         if instance is None:
             raise RuntimeError("Only classes which inherit mridc.core.Typing can use this decorator !")
 

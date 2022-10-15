@@ -8,10 +8,8 @@ import mridc.collections.reconstruction.models.unet_base.unet_block as unet_bloc
 
 
 class AttentionGate(nn.Module):
-    """
-    A Convolutional Block that consists of two convolution layers each followed by instance normalization, LeakyReLU \
-    activation and dropout.
-    """
+    """A Convolutional Block that consists of two convolution layers each followed by instance normalization, LeakyReLU \
+    activation and dropout."""
 
     def __init__(self, in_chans_x: int, in_chans_g: int, out_chans: int):
         """

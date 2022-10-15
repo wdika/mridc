@@ -260,9 +260,7 @@ class BaseqMRIReconstructionModel(base_reconstruction_models.BaseMRIReconstructi
 
     @staticmethod
     def _check_if_isinstance_pred(x):
-        """
-        Checks if x is a list of predictions.
-        """
+        """Checks if x is a list of predictions."""
         # Cascades
         if isinstance(x, list):
             x = x[-1]

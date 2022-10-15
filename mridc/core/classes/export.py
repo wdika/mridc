@@ -242,9 +242,7 @@ class Exportable(ABC):
             replace_for_export(self)
 
     def _export_teardown(self):
-        """
-        Override this method for any teardown code after export.
-        """
+        """Override this method for any teardown code after export."""
 
     @property
     def input_names(self):
