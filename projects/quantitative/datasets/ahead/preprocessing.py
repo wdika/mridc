@@ -172,7 +172,7 @@ def main(args):
     savepath = args.savepath
     for subjectID in tqdm(range(1, 119)):
         coilimgs, sense, brain_mask = _dataloder(subjectID, datapath)
-        if coilimgs != False:
+        if coilimgs is not False:
             coilimgs = np.stack(coilimgs, axis=0)
             if applymask:
                 coilimgs = coilimgs * np.repeat(brain_mask[..., np.newaxis], coilimgs.shape[-1], axis=3)
