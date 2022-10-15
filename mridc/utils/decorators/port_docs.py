@@ -103,7 +103,8 @@ def add_port_docs(wrapped=None, instance=None, value=""):
             port_description += "* *" + port + "* : " + str(ntype)
             port_description += "\n\n"
 
-    __doc__ = _normalize_docstring(wrapped.__doc__) + "\n\n" + str(port_description)
+    __doc__ = _normalize_docstring(
+        wrapped.__doc__) + "\n\n" + str(port_description)
     __doc__ = _normalize_docstring(__doc__)
 
     wrapt.FunctionWrapper.__setattr__(decorated, "__doc__", __doc__)

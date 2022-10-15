@@ -14,7 +14,8 @@ def test_case_0():
         str_0 = "JpcX/nu}J_ji/DY.e+"
         app_state_2 = module_0.AppState()
         assert app_state_2.model_parallel_rank is None
-        model_metadata_registry_0 = app_state_2.get_model_metadata_from_guid(str_0)
+        model_metadata_registry_0 = app_state_2.get_model_metadata_from_guid(
+            str_0)
     except BaseException:
         pass
 
@@ -27,7 +28,8 @@ def test_case_1():
         assert app_state_1.model_parallel_rank is None
         var_0 = app_state_1.reset_model_guid_registry()
         float_0 = -1878.58
-        model_metadata_registry_0 = app_state_0.get_model_metadata_from_guid(float_0)
+        model_metadata_registry_0 = app_state_0.get_model_metadata_from_guid(
+            float_0)
     except BaseException:
         pass
 
@@ -48,7 +50,8 @@ def test_case_2():
         tuple_0 = bool_0, list_0
         int_0 = 1391
         tuple_1 = app_state_0, tuple_0, int_0
-        model_metadata_registry_0 = app_state_0.get_model_metadata_from_guid(tuple_1)
+        model_metadata_registry_0 = app_state_0.get_model_metadata_from_guid(
+            tuple_1)
     except BaseException:
         pass
 
@@ -69,7 +72,8 @@ def test_case_3():
         assert app_state_2.model_parallel_rank is None
         app_state_3 = module_0.AppState()
         assert app_state_3.model_parallel_rank is None
-        model_metadata_registry_0 = app_state_3.get_model_metadata_from_guid(str_1)
+        model_metadata_registry_0 = app_state_3.get_model_metadata_from_guid(
+            str_1)
         assert model_metadata_registry_0.guid is None
         assert model_metadata_registry_0.restoration_path is None
         assert module_0.ModelMetadataRegistry.restoration_path is None
@@ -79,7 +83,8 @@ def test_case_3():
         var_2 = app_state_4.register_model_guid(str_2)
         assert var_2 is None
         float_0 = -2119.8085
-        model_metadata_registry_1 = app_state_4.get_model_metadata_from_guid(float_0)
+        model_metadata_registry_1 = app_state_4.get_model_metadata_from_guid(
+            float_0)
     except BaseException:
         pass
 
@@ -95,7 +100,8 @@ def test_case_4():
         int_0 = 32
         app_state_1 = module_0.AppState()
         assert app_state_1.model_parallel_rank is None
-        model_metadata_registry_0 = app_state_1.get_model_metadata_from_guid(int_0)
+        model_metadata_registry_0 = app_state_1.get_model_metadata_from_guid(
+            int_0)
     except BaseException:
         pass
 
@@ -110,7 +116,8 @@ def test_case_5():
         var_1 = app_state_0.reset_model_guid_registry()
         assert var_1 is None
         list_0 = [var_1]
-        model_metadata_registry_0 = app_state_0.get_model_metadata_from_guid(list_0)
+        model_metadata_registry_0 = app_state_0.get_model_metadata_from_guid(
+            list_0)
     except BaseException:
         pass
 
@@ -125,6 +132,7 @@ def test_case_6():
         str_1 = "fz\x0cM|CTO2SDH!"
         app_state_1 = module_0.AppState()
         assert app_state_1.model_parallel_rank is None
-        model_metadata_registry_0 = app_state_1.get_model_metadata_from_guid(str_1)
+        model_metadata_registry_0 = app_state_1.get_model_metadata_from_guid(
+            str_1)
     except BaseException:
         pass
