@@ -10,7 +10,6 @@ from typing import Dict, Optional, Sequence, Tuple
 import h5py
 import numpy as np
 import torch
-
 import wandb
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
@@ -30,7 +29,8 @@ import mridc.utils.model_utils as model_utils
 
 wandb.require("service")
 
-__all__ = ["BaseMRIReconstructionModel", "BaseSensitivityModel", "DistributedMetricSum"]
+__all__ = ["BaseMRIReconstructionModel",
+           "BaseSensitivityModel", "DistributedMetricSum"]
 
 
 class DistributedMetricSum(Metric):
@@ -43,7 +43,8 @@ class DistributedMetricSum(Metric):
 
     def __init__(self, dist_sync_on_step=True):
         super().__init__(dist_sync_on_step=dist_sync_on_step)
-        self.add_state("quantity", default=torch.tensor(0.0), dist_reduce_fx="sum")
+        self.add_state("quantity", default=torch.tensor(
+            0.0), dist_reduce_fx="sum")
 
     def update(self, batch: torch.Tensor):  # type: ignore
         """Update the metric with a batch of data."""
@@ -131,7 +132,8 @@ class BaseMRIReconstructionModel(modelPT.ModelPT, ABC):
         pred = torch.abs(pred / torch.max(torch.abs(pred)))
 
         if "ssim" in str(_loss_fn).lower():
-            max_value = np.array(torch.max(torch.abs(target)).item()).astype(np.float32)
+            max_value = np.array(
+                torch.max(torch.abs(target)).item()).astype(np.float32)
 
             def loss_fn(x, y):
                 """Calculate the ssim loss."""
@@ -139,7 +141,8 @@ class BaseMRIReconstructionModel(modelPT.ModelPT, ABC):
                 return _loss_fn(
                     x.unsqueeze(dim=self.coil_dim),
                     y.unsqueeze(dim=self.coil_dim),
-                    data_range=torch.tensor(max_value).unsqueeze(dim=0).to(x.device),
+                    data_range=torch.tensor(
+                        max_value).unsqueeze(dim=0).to(x.device),
                 )
 
         else:
@@ -241,9 +244,11 @@ class BaseMRIReconstructionModel(modelPT.ModelPT, ABC):
             except StopIteration:
                 pass
 
-            train_loss = sum(self.process_loss(target, preds, _loss_fn=self.train_loss_fn, mask=None))
+            train_loss = sum(self.process_loss(
+                target, preds, _loss_fn=self.train_loss_fn, mask=None))
         else:
-            train_loss = self.process_loss(target, preds, _loss_fn=self.train_loss_fn, mask=None)
+            train_loss = self.process_loss(
+                target, preds, _loss_fn=self.train_loss_fn, mask=None)
 
         acc = r if r != 0 else acc
         tensorboard_logs = {
@@ -306,9 +311,11 @@ class BaseMRIReconstructionModel(modelPT.ModelPT, ABC):
                 preds = next(preds)
             except StopIteration:
                 pass
-            val_loss = sum(self.process_loss(target, preds, _loss_fn=self.eval_loss_fn, mask=None))
+            val_loss = sum(self.process_loss(
+                target, preds, _loss_fn=self.eval_loss_fn, mask=None))
         else:
-            val_loss = self.process_loss(target, preds, _loss_fn=self.eval_loss_fn, mask=None)
+            val_loss = self.process_loss(
+                target, preds, _loss_fn=self.eval_loss_fn, mask=None)
 
         # Cascades
         if isinstance(preds, list):
@@ -330,13 +337,17 @@ class BaseMRIReconstructionModel(modelPT.ModelPT, ABC):
 
         target = target.numpy()  # type: ignore
         output = output.numpy()  # type: ignore
-        self.mse_vals[fname][slice_num] = torch.tensor(evaluation_metrics.mse(target, output)).view(1)
-        self.nmse_vals[fname][slice_num] = torch.tensor(evaluation_metrics.nmse(target, output)).view(1)
+        self.mse_vals[fname][slice_num] = torch.tensor(
+            evaluation_metrics.mse(target, output)).view(1)
+        self.nmse_vals[fname][slice_num] = torch.tensor(
+            evaluation_metrics.nmse(target, output)).view(1)
         self.ssim_vals[fname][slice_num] = torch.tensor(
-            evaluation_metrics.ssim(target, output, maxval=output.max() - output.min())
+            evaluation_metrics.ssim(
+                target, output, maxval=output.max() - output.min())
         ).view(1)
         self.psnr_vals[fname][slice_num] = torch.tensor(
-            evaluation_metrics.psnr(target, output, maxval=output.max() - output.min())
+            evaluation_metrics.psnr(
+                target, output, maxval=output.max() - output.min())
         ).view(1)
 
         return {"val_loss": val_loss}
@@ -423,13 +434,17 @@ class BaseMRIReconstructionModel(modelPT.ModelPT, ABC):
 
         target = target.numpy()  # type: ignore
         output = output.numpy()  # type: ignore
-        self.mse_vals[fname][slice_num] = torch.tensor(evaluation_metrics.mse(target, output)).view(1)
-        self.nmse_vals[fname][slice_num] = torch.tensor(evaluation_metrics.nmse(target, output)).view(1)
+        self.mse_vals[fname][slice_num] = torch.tensor(
+            evaluation_metrics.mse(target, output)).view(1)
+        self.nmse_vals[fname][slice_num] = torch.tensor(
+            evaluation_metrics.nmse(target, output)).view(1)
         self.ssim_vals[fname][slice_num] = torch.tensor(
-            evaluation_metrics.ssim(target, output, maxval=output.max() - output.min())
+            evaluation_metrics.ssim(
+                target, output, maxval=output.max() - output.min())
         ).view(1)
         self.psnr_vals[fname][slice_num] = torch.tensor(
-            evaluation_metrics.psnr(target, output, maxval=output.max() - output.min())
+            evaluation_metrics.psnr(
+                target, output, maxval=output.max() - output.min())
         ).view(1)
 
         return name, slice_num, preds.detach().cpu().numpy()
@@ -455,7 +470,8 @@ class BaseMRIReconstructionModel(modelPT.ModelPT, ABC):
                 image = image.detach().cpu()
             self.logger.experiment.log({name: wandb.Image(image.numpy())})
         else:
-            self.logger.experiment.add_image(name, image, global_step=self.global_step)
+            self.logger.experiment.add_image(
+                name, image, global_step=self.global_step)
 
     def validation_epoch_end(self, outputs):
         """
@@ -471,7 +487,8 @@ class BaseMRIReconstructionModel(modelPT.ModelPT, ABC):
         metrics: Dictionary of metrics.
             dict
         """
-        self.log("val_loss", torch.stack([x["val_loss"] for x in outputs]).mean())
+        self.log("val_loss", torch.stack(
+            [x["val_loss"] for x in outputs]).mean())
 
         # Log metrics.
         # Taken from: https://github.com/facebookresearch/fastMRI/blob/main/fastmri/pl_modules/mri_module.py
@@ -494,7 +511,9 @@ class BaseMRIReconstructionModel(modelPT.ModelPT, ABC):
         local_examples = 0
         for fname in mse_vals:
             local_examples += 1
-            metrics["MSE"] = metrics["MSE"] + torch.mean(torch.cat([v.view(-1) for _, v in mse_vals[fname].items()]))
+            metrics["MSE"] = metrics["MSE"] + \
+                torch.mean(torch.cat([v.view(-1)
+                           for _, v in mse_vals[fname].items()]))
             metrics["NMSE"] = metrics["NMSE"] + torch.mean(
                 torch.cat([v.view(-1) for _, v in nmse_vals[fname].items()])
             )
@@ -549,7 +568,9 @@ class BaseMRIReconstructionModel(modelPT.ModelPT, ABC):
         local_examples = 0
         for fname in mse_vals:
             local_examples += 1
-            metrics["MSE"] = metrics["MSE"] + torch.mean(torch.cat([v.view(-1) for _, v in mse_vals[fname].items()]))
+            metrics["MSE"] = metrics["MSE"] + \
+                torch.mean(torch.cat([v.view(-1)
+                           for _, v in mse_vals[fname].items()]))
             metrics["NMSE"] = metrics["NMSE"] + torch.mean(
                 torch.cat([v.view(-1) for _, v in nmse_vals[fname].items()])
             )
@@ -575,7 +596,8 @@ class BaseMRIReconstructionModel(modelPT.ModelPT, ABC):
             reconstructions[fname].append((slice_num, output))
 
         for fname in reconstructions:
-            reconstructions[fname] = np.stack([out for _, out in sorted(reconstructions[fname])])  # type: ignore
+            reconstructions[fname] = np.stack(
+                [out for _, out in sorted(reconstructions[fname])])  # type: ignore
 
         out_dir = Path(os.path.join(self.logger.log_dir, "reconstructions"))
         out_dir.mkdir(exist_ok=True, parents=True)
@@ -597,7 +619,8 @@ class BaseMRIReconstructionModel(modelPT.ModelPT, ABC):
         train_data: Training data.
             torch.utils.data.DataLoader
         """
-        self._train_dl = self._setup_dataloader_from_config(cfg=train_data_config)
+        self._train_dl = self._setup_dataloader_from_config(
+            cfg=train_data_config)
 
     def setup_validation_data(self, val_data_config: Optional[DictConfig]):
         """
@@ -613,7 +636,8 @@ class BaseMRIReconstructionModel(modelPT.ModelPT, ABC):
         val_data: Validation data.
             torch.utils.data.DataLoader
         """
-        self._validation_dl = self._setup_dataloader_from_config(cfg=val_data_config)
+        self._validation_dl = self._setup_dataloader_from_config(
+            cfg=val_data_config)
 
     def setup_test_data(self, test_data_config: Optional[DictConfig]):
         """
@@ -629,7 +653,8 @@ class BaseMRIReconstructionModel(modelPT.ModelPT, ABC):
         test_data: Test data.
             torch.utils.data.DataLoader
         """
-        self._test_dl = self._setup_dataloader_from_config(cfg=test_data_config)
+        self._test_dl = self._setup_dataloader_from_config(
+            cfg=test_data_config)
 
     @staticmethod
     def _setup_dataloader_from_config(cfg: DictConfig) -> DataLoader:
@@ -661,7 +686,8 @@ class BaseMRIReconstructionModel(modelPT.ModelPT, ABC):
 
             mask_func = (
                 [
-                    subsample.create_mask_for_mask_type(mask_type, [cf] * 2, [acc] * 2)
+                    subsample.create_mask_for_mask_type(
+                        mask_type, [cf] * 2, [acc] * 2)
                     for acc, cf in zip(accelerations, center_fractions)
                 ]
                 if len(accelerations) >= 2
@@ -781,7 +807,8 @@ class BaseSensitivityModel(nn.Module, ABC):
         self.mask_center = mask_center
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
-        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [
+            -2, -1]
         self.coil_dim = coil_dim
         self.normalize = normalize
 
@@ -879,7 +906,8 @@ class BaseSensitivityModel(nn.Module, ABC):
                 mask.shape[0], dtype=mask.dtype, device=mask.device
             )
 
-        pad = torch.div(mask.shape[-2] - num_low_frequencies_tensor + 1, 2, rounding_mode="trunc")
+        pad = torch.div(
+            mask.shape[-2] - num_low_frequencies_tensor + 1, 2, rounding_mode="trunc")
 
         return pad, num_low_frequencies_tensor
 
@@ -907,7 +935,8 @@ class BaseSensitivityModel(nn.Module, ABC):
             torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
         """
         if self.mask_center:
-            pad, num_low_freqs = self.get_pad_and_num_low_freqs(mask, num_low_frequencies)
+            pad, num_low_freqs = self.get_pad_and_num_low_freqs(
+                mask, num_low_frequencies)
             masked_kspace = utils.batched_mask_center(
                 masked_kspace, pad, pad + num_low_freqs, mask_type=self.mask_type
             )

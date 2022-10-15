@@ -81,7 +81,8 @@ class Dice(_Loss):
         super().__init__()
         other_act = None if utils.is_none(other_act) else other_act
         if other_act is not None and not callable(other_act):
-            raise TypeError(f"other_act must be None or callable but is {type(other_act).__name__}.")
+            raise TypeError(
+                f"other_act must be None or callable but is {type(other_act).__name__}.")
         if int(sigmoid) + int(softmax) + int(other_act is not None) > 1:
             raise ValueError(
                 "Incompatible values: more than 1 of [sigmoid=True, softmax=True, other_act is not None]."
@@ -118,7 +119,8 @@ class Dice(_Loss):
         n_pred_ch = input.shape[1]
         if self.softmax:
             if n_pred_ch == 1:
-                warnings.warn("single channel prediction, `softmax=True` ignored.")
+                warnings.warn(
+                    "single channel prediction, `softmax=True` ignored.")
             else:
                 input = torch.softmax(input, 1)
 
@@ -127,20 +129,23 @@ class Dice(_Loss):
 
         if self.to_onehot_y:
             if n_pred_ch == 1:
-                warnings.warn("single channel prediction, `to_onehot_y=True` ignored.")
+                warnings.warn(
+                    "single channel prediction, `to_onehot_y=True` ignored.")
             else:
                 target = one_hot(target, num_classes=n_pred_ch)
 
         if not self.include_background:
             if n_pred_ch == 1:
-                warnings.warn("single channel prediction, `include_background=False` ignored.")
+                warnings.warn(
+                    "single channel prediction, `include_background=False` ignored.")
             else:
                 # if skipping background, removing first channel
                 target = target[:, 1:]
                 input = input[:, 1:]
 
         if target.shape != input.shape:
-            raise AssertionError(f"ground truth has different shape ({target.shape}) from input ({input.shape})")
+            raise AssertionError(
+                f"ground truth has different shape ({target.shape}) from input ({input.shape})")
 
         # reducing only spatial dimensions (not batch nor channels)
         reduce_axis: List[int] = torch.arange(2, len(input.shape)).tolist()
@@ -162,7 +167,8 @@ class Dice(_Loss):
         if self.jaccard:
             denominator = 2.0 * (denominator - intersection)
 
-        dice_score = (2.0 * intersection + self.smooth_nr) / (denominator + self.smooth_dr)
+        dice_score = (2.0 * intersection + self.smooth_nr) / \
+            (denominator + self.smooth_dr)
         f: torch.Tensor = 1.0 - dice_score
 
         if self.reduction == "mean":
@@ -208,7 +214,8 @@ def one_hot(labels: torch.Tensor, num_classes: int, dtype: torch.dtype = torch.f
     sh = list(labels.shape)
 
     if sh[dim] != 1:
-        raise AssertionError("labels should have a channel with length equal to one.")
+        raise AssertionError(
+            "labels should have a channel with length equal to one.")
 
     sh[dim] = num_classes
 

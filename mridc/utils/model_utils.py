@@ -168,7 +168,8 @@ def parse_dataset_as_name(name: str) -> str:
     -------
     A valid prefix-name for the data loader.
     """
-    name = Path(name).stem if os.path.exists(name) or os.path.isdir(name) else name
+    name = Path(name).stem if os.path.exists(
+        name) or os.path.isdir(name) else name
     # cleanup name
     name = name.replace("-", "_")
 
@@ -215,7 +216,8 @@ def unique_names_check(name_list: Optional[List[str]]):
                 f"Resolved name : {name}"
             )
         else:
-            names.add(name)  # we need just hash key check, value is just a placeholder
+            # we need just hash key check, value is just a placeholder
+            names.add(name)
 
 
 def resolve_validation_dataloaders(model: ModelPT):
@@ -239,7 +241,8 @@ def resolve_validation_dataloaders(model: ModelPT):
     model: ModelPT subclass, which requires >=1 Validation Dataloaders to be setup.
     """
     if not _HAS_HYDRA:
-        logging.error("This function requires Hydra/OmegaConf and it was not installed.")
+        logging.error(
+            "This function requires Hydra/OmegaConf and it was not installed.")
         sys.exit(1)
     cfg = copy.deepcopy(model._cfg)
     dataloaders: List[Any] = []
@@ -276,7 +279,8 @@ def resolve_validation_dataloaders(model: ModelPT):
             dataloaders.append(model.validation_dl)
 
         model.validation_dl = dataloaders  # type: ignore
-        model.validation_names = [parse_dataset_as_name(ds) for ds in ds_values]  # type: ignore
+        model.validation_names = [parse_dataset_as_name(
+            ds) for ds in ds_values]  # type: ignore
 
         unique_names_check(name_list=model.validation_names)
         return
@@ -308,7 +312,8 @@ def resolve_test_dataloaders(model: "ModelPT"):
     model: ModelPT subclass, which requires >=1 Test Dataloaders to be setup.
     """
     if not _HAS_HYDRA:
-        logging.error("This function requires Hydra/OmegaConf and it was not installed.")
+        logging.error(
+            "This function requires Hydra/OmegaConf and it was not installed.")
         sys.exit(1)
     cfg = copy.deepcopy(model._cfg)
     dataloaders: List[Any] = []
@@ -345,7 +350,8 @@ def resolve_test_dataloaders(model: "ModelPT"):
             dataloaders.append(model.test_dl)
 
         model.test_dl = dataloaders  # type: ignore
-        model.test_names = [parse_dataset_as_name(ds) for ds in ds_values]  # type: ignore
+        model.test_names = [parse_dataset_as_name(
+            ds) for ds in ds_values]  # type: ignore
 
         unique_names_check(name_list=model.test_names)
         return
@@ -397,13 +403,15 @@ def convert_model_config_to_dict_config(cfg: Union[DictConfig, MRIDCConfig]) -> 
     The equivalent DictConfig.
     """
     if not _HAS_HYDRA:
-        logging.error("This function requires Hydra/OmegaConf and it was not installed.")
+        logging.error(
+            "This function requires Hydra/OmegaConf and it was not installed.")
         sys.exit(1)
     if not isinstance(cfg, (OmegaConf, DictConfig)) and is_dataclass(cfg):
         cfg = OmegaConf.structured(cfg)
 
     if not isinstance(cfg, DictConfig):
-        raise ValueError(f"cfg constructor argument must be of type DictConfig/dict but got {type(cfg)} instead.")
+        raise ValueError(
+            f"cfg constructor argument must be of type DictConfig/dict but got {type(cfg)} instead.")
 
     config = OmegaConf.to_container(cfg, resolve=True)
     config = OmegaConf.create(config)
@@ -413,7 +421,8 @@ def convert_model_config_to_dict_config(cfg: Union[DictConfig, MRIDCConfig]) -> 
 def _convert_config(cfg: "OmegaConf"):
     """Recursive function converting the configuration from old hydra format to the new one."""
     if not _HAS_HYDRA:
-        logging.error("This function requires Hydra/OmegaConf and it was not installed.")
+        logging.error(
+            "This function requires Hydra/OmegaConf and it was not installed.")
         sys.exit(1)
 
     # Get rid of cls -> _target_.
@@ -432,7 +441,8 @@ def _convert_config(cfg: "OmegaConf"):
             if isinstance(sub_cfg, DictConfig):
                 _convert_config(sub_cfg)  # type: ignore
     except OmegaConfBaseException as e:
-        logging.warning(f"Skipped conversion for config/subconfig:\n{cfg}\n Reason: {e}.")
+        logging.warning(
+            f"Skipped conversion for config/subconfig:\n{cfg}\n Reason: {e}.")
 
 
 def maybe_update_config_version(cfg: "DictConfig"):
@@ -452,7 +462,8 @@ def maybe_update_config_version(cfg: "DictConfig"):
     An updated DictConfig that conforms to Hydra 1.x format.
     """
     if not _HAS_HYDRA:
-        logging.error("This function requires Hydra/OmegaConf and it was not installed.")
+        logging.error(
+            "This function requires Hydra/OmegaConf and it was not installed.")
         sys.exit(1)
     if cfg is not None and not isinstance(cfg, DictConfig):
         try:
@@ -600,7 +611,8 @@ def resolve_cache_dir() -> Path:
     """
     override_dir = os.environ.get(MRIDC_ENV_CACHE_DIR, "")
     return (
-        Path.joinpath(Path.home(), f".cache/torch/MRIDC/MRIDC_{mridc.__version__}")
+        Path.joinpath(
+            Path.home(), f".cache/torch/MRIDC/MRIDC_{mridc.__version__}")
         if override_dir == ""
         else Path(override_dir).resolve()
     )
