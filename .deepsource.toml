@@ -17,10 +17,5 @@ name = "black"
 enabled = true
 
 [[transformers]]
-name = "autopep8"
-enabled = true
-max-line-length=119
-
-[[transformers]]
 name = "isort"
 enabled = true
