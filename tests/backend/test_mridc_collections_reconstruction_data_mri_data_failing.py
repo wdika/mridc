@@ -9,7 +9,7 @@ import mridc.collections.reconstruction.data.mri_data as module_0
 def test_case_0():
     try:
         str_0 = "x?nU"
-        set_0 = {str_0, str_0}
+        set_0 = {str_0}
         str_1 = "flowgroup"
         bool_0 = False
         bool_1 = True

@@ -6,7 +6,7 @@ import mridc.utils.distributed as module_0
 def test_case_0():
     try:
         bool_0 = True
-        set_0 = {bool_0, bool_0, bool_0}
+        set_0 = {bool_0}
         var_0 = module_0.initialize_distributed(set_0)
     except BaseException:
         pass

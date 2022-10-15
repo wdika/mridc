@@ -10,7 +10,7 @@ def test_case_0():
         ndarray_0 = None
         bytes_0 = b""
         int_0 = -1621
-        set_0 = {int_0, bytes_0, bytes_0, bytes_0}
+        set_0 = {int_0, bytes_0}
         metrics_0 = module_0.Metrics(bytes_0, int_0, set_0)
         assert metrics_0.metrics_scores == {}
         assert metrics_0.output_path == -1621
@@ -42,7 +42,7 @@ def test_case_1():
 def test_case_2():
     try:
         ndarray_0 = None
-        set_0 = {ndarray_0, ndarray_0}
+        set_0 = {ndarray_0}
         list_0 = []
         str_0 = "[{\tRJ\tjWBpyT\\"
         bool_0 = False

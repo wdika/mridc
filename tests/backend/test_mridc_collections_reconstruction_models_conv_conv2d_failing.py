@@ -69,7 +69,7 @@ def test_case_5():
 def test_case_7():
     try:
         str_0 = "q\twoLoWil}\tj`J>"
-        set_0 = {str_0, str_0, str_0, str_0}
+        set_0 = {str_0}
         str_1 = 'VVC\\K=B"FL'
         tuple_0 = ()
         dict_0 = {tuple_0: str_1, str_1: set_0, tuple_0: tuple_0}
@@ -85,7 +85,7 @@ def test_case_8():
         int_1 = -46
         str_0 = "nL=gE]_2**l}BNOVg;"
         bool_0 = False
-        set_0 = {str_0, bool_0, bool_0, bool_0}
+        set_0 = {str_0, bool_0}
         tuple_0 = int_0, int_1, str_0, set_0
         str_1 = "yE<QP_g"
         conv2d_0 = module_0.Conv2d(bool_0, tuple_0, set_0, str_1)

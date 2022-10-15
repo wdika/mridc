@@ -80,7 +80,7 @@ def test_case_6():
 def test_case_7():
     try:
         int_0 = 1582
-        set_0 = {int_0, int_0, int_0, int_0}
+        set_0 = {int_0}
         required_setting_missing_error_0 = module_0.RequiredSettingMissingError(set_0)
         assert required_setting_missing_error_0 is not None
         float_0 = -16.23486
