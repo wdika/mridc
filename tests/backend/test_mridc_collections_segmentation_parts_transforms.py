@@ -21,8 +21,10 @@ def test_case_0():
     assert j_r_s_m_r_i_data_transforms_0.dimensionality == 2
     assert j_r_s_m_r_i_data_transforms_0.mask_func is None
     assert j_r_s_m_r_i_data_transforms_0.shift_mask is False
-    assert j_r_s_m_r_i_data_transforms_0.mask_center_scale == pytest.approx(0.02, abs=0.01, rel=0.01)
-    assert j_r_s_m_r_i_data_transforms_0.half_scan_percentage == pytest.approx(0.0, abs=0.01, rel=0.01)
+    assert j_r_s_m_r_i_data_transforms_0.mask_center_scale == pytest.approx(
+        0.02, abs=0.01, rel=0.01)
+    assert j_r_s_m_r_i_data_transforms_0.half_scan_percentage == pytest.approx(
+        0.0, abs=0.01, rel=0.01)
     assert j_r_s_m_r_i_data_transforms_0.remask is False
     assert j_r_s_m_r_i_data_transforms_0.crop_size is None
     assert j_r_s_m_r_i_data_transforms_0.kspace_crop is False

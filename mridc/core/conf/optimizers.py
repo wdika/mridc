@@ -222,7 +222,8 @@ def register_optimizer_params(name: str, optimizer_params: OptimizerParams):
     optimizer_params: Optimizer class
     """
     if name in AVAILABLE_OPTIMIZER_PARAMS:
-        raise ValueError(f"Cannot override pre-existing optimizers. Conflicting optimizer name = {name}")
+        raise ValueError(
+            f"Cannot override pre-existing optimizers. Conflicting optimizer name = {name}")
 
     AVAILABLE_OPTIMIZER_PARAMS[name] = optimizer_params  # type: ignore
 

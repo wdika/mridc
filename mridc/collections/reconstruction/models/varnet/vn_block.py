@@ -43,7 +43,8 @@ class VarNetBlock(torch.nn.Module):
         self.model = model
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
-        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [
+            -2, -1]
         self.coil_dim = coil_dim
         self.no_dc = no_dc
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
@@ -107,7 +108,8 @@ class VarNetBlock(torch.nn.Module):
         Reconstructed image.
         """
         zero = torch.zeros(1, 1, 1, 1, 1).to(pred)
-        soft_dc = torch.where(mask.bool(), pred - ref_kspace, zero) * self.dc_weight
+        soft_dc = torch.where(mask.bool(), pred -
+                              ref_kspace, zero) * self.dc_weight
 
         eta = self.sens_reduce(pred, sens_maps)
         eta = self.model(eta)
