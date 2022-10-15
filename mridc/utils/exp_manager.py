@@ -250,11 +250,13 @@ def exp_manager(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None)
     logging.rank = global_rank
 
     if cfg is None:
-        logging.error("exp_manager did not receive a cfg argument. It will be disabled.")
+        logging.error(
+            "exp_manager did not receive a cfg argument. It will be disabled.")
         return None
 
     if trainer.fast_dev_run:
-        logging.info("Trainer was called with fast_dev_run. exp_manager will return without any functionality.")
+        logging.info(
+            "Trainer was called with fast_dev_run. exp_manager will return without any functionality.")
         return None
 
     # Ensure passed cfg is compliant with ExpManagerConfig
@@ -262,7 +264,8 @@ def exp_manager(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None)
     if isinstance(cfg, dict):
         cfg = OmegaConf.create(cfg)
     elif not isinstance(cfg, DictConfig):
-        raise ValueError(f"cfg was type: {type(cfg)}. Expected either a dict or a DictConfig")
+        raise ValueError(
+            f"cfg was type: {type(cfg)}. Expected either a dict or a DictConfig")
     cfg = OmegaConf.create(OmegaConf.to_container(cfg, resolve=True))
     cfg = OmegaConf.merge(schema, cfg)
 
@@ -280,7 +283,8 @@ def exp_manager(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None)
     )
 
     if cfg.resume_if_exists:
-        check_resume(trainer, str(log_dir), cfg.resume_past_end, cfg.resume_ignore_no_checkpoint)
+        check_resume(trainer, str(log_dir), cfg.resume_past_end,
+                     cfg.resume_ignore_no_checkpoint)
 
     checkpoint_name = name
     # If name returned from get_log_dir is "", use cfg.name for checkpointing
@@ -311,7 +315,8 @@ def exp_manager(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None)
             "Please set either one or neither."
         )
 
-    log_file = log_dir / f"mridc_log_globalrank-{global_rank}_localrank-{local_rank}.txt"
+    log_file = log_dir / \
+        f"mridc_log_globalrank-{global_rank}_localrank-{local_rank}.txt"
 
     logging.add_file_handler(log_file)
     # For some reason, LearningRateLogger requires trainer to have a logger. Safer to create logger on all ranks
@@ -330,7 +335,8 @@ def exp_manager(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None)
 
     # add loggers timing callbacks
     if cfg.log_step_timing:
-        timing_callback = TimingCallback(timer_kwargs=cfg.step_timing_kwargs or {})
+        timing_callback = TimingCallback(
+            timer_kwargs=cfg.step_timing_kwargs or {})
         trainer.callbacks.insert(0, timing_callback)
 
     if cfg.create_checkpoint_callback:
@@ -359,7 +365,8 @@ def exp_manager(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None)
         logging.add_err_file_handler(log_dir / "mridc_error_log.txt")
 
         # Add lightning file logging to global_rank zero
-        add_filehandlers_to_pl_logger(log_dir / "lightning_logs.txt", log_dir / "mridc_error_log.txt")
+        add_filehandlers_to_pl_logger(
+            log_dir / "lightning_logs.txt", log_dir / "mridc_error_log.txt")
 
     return log_dir
 
@@ -377,7 +384,8 @@ def error_checks(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None
             "hydra.run.dir=. to your python script."
         )
 
-    if trainer.logger is not None and (cfg.create_tensorboard_logger or cfg.create_wandb_logger):  # type: ignore
+    # type: ignore
+    if trainer.logger is not None and (cfg.create_tensorboard_logger or cfg.create_wandb_logger):
         raise LoggerMisconfigurationError(
             "The pytorch lightning trainer that was passed to exp_manager contained a logger, and either "
             "create_tensorboard_logger or create_wandb_logger was set to True. These can only be used if trainer does "
@@ -421,7 +429,8 @@ def check_resume(
     ValueError: If resume is True, and there were more than 1 checkpoint could found.
     """
     if not log_dir:
-        raise ValueError(f"Resuming requires the log_dir {log_dir} to be passed to exp_manager")
+        raise ValueError(
+            f"Resuming requires the log_dir {log_dir} to be passed to exp_manager")
 
     checkpoint_dir = Path(Path(log_dir) / "checkpoints")
 
@@ -430,8 +439,10 @@ def check_resume(
     last_checkpoints = list(checkpoint_dir.rglob("*last.ckpt"))
     if not checkpoint_dir.exists():
         if not resume_ignore_no_checkpoint:
-            raise NotFoundError(f"There was no checkpoint folder at checkpoint_dir :{checkpoint_dir}. Cannot resume.")
-        logging.warning(f"There was no checkpoint folder at checkpoint_dir :{checkpoint_dir}. Training from scratch.")
+            raise NotFoundError(
+                f"There was no checkpoint folder at checkpoint_dir :{checkpoint_dir}. Cannot resume.")
+        logging.warning(
+            f"There was no checkpoint folder at checkpoint_dir :{checkpoint_dir}. Training from scratch.")
         return
     if end_checkpoints:
         if not resume_past_end:
@@ -442,23 +453,29 @@ def check_resume(
             if "mp_rank" in str(end_checkpoints[0]):
                 checkpoint = end_checkpoints[0]
             else:
-                raise ValueError(f"Multiple checkpoints {end_checkpoints} that matches *end.ckpt.")
+                raise ValueError(
+                    f"Multiple checkpoints {end_checkpoints} that matches *end.ckpt.")
         logging.info(f"Resuming from {end_checkpoints[0]}")
     elif not last_checkpoints:
         if not resume_ignore_no_checkpoint:
-            raise NotFoundError(f"There were no checkpoints found in {checkpoint_dir}. Cannot resume.")
-        logging.warning(f"There were no checkpoints found in {checkpoint_dir}. Training from scratch.")
+            raise NotFoundError(
+                f"There were no checkpoints found in {checkpoint_dir}. Cannot resume.")
+        logging.warning(
+            f"There were no checkpoints found in {checkpoint_dir}. Training from scratch.")
         return
     elif len(last_checkpoints) > 1:
         if "mp_rank" not in str(last_checkpoints[0]) and "tp_rank" not in str(last_checkpoints[0]):
-            raise ValueError(f"Multiple checkpoints {last_checkpoints} that matches *last.ckpt.")
+            raise ValueError(
+                f"Multiple checkpoints {last_checkpoints} that matches *last.ckpt.")
         checkpoint = last_checkpoints[0]
-        checkpoint = mridc.utils.model_utils.uninject_model_parallel_rank(checkpoint)  # type: ignore
+        checkpoint = mridc.utils.model_utils.uninject_model_parallel_rank(
+            checkpoint)  # type: ignore
     else:
         logging.info(f"Resuming from {last_checkpoints[0]}")
         checkpoint = last_checkpoints[0]
 
-    trainer._checkpoint_connector.resume_from_checkpoint_fit_path = str(checkpoint)
+    trainer._checkpoint_connector.resume_from_checkpoint_fit_path = str(
+        checkpoint)
 
     if is_global_rank_zero():
         if files_to_move := [child for child in Path(log_dir).iterdir() if child.is_file()]:
@@ -506,7 +523,8 @@ def check_explicit_log_dir(
             f"or version: {version}. Please note that exp_dir, name, and version will be ignored."
         )
     if is_global_rank_zero() and Path(str(explicit_log_dir)).exists():
-        logging.warning(f"Exp_manager is logging to {explicit_log_dir}, but it already exists.")
+        logging.warning(
+            f"Exp_manager is logging to {explicit_log_dir}, but it already exists.")
     return Path(str(explicit_log_dir)), str(explicit_log_dir), "", ""
 
 
@@ -539,7 +557,8 @@ def get_log_dir(
     ValueError: If resume is True, and there were more than 1 checkpoint could found.
     """
     if explicit_log_dir:  # If explicit log_dir was passed, short circuit
-        return check_explicit_log_dir(trainer, [Path(explicit_log_dir)], exp_dir, name, version)  # type: ignore
+        # type: ignore
+        return check_explicit_log_dir(trainer, [Path(explicit_log_dir)], exp_dir, name, version)
 
     # Default exp_dir to ./mridc_experiments if None was passed
     _exp_dir = exp_dir
@@ -580,11 +599,13 @@ def get_log_dir(
                 if use_datetime_version:
                     version = time.strftime("%Y-%m-%d_%H-%M-%S")
                 else:
-                    tensorboard_logger = TensorBoardLogger(save_dir=_exp_dir, name=name, version=version)
+                    tensorboard_logger = TensorBoardLogger(
+                        save_dir=_exp_dir, name=name, version=version)
                     version = f"version_{tensorboard_logger.version}"
                 os.environ[MRIDC_ENV_VARNAME_VERSION] = "" if version is None else version
 
-    log_dir = Path(str(_exp_dir)) / Path(str(name)) / Path("" if version is None else str(version))
+    log_dir = Path(str(_exp_dir)) / Path(str(name)) / \
+        Path("" if version is None else str(version))
     return log_dir, str(_exp_dir), str(name), str(version)
 
 
@@ -690,13 +711,15 @@ def configure_loggers(
         # if wandb_kwargs.get("save_dir", None) is None:
         #     wandb_kwargs["save_dir"] = str(exp_dir[0])
         #     os.makedirs(wandb_kwargs["save_dir"], exist_ok=True)
-        wandb_logger = WandbLogger(save_dir=str(exp_dir[0]), version=version, **wandb_kwargs)
+        wandb_logger = WandbLogger(save_dir=str(
+            exp_dir[0]), version=version, **wandb_kwargs)
 
         logger_list.append(wandb_logger)
         logging.info("WandBLogger has been set up")
 
     logger_list = (
-        LoggerList(logger_list, mridc_name=name, mridc_version=version) if len(logger_list) > 1 else logger_list[0]
+        LoggerList(logger_list, mridc_name=name, mridc_version=version) if len(
+            logger_list) > 1 else logger_list[0]
     )
     trainer._logger_connector.configure_logger(logger_list)
 
@@ -762,7 +785,8 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
         checkpoints = list(Path(self.dirpath).rglob("*.ckpt"))
         for checkpoint in checkpoints:
             if "mp_rank" in str(checkpoint) or "tp_rank" in str(checkpoint):
-                checkpoint = mridc.utils.model_utils.uninject_model_parallel_rank(checkpoint)
+                checkpoint = mridc.utils.model_utils.uninject_model_parallel_rank(
+                    checkpoint)
             checkpoint = str(checkpoint)
             if checkpoint.endswith("-last.ckpt"):
                 continue
@@ -771,19 +795,21 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
             if index != -1:
                 if match := re.search("[A-z]", checkpoint[index:]):
                     # -1 due to separator hypen
-                    value = checkpoint[index : index + match.start() - 1]
+                    value = checkpoint[index: index + match.start() - 1]
                     self.best_k_models[checkpoint] = float(value)
         if not self.best_k_models:
             return  # No saved checkpoints yet
 
         _reverse = self.mode != "min"
 
-        best_k_models = sorted(self.best_k_models, key=self.best_k_models.get, reverse=_reverse)
+        best_k_models = sorted(
+            self.best_k_models, key=self.best_k_models.get, reverse=_reverse)
 
         # This section should be ok as rank zero will delete all excess checkpoints, since all other ranks are
         # instantiated after rank zero. models_to_delete should be 0 for all other ranks.
         if self.model_parallel_size is not None:
-            models_to_delete = len(best_k_models) - self.model_parallel_size * self.save_top_k
+            models_to_delete = len(best_k_models) - \
+                self.model_parallel_size * self.save_top_k
         else:
             models_to_delete = len(best_k_models) - self.save_top_k
         logging.debug(f"Number of models to delete: {models_to_delete}")
@@ -814,11 +840,13 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
         app_state = AppState()
 
         if app_state.model_parallel_size is not None and app_state.model_parallel_size > 1:
-            raise ValueError("always_save_mridc is not implemented for model parallel models.")
+            raise ValueError(
+                "always_save_mridc is not implemented for model parallel models.")
 
         # since we are creating tarfile artifacts we need to update .mridc path
         app_state.model_restore_path = os.path.abspath(
-            os.path.expanduser(os.path.join(self.dirpath, self.prefix + self.postfix))
+            os.path.expanduser(os.path.join(
+                self.dirpath, self.prefix + self.postfix))
         )
 
         if self.save_best_model:
@@ -878,11 +906,13 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
                     "were found. Saving latest model instead."
                 )
             else:
-                self.best_model_path = trainer.strategy.broadcast(self.best_model_path)
+                self.best_model_path = trainer.strategy.broadcast(
+                    self.best_model_path)
                 trainer._checkpoint_connector.restore(self.best_model_path)
 
         if self.save_mridc_on_train_end:
-            pl_module.save_to(save_path=os.path.join(self.dirpath, self.prefix + self.postfix))
+            pl_module.save_to(save_path=os.path.join(
+                self.dirpath, self.prefix + self.postfix))
 
     def _del_model_without_trainer(self, filepath: str) -> None:
         """
@@ -895,7 +925,8 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
         app_state = AppState()
         if app_state.model_parallel_size is not None and app_state.model_parallel_size > 1:
             # filepath needs to be updated to include mp_rank
-            filepath = mridc.utils.model_utils.inject_model_parallel_rank(filepath)  # type: ignore
+            filepath = mridc.utils.model_utils.inject_model_parallel_rank(
+                filepath)  # type: ignore
 
         # each model parallel rank needs to remove its model
         if is_global_rank_zero() or (app_state.model_parallel_size is not None and app_state.data_parallel_rank == 0):
@@ -903,7 +934,8 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
                 self._fs.rm(filepath)
                 logging.info(f"Removed checkpoint: {filepath}")
             except FileNotFoundError:
-                logging.info(f"Tried to remove checkpoint: {filepath} but failed.")
+                logging.info(
+                    f"Tried to remove checkpoint: {filepath} but failed.")
 
 
 def configure_checkpointing(trainer: Trainer, log_dir: Path, name: str, resume: bool, params: "DictConfig"):
@@ -921,7 +953,8 @@ def configure_checkpointing(trainer: Trainer, log_dir: Path, name: str, resume: 
     # Create the callback and attach it to trainer
     if "filepath" in params:
         if params.filepath is not None:
-            logging.warning("filepath is deprecated. Please switch to dirpath and filename instead")
+            logging.warning(
+                "filepath is deprecated. Please switch to dirpath and filename instead")
             if params.dirpath is None:
                 params.dirpath = Path(params.filepath).parent
             if params.filename is None:

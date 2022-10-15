@@ -47,7 +47,8 @@ class HydraConfig:
     """Configuration for the hydra framework."""
 
     run: Dict[str, Any] = field(default_factory=lambda: {"dir": "."})
-    job_logging: Dict[str, Any] = field(default_factory=lambda: {"root": {"handlers": None}})
+    job_logging: Dict[str, Any] = field(
+        default_factory=lambda: {"root": {"handlers": None}})
 
 
 @dataclass
@@ -155,7 +156,8 @@ class ModelConfigBuilder:
 
         # Setup optim
         optim_name = cfg.__class__.__name__.replace("Params", "").lower()
-        wrapped_cfg = WrappedOptimConfig(name=optim_name, sched=None, **vars(cfg))  # type: ignore
+        wrapped_cfg = WrappedOptimConfig(
+            name=optim_name, sched=None, **vars(cfg))  # type: ignore
 
         if sched_cfg is not None:
 
@@ -165,7 +167,8 @@ class ModelConfigBuilder:
 
             # Setup scheduler
             sched_name = sched_cfg.__class__.__name__.replace("Params", "")
-            wrapped_sched_cfg = WrappedSchedConfig(name=sched_name, **vars(sched_cfg))
+            wrapped_sched_cfg = WrappedSchedConfig(
+                name=sched_name, **vars(sched_cfg))
 
             wrapped_cfg.sched = wrapped_sched_cfg
 

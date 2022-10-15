@@ -23,6 +23,7 @@ class Singleton(type):
                 # Check once again.
                 if cls not in cls.__instances:
                     # Create a new object instance - one per class.
-                    cls.__instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+                    cls.__instances[cls] = super(
+                        Singleton, cls).__call__(*args, **kwargs)
         # Return the instance.
         return cls.__instances[cls]

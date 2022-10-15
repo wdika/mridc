@@ -11,7 +11,8 @@ def test_case_0():
     int_0 = 103
     var_0 = None
     int_1 = 4913
-    data_loader_config_0 = module_0.DataLoaderConfig(bool_0, var_0, int_1, bool_0, bool_0)
+    data_loader_config_0 = module_0.DataLoaderConfig(
+        bool_0, var_0, int_1, bool_0, bool_0)
     assert data_loader_config_0.batch_size is None
     assert data_loader_config_0.shuffle is None
     assert data_loader_config_0.sampler == 4913
@@ -35,7 +36,8 @@ def test_case_0():
     assert module_0.DataLoaderConfig.worker_init_fn is None
     assert module_0.DataLoaderConfig.multiprocessing_context is None
     data_loader_config_1 = module_0.DataLoaderConfig(float_0, bool_0, int_0)
-    assert data_loader_config_1.batch_size == pytest.approx(1757.33, abs=0.01, rel=0.01)
+    assert data_loader_config_1.batch_size == pytest.approx(
+        1757.33, abs=0.01, rel=0.01)
     assert data_loader_config_1.shuffle is None
     assert data_loader_config_1.sampler == 103
     assert data_loader_config_1.batch_sampler is None
@@ -57,10 +59,12 @@ def test_case_1():
     float_0 = 1978.9
     bool_1 = True
     var_1 = None
-    data_loader_config_0 = module_0.DataLoaderConfig(int_0, str_0, float_0, bool_1, var_1)
+    data_loader_config_0 = module_0.DataLoaderConfig(
+        int_0, str_0, float_0, bool_1, var_1)
     assert data_loader_config_0.batch_size is None
     assert data_loader_config_0.shuffle == "NH#|N/whu]n"
-    assert data_loader_config_0.sampler == pytest.approx(1978.9, abs=0.01, rel=0.01)
+    assert data_loader_config_0.sampler == pytest.approx(
+        1978.9, abs=0.01, rel=0.01)
     assert data_loader_config_0.batch_sampler is True
     assert data_loader_config_0.num_workers is None
     assert data_loader_config_0.collate_fn is None
@@ -81,7 +85,8 @@ def test_case_1():
     assert module_0.DataLoaderConfig.worker_init_fn is None
     assert module_0.DataLoaderConfig.multiprocessing_context is None
     var_2 = None
-    data_loader_config_1 = module_0.DataLoaderConfig(bool_0, var_0, bool_0, list_0, var_2)
+    data_loader_config_1 = module_0.DataLoaderConfig(
+        bool_0, var_0, bool_0, list_0, var_2)
     assert data_loader_config_1.batch_size is False
     assert data_loader_config_1.shuffle is None
     assert data_loader_config_1.sampler is False
