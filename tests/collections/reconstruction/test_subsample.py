@@ -17,8 +17,7 @@ from mridc.collections.reconstruction.data.subsample import (
 
 @pytest.mark.parametrize(
     "mask_type, center_fractions, accelerations, expected_mask_func, x, seed, half_scan_percentage",
-    [("random1d", [0.08, 0.04], [4, 8], RandomMaskFunc,
-      np.array([1, 320, 320]), None, 0)],
+    [("random1d", [0.08, 0.04], [4, 8], RandomMaskFunc, np.array([1, 320, 320]), None, 0)],
 )
 def test_create_mask_for_random_type(
     mask_type, center_fractions, accelerations, expected_mask_func, x, seed, half_scan_percentage
@@ -38,8 +37,7 @@ def test_create_mask_for_random_type(
     Returns:
         None
     """
-    mask_func = create_mask_for_mask_type(
-        mask_type, center_fractions, accelerations)
+    mask_func = create_mask_for_mask_type(mask_type, center_fractions, accelerations)
 
     mask, acc = mask_func(x, seed, half_scan_percentage)
     mask = mask.squeeze(0).numpy()
@@ -59,8 +57,7 @@ def test_create_mask_for_random_type(
 
 @pytest.mark.parametrize(
     "mask_type, center_fractions, accelerations, expected_mask_func, x, seed, half_scan_percentage",
-    [("equispaced1d", [0.08, 0.04], [4, 8],
-      Equispaced1DMaskFunc, np.array([1, 320, 320]), None, 0)],
+    [("equispaced1d", [0.08, 0.04], [4, 8], Equispaced1DMaskFunc, np.array([1, 320, 320]), None, 0)],
 )
 def test_create_mask_for_equispaced1d_type(
     mask_type, center_fractions, accelerations, expected_mask_func, x, seed, half_scan_percentage
@@ -80,8 +77,7 @@ def test_create_mask_for_equispaced1d_type(
     Returns:
         None
     """
-    mask_func = create_mask_for_mask_type(
-        mask_type, center_fractions, accelerations)
+    mask_func = create_mask_for_mask_type(mask_type, center_fractions, accelerations)
 
     mask, acc = mask_func(x, seed, half_scan_percentage)
     mask = mask.squeeze(0).numpy()
@@ -101,8 +97,7 @@ def test_create_mask_for_equispaced1d_type(
 
 @pytest.mark.parametrize(
     "mask_type, center_fractions, accelerations, expected_mask_func, x, seed, half_scan_percentage",
-    [("equispaced2d", [0.08, 0.04], [4, 8], Equispaced2DMaskFunc,
-      np.array([1, 320, 320, 1]), None, 0)],
+    [("equispaced2d", [0.08, 0.04], [4, 8], Equispaced2DMaskFunc, np.array([1, 320, 320, 1]), None, 0)],
 )
 def test_create_mask_for_equispaced2d_type(
     mask_type, center_fractions, accelerations, expected_mask_func, x, seed, half_scan_percentage
@@ -122,8 +117,7 @@ def test_create_mask_for_equispaced2d_type(
     Returns:
         None
     """
-    mask_func = create_mask_for_mask_type(
-        mask_type, center_fractions, accelerations)
+    mask_func = create_mask_for_mask_type(mask_type, center_fractions, accelerations)
 
     mask, acc = mask_func(x, seed, half_scan_percentage)
     mask = mask.numpy()
@@ -142,8 +136,7 @@ def test_create_mask_for_equispaced2d_type(
 
 @pytest.mark.parametrize(
     "mask_type, center_fractions, accelerations, expected_mask_func, x, seed, half_scan_percentage, scale",
-    [("gaussian1d", [0.7, 0.7], [4, 10], Gaussian1DMaskFunc,
-      np.array([1, 320, 320, 1]), None, 0, 0.02)],
+    [("gaussian1d", [0.7, 0.7], [4, 10], Gaussian1DMaskFunc, np.array([1, 320, 320, 1]), None, 0, 0.02)],
 )
 def test_create_mask_for_gaussian1d_type(
     mask_type, center_fractions, accelerations, expected_mask_func, x, seed, half_scan_percentage, scale
@@ -164,8 +157,7 @@ def test_create_mask_for_gaussian1d_type(
     Returns:
         None
     """
-    mask_func = create_mask_for_mask_type(
-        mask_type, center_fractions, accelerations)
+    mask_func = create_mask_for_mask_type(mask_type, center_fractions, accelerations)
 
     mask, acc = mask_func(x, seed, half_scan_percentage, scale)
     mask = mask.squeeze(0).numpy()
@@ -185,8 +177,7 @@ def test_create_mask_for_gaussian1d_type(
 
 @pytest.mark.parametrize(
     "mask_type, center_fractions, accelerations, expected_mask_func, x, seed, half_scan_percentage, scale",
-    [("gaussian2d", [0.7, 0.7], [4, 10], Gaussian2DMaskFunc,
-      np.array([1, 320, 320, 1]), None, 0, 0.02)],
+    [("gaussian2d", [0.7, 0.7], [4, 10], Gaussian2DMaskFunc, np.array([1, 320, 320, 1]), None, 0, 0.02)],
 )
 def test_create_mask_for_gaussian2d_type(
     mask_type, center_fractions, accelerations, expected_mask_func, x, seed, half_scan_percentage, scale
@@ -207,8 +198,7 @@ def test_create_mask_for_gaussian2d_type(
     Returns:
         None
     """
-    mask_func = create_mask_for_mask_type(
-        mask_type, center_fractions, accelerations)
+    mask_func = create_mask_for_mask_type(mask_type, center_fractions, accelerations)
 
     mask, acc = mask_func(x, seed, half_scan_percentage, scale)
     mask = mask.squeeze(0).squeeze(-1).numpy()
@@ -227,8 +217,7 @@ def test_create_mask_for_gaussian2d_type(
 
 @pytest.mark.parametrize(
     "mask_type, center_fractions, accelerations, expected_mask_func, x, seed, half_scan_percentage, scale",
-    [("poisson2d", [0.7, 0.7], [4, 10], Poisson2DMaskFunc,
-      np.array([1, 320, 320, 1]), None, 0, 0.02)],
+    [("poisson2d", [0.7, 0.7], [4, 10], Poisson2DMaskFunc, np.array([1, 320, 320, 1]), None, 0, 0.02)],
 )
 def test_create_mask_for_poisson2d_type(
     mask_type, center_fractions, accelerations, expected_mask_func, x, seed, half_scan_percentage, scale
@@ -249,8 +238,7 @@ def test_create_mask_for_poisson2d_type(
     Returns:
         None
     """
-    mask_func = create_mask_for_mask_type(
-        mask_type, center_fractions, accelerations)
+    mask_func = create_mask_for_mask_type(mask_type, center_fractions, accelerations)
 
     mask, acc = mask_func(x, seed, half_scan_percentage, scale)
     mask = mask.squeeze(0).squeeze(-1).numpy()

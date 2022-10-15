@@ -25,8 +25,7 @@ def test_centered_fft2(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = fft2(x, centered=True, normalization="ortho",
-                     spatial_dims=[-2, -1]).numpy()
+    out_torch = fft2(x, centered=True, normalization="ortho", spatial_dims=[-2, -1]).numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)
@@ -51,8 +50,7 @@ def test_non_centered_fft2(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = fft2(x, centered=False, normalization="ortho",
-                     spatial_dims=[-2, -1]).numpy()
+    out_torch = fft2(x, centered=False, normalization="ortho", spatial_dims=[-2, -1]).numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)
@@ -75,8 +73,7 @@ def test_centered_fft2_backward_normalization(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = fft2(x, centered=True, normalization="backward",
-                     spatial_dims=[-2, -1]).numpy()
+    out_torch = fft2(x, centered=True, normalization="backward", spatial_dims=[-2, -1]).numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)
@@ -101,8 +98,7 @@ def test_centered_fft2_forward_normalization(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = fft2(x, centered=True, normalization="forward",
-                     spatial_dims=[-2, -1]).numpy()
+    out_torch = fft2(x, centered=True, normalization="forward", spatial_dims=[-2, -1]).numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)
@@ -127,8 +123,7 @@ def test_centered_ifft2(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = ifft2(x, centered=True, normalization="ortho",
-                      spatial_dims=[-2, -1]).numpy()
+    out_torch = ifft2(x, centered=True, normalization="ortho", spatial_dims=[-2, -1]).numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)
@@ -153,8 +148,7 @@ def test_non_centered_ifft2(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = ifft2(x, centered=False, normalization="ortho",
-                      spatial_dims=[-2, -1]).numpy()
+    out_torch = ifft2(x, centered=False, normalization="ortho", spatial_dims=[-2, -1]).numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)
@@ -177,8 +171,7 @@ def test_centered_ifft2_backward_normalization(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = ifft2(x, centered=True, normalization="backward",
-                      spatial_dims=[-2, -1]).numpy()
+    out_torch = ifft2(x, centered=True, normalization="backward", spatial_dims=[-2, -1]).numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)
@@ -203,8 +196,7 @@ def test_centered_ifft2_forward_normalization(shape):
     """
     shape = shape + [2]
     x = create_input(shape)
-    out_torch = ifft2(x, centered=True, normalization="forward",
-                      spatial_dims=[-2, -1]).numpy()
+    out_torch = ifft2(x, centered=True, normalization="forward", spatial_dims=[-2, -1]).numpy()
     out_torch = out_torch[..., 0] + 1j * out_torch[..., 1]
 
     input_numpy = tensor_to_complex_np(x)

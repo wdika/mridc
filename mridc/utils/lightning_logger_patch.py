@@ -21,8 +21,7 @@ def add_memory_handlers_to_pl_logger():
     """
     if not HANDLERS:
         HANDLERS["memory_err"] = MemoryHandler(-1)
-        HANDLERS["memory_err"].addFilter(
-            lambda record: record.levelno > _logging.INFO)
+        HANDLERS["memory_err"].addFilter(lambda record: record.levelno > _logging.INFO)
         HANDLERS["memory_all"] = MemoryHandler(-1)
         pl._logger.addHandler(HANDLERS["memory_err"])
         pl._logger.addHandler(HANDLERS["memory_all"])
@@ -38,8 +37,7 @@ def add_filehandlers_to_pl_logger(all_log_file, err_log_file):
     HANDLERS["file"] = _logging.FileHandler(all_log_file)
     pl._logger.addHandler(HANDLERS["file"])
     HANDLERS["file_err"] = _logging.FileHandler(err_log_file)
-    HANDLERS["file_err"].addFilter(
-        lambda record: record.levelno > _logging.INFO)
+    HANDLERS["file_err"].addFilter(lambda record: record.levelno > _logging.INFO)
     pl._logger.addHandler(HANDLERS["file_err"])
 
     if HANDLERS.get("memory_all"):
