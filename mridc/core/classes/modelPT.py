@@ -85,8 +85,7 @@ class ModelPT(LightningModule, Model):
         if "target" not in cfg:
             # This is for Jarvis service.
             OmegaConf.set_struct(cfg, False)
-            cfg.target = "{0}.{1}".format(
-                self.__class__.__module__, self.__class__.__name__)
+            cfg.target = "{0}.{1}".format(self.__class__.__module__, self.__class__.__name__)
             OmegaConf.set_struct(cfg, True)
 
         if "mridc_version" not in cfg:
@@ -117,12 +116,10 @@ class ModelPT(LightningModule, Model):
                 self.setup_training_data(self._cfg.train_ds)
 
             if "validation_ds" in self._cfg and self._cfg.validation_ds is not None:
-                self.setup_multiple_validation_data(
-                    self._cfg.validation_ds)  # type: ignore
+                self.setup_multiple_validation_data(self._cfg.validation_ds)  # type: ignore
 
             if "test_ds" in self._cfg and self._cfg.test_ds is not None:
-                self.setup_multiple_test_data(
-                    test_data_config=None)  # type: ignore
+                self.setup_multiple_test_data(test_data_config=None)  # type: ignore
 
         else:
             if "train_ds" in self._cfg and self._cfg.train_ds is not None:  # type: ignore
@@ -149,8 +146,7 @@ class ModelPT(LightningModule, Model):
                 )
 
         # ModelPT wrappers over subclass implementations
-        self._training_step = mridc.utils.model_utils.wrap_training_step(
-            self.training_step)  # type: ignore
+        self._training_step = mridc.utils.model_utils.wrap_training_step(self.training_step)  # type: ignore
 
     def __init_subclass__(cls) -> None:
         """This method is called when a subclass is created."""
@@ -189,8 +185,7 @@ class ModelPT(LightningModule, Model):
             return src
 
         if not hasattr(self, "artifacts"):
-            self.artifacts: Dict[str,
-                                 mridc.utils.model_utils.ArtifactItem] = {}
+            self.artifacts: Dict[str, mridc.utils.model_utils.ArtifactItem] = {}
 
         if self.artifacts is None:
             self.artifacts = {}
@@ -286,8 +281,7 @@ class ModelPT(LightningModule, Model):
         if save_restore_connector.model_extracted_dir is None:
             restore_path = os.path.abspath(os.path.expanduser(restore_path))
         else:
-            restore_path = os.path.abspath(os.path.expanduser(
-                save_restore_connector.model_extracted_dir))
+            restore_path = os.path.abspath(os.path.expanduser(save_restore_connector.model_extracted_dir))
 
         if not path.exists(restore_path):
             raise FileNotFoundError(f"Can't find {restore_path}")
@@ -308,8 +302,7 @@ class ModelPT(LightningModule, Model):
         cls,
         checkpoint_path: str,
         *args,
-        map_location: Optional[Union[Dict[str, str],
-                                     str, torch.device, int, Callable]] = None,
+        map_location: Optional[Union[Dict[str, str], str, torch.device, int, Callable]] = None,
         hparams_file: Optional[str] = None,
         strict: bool = True,
         **kwargs,
@@ -355,8 +348,7 @@ class ModelPT(LightningModule, Model):
         self.validation_names = None
 
         # preserve config
-        self._update_dataset_config(
-            dataset_name="validation", config=val_data_config)
+        self._update_dataset_config(dataset_name="validation", config=val_data_config)
 
         try:
             self._multi_dataset_mode = True
@@ -369,8 +361,7 @@ class ModelPT(LightningModule, Model):
             and self._validation_dl is not None
             and type(self._validation_dl) in [list, tuple]
         ):
-            self.validation_names = [
-                f"val_{idx}_" for idx in range(len(self._validation_dl))]
+            self.validation_names = [f"val_{idx}_" for idx in range(len(self._validation_dl))]
 
     def setup_multiple_test_data(self, test_data_config: Union[DictConfig, Dict]):
         """(Optionally) Setups data loader to be used in test, with support for multiple data loaders."""
@@ -380,8 +371,7 @@ class ModelPT(LightningModule, Model):
         self._test_dl = None  # type: ignore
 
         # preserve config
-        self._update_dataset_config(
-            dataset_name="test", config=test_data_config)
+        self._update_dataset_config(dataset_name="test", config=test_data_config)
 
         try:
             self._multi_dataset_mode = True
@@ -390,8 +380,7 @@ class ModelPT(LightningModule, Model):
             self._multi_dataset_mode = False
 
         if self.test_names is None and self._test_dl is not None and type(self._test_dl) in [list, tuple]:
-            self.test_names = [
-                f"test_{idx}_" for idx in range(len(self._test_dl))]
+            self.test_names = [f"test_{idx}_" for idx in range(len(self._test_dl))]
 
     def setup_optimization(self, optim_config: Optional[Union[DictConfig, Dict]] = None):
         """
@@ -419,8 +408,7 @@ class ModelPT(LightningModule, Model):
 
         # If config is still None, or internal config has no Optim, return without instantiation
         if optim_config is None:
-            logging.info(
-                "No optimizer config provided, therefore no optimizer was created")
+            logging.info("No optimizer config provided, therefore no optimizer was created")
             return
         # Preserve the configuration
         if not isinstance(optim_config, DictConfig):
@@ -439,20 +427,17 @@ class ModelPT(LightningModule, Model):
             optim_config = OmegaConf.to_container(optim_config, resolve=True)
 
         if self._trainer is None:
-            logging.warning(
-                "Trainer wasn't specified in model constructor. Make sure that you really wanted it.")
+            logging.warning("Trainer wasn't specified in model constructor. Make sure that you really wanted it.")
 
         if "sched" in optim_config and self._trainer is not None:
             if not isinstance(self._trainer.accumulate_grad_batches, int):
-                raise ValueError(
-                    "We do not currently support gradient accumulation that is not an integer.")
+                raise ValueError("We do not currently support gradient accumulation that is not an integer.")
             if self._trainer.max_steps is None or self.trainer.max_steps < 0:  # type: ignore
                 # Store information needed to calculate max_steps
                 optim_config["sched"]["t_max_epochs"] = self._trainer.max_epochs
                 optim_config["sched"]["t_accumulate_grad_batches"] = self._trainer.accumulate_grad_batches
                 optim_config["sched"]["t_limit_train_batches"] = self._trainer.limit_train_batches
-                optim_config["sched"]["t_num_workers"] = self._trainer.num_devices * \
-                    self._trainer.num_nodes
+                optim_config["sched"]["t_num_workers"] = self._trainer.num_devices * self._trainer.num_nodes
             else:
                 optim_config["sched"]["max_steps"] = self._trainer.max_steps
 
@@ -486,8 +471,7 @@ class ModelPT(LightningModule, Model):
         # Check if caller has optimizer kwargs, default to empty dictionary
         if "args" in optim_config:
             optimizer_args = optim_config.pop("args")
-            optimizer_args = mridc.core.optim.optimizers.parse_optimizer_args(
-                optimizer_name, optimizer_args)
+            optimizer_args = mridc.core.optim.optimizers.parse_optimizer_args(optimizer_name, optimizer_args)
         else:
             optimizer_args = copy.deepcopy(optim_config)
 
@@ -503,18 +487,15 @@ class ModelPT(LightningModule, Model):
 
             # Actually instantiate the optimizer
             if optimizer_cls is None:
-                optimizer = mridc.core.optim.optimizers.get_optimizer(
-                    optimizer_name)
-                optimizer = optimizer(
-                    self._optimizer_param_groups, **optimizer_args)
+                optimizer = mridc.core.optim.optimizers.get_optimizer(optimizer_name)
+                optimizer = optimizer(self._optimizer_param_groups, **optimizer_args)
 
                 logging.info("Optimizer config = %s", str(optimizer))
 
                 self._optimizer = optimizer  # type: ignore
 
             elif inspect.isclass(optimizer_cls):
-                optimizer = optimizer_cls(
-                    self._optimizer_param_groups, **optimizer_args)
+                optimizer = optimizer_cls(self._optimizer_param_groups, **optimizer_args)
                 logging.info("Optimizer config = %s", str(optimizer))
 
                 self._optimizer = optimizer  # type: ignore
@@ -522,8 +503,7 @@ class ModelPT(LightningModule, Model):
             else:
                 # Attempt class path resolution
                 try:
-                    optimizer_cls = OmegaConf.create(
-                        {"_target_": optimizer_cls})
+                    optimizer_cls = OmegaConf.create({"_target_": optimizer_cls})
                     optimizer_config = {"lr": lr} if lr is not None else {}
                     optimizer_config |= optimizer_args
 
@@ -531,8 +511,7 @@ class ModelPT(LightningModule, Model):
                         optimizer_cls, self._optimizer_param_groups, **optimizer_config
                     )  # type: DictConfig
 
-                    logging.info("Optimizer config = %s",
-                                 str(optimizer_instance))
+                    logging.info("Optimizer config = %s", str(optimizer_instance))
 
                     self._optimizer = optimizer_instance
 
@@ -565,8 +544,7 @@ class ModelPT(LightningModule, Model):
                 ]
 
                 self._scheduler = _schedulers  # type: ignore
-                self._optimizer = [self._optimizer] * \
-                    len(scheduler_config["name"])  # type: ignore
+                self._optimizer = [self._optimizer] * len(scheduler_config["name"])  # type: ignore
             else:
                 # Try to instantiate scheduler for optimizer
                 self._scheduler = mridc.core.optim.lr_scheduler.prepare_lr_scheduler(  # type: ignore
@@ -654,12 +632,10 @@ class ModelPT(LightningModule, Model):
 
         # Case where we provide exactly 1 data loader
         if type(outputs[0]) is dict:
-            output_dict = self.multi_validation_epoch_end(
-                outputs, dataloader_idx=0)  # type: ignore
+            output_dict = self.multi_validation_epoch_end(outputs, dataloader_idx=0)  # type: ignore
 
             if output_dict is not None and "log" in output_dict:
-                self.log_dict(output_dict.pop("log"),
-                              on_epoch=True)  # type: ignore
+                self.log_dict(output_dict.pop("log"), on_epoch=True)  # type: ignore
 
             return output_dict
 
@@ -668,10 +644,8 @@ class ModelPT(LightningModule, Model):
         # The output is a list of list of dicts, outer list corresponds to dataloader idx
         for dataloader_idx, val_outputs in enumerate(outputs):  # type: ignore
             # Get prefix and dispatch call to multi epoch end
-            dataloader_prefix = self.get_validation_dataloader_prefix(
-                dataloader_idx)
-            dataloader_logs = self.multi_validation_epoch_end(
-                val_outputs, dataloader_idx=dataloader_idx)
+            dataloader_prefix = self.get_validation_dataloader_prefix(dataloader_idx)
+            dataloader_logs = self.multi_validation_epoch_end(val_outputs, dataloader_idx=dataloader_idx)
 
             # If result was not provided, generate empty dict
             # type: ignore
@@ -722,8 +696,7 @@ class ModelPT(LightningModule, Model):
                     output_dict[new_k] = v  # type: ignore
 
         if "log" in output_dict:  # type: ignore
-            self.log_dict(output_dict.pop("log"),
-                          on_epoch=True)  # type: ignore
+            self.log_dict(output_dict.pop("log"), on_epoch=True)  # type: ignore
 
         # return everything else
         return output_dict
@@ -758,12 +731,10 @@ class ModelPT(LightningModule, Model):
 
         # Case where we provide exactly 1 data loader
         if type(outputs[0]) is dict:
-            output_dict = self.multi_test_epoch_end(
-                outputs, dataloader_idx=0)  # type: ignore
+            output_dict = self.multi_test_epoch_end(outputs, dataloader_idx=0)  # type: ignore
 
             if output_dict is not None and "log" in output_dict:
-                self.log_dict(output_dict.pop("log"),
-                              on_epoch=True)  # type: ignore
+                self.log_dict(output_dict.pop("log"), on_epoch=True)  # type: ignore
 
             return output_dict
 
@@ -773,8 +744,7 @@ class ModelPT(LightningModule, Model):
         for dataloader_idx, test_outputs in enumerate(outputs):  # type: ignore
             # Get prefix and dispatch call to multi epoch end
             dataloader_prefix = self.get_test_dataloader_prefix(dataloader_idx)
-            self.multi_test_epoch_end(
-                test_outputs, dataloader_idx=dataloader_idx)
+            self.multi_test_epoch_end(test_outputs, dataloader_idx=dataloader_idx)
 
             # If result was not provided, generate empty dict
             dataloader_logs = dataloader_logs or {}  # type: ignore
@@ -824,8 +794,7 @@ class ModelPT(LightningModule, Model):
                     output_dict[new_k] = v  # type: ignore
 
         if "log" in output_dict:  # type: ignore
-            self.log_dict(output_dict.pop("log"),
-                          on_epoch=True)  # type: ignore
+            self.log_dict(output_dict.pop("log"), on_epoch=True)  # type: ignore
 
         # return everything else
         return output_dict
@@ -905,8 +874,7 @@ class ModelPT(LightningModule, Model):
         # Restore checkpoint part into current model
         self.load_state_dict(dict_to_load, strict=False)  # type: ignore
         if load_from_string is not None:
-            logging.info(
-                f"Model checkpoint partially restored from {load_from_string}")
+            logging.info(f"Model checkpoint partially restored from {load_from_string}")
             if len(excluded_param_names) > 0:
                 logging.info(
                     f"The following parameters were excluded when loading from {load_from_string} : "
@@ -943,10 +911,8 @@ class ModelPT(LightningModule, Model):
         map_location: str or torch.device() which represents where the intermediate state dict (from the pretrained \
         model or checkpoint) will be loaded.
         """
-        args = ["init_from_mridc_model",
-                "init_from_pretrained_model", "init_from_ptl_ckpt"]
-        arg_matches = [(1 if arg in cfg and arg is not None else 0)
-                       for arg in args]
+        args = ["init_from_mridc_model", "init_from_pretrained_model", "init_from_ptl_ckpt"]
+        arg_matches = [(1 if arg in cfg and arg is not None else 0) for arg in args]
 
         if sum(arg_matches) == 0:
             # model weights do not need to be restored
@@ -964,41 +930,34 @@ class ModelPT(LightningModule, Model):
                     model_path = cfg.init_from_mridc_model  # type: ignore
                     # Restore model
                     restored_model = self.restore_from(
-                        model_path, map_location=map_location, strict=cfg.get(
-                            "init_strict", True)  # type: ignore
+                        model_path, map_location=map_location, strict=cfg.get("init_strict", True)  # type: ignore
                     )
                     # Restore checkpoint into current model
-                    self.load_state_dict(
-                        restored_model.state_dict(), strict=False)
-                    logging.info(
-                        f"Model checkpoint restored from mridc file with path : `{model_path}`")
+                    self.load_state_dict(restored_model.state_dict(), strict=False)
+                    logging.info(f"Model checkpoint restored from mridc file with path : `{model_path}`")
                 elif isinstance(cfg.init_from_mridc_model, (DictConfig, dict)):  # type: ignore
                     model_load_dict = cfg.init_from_mridc_model  # type: ignore
                     for model_load_cfg in model_load_dict.values():
                         model_path = model_load_cfg.path
                         # Restore model
                         restored_model = self.restore_from(
-                            model_path, map_location=map_location, strict=cfg.get(
-                                "init_strict", True)  # type: ignore
+                            model_path, map_location=map_location, strict=cfg.get("init_strict", True)  # type: ignore
                         )
 
                         include = model_load_cfg.pop("include", [""])
                         exclude = model_load_cfg.pop("exclude", [])
 
                         self.load_part_of_state_dict(
-                            restored_model.state_dict(
-                            ), include, exclude, f"mridc file with path `{model_path}`"
+                            restored_model.state_dict(), include, exclude, f"mridc file with path `{model_path}`"
                         )
                 else:
-                    raise TypeError(
-                        "Invalid type: init_from_mridc_model is not a string or a dict!")
+                    raise TypeError("Invalid type: init_from_mridc_model is not a string or a dict!")
 
         if "init_from_pretrained_model" in cfg and cfg.init_from_pretrained_model is not None:  # type: ignore
             with open_dict(cfg):  # type: ignore
                 # Restore model
                 if isinstance(cfg.init_from_pretrained_model, str):  # type: ignore
-                    model_name = cfg.pop(
-                        "init_from_pretrained_model")  # type: ignore
+                    model_name = cfg.pop("init_from_pretrained_model")  # type: ignore
 
                     # Check if model is being resumed or not - only works if `Trainer` is attached to model
                     if hasattr(self, "trainer") and self.trainer is not None:
@@ -1014,15 +973,12 @@ class ModelPT(LightningModule, Model):
                             return
 
                     restored_model = self.from_pretrained(
-                        model_name, map_location=map_location, strict=cfg.get(
-                            "init_strict", True)  # type: ignore
+                        model_name, map_location=map_location, strict=cfg.get("init_strict", True)  # type: ignore
                     )
 
                     # Restore checkpoint into current model
-                    self.load_state_dict(
-                        restored_model.state_dict(), strict=False)
-                    logging.info(
-                        f"Model checkpoint restored from pretrained checkpoint with name : `{model_name}`")
+                    self.load_state_dict(restored_model.state_dict(), strict=False)
+                    logging.info(f"Model checkpoint restored from pretrained checkpoint with name : `{model_name}`")
                 elif isinstance(cfg.init_from_pretrained_model, dict):  # type: ignore
                     pass
                 elif isinstance(cfg.init_from_pretrained_model, (DictConfig, dict)):  # type: ignore
@@ -1031,8 +987,7 @@ class ModelPT(LightningModule, Model):
                         model_name = model_load_cfg.name
                         # Restore model
                         restored_model = self.from_pretrained(
-                            model_name, map_location=map_location, strict=cfg.get(
-                                "init_strict", True)  # type: ignore
+                            model_name, map_location=map_location, strict=cfg.get("init_strict", True)  # type: ignore
                         )
 
                         include = model_load_cfg.pop("include", [""])
@@ -1045,8 +1000,7 @@ class ModelPT(LightningModule, Model):
                             f"pretrained checkpoint with name `{model_name}`",
                         )
                 else:
-                    raise TypeError(
-                        "Invalid type: init_from_pretrained_model is not a string or a dict!")
+                    raise TypeError("Invalid type: init_from_pretrained_model is not a string or a dict!")
 
         if "init_from_ptl_ckpt" in cfg and cfg.init_from_ptl_ckpt is not None:  # type: ignore
             with open_dict(cfg):  # type: ignore
@@ -1074,8 +1028,7 @@ class ModelPT(LightningModule, Model):
                             ckpt["state_dict"], include, exclude, f"mridc file with path `{ckpt_path}`"
                         )
                 else:
-                    raise TypeError(
-                        "Invalid type: init_from_ptl_ckpt is not a string or a dict!")
+                    raise TypeError("Invalid type: init_from_ptl_ckpt is not a string or a dict!")
 
     def teardown(self, stage: str):
         """Called at the end of fit and test."""
@@ -1199,8 +1152,7 @@ class ModelPT(LightningModule, Model):
                 if trainer.num_devices and trainer.num_nodes:
                     self.world_size = trainer.num_devices * trainer.num_nodes
             else:
-                logging.warning(
-                    "World size can only be set by PyTorch Lightning Trainer.")
+                logging.warning("World size can only be set by PyTorch Lightning Trainer.")
         app_state = AppState()
         app_state.world_size = self.world_size
 
@@ -1237,8 +1189,7 @@ class ModelPT(LightningModule, Model):
                 # Update hyperparameters by calling property setter
                 self.cfg = self._cfg
             else:
-                raise ValueError(
-                    "`dataset_name` when updating config must be one of [train, validation, test]")
+                raise ValueError("`dataset_name` when updating config must be one of [train, validation, test]")
 
     @property
     def num_weights(self):
@@ -1298,8 +1249,7 @@ class ModelPT(LightningModule, Model):
             else:
                 restore_path = None
 
-            appstate.register_model_guid(
-                self.model_guid, restoration_path=restore_path)
+            appstate.register_model_guid(self.model_guid, restoration_path=restore_path)
 
     @classmethod
     def update_save_restore_connector(cls, save_restore_connector):
