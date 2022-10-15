@@ -44,7 +44,8 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
-        self.use_reconstruction_module = cfg_dict.get("use_reconstruction_module", True)
+        self.use_reconstruction_module = cfg_dict.get(
+            "use_reconstruction_module", True)
 
         self.fft_centered = cfg_dict.get("fft_centered")
         self.fft_normalization = cfg_dict.get("fft_normalization")
@@ -54,16 +55,22 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
         self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
         self.dimensionality = cfg_dict.get("dimensionality", 2)
         if self.dimensionality != 2:
-            raise NotImplementedError(f"Currently only 2D is supported for segmentation, got {self.dimensionality}D.")
-        self.input_channels = cfg_dict.get("segmentation_module_input_channels", 2)
+            raise NotImplementedError(
+                f"Currently only 2D is supported for segmentation, got {self.dimensionality}D.")
+        self.input_channels = cfg_dict.get(
+            "segmentation_module_input_channels", 2)
         self.magnitude_input = cfg_dict.get("magnitude_input", True)
 
-        reconstruction_module_recurrent_filters = cfg_dict.get("reconstruction_module_recurrent_filters")
-        reconstruction_module_num_cascades = cfg_dict.get("reconstruction_module_num_cascades")
-        self.reconstruction_module_time_steps = 8 * math.ceil(cfg_dict.get("reconstruction_module_time_steps") / 8)
+        reconstruction_module_recurrent_filters = cfg_dict.get(
+            "reconstruction_module_recurrent_filters")
+        reconstruction_module_num_cascades = cfg_dict.get(
+            "reconstruction_module_num_cascades")
+        self.reconstruction_module_time_steps = 8 * \
+            math.ceil(cfg_dict.get("reconstruction_module_time_steps") / 8)
         self.no_dc = cfg_dict.get("reconstruction_module_no_dc")
         self.keep_eta = cfg_dict.get("reconstruction_module_keep_eta")
-        self.reconstruction_module_dimensionality = cfg_dict.get("reconstruction_module_dimensionality")
+        self.reconstruction_module_dimensionality = cfg_dict.get(
+            "reconstruction_module_dimensionality")
 
         reconstruction_module_consecutive_slices = (
             self.consecutive_slices if self.reconstruction_module_dimensionality == 3 else 1
@@ -72,15 +79,22 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
         self.reconstruction_module = torch.nn.ModuleList(
             [
                 rim_block.RIMBlock(
-                    recurrent_layer=cfg_dict.get("reconstruction_module_recurrent_layer"),
-                    conv_filters=cfg_dict.get("reconstruction_module_conv_filters"),
-                    conv_kernels=cfg_dict.get("reconstruction_module_conv_kernels"),
-                    conv_dilations=cfg_dict.get("reconstruction_module_conv_dilations"),
+                    recurrent_layer=cfg_dict.get(
+                        "reconstruction_module_recurrent_layer"),
+                    conv_filters=cfg_dict.get(
+                        "reconstruction_module_conv_filters"),
+                    conv_kernels=cfg_dict.get(
+                        "reconstruction_module_conv_kernels"),
+                    conv_dilations=cfg_dict.get(
+                        "reconstruction_module_conv_dilations"),
                     conv_bias=cfg_dict.get("reconstruction_module_conv_bias"),
                     recurrent_filters=reconstruction_module_recurrent_filters,
-                    recurrent_kernels=cfg_dict.get("reconstruction_module_recurrent_kernels"),
-                    recurrent_dilations=cfg_dict.get("reconstruction_module_recurrent_dilations"),
-                    recurrent_bias=cfg_dict.get("reconstruction_module_recurrent_bias"),
+                    recurrent_kernels=cfg_dict.get(
+                        "reconstruction_module_recurrent_kernels"),
+                    recurrent_dilations=cfg_dict.get(
+                        "reconstruction_module_recurrent_dilations"),
+                    recurrent_bias=cfg_dict.get(
+                        "reconstruction_module_recurrent_bias"),
                     depth=cfg_dict.get("reconstruction_module_depth"),
                     time_steps=self.reconstruction_module_time_steps,
                     conv_dim=cfg_dict.get("reconstruction_module_conv_dim"),
@@ -97,51 +111,63 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
         )
 
         # Keep estimation through the cascades if keep_eta is True or re-estimate it if False.
-        self.reconstruction_module_keep_eta = cfg_dict.get("reconstruction_module_keep_eta")
+        self.reconstruction_module_keep_eta = cfg_dict.get(
+            "reconstruction_module_keep_eta")
 
         # initialize weights if not using pretrained cirim
         if not cfg_dict.get("pretrained", False):
-            std_init_range = 1 / reconstruction_module_recurrent_filters[0] ** 0.5
-            self.reconstruction_module.apply(lambda module: rnn_utils.rnn_weights_init(module, std_init_range))
+            std_init_range = 1 / \
+                reconstruction_module_recurrent_filters[0] ** 0.5
+            self.reconstruction_module.apply(
+                lambda module: rnn_utils.rnn_weights_init(module, std_init_range))
 
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
-        self.reconstruction_module_accumulate_estimates = cfg_dict.get("reconstruction_module_accumulate_estimates")
+        self.reconstruction_module_accumulate_estimates = cfg_dict.get(
+            "reconstruction_module_accumulate_estimates")
 
         segmentation_module = cfg_dict.get("segmentation_module")
         if segmentation_module.lower() == "unet":
             self.segmentation_module = unet_block.Unet(
                 in_chans=self.input_channels,
-                out_chans=cfg_dict.get("segmentation_module_output_channels", 2),
+                out_chans=cfg_dict.get(
+                    "segmentation_module_output_channels", 2),
                 chans=cfg_dict.get("segmentation_module_channels", 64),
-                num_pool_layers=cfg_dict.get("segmentation_module_pooling_layers", 2),
+                num_pool_layers=cfg_dict.get(
+                    "segmentation_module_pooling_layers", 2),
                 drop_prob=cfg_dict.get("segmentation_module_dropout", 0.0),
             )
         elif segmentation_module.lower() == "attentionunet":
             self.segmentation_module = attention_unet_block.AttentionUnet(
                 in_chans=self.input_channels,
-                out_chans=cfg_dict.get("segmentation_module_output_channels", 2),
+                out_chans=cfg_dict.get(
+                    "segmentation_module_output_channels", 2),
                 chans=cfg_dict.get("segmentation_module_channels", 64),
-                num_pool_layers=cfg_dict.get("segmentation_module_pooling_layers", 2),
+                num_pool_layers=cfg_dict.get(
+                    "segmentation_module_pooling_layers", 2),
                 drop_prob=cfg_dict.get("segmentation_module_dropout", 0.0),
             )
         elif segmentation_module.lower() == "lambdaunet":
             self.segmentation_module = lambda_unet_block.LambdaBlock(
                 in_chans=self.input_channels,
-                out_chans=cfg_dict.get("segmentation_module_output_channels", 2),
+                out_chans=cfg_dict.get(
+                    "segmentation_module_output_channels", 2),
                 drop_prob=cfg_dict.get("segmentation_module_dropout", 0.0),
-                temporal_kernel=cfg_dict.get("segmentation_module_temporal_kernel", 1),
+                temporal_kernel=cfg_dict.get(
+                    "segmentation_module_temporal_kernel", 1),
                 num_slices=self.consecutive_slices,
             )
         elif segmentation_module.lower() == "vnet":
             self.segmentation_module = vnet_block.VNet(
                 in_chans=self.input_channels,
-                out_chans=cfg_dict.get("segmentation_module_output_channels", 2),
+                out_chans=cfg_dict.get(
+                    "segmentation_module_output_channels", 2),
                 act=cfg_dict.get("segmentation_module_activation", "elu"),
                 drop_prob=cfg_dict.get("segmentation_module_dropout", 0.0),
                 bias=cfg_dict.get("segmentation_module_bias", False),
             )
         else:
-            raise ValueError(f"Segmentation module {segmentation_module} not implemented.")
+            raise ValueError(
+                f"Segmentation module {segmentation_module} not implemented.")
 
     @common_classes.typecheck()
     def forward(
@@ -183,13 +209,15 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
                 prediction_slice = y_slice.clone()
                 sensitivity_maps_slice = sensitivity_maps[:, slice_idx, ...]
                 mask_slice = mask[:, 0, ...]
-                init_reconstruction_pred_slice = init_reconstruction_pred[:, slice_idx, ...]
+                init_reconstruction_pred_slice = init_reconstruction_pred[:,
+                                                                          slice_idx, ...]
                 _pred_reconstruction_slice = (
                     None
                     if init_reconstruction_pred_slice is None or init_reconstruction_pred_slice.dim() < 4
                     else init_reconstruction_pred_slice
                 )
-                target_reconstruction_slice = target_reconstruction[:, slice_idx, ...]
+                target_reconstruction_slice = target_reconstruction[:,
+                                                                    slice_idx, ...]
                 hx = None
                 sigma = 1.0
                 cascades_etas = []
@@ -206,15 +234,18 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
                         keep_eta=False if i == 0 else self.keep_eta,
                     )
                     time_steps_etas = [
-                        self.process_intermediate_pred(pred, sensitivity_maps_slice, target_reconstruction_slice)
+                        self.process_intermediate_pred(
+                            pred, sensitivity_maps_slice, target_reconstruction_slice)
                         for pred in prediction_slice
                     ]
                     cascades_etas.append(torch.stack(time_steps_etas, dim=0))
-                pred_reconstruction_slices.append(torch.stack(cascades_etas, dim=0))
+                pred_reconstruction_slices.append(
+                    torch.stack(cascades_etas, dim=0))
             preds = torch.stack(pred_reconstruction_slices, dim=3)
 
             cascades_etas = [
-                [preds[cascade_eta, time_step_eta, ...] for time_step_eta in range(preds.shape[1])]
+                [preds[cascade_eta, time_step_eta, ...]
+                    for time_step_eta in range(preds.shape[1])]
                 for cascade_eta in range(preds.shape[0])
             ]
         else:
@@ -240,7 +271,8 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
                     keep_eta=False if i == 0 else self.keep_eta,
                 )
                 time_steps_etas = [
-                    self.process_intermediate_pred(pred, sensitivity_maps, target_reconstruction)
+                    self.process_intermediate_pred(
+                        pred, sensitivity_maps, target_reconstruction)
                     for pred in prediction
                 ]
                 cascades_etas.append(time_steps_etas)
@@ -255,30 +287,37 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
             _pred_reconstruction = torch.view_as_real(_pred_reconstruction)
         if self.consecutive_slices > 1 and _pred_reconstruction.dim() == 5:
             _pred_reconstruction = _pred_reconstruction.reshape(  # type: ignore
-                _pred_reconstruction.shape[0] * _pred_reconstruction.shape[1],  # type: ignore
+                # type: ignore
+                _pred_reconstruction.shape[0] * _pred_reconstruction.shape[1],
                 *_pred_reconstruction.shape[2:],  # type: ignore
             )
         if _pred_reconstruction.shape[-1] == 2:  # type: ignore
             if self.input_channels == 1:
-                _pred_reconstruction = torch.view_as_complex(_pred_reconstruction).unsqueeze(1)
+                _pred_reconstruction = torch.view_as_complex(
+                    _pred_reconstruction).unsqueeze(1)
                 if self.magnitude_input:
                     _pred_reconstruction = torch.abs(_pred_reconstruction)
             elif self.input_channels == 2:
                 if self.magnitude_input:
-                    raise ValueError("Magnitude input is not supported for 2-channel input.")
-                _pred_reconstruction = _pred_reconstruction.permute(0, 3, 1, 2)  # type: ignore
+                    raise ValueError(
+                        "Magnitude input is not supported for 2-channel input.")
+                _pred_reconstruction = _pred_reconstruction.permute(
+                    0, 3, 1, 2)  # type: ignore
             else:
-                raise ValueError("The input channels must be either 1 or 2. Found: {}".format(self.input_channels))
+                raise ValueError("The input channels must be either 1 or 2. Found: {}".format(
+                    self.input_channels))
         else:
             _pred_reconstruction = _pred_reconstruction.unsqueeze(1)
 
         pred_segmentation = self.segmentation_module(_pred_reconstruction)
 
-        pred_segmentation = torch.abs(pred_segmentation / torch.abs(torch.max(pred_segmentation)))
+        pred_segmentation = torch.abs(
+            pred_segmentation / torch.abs(torch.max(pred_segmentation)))
         if self.consecutive_slices > 1:
             # get batch size and number of slices from y, because if the reconstruction module is used they will not
             # be saved before
-            pred_segmentation = pred_segmentation.view([y.shape[0], y.shape[1], *pred_segmentation.shape[1:]])
+            pred_segmentation = pred_segmentation.view(
+                [y.shape[0], y.shape[1], *pred_segmentation.shape[1:]])
 
         return pred_reconstruction, pred_segmentation
 
@@ -339,7 +378,8 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
         target = torch.abs(target / torch.max(torch.abs(target)))
 
         if "ssim" in str(_loss_fn).lower():
-            max_value = np.array(torch.max(torch.abs(target)).item()).astype(np.float32)
+            max_value = np.array(
+                torch.max(torch.abs(target)).item()).astype(np.float32)
 
             def loss_fn(x, y):
                 """Calculate the ssim loss."""
@@ -347,7 +387,8 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
                 return _loss_fn(
                     x,
                     y,
-                    data_range=torch.tensor(max_value).unsqueeze(dim=0).to(x.device),
+                    data_range=torch.tensor(
+                        max_value).unsqueeze(dim=0).to(x.device),
                 )
 
         else:
@@ -361,12 +402,16 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
         if self.reconstruction_module_accumulate_estimates:
             cascades_loss = []
             for cascade_pred in pred:
-                time_steps_loss = [loss_fn(target, time_step_pred) for time_step_pred in cascade_pred]
+                time_steps_loss = [loss_fn(target, time_step_pred)
+                                   for time_step_pred in cascade_pred]
                 _loss = [
-                    x * torch.logspace(-1, 0, steps=self.reconstruction_module_time_steps).to(time_steps_loss[0])
+                    x *
+                    torch.logspace(-1, 0, steps=self.reconstruction_module_time_steps).to(
+                        time_steps_loss[0])
                     for x in time_steps_loss
                 ]
-                cascades_loss.append(sum(sum(_loss) / self.reconstruction_module_time_steps))
+                cascades_loss.append(
+                    sum(sum(_loss) / self.reconstruction_module_time_steps))
             yield sum(list(cascades_loss)) / len(self.reconstruction_module)
         else:
             return loss_fn(target, pred)
