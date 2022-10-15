@@ -24,7 +24,8 @@ class SegmentationLambdaUNet(base_segmentation_models.BaseMRIJointReconstruction
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
-        self.use_reconstruction_module = cfg_dict.get("use_reconstruction_module", False)
+        self.use_reconstruction_module = cfg_dict.get(
+            "use_reconstruction_module", False)
 
         self.fft_centered = cfg_dict.get("fft_centered")
         self.fft_normalization = cfg_dict.get("fft_normalization")
@@ -32,12 +33,14 @@ class SegmentationLambdaUNet(base_segmentation_models.BaseMRIJointReconstruction
         self.coil_dim = cfg_dict.get("coil_dim")
         self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
-        self.input_channels = cfg_dict.get("segmentation_module_input_channels", 2)
+        self.input_channels = cfg_dict.get(
+            "segmentation_module_input_channels", 2)
         if self.input_channels == 0:
             raise ValueError("Segmentation module input channels cannot be 0.")
         elif self.input_channels > 2:
             raise ValueError(
-                "Segmentation module input channels must be either 1 or 2. Found: {}".format(self.input_channels)
+                "Segmentation module input channels must be either 1 or 2. Found: {}".format(
+                    self.input_channels)
             )
 
         self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
@@ -47,12 +50,15 @@ class SegmentationLambdaUNet(base_segmentation_models.BaseMRIJointReconstruction
             in_chans=self.input_channels,
             out_chans=cfg_dict.get("segmentation_module_output_channels", 2),
             chans=cfg_dict.get("segmentation_module_channels", 32),
-            num_pool_layers=cfg_dict.get("segmentation_module_pooling_layers", 4),
+            num_pool_layers=cfg_dict.get(
+                "segmentation_module_pooling_layers", 4),
             drop_prob=cfg_dict.get("segmentation_module_dropout", 0.0),
             query_depth=cfg_dict.get("segmentation_module_query_depth", 16),
             intra_depth=cfg_dict.get("segmentation_module_intra_depth", 4),
-            receptive_kernel=cfg_dict.get("segmentation_module_receptive_kernel", 3),
-            temporal_kernel=cfg_dict.get("segmentation_module_temporal_kernel", 1),
+            receptive_kernel=cfg_dict.get(
+                "segmentation_module_receptive_kernel", 3),
+            temporal_kernel=cfg_dict.get(
+                "segmentation_module_temporal_kernel", 1),
             num_slices=self.consecutive_slices,
         )
 
@@ -91,7 +97,8 @@ class SegmentationLambdaUNet(base_segmentation_models.BaseMRIJointReconstruction
             batch, slices = init_reconstruction_pred.shape[:2]
             init_reconstruction_pred = init_reconstruction_pred.reshape(  # type: ignore
                 # type: ignore
-                init_reconstruction_pred.shape[0] * init_reconstruction_pred.shape[1],
+                init_reconstruction_pred.shape[0] * \
+                init_reconstruction_pred.shape[1],
                 init_reconstruction_pred.shape[2],  # type: ignore
                 init_reconstruction_pred.shape[3],  # type: ignore
                 init_reconstruction_pred.shape[4],  # type: ignore
@@ -99,21 +106,27 @@ class SegmentationLambdaUNet(base_segmentation_models.BaseMRIJointReconstruction
 
         if init_reconstruction_pred.shape[-1] == 2:  # type: ignore
             if self.input_channels == 1:
-                init_reconstruction_pred = torch.view_as_complex(init_reconstruction_pred).unsqueeze(1)
+                init_reconstruction_pred = torch.view_as_complex(
+                    init_reconstruction_pred).unsqueeze(1)
                 if self.magnitude_input:
-                    init_reconstruction_pred = torch.abs(init_reconstruction_pred)
+                    init_reconstruction_pred = torch.abs(
+                        init_reconstruction_pred)
             elif self.input_channels == 2:
                 if self.magnitude_input:
-                    raise ValueError("Magnitude input is not supported for 2-channel input.")
-                init_reconstruction_pred = init_reconstruction_pred.permute(0, 3, 1, 2)  # type: ignore
+                    raise ValueError(
+                        "Magnitude input is not supported for 2-channel input.")
+                init_reconstruction_pred = init_reconstruction_pred.permute(
+                    0, 3, 1, 2)  # type: ignore
             else:
-                raise ValueError("The input channels must be either 1 or 2. Found: {}".format(self.input_channels))
+                raise ValueError("The input channels must be either 1 or 2. Found: {}".format(
+                    self.input_channels))
         else:
             init_reconstruction_pred = init_reconstruction_pred.unsqueeze(1)
 
         pred_segmentation = self.segmentation_module(init_reconstruction_pred)
 
-        pred_segmentation = torch.abs(pred_segmentation / torch.abs(torch.max(pred_segmentation)))
+        pred_segmentation = torch.abs(
+            pred_segmentation / torch.abs(torch.max(pred_segmentation)))
         if self.consecutive_slices > 1:
             pred_segmentation = pred_segmentation.view(
                 [
