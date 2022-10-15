@@ -32,7 +32,8 @@ AVAILABLE_OPTIMIZERS = {
     "adafactor": Adafactor,
 }
 
-__all__ = ["AVAILABLE_OPTIMIZERS", "get_optimizer", "register_optimizer", "parse_optimizer_args"]
+__all__ = ["AVAILABLE_OPTIMIZERS", "get_optimizer",
+           "register_optimizer", "parse_optimizer_args"]
 
 
 def parse_optimizer_args(
@@ -63,14 +64,16 @@ def parse_optimizer_args(
     optimizer_kwargs = maybe_update_config_version(optimizer_kwargs)
 
     if isinstance(optimizer_kwargs, DictConfig):
-        optimizer_kwargs = OmegaConf.to_container(optimizer_kwargs, resolve=True)
+        optimizer_kwargs = OmegaConf.to_container(
+            optimizer_kwargs, resolve=True)
 
     # If it is a dictionary, perform stepwise resolution
     if hasattr(optimizer_kwargs, "keys"):
         # Attempt class path resolution
         if "_target_" in optimizer_kwargs:  # captures (target, _target_)
             optimizer_kwargs_config = OmegaConf.create(optimizer_kwargs)
-            optimizer_instance = hydra.utils.instantiate(optimizer_kwargs_config)  # type: DictConfig
+            optimizer_instance = hydra.utils.instantiate(
+                optimizer_kwargs_config)  # type: DictConfig
             optimizer_instance = vars(optimizer_instance)  # type: ignore
             return optimizer_instance
 
@@ -93,9 +96,11 @@ def parse_optimizer_args(
                 optimizer_params_override = optimizer_kwargs
 
             if isinstance(optimizer_params_override, DictConfig):
-                optimizer_params_override = OmegaConf.to_container(optimizer_params_override, resolve=True)
+                optimizer_params_override = OmegaConf.to_container(
+                    optimizer_params_override, resolve=True)
 
-            optimizer_params_cls = get_optimizer_config(optimizer_params_name, **optimizer_params_override)
+            optimizer_params_cls = get_optimizer_config(
+                optimizer_params_name, **optimizer_params_override)
 
             # If we are provided just a Config object, simply return the dictionary of that object
             if optimizer_params_name is None:
@@ -125,12 +130,14 @@ def register_optimizer(name: str, optimizer: Optimizer, optimizer_params: Optimi
     optimizer_params: The parameters as a dataclass of the optimizer.
     """
     if name in AVAILABLE_OPTIMIZERS:
-        raise ValueError(f"Cannot override pre-existing optimizers. Conflicting optimizer name = {name}")
+        raise ValueError(
+            f"Cannot override pre-existing optimizers. Conflicting optimizer name = {name}")
 
     AVAILABLE_OPTIMIZERS[name] = optimizer
 
     optim_name = f"{optimizer.__name__}_params"
-    register_optimizer_params(name=optim_name, optimizer_params=optimizer_params)
+    register_optimizer_params(
+        name=optim_name, optimizer_params=optimizer_params)
 
 
 def get_optimizer(name: str, **kwargs: Optional[Dict[str, Any]]) -> partial:

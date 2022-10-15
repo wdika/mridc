@@ -31,7 +31,8 @@ class NamedTimer:
         buffer_size: If positive, limits the number of stored measures per name
         """
         if reduction not in self._REDUCTION_TYPE:
-            raise ValueError(f"Unknown reduction={reduction} please use one of {self._REDUCTION_TYPE}")
+            raise ValueError(
+                f"Unknown reduction={reduction} please use one of {self._REDUCTION_TYPE}")
 
         self._reduction = reduction
         self._sync_cuda = sync_cuda
@@ -84,7 +85,8 @@ class NamedTimer:
         timer_data = self.timers.get(name, {})
 
         if "start" in timer_data:
-            raise RuntimeError(f"Cannot start timer = '{name}' since it is already active")
+            raise RuntimeError(
+                f"Cannot start timer = '{name}' since it is already active")
 
         # synchronize pytorch cuda execution if supported
         if self._sync_cuda and torch.cuda.is_initialized():
@@ -104,7 +106,8 @@ class NamedTimer:
         """
         timer_data = self.timers.get(name)
         if (timer_data is None) or ("start" not in timer_data):
-            raise RuntimeError(f"Cannot end timer = '{name}' since it is not active")
+            raise RuntimeError(
+                f"Cannot end timer = '{name}' since it is not active")
 
         # synchronize pytorch cuda execution if supported
         if self._sync_cuda and torch.cuda.is_initialized():
@@ -118,7 +121,7 @@ class NamedTimer:
 
         # enforce buffer_size if positive
         if self._buffer_size > 0:
-            timer_data["dt"] = timer_data["dt"][-self._buffer_size :]
+            timer_data["dt"] = timer_data["dt"][-self._buffer_size:]
 
         self.timers[name] = timer_data
 

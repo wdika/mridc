@@ -49,13 +49,15 @@ class qVarNetBlock(torch.nn.Module):
         super().__init__()
 
         self.linear_forward_model = (
-            qrim_utils.SignalForwardModel(sequence="MEGRE") if linear_forward_model is None else linear_forward_model
+            qrim_utils.SignalForwardModel(
+                sequence="MEGRE") if linear_forward_model is None else linear_forward_model
         )
 
         self.model = model
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
-        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [
+            -2, -1]
         self.coil_dim = coil_dim
         self.no_dc = no_dc
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
@@ -140,19 +142,26 @@ class qVarNetBlock(torch.nn.Module):
         -------
         Reconstructed image.
         """
-        init_eta = torch.stack([R2star_map_init, S0_map_init, B0_map_init, phi_map_init], dim=1)
+        init_eta = torch.stack(
+            [R2star_map_init, S0_map_init, B0_map_init, phi_map_init], dim=1)
 
-        R2star_map_init = (R2star_map_init * gamma[0]).unsqueeze(0)  # type: ignore
+        R2star_map_init = (R2star_map_init *
+                           gamma[0]).unsqueeze(0)  # type: ignore
         S0_map_init = (S0_map_init * gamma[1]).unsqueeze(0)  # type: ignore
         B0_map_init = (B0_map_init * gamma[2]).unsqueeze(0)  # type: ignore
         phi_map_init = (phi_map_init * gamma[3]).unsqueeze(0)  # type: ignore
 
-        init_pred = self.linear_forward_model(R2star_map_init, S0_map_init, B0_map_init, phi_map_init, TEs)
-        pred_kspace = self.sens_expand(init_pred, sensitivity_maps.unsqueeze(self.coil_dim - 1))
-        soft_dc = (pred_kspace - masked_kspace) * sampling_mask * self.dc_weight
-        init_pred = self.sens_reduce(soft_dc, sensitivity_maps.unsqueeze(self.coil_dim - 1)).to(masked_kspace)
+        init_pred = self.linear_forward_model(
+            R2star_map_init, S0_map_init, B0_map_init, phi_map_init, TEs)
+        pred_kspace = self.sens_expand(
+            init_pred, sensitivity_maps.unsqueeze(self.coil_dim - 1))
+        soft_dc = (pred_kspace - masked_kspace) * \
+            sampling_mask * self.dc_weight
+        init_pred = self.sens_reduce(soft_dc, sensitivity_maps.unsqueeze(
+            self.coil_dim - 1)).to(masked_kspace)
 
-        eta = torch.view_as_real(init_eta + torch.view_as_complex(self.model(init_pred.to(masked_kspace))))
+        eta = torch.view_as_real(
+            init_eta + torch.view_as_complex(self.model(init_pred.to(masked_kspace))))
         eta_tmp = eta[:, 0, ...]
         eta_tmp[eta_tmp < 0] = 0
         eta[:, 0, ...] = eta_tmp
