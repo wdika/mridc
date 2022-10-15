@@ -29,7 +29,8 @@ from mridc.utils.cloud import maybe_download_from_cloud
 
 _HAS_HYDRA = True
 
-__all__ = ["Typing", "FileIO", "Model", "PretrainedModelInfo", "Serialization", "is_typecheck_enabled", "typecheck"]
+__all__ = ["Typing", "FileIO", "Model", "PretrainedModelInfo",
+           "Serialization", "is_typecheck_enabled", "typecheck"]
 
 _TYPECHECK_ENABLED = True
 
@@ -71,12 +72,14 @@ class TypecheckMetadata:
     is_singular_container_type: bool = field(init=False)
 
     def __post_init__(self):
-        has_container_types = any(isinstance(type_val, (list, tuple)) for type_val in self.original_types.values())
+        has_container_types = any(isinstance(type_val, (list, tuple))
+                                  for type_val in self.original_types.values())
 
         self.has_container_types = has_container_types
 
         # If only one NeuralType is declared, and it declares a container nest, set to True
-        self.is_singular_container_type = self.has_container_types and len(self.original_types) == 1
+        self.is_singular_container_type = self.has_container_types and len(
+            self.original_types) == 1
 
         # If container nests are declared, flatten the nest into `base_types`
         # Also compute the nest depth for each of the NeuralTypes
@@ -103,7 +106,8 @@ class TypecheckMetadata:
         else:
             # Otherwise, simply preserve the original_types and set depth of nest to 0.
             self.base_types = self.original_types
-            self.container_depth = {type_key: 0 for type_key in self.base_types.keys()}
+            self.container_depth = {
+                type_key: 0 for type_key in self.base_types.keys()}
 
         # Compute subset of original_types which are mandatory in the call argspec
         self.mandatory_types = {
@@ -148,7 +152,8 @@ class Typing(ABC):
         if input_types is None:
             return
         # Precompute metadata
-        metadata = TypecheckMetadata(original_types=input_types, ignore_collections=ignore_collections)
+        metadata = TypecheckMetadata(
+            original_types=input_types, ignore_collections=ignore_collections)
 
         total_input_types = len(input_types)
         mandatory_input_types = len(metadata.mandatory_types)
@@ -180,7 +185,8 @@ class Typing(ABC):
                     f"Argument: {key}",
                 ]
                 for i, dict_tuple in enumerate(metadata.base_types[key].elements_type.type_parameters.items()):
-                    error_msg.insert(i + 2, f"  input param_{i} : {dict_tuple[0]}: {dict_tuple[1]}")
+                    error_msg.insert(
+                        i + 2, f"  input param_{i} : {dict_tuple[0]}: {dict_tuple[1]}")
                 error_msg.extend(
                     f"  input param_{i} : {dict_tuple[0]}: {dict_tuple[1]}"
                     for i, dict_tuple in enumerate(value.neural_type.elements_type.type_parameters.items())
@@ -230,7 +236,8 @@ class Typing(ABC):
         if output_types is None:
             return
         # Precompute metadata
-        metadata = TypecheckMetadata(original_types=output_types, ignore_collections=ignore_collections)
+        metadata = TypecheckMetadata(
+            original_types=output_types, ignore_collections=ignore_collections)
         out_types_list = list(metadata.base_types.items())
         mandatory_out_types_list = list(metadata.mandatory_types.items())
 
@@ -277,9 +284,11 @@ class Typing(ABC):
                     )
 
         elif metadata.is_singular_container_type:
-            depth = 0 if len(out_objects) == 1 and type(out_objects) is tuple else 1
+            depth = 0 if len(out_objects) == 1 and type(
+                out_objects) is tuple else 1
             for res in out_objects:
-                self.__attach_neural_type(res, metadata, depth=depth, name=out_types_list[0][0])
+                self.__attach_neural_type(
+                    res, metadata, depth=depth, name=out_types_list[0][0])
         else:
             # If more then one item is returned in a return statement, python will wrap
             # the output with an outer tuple. Therefore there must be a 1:1 correspondence
@@ -290,7 +299,8 @@ class Typing(ABC):
             # Since we are guaranteed that the outer tuple will be built by python,
             # assuming initial depth of 0 is appropriate.
             for ind, res in enumerate(out_objects):
-                self.__attach_neural_type(res, metadata, depth=0, name=out_types_list[ind][0])
+                self.__attach_neural_type(
+                    res, metadata, depth=0, name=out_types_list[ind][0])
 
     def __check_neural_type(self, obj, metadata, depth: int, name: str = None):
         """
@@ -354,7 +364,8 @@ class Typing(ABC):
         """
         if isinstance(obj, (tuple, list)):
             for elem in obj:
-                self.__attach_neural_type(elem, metadata, depth=depth + 1, name=name)
+                self.__attach_neural_type(
+                    elem, metadata, depth=depth + 1, name=name)
             return  # after processing nest, return to avoid argument insertion into nest itself
 
         type_val = metadata.base_types[name]
@@ -399,7 +410,8 @@ class Serialization(ABC):
                 config = OmegaConf.create(config)
                 OmegaConf.set_struct(config, True)
 
-            config = mridc.utils.model_utils.maybe_update_config_version(config)  # type: ignore
+            config = mridc.utils.model_utils.maybe_update_config_version(
+                config)  # type: ignore
 
         # Hydra 0.x API
         if ("cls" in config or "target" in config) and "params" in config and _HAS_HYDRA:
@@ -419,13 +431,15 @@ class Serialization(ABC):
                 imported_cls = None
                 try:
                     # try to import the target class
-                    imported_cls = mridc.utils.model_utils.import_class_by_path(target_cls)  # type: ignore
+                    imported_cls = mridc.utils.model_utils.import_class_by_path(
+                        target_cls)  # type: ignore
                     # use subclass instead
                     if issubclass(cls, imported_cls):
                         imported_cls = cls
                     if accepts_trainer := Serialization._inspect_signature_for_trainer(imported_cls):
                         # Create a dummy PL trainer object
-                        instance = imported_cls(cfg=config, trainer=trainer)  # type: ignore
+                        instance = imported_cls(
+                            cfg=config, trainer=trainer)  # type: ignore
                     else:
                         instance = imported_cls(cfg=config)  # type: ignore
 
@@ -456,11 +470,13 @@ class Serialization(ABC):
         if hasattr(self, "_cfg") and self._cfg is not None:  # type: ignore
             # Resolve the config dict
             if _HAS_HYDRA and isinstance(self._cfg, DictConfig):  # type: ignore
-                config = OmegaConf.to_container(self._cfg, resolve=True)  # type: ignore
+                config = OmegaConf.to_container(
+                    self._cfg, resolve=True)  # type: ignore
                 config = OmegaConf.create(config)
                 OmegaConf.set_struct(config, True)
 
-                config = mridc.utils.model_utils.maybe_update_config_version(config)  # type: ignore
+                config = mridc.utils.model_utils.maybe_update_config_version(
+                    config)  # type: ignore
 
             self._cfg = config
 
@@ -557,7 +573,8 @@ class FileIO(ABC):
         path2yaml_file: path2yaml_file: path to yaml file where model configuration will be saved.
         """
         if hasattr(self, "_cfg"):
-            self._cfg = mridc.utils.model_utils.maybe_update_config_version(self._cfg)  # type: ignore
+            self._cfg = mridc.utils.model_utils.maybe_update_config_version(
+                self._cfg)  # type: ignore
             with open(path2yaml_file, "w", encoding="utf-8") as fout:
                 OmegaConf.save(config=self._cfg, f=fout, resolve=True)
         else:
@@ -584,7 +601,8 @@ class PretrainedModelInfo:
         )
 
         if self.class_ is not None:
-            extras = "{extras},\n\t" "class_={class_}".format(extras=extras, **self.__dict__)
+            extras = "{extras},\n\t" "class_={class_}".format(
+                extras=extras, **self.__dict__)
 
         return f"{base}(\n\t{extras}\n)"
 
@@ -626,7 +644,8 @@ class Model(Typing, Serialization, FileIO, ABC):  # type: ignore
         A list of model names.
         """
         return (
-            [model.pretrained_model_name for model in cls.list_available_models()]  # type: ignore
+            [model.pretrained_model_name for model in cls.list_available_models()
+             ]  # type: ignore
             if cls.list_available_models() is not None
             else []
         )
@@ -693,10 +712,12 @@ class Model(Typing, Serialization, FileIO, ABC):  # type: ignore
             )
         filename = location_in_the_cloud.split("/")[-1]
         url = location_in_the_cloud.replace(filename, "")
-        cache_dir = Path.joinpath(mridc.utils.model_utils.resolve_cache_dir(), f"{filename[:-5]}")  # type: ignore
+        cache_dir = Path.joinpath(
+            mridc.utils.model_utils.resolve_cache_dir(), f"{filename[:-5]}")  # type: ignore
         # If either description and location in the cloud changes, this will force re-download
         # of the model.
-        cache_subfolder = hashlib.sha512((location_in_the_cloud + description).encode("utf-8")).hexdigest()
+        cache_subfolder = hashlib.sha512(
+            (location_in_the_cloud + description).encode("utf-8")).hexdigest()
         # if file exists on cache_folder/subfolder, it will be re-used, unless refresh_cache is True
         mridc_model_file_in_cache = maybe_download_from_cloud(
             url=url, filename=filename, cache_dir=cache_dir, subfolder=cache_subfolder, refresh_cache=refresh_cache
@@ -753,8 +774,10 @@ class typecheck:
 
     def __init__(
         self,
-        input_types: Union[TypeState, Optional[Dict[str, NeuralType]]] = TypeState.UNINITIALIZED,
-        output_types: Union[TypeState, Optional[Dict[str, NeuralType]]] = TypeState.UNINITIALIZED,
+        input_types: Union[TypeState, Optional[Dict[str,
+                                                    NeuralType]]] = TypeState.UNINITIALIZED,
+        output_types: Union[TypeState, Optional[Dict[str,
+                                                     NeuralType]]] = TypeState.UNINITIALIZED,
         ignore_collections: bool = False,
     ):
         self.input_types = input_types
@@ -772,10 +795,12 @@ class typecheck:
         Local function level overrides can be provided by supplying dictionaries as arguments to the decorator.
         """
         if instance is None:
-            raise RuntimeError("Only classes which inherit mridc.core.Typing can use this decorator !")
+            raise RuntimeError(
+                "Only classes which inherit mridc.core.Typing can use this decorator !")
 
         if not isinstance(instance, Typing):
-            raise RuntimeError("Only classes which inherit mridc.core.Typing can use this decorator !")
+            raise RuntimeError(
+                "Only classes which inherit mridc.core.Typing can use this decorator !")
 
         if hasattr(instance, "input_ports") or hasattr(instance, "output_ports"):
             raise RuntimeError(
@@ -803,10 +828,12 @@ class typecheck:
 
         # Check that all arguments are kwargs
         if input_types is not None and len(args) > 0:
-            raise TypeError("All arguments must be passed by kwargs only for typed methods")
+            raise TypeError(
+                "All arguments must be passed by kwargs only for typed methods")
 
         # Perform rudimentary input checks here
-        instance._validate_input_types(input_types=input_types, ignore_collections=self.ignore_collections, **kwargs)
+        instance._validate_input_types(
+            input_types=input_types, ignore_collections=self.ignore_collections, **kwargs)
 
         # Call the method - this can be forward, or any other callable method
         outputs = wrapped(*args, **kwargs)
