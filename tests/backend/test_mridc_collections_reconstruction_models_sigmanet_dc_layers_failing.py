@@ -129,7 +129,7 @@ def test_case_5():
         bool_0 = True
         conjugate_gradient_0 = None
         int_0 = -1293
-        set_0 = {conjugate_gradient_0, str_0, conjugate_gradient_0, bool_0}
+        set_0 = {conjugate_gradient_0, str_0, bool_0}
         list_0 = [set_0, bool_0]
         bool_1 = False
         data_g_d_layer_0 = module_0.DataGDLayer(bool_1)

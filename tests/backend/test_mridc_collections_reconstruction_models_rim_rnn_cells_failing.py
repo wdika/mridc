@@ -12,7 +12,7 @@ def test_case_0():
         tuple_1 = tuple_0, str_0, tuple_0
         list_0 = [float_0, tuple_1, bytes_0]
         str_1 = "I6}^B*(Mrh=XmewA"
-        set_0 = {float_0, str_1, tuple_1, tuple_1}
+        set_0 = {float_0, str_1, tuple_1}
         int_0 = 2995
         bool_0 = False
         str_2 = "K*Mhv.gNeb@s"
@@ -125,7 +125,7 @@ def test_case_10():
         str_0 = '}#"SCd/3sh\x0c'
         bool_0 = True
         float_0 = 615.7
-        set_0 = {bytes_0, bytes_0}
+        set_0 = {bytes_0}
         dict_0 = {}
         conv_m_g_u_cell_base_0 = module_0.ConvMGUCellBase(bytes_0, str_0, bool_0, float_0, set_0, dict_0)
     except BaseException:
