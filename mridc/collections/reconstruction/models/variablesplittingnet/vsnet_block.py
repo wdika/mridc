@@ -77,7 +77,8 @@ class VSNetBlock(torch.nn.Module):
         self.num_cascades = num_cascades
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
-        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [
+            -2, -1]
         self.coil_dim = coil_dim
 
     def sens_expand(self, x: torch.Tensor, sens_maps: torch.Tensor) -> torch.Tensor:
@@ -138,7 +139,8 @@ class VSNetBlock(torch.nn.Module):
         """
         for idx in range(self.num_cascades):
             pred = self.sens_reduce(kspace, sens_maps)
-            pred = self.denoiser_block[idx](pred.permute(0, 3, 1, 2)).permute(0, 2, 3, 1)
+            pred = self.denoiser_block[idx](
+                pred.permute(0, 3, 1, 2)).permute(0, 2, 3, 1)
             pred = self.sens_expand(pred, sens_maps)
             sx = self.data_consistency_block[idx](pred, kspace, mask)
             sx = self.sens_reduce(sx, sens_maps)

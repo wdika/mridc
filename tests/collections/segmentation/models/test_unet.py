@@ -235,7 +235,7 @@ def test_unet(shape, cfg, center_fractions, accelerations, dimensionality, segme
 
     outputs, masks = [], []
     for i in range(x.shape[0]):
-        output, mask, _ = utils.apply_mask(x[i : i + 1], mask_func, seed=123)
+        output, mask, _ = utils.apply_mask(x[i: i + 1], mask_func, seed=123)
         outputs.append(output)
         masks.append(mask)
 
@@ -272,16 +272,19 @@ def test_unet(shape, cfg, center_fractions, accelerations, dimensionality, segme
     if consecutive_slices > 1:
         output = torch.view_as_complex(
             output.reshape(
-                [output.shape[0] * output.shape[1], output.shape[2], output.shape[3], output.shape[4], output.shape[5]]
+                [output.shape[0] * output.shape[1], output.shape[2],
+                    output.shape[3], output.shape[4], output.shape[5]]
             ).sum(coil_dim - 1)
         )
         output = torch.stack([output for _ in range(segmentation_classes)], 1)
         pred_segmentation = pred_segmentation.reshape(
-            pred_segmentation.shape[0] * pred_segmentation.shape[1], *pred_segmentation.shape[2:]
+            pred_segmentation.shape[0] *
+            pred_segmentation.shape[1], *pred_segmentation.shape[2:]
         )
         if pred_segmentation.shape != output.shape:
             raise AssertionError
     else:
-        output = torch.view_as_complex(torch.stack([output for _ in range(segmentation_classes)], 1).sum(coil_dim + 1))
+        output = torch.view_as_complex(torch.stack(
+            [output for _ in range(segmentation_classes)], 1).sum(coil_dim + 1))
         if pred_segmentation.shape != output.shape:
             raise AssertionError

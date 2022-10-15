@@ -54,8 +54,10 @@ class ComplexInstanceNorm(torch.nn.Module):
 
         # Eigenvalue decomposition C = V*S*inv(V)
         # compute eigenvalues
-        s1 = (cxx + cyy) / 2 - torch.sqrt((cxx + cyy) ** 2 / 4 - cxx * cyy + cxy**2)
-        s2 = (cxx + cyy) / 2 + torch.sqrt((cxx + cyy) ** 2 / 4 - cxx * cyy + cxy**2)
+        s1 = (cxx + cyy) / 2 - torch.sqrt((cxx + cyy)
+                                          ** 2 / 4 - cxx * cyy + cxy**2)
+        s2 = (cxx + cyy) / 2 + torch.sqrt((cxx + cyy)
+                                          ** 2 / 4 - cxx * cyy + cxy**2)
 
         # compute eigenvectors
         v1x = s1 - cyy
@@ -64,8 +66,10 @@ class ComplexInstanceNorm(torch.nn.Module):
         v2y = cxy
 
         # normalize eigenvectors
-        norm1 = torch.sqrt(torch.sum(v1x * v1x + v1y * v1y, dim=dim, keepdim=True))
-        norm2 = torch.sqrt(torch.sum(v2x * v2x + v2y * v2y, dim=dim, keepdim=True))
+        norm1 = torch.sqrt(
+            torch.sum(v1x * v1x + v1y * v1y, dim=dim, keepdim=True))
+        norm2 = torch.sqrt(
+            torch.sum(v2x * v2x + v2y * v2y, dim=dim, keepdim=True))
 
         v1x = v1x.div(norm1)
         v1y = v1y.div(norm1)
@@ -181,9 +185,11 @@ class SensitivityNetwork(torch.nn.Module):
         self.is_trainable = [True] * num_iter
 
         # setup the modules
-        self.gradR = torch.nn.ModuleList([ComplexNormWrapper(model) for _ in range(self.num_iter)])
+        self.gradR = torch.nn.ModuleList(
+            [ComplexNormWrapper(model) for _ in range(self.num_iter)])
 
-        self.gradD = torch.nn.ModuleList([datalayer for _ in range(self.num_iter)])
+        self.gradD = torch.nn.ModuleList(
+            [datalayer for _ in range(self.num_iter)])
 
         self.save_space = save_space
         self.reset_cache = reset_cache
@@ -210,7 +216,8 @@ class SensitivityNetwork(torch.nn.Module):
         if self.shared_params:
             num_iter = self.num_iter_total
         else:
-            num_iter = min(np.where(self.is_trainable)[0][-1] + 1, self.num_iter)
+            num_iter = min(np.where(self.is_trainable)
+                           [0][-1] + 1, self.num_iter)
 
         for i in range(num_iter):
             x_thalf = x - self.gradR[i % self.num_iter](x)
@@ -237,7 +244,8 @@ class SensitivityNetwork(torch.nn.Module):
         if self.shared_params:
             num_iter = self.num_iter_total
         else:
-            num_iter = min(np.where(self.is_trainable)[0][-1] + 1, self.num_iter)
+            num_iter = min(np.where(self.is_trainable)
+                           [0][-1] + 1, self.num_iter)
 
         for i in range(num_iter):
             x_thalf = x - self.gradR[i % self.num_iter](x)

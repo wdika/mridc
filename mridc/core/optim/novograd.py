@@ -97,10 +97,12 @@ class Novograd(Optimizer):
                     # Exponential moving average of gradient values
                     state["exp_avg"] = torch.zeros_like(p.data)
                     # Exponential moving average of squared gradient values
-                    state["exp_avg_sq"] = torch.zeros([]).to(state["exp_avg"].device)
+                    state["exp_avg_sq"] = torch.zeros(
+                        []).to(state["exp_avg"].device)
                     if amsgrad:
                         # Maintains max of all exp moving avg of squared grad
-                        state["max_exp_avg_sq"] = torch.zeros([]).to(state["exp_avg"].device)
+                        state["max_exp_avg_sq"] = torch.zeros(
+                            []).to(state["exp_avg"].device)
 
                 exp_avg, exp_avg_sq = state["exp_avg"], state["exp_avg_sq"]
                 if amsgrad:
@@ -135,7 +137,8 @@ class Novograd(Optimizer):
                     # Clip update so that updates are less than eta*weights
                     data_norm = torch.norm(p.data)
                     grad_norm = torch.norm(exp_avg.data)
-                    luc_factor = self.luc_trust * data_norm / (grad_norm + self.luc_eps)
+                    luc_factor = self.luc_trust * \
+                        data_norm / (grad_norm + self.luc_eps)
                     luc_factor = min(luc_factor, group["lr"])
                     p.data.add_(exp_avg, alpha=-luc_factor)
                 else:

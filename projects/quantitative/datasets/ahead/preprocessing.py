@@ -50,7 +50,8 @@ def _dataloder(subjectID: str, datapath: str):
 
         file_coilimgs_p1 = f"Subcortex_{subjectID.zfill(4)}*_R02_inv2_"
         file_coilimgs_p2 = "_gdataCorrected.nii.gz"
-        filename_coilimgs = glob.glob(os.path.join(folders[0], f"{file_coilimgs_p1}*{file_coilimgs_p2}"))
+        filename_coilimgs = glob.glob(os.path.join(
+            folders[0], f"{file_coilimgs_p1}*{file_coilimgs_p2}"))
 
         if filename_sense and filename_coilimgs:
             # load sensitivity map (complex-valued)
@@ -63,12 +64,15 @@ def _dataloder(subjectID: str, datapath: str):
             # load coil images (complex-valued)
             coilimgs = []  # type: ignore
             for i in range(1, 5):  # type: ignore
-                filename_coilimg = glob.glob(os.path.join(folders[0], file_coilimgs_p1 + str(i) + file_coilimgs_p2))
+                filename_coilimg = glob.glob(os.path.join(
+                    folders[0], file_coilimgs_p1 + str(i) + file_coilimgs_p2))
                 coilimg = sitk.ReadImage(filename_coilimg[0])
-                coilimgs.append(np.transpose(sitk.GetArrayFromImage(coilimg), (3, 2, 1, 0)))  # type: ignore
+                coilimgs.append(np.transpose(sitk.GetArrayFromImage(
+                    coilimg), (3, 2, 1, 0)))  # type: ignore
 
             # load brain mask
-            brain_mask = sitk.ReadImage(os.path.join(folders[0], "nii", "mask_inv2_te2_m_corr.nii"))
+            brain_mask = sitk.ReadImage(os.path.join(
+                folders[0], "nii", "mask_inv2_te2_m_corr.nii"))
             brain_mask = sitk.GetArrayFromImage(brain_mask)
             # need to flip! in the second axis!
             brain_mask = np.flip(np.transpose(brain_mask, (0, 2, 1)), 1)
@@ -101,17 +105,20 @@ def B0mapping(coilimgs, sense, mask_brain):
     phases = np.angle(imgs)
     phase_unwrapped = np.zeros(phases.shape)
     for i in range(phases.shape[0]):
-        phase_unwrapped[i] = unwrap_phase(np.ma.array(phases[i], mask=np.zeros(phases[i].shape)))
+        phase_unwrapped[i] = unwrap_phase(np.ma.array(
+            phases[i], mask=np.zeros(phases[i].shape)))
 
     TEs = (3.0, 11.5, 20.0, 28.5)
     phase_diff_set = []
     TE_diff = []
     # obtain phase differences and TE differences
     for i in range(phase_unwrapped.shape[0] - TEnotused):
-        phase_diff_set.append((phase_unwrapped[i + 1] - phase_unwrapped[i]).flatten())
+        phase_diff_set.append(
+            (phase_unwrapped[i + 1] - phase_unwrapped[i]).flatten())
         phase_diff_set[i] = (
             phase_diff_set[i]
-            - np.round(np.sum(phase_diff_set[i] * mask_brain.flatten()) / np.sum(mask_brain.flatten()) / 2 / np.pi)
+            - np.round(np.sum(phase_diff_set[i] * mask_brain.flatten()
+                              ) / np.sum(mask_brain.flatten()) / 2 / np.pi)
             * 2
             * np.pi
         )
@@ -124,7 +131,8 @@ def B0mapping(coilimgs, sense, mask_brain):
     scaling = 1e-3
     ls = LeastSquares()
     B0_map_tmp = ls.lstq_pinv(
-        torch.from_numpy(np.transpose(np.expand_dims(phase_diff_set, 2), (1, 0, 2))),
+        torch.from_numpy(np.transpose(
+            np.expand_dims(phase_diff_set, 2), (1, 0, 2))),
         torch.from_numpy(np.expand_dims(TE_diff, 1) * scaling),
     )
     B0_map = B0_map_tmp.reshape(phase_unwrapped.shape[1:4])
@@ -175,8 +183,12 @@ def main(args):
         if coilimgs is not False:
             coilimgs = np.stack(coilimgs, axis=0)
             if applymask:
-                coilimgs = coilimgs * np.repeat(brain_mask[..., np.newaxis], coilimgs.shape[-1], axis=3)
-                sense = sense * np.repeat(brain_mask[..., np.newaxis], sense.shape[-1], axis=3)
+                coilimgs = coilimgs * \
+                    np.repeat(brain_mask[..., np.newaxis],
+                              coilimgs.shape[-1], axis=3)
+                sense = sense * \
+                    np.repeat(brain_mask[..., np.newaxis],
+                              sense.shape[-1], axis=3)
             B0map = B0mapping(coilimgs, sense, brain_mask)
             planes = ["sagittal", "coronal", "axial"]
             folder_subject = f"Subcortex_{str(subjectID).zfill(4)}_R02_inv2"
@@ -187,7 +199,8 @@ def main(args):
                 B0map_dim = np.swapaxes(B0map, 0, dim)
                 brain_mask_dim = np.swapaxes(brain_mask, 0, dim)
                 size_dim = coilimgs.shape[dim + 1]
-                Path(os.path.join(savepath, folder_subject, planes[dim])).mkdir(parents=True, exist_ok=True)
+                Path(os.path.join(savepath, folder_subject, planes[dim])).mkdir(
+                    parents=True, exist_ok=True)
                 for itr_dim in range(round(size_dim / 2) - half_nr_of_slices, round(size_dim / 2) + half_nr_of_slices):
                     filename_save = os.path.join(
                         savepath,
@@ -197,19 +210,28 @@ def main(args):
                     )
 
                     with h5py.File(filename_save, "w") as data:
-                        data.create_dataset("ksp", data=ksp_dim[:, itr_dim, ...].squeeze())
-                        data.create_dataset("sense", data=sense_dim[itr_dim, ...].squeeze())
-                        data.create_dataset("B0map", data=B0map_dim[itr_dim, ...].squeeze())
-                        data.create_dataset("mask_brain", data=brain_mask_dim[itr_dim, ...].squeeze())
+                        data.create_dataset(
+                            "ksp", data=ksp_dim[:, itr_dim, ...].squeeze())
+                        data.create_dataset(
+                            "sense", data=sense_dim[itr_dim, ...].squeeze())
+                        data.create_dataset(
+                            "B0map", data=B0map_dim[itr_dim, ...].squeeze())
+                        data.create_dataset(
+                            "mask_brain", data=brain_mask_dim[itr_dim, ...].squeeze())
 
 
 # noinspection PyTypeChecker
 def create_arg_parser():
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("datapath", type=str, help="Path of the files to be converted.")
-    parser.add_argument("savepath", type=str, help="Path to save the converted files.")
-    parser.add_argument("--applymask", action="store_true", help="Apply brain mask.")
-    parser.add_argument("--centerslices", action="store_true", help="Save center slices.")
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("datapath", type=str,
+                        help="Path of the files to be converted.")
+    parser.add_argument("savepath", type=str,
+                        help="Path to save the converted files.")
+    parser.add_argument("--applymask", action="store_true",
+                        help="Apply brain mask.")
+    parser.add_argument("--centerslices", action="store_true",
+                        help="Save center slices.")
     return parser
 
 

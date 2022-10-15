@@ -14,7 +14,8 @@ def test_case_0():
         bool_0 = True
         conv_nonlinear_0 = None
         int_0 = 107
-        conv_nonlinear_1 = module_0.ConvNonlinear(str_0, conv_nonlinear_0, float_0, bool_0, set_0, int_0)
+        conv_nonlinear_1 = module_0.ConvNonlinear(
+            str_0, conv_nonlinear_0, float_0, bool_0, set_0, int_0)
     except BaseException:
         pass
 
@@ -33,7 +34,8 @@ def test_case_1():
         str_1 = None
         conv_r_n_n_stack_1 = module_0.ConvRNNStack(float_0, set_0)
         assert conv_r_n_n_stack_1.training is True
-        assert conv_r_n_n_stack_1.convs == pytest.approx(10.02, abs=0.01, rel=0.01)
+        assert conv_r_n_n_stack_1.convs == pytest.approx(
+            10.02, abs=0.01, rel=0.01)
         assert conv_r_n_n_stack_1.rnn == {b"=<"}
         conv_r_n_n_stack_2 = module_0.ConvRNNStack(str_1, conv_r_n_n_stack_1)
         assert conv_r_n_n_stack_2.training is True
@@ -56,7 +58,8 @@ def test_case_2():
         conv_nonlinear_0 = None
         conv_r_n_n_stack_0 = module_0.ConvRNNStack(list_0, conv_nonlinear_0)
         assert conv_r_n_n_stack_0.training is True
-        assert conv_r_n_n_stack_0.convs == [{1}.__class__(), {1}.__class__(), True]
+        assert conv_r_n_n_stack_0.convs == [
+            {1}.__class__(), {1}.__class__(), True]
         assert conv_r_n_n_stack_0.rnn is None
         list_1 = [conv_r_n_n_stack_0, list_0, conv_r_n_n_stack_0, bool_0]
         str_0 = "v3of'g9\\S9:aD)-R$7_"
@@ -64,7 +67,8 @@ def test_case_2():
         list_2 = [bool_2, conv_r_n_n_stack_0, bool_0, set_0]
         str_1 = "'2rv"
         str_2 = "NK>Kd=8sN?v3A'p"
-        conv_nonlinear_1 = module_0.ConvNonlinear(list_1, str_0, bool_2, list_2, set_0, str_1, str_2)
+        conv_nonlinear_1 = module_0.ConvNonlinear(
+            list_1, str_0, bool_2, list_2, set_0, str_1, str_2)
     except BaseException:
         pass
 
@@ -78,15 +82,18 @@ def test_case_3():
         conv_nonlinear_0 = None
         conv_r_n_n_stack_0 = module_0.ConvRNNStack(list_0, conv_nonlinear_0)
         assert conv_r_n_n_stack_0.training is True
-        assert conv_r_n_n_stack_0.convs == [{1}.__class__(), {1}.__class__(), True]
+        assert conv_r_n_n_stack_0.convs == [
+            {1}.__class__(), {1}.__class__(), True]
         assert conv_r_n_n_stack_0.rnn is None
-        list_1 = [conv_nonlinear_0, conv_r_n_n_stack_0, list_0, set_0, conv_r_n_n_stack_0, bool_0]
+        list_1 = [conv_nonlinear_0, conv_r_n_n_stack_0,
+                  list_0, set_0, conv_r_n_n_stack_0, bool_0]
         str_0 = "v3of'g9\\S9:aD)-R$7_"
         bool_2 = True
         list_2 = [bool_2, conv_r_n_n_stack_0, bool_0, set_0]
         str_1 = "'2rv"
         str_2 = "LossType"
-        conv_nonlinear_1 = module_0.ConvNonlinear(list_1, str_0, bool_2, list_2, set_0, str_1, str_2)
+        conv_nonlinear_1 = module_0.ConvNonlinear(
+            list_1, str_0, bool_2, list_2, set_0, str_1, str_2)
     except BaseException:
         pass
 
@@ -103,7 +110,8 @@ def test_case_5():
         assert conv_r_n_n_stack_0.training is True
         assert conv_r_n_n_stack_0.convs == {"NDM}3oK6JnF&(,}."}
         assert conv_r_n_n_stack_0.rnn == "06#,PVOad>F\\"
-        conv_nonlinear_0 = module_0.ConvNonlinear(str_0, str_1, list_0, bytes_0, list_0, conv_r_n_n_stack_0, set_0)
+        conv_nonlinear_0 = module_0.ConvNonlinear(
+            str_0, str_1, list_0, bytes_0, list_0, conv_r_n_n_stack_0, set_0)
     except BaseException:
         pass
 
@@ -136,6 +144,7 @@ def test_case_7():
         float_0 = -1199.0
         str_2 = "\x0cJY##nWxlb0F"
         int_0 = 1918
-        conv_nonlinear_0 = module_0.ConvNonlinear(set_0, dict_0, dict_0, float_0, str_2, int_0)
+        conv_nonlinear_0 = module_0.ConvNonlinear(
+            set_0, dict_0, dict_0, float_0, str_2, int_0)
     except BaseException:
         pass
