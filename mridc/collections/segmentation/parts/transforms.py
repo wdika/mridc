@@ -248,8 +248,7 @@ class JRSMRIDataTransforms:
         if self.complex_data:
             if self.apply_prewhitening:
                 kspace = torch.stack(
-                    # type: ignore
-                    [self.prewhitening(kspace[echo]) for echo in range(kspace.shape[0])],
+                    [self.prewhitening(kspace[echo]) for echo in range(kspace.shape[0])],  # type: ignore
                     dim=0,
                 )
 
@@ -462,9 +461,9 @@ class JRSMRIDataTransforms:
                 acc = torch.tensor([1])
 
                 if mask is None or mask.ndim == 0:
-                    mask = torch.ones(masked_kspace.shape[-3], masked_kspace.shape[-2]).type(
+                    mask = torch.ones(masked_kspace.shape[-3], masked_kspace.shape[-2]).type(  # type: ignore
                         torch.float32
-                    )  # type: ignore
+                    )
                 else:
                     mask = torch.from_numpy(mask)
 

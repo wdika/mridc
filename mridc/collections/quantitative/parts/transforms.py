@@ -246,8 +246,7 @@ class qMRIDataTransforms:
 
         if self.apply_prewhitening:
             kspace = torch.stack(
-                # type: ignore
-                [self.prewhitening(kspace[echo]) for echo in range(kspace.shape[0])],
+                [self.prewhitening(kspace[echo]) for echo in range(kspace.shape[0])],  # type: ignore
                 dim=0,
             )
 
@@ -870,8 +869,7 @@ class GaussianSmoothing(torch.nn.Module):
         # The gaussian kernel is the product of the gaussian function of each dimension.
         kernel = 1
         meshgrids = torch.meshgrid(
-            # type: ignore
-            [torch.arange(size, dtype=torch.float32) for size in kernel_size],
+            [torch.arange(size, dtype=torch.float32) for size in kernel_size],  # type: ignore
             indexing="ij",
         )
         for size, std, mgrid in zip(kernel_size, sigma, meshgrids):  # type: ignore
@@ -895,7 +893,7 @@ class GaussianSmoothing(torch.nn.Module):
         elif dim == 3:
             self.conv = F.conv3d
         else:
-            raise RuntimeError("Only 1, 2 and 3 dimensions are supported. Received {}.".format(dim))
+            raise RuntimeError(f"Only 1, 2 and 3 dimensions are supported. Received {dim}.")
 
     def forward(self, input):
         """

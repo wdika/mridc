@@ -664,15 +664,13 @@ class BaseqMRIReconstructionModel(base_reconstruction_models.BaseMRIReconstructi
         if self.use_reconstruction_module:
             for echo_time in range(target.shape[1]):  # type: ignore
                 self.log_image(
-                    # type: ignore
                     f"{key}/reconstruction_echo_{echo_time}/target",
-                    target[:, echo_time, :, :],
+                    target[:, echo_time, :, :],  # type: ignore
                 )  # type: ignore
                 self.log_image(f"{key}/reconstruction_echo_{echo_time}/reconstruction", recon_pred[:, echo_time, :, :])
                 self.log_image(
                     f"{key}/reconstruction_echo_{echo_time}/error",
-                    # type: ignore
-                    torch.abs(target[:, echo_time, :, :] - recon_pred[:, echo_time, :, :]),
+                    torch.abs(target[:, echo_time, :, :] - recon_pred[:, echo_time, :, :]),  # type: ignore
                 )
 
         self.log_image(f"{key}/R2star/target", R2star_map_target)
@@ -969,15 +967,13 @@ class BaseqMRIReconstructionModel(base_reconstruction_models.BaseMRIReconstructi
         if self.use_reconstruction_module:
             for echo_time in range(target.shape[1]):  # type: ignore
                 self.log_image(
-                    # type: ignore
                     f"{key}/reconstruction_echo_{echo_time}/target",
-                    target[:, echo_time, :, :],
+                    target[:, echo_time, :, :],  # type: ignore
                 )  # type: ignore
                 self.log_image(f"{key}/reconstruction_echo_{echo_time}/reconstruction", recon_pred[:, echo_time, :, :])
                 self.log_image(
                     f"{key}/reconstruction_echo_{echo_time}/error",
-                    # type: ignore
-                    torch.abs(target[:, echo_time, :, :] - recon_pred[:, echo_time, :, :]),
+                    torch.abs(target[:, echo_time, :, :] - recon_pred[:, echo_time, :, :]),  # type: ignore
                 )
 
         self.log_image(f"{key}/R2star/target", R2star_map_target)

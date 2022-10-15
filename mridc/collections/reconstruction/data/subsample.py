@@ -496,11 +496,9 @@ class Poisson2DMaskFunc(MaskFunc):
 
         ny, nx = self.shape
         y, x = np.mgrid[:ny, :nx]
-        # type: ignore
-        x = np.maximum(abs(x - self.shape[-1] / 2) - calib[-1] / 2, 0)
+        x = np.maximum(abs(x - self.shape[-1] / 2) - calib[-1] / 2, 0)  # type: ignore
         x /= x.max()
-        # type: ignore
-        y = np.maximum(abs(y - self.shape[-2] / 2) - calib[-2] / 2, 0)
+        y = np.maximum(abs(y - self.shape[-2] / 2) - calib[-2] / 2, 0)  # type: ignore
         y /= y.max()
         r = np.sqrt(x**2 + y**2)
 

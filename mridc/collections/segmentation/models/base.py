@@ -73,6 +73,7 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
                 sigmoid=cfg_dict.get("dice_loss_sigmoid", True),
                 softmax=cfg_dict.get("dice_loss_softmax", False),
                 other_act=cfg_dict.get("dice_loss_other_act", None),
+                w_type=cfg_dict.get("dice_loss_w_type", None),
                 squared_pred=cfg_dict.get("dice_loss_squared_pred", False),
                 jaccard=cfg_dict.get("dice_loss_jaccard", False),
                 flatten=cfg_dict.get("dice_loss_flatten", False),
@@ -103,6 +104,7 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             sigmoid=cfg_dict.get("dice_metric_sigmoid", False),
             softmax=cfg_dict.get("dice_metric_softmax", True),
             other_act=cfg_dict.get("dice_metric_other_act", None),
+            w_type=cfg_dict.get("dice_loss_w_type", None),
             squared_pred=cfg_dict.get("dice_metric_squared_pred", False),
             jaccard=cfg_dict.get("dice_metric_jaccard", False),
             flatten=cfg_dict.get("dice_metric_flatten", False),
@@ -469,13 +471,8 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             val_loss = self.total_segmentation_loss_weight * segmentation_loss
 
         for class_idx in range(target_segmentation.shape[1]):  # type: ignore
-            # type: ignore
-            target_segmentation_class = target_segmentation[:, class_idx]
-            target_segmentation_class = target_segmentation_class / torch.max(torch.abs(target_segmentation_class))
-
+            target_segmentation_class = target_segmentation[:, class_idx]  # type: ignore
             output_segmentation_class = pred_segmentation[:, class_idx]
-            output_segmentation_class = output_segmentation_class / torch.max(torch.abs(output_segmentation_class))
-
             self.log_image(
                 f"{key}/segmentation_classes/target_class_{class_idx}",
                 target_segmentation_class,  # type: ignore
@@ -624,12 +621,8 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             ).view(1)
 
         for class_idx in range(target_segmentation.shape[1]):  # type: ignore
-            # type: ignore
-            target_segmentation_class = target_segmentation[:, class_idx]
-            target_segmentation_class = target_segmentation_class / torch.max(torch.abs(target_segmentation_class))
-
+            target_segmentation_class = target_segmentation[:, class_idx]  # type: ignore
             output_segmentation_class = pred_segmentation[:, class_idx]
-            output_segmentation_class = output_segmentation_class / torch.max(torch.abs(output_segmentation_class))
 
             self.log_image(
                 f"{key}/segmentation_classes/target_class_{class_idx}",

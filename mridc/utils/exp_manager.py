@@ -377,8 +377,7 @@ def error_checks(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None
             "hydra.run.dir=. to your python script."
         )
 
-    # type: ignore
-    if trainer.logger is not None and (cfg.create_tensorboard_logger or cfg.create_wandb_logger):
+    if trainer.logger is not None and (cfg.create_tensorboard_logger or cfg.create_wandb_logger):  # type: ignore
         raise LoggerMisconfigurationError(
             "The pytorch lightning trainer that was passed to exp_manager contained a logger, and either "
             "create_tensorboard_logger or create_wandb_logger was set to True. These can only be used if trainer does "
@@ -540,8 +539,7 @@ def get_log_dir(
     ValueError: If resume is True, and there were more than 1 checkpoint could found.
     """
     if explicit_log_dir:  # If explicit log_dir was passed, short circuit
-        # type: ignore
-        return check_explicit_log_dir(trainer, [Path(explicit_log_dir)], exp_dir, name, version)
+        return check_explicit_log_dir(trainer, [Path(explicit_log_dir)], exp_dir, name, version)  # type: ignore
 
     # Default exp_dir to ./mridc_experiments if None was passed
     _exp_dir = exp_dir

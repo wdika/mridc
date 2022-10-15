@@ -648,15 +648,13 @@ class ModelPT(LightningModule, Model):
             dataloader_logs = self.multi_validation_epoch_end(val_outputs, dataloader_idx=dataloader_idx)
 
             # If result was not provided, generate empty dict
-            # type: ignore
-            dataloader_logs: Dict[Any, Any] = dataloader_logs or {}
+            dataloader_logs: Dict[Any, Any] = dataloader_logs or {}  # type: ignore
 
             # Perform `val_loss` resolution first (if provided outside logs)
             if ("val_loss" in dataloader_logs and "val_loss" not in output_dict) and (  # type: ignore
                 dataloader_idx == self._val_dl_idx
             ):
-                # type: ignore
-                output_dict["val_loss"] = dataloader_logs["val_loss"]
+                output_dict["val_loss"] = dataloader_logs["val_loss"]  # type: ignore
 
             # For every item in the result dictionary
             for k, v in dataloader_logs.items():  # type: ignore
@@ -669,8 +667,7 @@ class ModelPT(LightningModule, Model):
                         # If we are logging the metric, but dont provide it at result level,
                         # store it twice - once in log and once in result level.
                         # Also mark log with prefix name to avoid log level clash with other data loaders
-                        # type: ignore
-                        if k_log not in output_dict["log"] and dataloader_idx == self._val_dl_idx:
+                        if k_log not in output_dict["log"] and dataloader_idx == self._val_dl_idx:  # type: ignore
                             new_k_log = k_log
 
                             # Also insert duplicate key with prefix for ease of comparison / avoid name clash
@@ -754,9 +751,8 @@ class ModelPT(LightningModule, Model):
                 "test_loss" in dataloader_logs
                 and "test_loss" not in output_dict  # type: ignore
                 and dataloader_idx == self._test_dl_idx
-            ):  # type: ignore
-                # type: ignore
-                output_dict["test_loss"] = dataloader_logs["test_loss"]
+            ):
+                output_dict["test_loss"] = dataloader_logs["test_loss"]  # type: ignore
 
             # For every item in the result dictionary
             for k, v in dataloader_logs.items():
@@ -768,8 +764,7 @@ class ModelPT(LightningModule, Model):
                         # If we are logging the loss, but dont provide it at result level,
                         # store it twice - once in log and once in result level.
                         # Also mark log with prefix name to avoid log level clash with other data loaders
-                        # type: ignore
-                        if k_log not in output_dict["log"] and dataloader_idx == self._test_dl_idx:
+                        if k_log not in output_dict["log"] and dataloader_idx == self._test_dl_idx:  # type: ignore
                             new_k_log = k_log
 
                             # Also insert duplicate key with prefix for ease of comparison / avoid name clash

@@ -37,6 +37,7 @@ class Dice(_Loss):
         sigmoid: bool = True,
         softmax: bool = False,
         other_act: Optional[Callable] = None,
+        w_type: Optional[str] = None,
         squared_pred: bool = False,
         jaccard: bool = False,
         flatten: bool = False,
@@ -58,6 +59,9 @@ class Dice(_Loss):
             Whether to add softmax function to the input data. Defaults to False.
         other_act: Callable
             Use this parameter if you want to apply another type of activation layer.
+            Defaults to None.
+        w_type: str
+            Type of weight function to be used for calculating Dice loss. Defaults to "square".
         squared_pred: bool
             Whether to square the prediction before calculating Dice. Defaults to False.
         jaccard: bool
@@ -91,6 +95,7 @@ class Dice(_Loss):
         self.sigmoid = sigmoid
         self.softmax = softmax
         self.other_act = other_act
+        self.w_type = w_type
         self.squared_pred = squared_pred
         self.jaccard = jaccard
         self.flatten = flatten
@@ -99,14 +104,22 @@ class Dice(_Loss):
         self.smooth_dr = float(smooth_dr)
         self.batch = batch
 
+    def w_func(self, grnd):
+        """Weight function for Dice loss."""
+        if self.w_type == "simple":
+            return torch.reciprocal(grnd)
+        if self.w_type == "square":
+            return torch.reciprocal(grnd * grnd)
+        return torch.ones_like(grnd)
+
     def forward(self, target: torch.Tensor, input: torch.Tensor) -> Tuple[Union[Tensor, Any], Tensor]:
         """
         Parameters
         ----------
-        target: torch.Tensor
-            the ground truth of shape [BNHW[D]].
         input: torch.Tensor
             the prediction of shape [BNHW[D]].
+        target: torch.Tensor
+            the ground truth of shape [BNHW[D]].
         """
         if self.flatten:
             target = target.view(target.shape[0], 1, -1)
@@ -162,7 +175,20 @@ class Dice(_Loss):
         if self.jaccard:
             denominator = 2.0 * (denominator - intersection)
 
-        dice_score = (2.0 * intersection + self.smooth_nr) / (denominator + self.smooth_dr)
+        w = self.w_func(ground_o.float())
+        infs = torch.isinf(w)
+        if self.batch:
+            w[infs] = 0.0
+            w = w + infs * torch.max(w)
+        else:
+            w[infs] = 0.0
+            max_values = torch.max(w, dim=1)[0].unsqueeze(dim=1)
+            w = w + infs * max_values
+
+        final_reduce_dim = 0 if self.batch else 1
+        numer = 2.0 * (intersection * w).sum(final_reduce_dim, keepdim=True) + self.smooth_nr
+        denom = (denominator * w).sum(final_reduce_dim, keepdim=True) + self.smooth_dr
+        dice_score = numer / denom
         f: torch.Tensor = 1.0 - dice_score
 
         if self.reduction == "mean":

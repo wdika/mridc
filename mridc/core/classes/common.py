@@ -437,8 +437,7 @@ class Serialization(ABC):
             if instance is None:
                 try:
                     if accepts_trainer := Serialization._inspect_signature_for_trainer(cls):
-                        # type: ignore
-                        instance = cls(cfg=config, trainer=trainer)
+                        instance = cls(cfg=config, trainer=trainer)  # type: ignore
                     else:
                         instance = cls(cfg=config)  # type: ignore
                 except Exception as e:
