@@ -500,7 +500,7 @@ class Poisson2DMaskFunc(MaskFunc):
         x /= x.max()
         y = np.maximum(abs(y - self.shape[-2] / 2) - calib[-2] / 2, 0)  # type: ignore
         y /= y.max()
-        r = np.hypot(x**2 + y**2)
+        r = np.hypot(x, y)
 
         slope_max = max(nx, ny)
         slope_min = 0
