@@ -358,26 +358,25 @@ class JRSMRIDataTransforms:
 
             target_reconstruction = utils.center_crop(target_reconstruction, self.crop_size)
 
-            if self.complex_data:
-                if sensitivity_map is not None and sensitivity_map.size != 0:
-                    sensitivity_map = (
-                        fft.ifft2(
-                            utils.complex_center_crop(
-                                fft.fft2(
-                                    sensitivity_map,
-                                    centered=self.fft_centered,
-                                    normalization=self.fft_normalization,
-                                    spatial_dims=self.spatial_dims,
-                                ),
-                                self.crop_size,
+            if self.complex_data and sensitivity_map is not None and sensitivity_map.size != 0:
+                sensitivity_map = (
+                    fft.ifft2(
+                        utils.complex_center_crop(
+                            fft.fft2(
+                                sensitivity_map,
+                                centered=self.fft_centered,
+                                normalization=self.fft_normalization,
+                                spatial_dims=self.spatial_dims,
                             ),
-                            centered=self.fft_centered,
-                            normalization=self.fft_normalization,
-                            spatial_dims=self.spatial_dims,
-                        )
-                        if self.kspace_crop
-                        else utils.complex_center_crop(sensitivity_map, self.crop_size)
+                            self.crop_size,
+                        ),
+                        centered=self.fft_centered,
+                        normalization=self.fft_normalization,
+                        spatial_dims=self.spatial_dims,
                     )
+                    if self.kspace_crop
+                    else utils.complex_center_crop(sensitivity_map, self.crop_size)
+                )
 
             if segmentation_labels is not None:
                 segmentation_labels = utils.center_crop(segmentation_labels, self.crop_size)
