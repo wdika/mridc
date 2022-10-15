@@ -182,7 +182,8 @@ class Exportable(ABC):
                     if verbose:
                         logging.info(f"JIT code:\n{jitted_model.code}")
                     jitted_model.save(output)
-                    assert exists(output)
+                    if not exists(output):
+                        raise AssertionError
                 elif format == ExportFormat.ONNX:
                     # dynamic axis is a mapping from input/output_name => list of "dynamic" indices
                     if dynamic_axes is None:

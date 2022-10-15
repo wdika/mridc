@@ -49,7 +49,8 @@ class LambdaLayer(nn.Module):
         self.q_depth = query_depth
         self.intra_depth = intra_depth
 
-        assert (out_channels % heads) == 0, "out_channels must be divisible by number of heads for multi-head query."
+        if (out_channels % heads) != 0:
+            raise AssertionError("out_channels must be divisible by number of heads for multi-head query.")
         self.v_depth = out_channels // heads
         self.heads = heads
 
@@ -70,7 +71,8 @@ class LambdaLayer(nn.Module):
             nn.BatchNorm2d(self.v_depth * intra_depth),
         )
 
-        assert (receptive_kernel % 2) == 1, "Receptive kernel size should be odd."
+        if (receptive_kernel % 2) != 1:
+            raise AssertionError("Receptive kernel size should be odd.")
         self.pos_conv = nn.Conv3d(
             intra_depth,
             query_depth,
@@ -79,8 +81,10 @@ class LambdaLayer(nn.Module):
         )
 
         if temporal_kernel >= 3:
-            assert temporal_kernel <= num_slices
-            assert (temporal_kernel % 2) == 1, "Temporal kernel size should be odd."
+            if temporal_kernel > num_slices:
+                raise AssertionError
+            if (temporal_kernel % 2) != 1:
+                raise AssertionError("Temporal kernel size should be odd.")
             self.temp_conv = nn.Conv2d(
                 intra_depth,
                 query_depth,
