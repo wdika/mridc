@@ -237,7 +237,6 @@ class BaseqMRIReconstructionModel(base_reconstruction_models.BaseMRIReconstructi
         r: Random index.
             int
         """
-
         if isinstance(y, list):
             r = np.random.randint(len(y))
             R2star_map_init = R2star_map_init[r]
@@ -1362,7 +1361,6 @@ class BaseqMRIReconstructionModel(base_reconstruction_models.BaseMRIReconstructi
         -------
         Saves the reconstructed images to .h5 files.
         """
-
         # Log metrics.
         # Taken from: https://github.com/facebookresearch/fastMRI/blob/main/fastmri/pl_modules/mri_module.py
         mse_vals_reconstruction = defaultdict(dict)
