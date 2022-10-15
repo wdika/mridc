@@ -107,8 +107,10 @@ class DUNet(base_models.BaseMRIReconstructionModel, ABC):
             reset_cache=False,
         )
 
-        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get(
+            "train_loss_fn") == "ssim" else L1Loss()
+        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get(
+            "eval_loss_fn") == "ssim" else L1Loss()
 
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
         self.accumulate_estimates = False
@@ -154,7 +156,8 @@ class DUNet(base_models.BaseMRIReconstructionModel, ABC):
             self.coil_dim,
         )
         image = self.model(init_pred, y, sensitivity_maps, mask)
-        image = torch.sum(utils.complex_mul(image, utils.complex_conj(sensitivity_maps)), self.coil_dim)
+        image = torch.sum(utils.complex_mul(
+            image, utils.complex_conj(sensitivity_maps)), self.coil_dim)
         image = torch.view_as_complex(image)
         _, image = utils.center_crop_to_smallest(target, image)
         return image

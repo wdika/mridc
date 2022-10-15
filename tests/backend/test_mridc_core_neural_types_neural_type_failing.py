@@ -114,7 +114,8 @@ None
 
 Type comparison result: :bD"""
         )
-        var_3 = neural_type_0.compare_and_raise_error(bool_0, bytes_0, neural_type_0)
+        var_3 = neural_type_0.compare_and_raise_error(
+            bool_0, bytes_0, neural_type_0)
         assert var_3 is None
         neural_type_2 = module_0.NeuralType(list_1)
     except BaseException:
@@ -220,7 +221,8 @@ def test_case_3():
         list_0 = None
         str_0 = "KIKINET"
         str_1 = "win"
-        var_0 = neural_type_0.compare_and_raise_error(str_1, list_0, neural_type_0)
+        var_0 = neural_type_0.compare_and_raise_error(
+            str_1, list_0, neural_type_0)
         assert var_0 is None
         list_1 = []
         neural_type_error_0 = module_0.NeuralTypeError(*list_1)
@@ -239,7 +241,8 @@ def test_case_3():
 def test_case_4():
     try:
         neural_type_error_0 = module_0.NeuralTypeError()
-        neural_port_name_mismatch_error_0 = module_0.NeuralPortNameMismatchError(neural_type_error_0)
+        neural_port_name_mismatch_error_0 = module_0.NeuralPortNameMismatchError(
+            neural_type_error_0)
         assert neural_port_name_mismatch_error_0.message == "Wrong input port name: "
         float_0 = 0.001
         int_0 = -2470
@@ -253,7 +256,8 @@ def test_case_4():
         assert var_0 is False
         element_type_0 = module_2.ElementType()
         assert element_type_0 is not None
-        neural_type_comparison_result_0 = element_type_0.compare(neural_port_name_mismatch_error_0)
+        neural_type_comparison_result_0 = element_type_0.compare(
+            neural_port_name_mismatch_error_0)
         assert neural_type_comparison_result_0 == module_1.NeuralTypeComparisonResult.INCOMPATIBLE
         assert module_1.NeuralTypeComparisonResult.SAME == module_1.NeuralTypeComparisonResult.SAME
         assert module_1.NeuralTypeComparisonResult.LESS == module_1.NeuralTypeComparisonResult.LESS
@@ -309,7 +313,8 @@ def test_case_5():
     try:
         int_0 = -1745
         neural_type_error_0 = module_0.NeuralTypeError()
-        neural_port_name_mismatch_error_0 = module_0.NeuralPortNameMismatchError(neural_type_error_0)
+        neural_port_name_mismatch_error_0 = module_0.NeuralPortNameMismatchError(
+            neural_type_error_0)
         assert neural_port_name_mismatch_error_0.message == "Wrong input port name: "
         element_type_0 = module_2.ElementType()
         var_0 = element_type_0.__str__()

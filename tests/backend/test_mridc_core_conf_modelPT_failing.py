@@ -15,14 +15,17 @@ def test_case_0():
         bool_0 = False
         float_0 = -5392.36229
         sched_config_0 = module_0.SchedConfig(float_0, int_0)
-        assert sched_config_0.name == pytest.approx(-5392.36229, abs=0.01, rel=0.01)
+        assert sched_config_0.name == pytest.approx(
+            -5392.36229, abs=0.01, rel=0.01)
         assert sched_config_0.min_lr == 2540
         assert sched_config_0.last_epoch == -1
         assert module_0.SchedConfig.name == "???"
-        assert module_0.SchedConfig.min_lr == pytest.approx(0.0, abs=0.01, rel=0.01)
+        assert module_0.SchedConfig.min_lr == pytest.approx(
+            0.0, abs=0.01, rel=0.01)
         assert module_0.SchedConfig.last_epoch == -1
         dataset_config_0 = module_1.DatasetConfig(bool_0)
-        model_config_0 = module_0.ModelConfig(dataset_config_0, dataset_config_0)
+        model_config_0 = module_0.ModelConfig(
+            dataset_config_0, dataset_config_0)
         assert model_config_0.test_ds is None
         assert model_config_0.optim is None
         assert module_0.ModelConfig.train_ds is None
@@ -87,7 +90,8 @@ def test_case_1():
         assert sched_config_0.min_lr == pytest.approx(0.0, abs=0.01, rel=0.01)
         assert sched_config_0.last_epoch == -1
         assert module_0.SchedConfig.name == "???"
-        assert module_0.SchedConfig.min_lr == pytest.approx(0.0, abs=0.01, rel=0.01)
+        assert module_0.SchedConfig.min_lr == pytest.approx(
+            0.0, abs=0.01, rel=0.01)
         assert module_0.SchedConfig.last_epoch == -1
         sched_config_1 = module_0.SchedConfig(str_0, int_0)
         assert sched_config_1.name == "k-)qm"
@@ -105,7 +109,8 @@ def test_case_2():
         assert sched_config_0.min_lr == pytest.approx(0.0, abs=0.01, rel=0.01)
         assert sched_config_0.last_epoch == -1
         assert module_0.SchedConfig.name == "???"
-        assert module_0.SchedConfig.min_lr == pytest.approx(0.0, abs=0.01, rel=0.01)
+        assert module_0.SchedConfig.min_lr == pytest.approx(
+            0.0, abs=0.01, rel=0.01)
         assert module_0.SchedConfig.last_epoch == -1
         model_config_0 = module_0.ModelConfig()
         assert model_config_0.train_ds is None
@@ -130,7 +135,8 @@ def test_case_2():
         assert module_0.MRIDCConfig.trainer.auto_select_gpus is False
         assert module_0.MRIDCConfig.trainer.tpu_cores is None
         assert module_0.MRIDCConfig.trainer.enable_progress_bar is True
-        assert module_0.MRIDCConfig.trainer.overfit_batches == pytest.approx(0.0, abs=0.01, rel=0.01)
+        assert module_0.MRIDCConfig.trainer.overfit_batches == pytest.approx(
+            0.0, abs=0.01, rel=0.01)
         assert module_0.MRIDCConfig.trainer.track_grad_norm == -1
         assert module_0.MRIDCConfig.trainer.check_val_every_n_epoch == 1
         assert module_0.MRIDCConfig.trainer.fast_dev_run is False
@@ -139,10 +145,14 @@ def test_case_2():
         assert module_0.MRIDCConfig.trainer.min_epochs == 1
         assert module_0.MRIDCConfig.trainer.max_steps == -1
         assert module_0.MRIDCConfig.trainer.min_steps is None
-        assert module_0.MRIDCConfig.trainer.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
-        assert module_0.MRIDCConfig.trainer.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
-        assert module_0.MRIDCConfig.trainer.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
-        assert module_0.MRIDCConfig.trainer.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
+        assert module_0.MRIDCConfig.trainer.limit_train_batches == pytest.approx(
+            1.0, abs=0.01, rel=0.01)
+        assert module_0.MRIDCConfig.trainer.limit_val_batches == pytest.approx(
+            1.0, abs=0.01, rel=0.01)
+        assert module_0.MRIDCConfig.trainer.limit_test_batches == pytest.approx(
+            1.0, abs=0.01, rel=0.01)
+        assert module_0.MRIDCConfig.trainer.val_check_interval == pytest.approx(
+            1.0, abs=0.01, rel=0.01)
         assert module_0.MRIDCConfig.trainer.log_every_n_steps == 1
         assert module_0.MRIDCConfig.trainer.accelerator == "gpu"
         assert module_0.MRIDCConfig.trainer.sync_batchnorm is False
@@ -161,7 +171,8 @@ def test_case_2():
         assert module_0.MRIDCConfig.trainer.plugins is None
         assert module_0.MRIDCConfig.trainer.move_metrics_to_cpu is False
         assert module_0.MRIDCConfig.trainer.multiple_trainloader_mode == "max_size_cycle"
-        assert module_0.MRIDCConfig.trainer.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+        assert module_0.MRIDCConfig.trainer.limit_predict_batches == pytest.approx(
+            1.0, abs=0.01, rel=0.01)
         assert module_0.MRIDCConfig.trainer.gradient_clip_algorithm == "norm"
         assert module_0.MRIDCConfig.trainer.max_time is None
         assert module_0.MRIDCConfig.trainer.reload_dataloaders_every_n_epochs == 0
@@ -189,7 +200,8 @@ def test_case_2():
         assert module_0.MRIDCConfig.exp_manager.log_global_rank_0_only is False
         assert module_0.MRIDCConfig.exp_manager.model_parallel_size is None
         assert module_0.MRIDCConfig.hydra.run == {"dir": "."}
-        assert module_0.MRIDCConfig.hydra.job_logging == {"root": {"handlers": None}}
+        assert module_0.MRIDCConfig.hydra.job_logging == {
+            "root": {"handlers": None}}
         optimizer_params_0 = module_2.OptimizerParams()
         bool_0 = False
         bool_1 = True
@@ -207,7 +219,8 @@ def test_case_2():
         assert model_config_builder_1.validation_ds_cfg is None
         assert model_config_builder_1.test_ds_cfg is None
         assert model_config_builder_1.optim_cfg is None
-        var_2 = model_config_builder_1.set_optim(optimizer_params_0, scheduler_params_0)
+        var_2 = model_config_builder_1.set_optim(
+            optimizer_params_0, scheduler_params_0)
         int_0 = -576
         sched_config_1 = module_0.SchedConfig()
         assert sched_config_1.name == "???"
@@ -223,7 +236,8 @@ def test_case_2():
         assert model_config_builder_2.test_ds_cfg is None
         assert model_config_builder_2.optim_cfg is None
         var_3 = model_config_builder_2.set_test_ds(dataset_config_2)
-        model_config_1 = module_0.ModelConfig(optimizer_params_0, dataset_config_1, dataset_config_2)
+        model_config_1 = module_0.ModelConfig(
+            optimizer_params_0, dataset_config_1, dataset_config_2)
         assert model_config_1.optim is None
         model_config_builder_3 = module_0.ModelConfigBuilder(model_config_1)
         assert model_config_builder_3.train_ds_cfg is None
@@ -259,7 +273,8 @@ def test_case_4():
         bool_0 = False
         int_0 = -2753
         dataset_config_0 = module_1.DatasetConfig(int_0)
-        model_config_0 = module_0.ModelConfig(dataset_config_0, dataset_config_0)
+        model_config_0 = module_0.ModelConfig(
+            dataset_config_0, dataset_config_0)
         assert model_config_0.test_ds is None
         assert model_config_0.optim is None
         assert module_0.ModelConfig.train_ds is None
@@ -319,7 +334,8 @@ def test_case_4():
         hydra_config_1 = module_0.HydraConfig()
         assert hydra_config_1.run == {"dir": "."}
         assert hydra_config_1.job_logging == {"root": {"handlers": None}}
-        m_r_i_d_c_config_0 = module_0.MRIDCConfig(str_0, trainer_config_0, hydra_config_1)
+        m_r_i_d_c_config_0 = module_0.MRIDCConfig(
+            str_0, trainer_config_0, hydra_config_1)
         assert m_r_i_d_c_config_0.name == "ix\tfY6\nE.!u=C^M"
         assert module_0.MRIDCConfig.name == "???"
         assert module_0.MRIDCConfig.model == "???"
@@ -332,7 +348,8 @@ def test_case_4():
         assert module_0.MRIDCConfig.trainer.auto_select_gpus is False
         assert module_0.MRIDCConfig.trainer.tpu_cores is None
         assert module_0.MRIDCConfig.trainer.enable_progress_bar is True
-        assert module_0.MRIDCConfig.trainer.overfit_batches == pytest.approx(0.0, abs=0.01, rel=0.01)
+        assert module_0.MRIDCConfig.trainer.overfit_batches == pytest.approx(
+            0.0, abs=0.01, rel=0.01)
         assert module_0.MRIDCConfig.trainer.track_grad_norm == -1
         assert module_0.MRIDCConfig.trainer.check_val_every_n_epoch == 1
         assert module_0.MRIDCConfig.trainer.fast_dev_run is False
@@ -341,10 +358,14 @@ def test_case_4():
         assert module_0.MRIDCConfig.trainer.min_epochs == 1
         assert module_0.MRIDCConfig.trainer.max_steps == -1
         assert module_0.MRIDCConfig.trainer.min_steps is None
-        assert module_0.MRIDCConfig.trainer.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
-        assert module_0.MRIDCConfig.trainer.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
-        assert module_0.MRIDCConfig.trainer.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
-        assert module_0.MRIDCConfig.trainer.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
+        assert module_0.MRIDCConfig.trainer.limit_train_batches == pytest.approx(
+            1.0, abs=0.01, rel=0.01)
+        assert module_0.MRIDCConfig.trainer.limit_val_batches == pytest.approx(
+            1.0, abs=0.01, rel=0.01)
+        assert module_0.MRIDCConfig.trainer.limit_test_batches == pytest.approx(
+            1.0, abs=0.01, rel=0.01)
+        assert module_0.MRIDCConfig.trainer.val_check_interval == pytest.approx(
+            1.0, abs=0.01, rel=0.01)
         assert module_0.MRIDCConfig.trainer.log_every_n_steps == 1
         assert module_0.MRIDCConfig.trainer.accelerator == "gpu"
         assert module_0.MRIDCConfig.trainer.sync_batchnorm is False
@@ -363,7 +384,8 @@ def test_case_4():
         assert module_0.MRIDCConfig.trainer.plugins is None
         assert module_0.MRIDCConfig.trainer.move_metrics_to_cpu is False
         assert module_0.MRIDCConfig.trainer.multiple_trainloader_mode == "max_size_cycle"
-        assert module_0.MRIDCConfig.trainer.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+        assert module_0.MRIDCConfig.trainer.limit_predict_batches == pytest.approx(
+            1.0, abs=0.01, rel=0.01)
         assert module_0.MRIDCConfig.trainer.gradient_clip_algorithm == "norm"
         assert module_0.MRIDCConfig.trainer.max_time is None
         assert module_0.MRIDCConfig.trainer.reload_dataloaders_every_n_epochs == 0
@@ -391,11 +413,13 @@ def test_case_4():
         assert module_0.MRIDCConfig.exp_manager.log_global_rank_0_only is False
         assert module_0.MRIDCConfig.exp_manager.model_parallel_size is None
         assert module_0.MRIDCConfig.hydra.run == {"dir": "."}
-        assert module_0.MRIDCConfig.hydra.job_logging == {"root": {"handlers": None}}
+        assert module_0.MRIDCConfig.hydra.job_logging == {
+            "root": {"handlers": None}}
         str_2 = "B%\x0cKaZq,5("
         dict_0 = {str_0: int_0, str_2: str_2}
         hydra_config_2 = module_0.HydraConfig(dict_0)
-        assert hydra_config_2.run == {"ix\tfY6\nE.!u=C^M": -2753, "B%\x0cKaZq,5(": "B%\x0cKaZq,5("}
+        assert hydra_config_2.run == {
+            "ix\tfY6\nE.!u=C^M": -2753, "B%\x0cKaZq,5(": "B%\x0cKaZq,5("}
         assert hydra_config_2.job_logging == {"root": {"handlers": None}}
         model_config_2 = model_config_builder_1.build()
     except BaseException:
@@ -436,7 +460,8 @@ def test_case_5():
             bool_0,
         )
         var_0 = None
-        m_r_i_d_c_config_0 = module_0.MRIDCConfig(str_2, trainer_config_0, var_0, hydra_config_0)
+        m_r_i_d_c_config_0 = module_0.MRIDCConfig(
+            str_2, trainer_config_0, var_0, hydra_config_0)
         assert m_r_i_d_c_config_0.name == ""
         assert m_r_i_d_c_config_0.trainer is None
         assert module_0.MRIDCConfig.name == "???"
@@ -450,7 +475,8 @@ def test_case_5():
         assert module_0.MRIDCConfig.trainer.auto_select_gpus is False
         assert module_0.MRIDCConfig.trainer.tpu_cores is None
         assert module_0.MRIDCConfig.trainer.enable_progress_bar is True
-        assert module_0.MRIDCConfig.trainer.overfit_batches == pytest.approx(0.0, abs=0.01, rel=0.01)
+        assert module_0.MRIDCConfig.trainer.overfit_batches == pytest.approx(
+            0.0, abs=0.01, rel=0.01)
         assert module_0.MRIDCConfig.trainer.track_grad_norm == -1
         assert module_0.MRIDCConfig.trainer.check_val_every_n_epoch == 1
         assert module_0.MRIDCConfig.trainer.fast_dev_run is False
@@ -459,10 +485,14 @@ def test_case_5():
         assert module_0.MRIDCConfig.trainer.min_epochs == 1
         assert module_0.MRIDCConfig.trainer.max_steps == -1
         assert module_0.MRIDCConfig.trainer.min_steps is None
-        assert module_0.MRIDCConfig.trainer.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
-        assert module_0.MRIDCConfig.trainer.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
-        assert module_0.MRIDCConfig.trainer.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
-        assert module_0.MRIDCConfig.trainer.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
+        assert module_0.MRIDCConfig.trainer.limit_train_batches == pytest.approx(
+            1.0, abs=0.01, rel=0.01)
+        assert module_0.MRIDCConfig.trainer.limit_val_batches == pytest.approx(
+            1.0, abs=0.01, rel=0.01)
+        assert module_0.MRIDCConfig.trainer.limit_test_batches == pytest.approx(
+            1.0, abs=0.01, rel=0.01)
+        assert module_0.MRIDCConfig.trainer.val_check_interval == pytest.approx(
+            1.0, abs=0.01, rel=0.01)
         assert module_0.MRIDCConfig.trainer.log_every_n_steps == 1
         assert module_0.MRIDCConfig.trainer.accelerator == "gpu"
         assert module_0.MRIDCConfig.trainer.sync_batchnorm is False
@@ -481,7 +511,8 @@ def test_case_5():
         assert module_0.MRIDCConfig.trainer.plugins is None
         assert module_0.MRIDCConfig.trainer.move_metrics_to_cpu is False
         assert module_0.MRIDCConfig.trainer.multiple_trainloader_mode == "max_size_cycle"
-        assert module_0.MRIDCConfig.trainer.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+        assert module_0.MRIDCConfig.trainer.limit_predict_batches == pytest.approx(
+            1.0, abs=0.01, rel=0.01)
         assert module_0.MRIDCConfig.trainer.gradient_clip_algorithm == "norm"
         assert module_0.MRIDCConfig.trainer.max_time is None
         assert module_0.MRIDCConfig.trainer.reload_dataloaders_every_n_epochs == 0
@@ -509,7 +540,8 @@ def test_case_5():
         assert module_0.MRIDCConfig.exp_manager.log_global_rank_0_only is False
         assert module_0.MRIDCConfig.exp_manager.model_parallel_size is None
         assert module_0.MRIDCConfig.hydra.run == {"dir": "."}
-        assert module_0.MRIDCConfig.hydra.job_logging == {"root": {"handlers": None}}
+        assert module_0.MRIDCConfig.hydra.job_logging == {
+            "root": {"handlers": None}}
         optim_config_0 = module_0.OptimConfig()
         assert optim_config_0.name == "???"
         assert optim_config_0.sched is None

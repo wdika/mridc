@@ -86,7 +86,8 @@ class KIKINet(base_models.BaseMRIReconstructionModel, ABC):
         if image_model_architecture == "MWCNN":
             image_model = mwcnn_.MWCNN(
                 input_channels=2,
-                first_conv_hidden_channels=cfg_dict.get("image_mwcnn_hidden_channels"),
+                first_conv_hidden_channels=cfg_dict.get(
+                    "image_mwcnn_hidden_channels"),
                 num_scales=cfg_dict.get("image_mwcnn_num_scales"),
                 bias=cfg_dict.get("image_mwcnn_bias"),
                 batchnorm=cfg_dict.get("image_mwcnn_batchnorm"),
@@ -112,11 +113,15 @@ class KIKINet(base_models.BaseMRIReconstructionModel, ABC):
         self.spatial_dims = cfg_dict.get("spatial_dims")
         self.coil_dim = cfg_dict.get("coil_dim")
 
-        self.image_model_list = torch.nn.ModuleList([image_model] * self.num_iter)
-        self.kspace_model_list = torch.nn.ModuleList([crossdomain.MultiCoil(kspace_model, coil_dim=1)] * self.num_iter)
+        self.image_model_list = torch.nn.ModuleList(
+            [image_model] * self.num_iter)
+        self.kspace_model_list = torch.nn.ModuleList(
+            [crossdomain.MultiCoil(kspace_model, coil_dim=1)] * self.num_iter)
 
-        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get(
+            "train_loss_fn") == "ssim" else L1Loss()
+        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get(
+            "eval_loss_fn") == "ssim" else L1Loss()
 
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
         self.accumulate_estimates = False
@@ -156,13 +161,15 @@ class KIKINet(base_models.BaseMRIReconstructionModel, ABC):
         zero = torch.zeros(1, 1, 1, 1, 1).to(kspace)
 
         for idx in range(self.num_iter):
-            soft_dc = torch.where(mask.bool(), kspace - y, zero) * self.dc_weight
+            soft_dc = torch.where(mask.bool(), kspace -
+                                  y, zero) * self.dc_weight
 
             kspace = self.kspace_model_list[idx](kspace)
             if kspace.shape[-1] != 2:
                 kspace = kspace.permute(0, 1, 3, 4, 2).to(target)
                 # this is necessary, but why?
-                kspace = torch.view_as_real(kspace[..., 0] + 1j * kspace[..., 1])
+                kspace = torch.view_as_real(
+                    kspace[..., 0] + 1j * kspace[..., 1])
 
             image = utils.complex_mul(
                 fft.ifft2(
@@ -173,11 +180,13 @@ class KIKINet(base_models.BaseMRIReconstructionModel, ABC):
                 ),
                 utils.complex_conj(sensitivity_maps),
             ).sum(self.coil_dim)
-            image = self.image_model_list[idx](image.unsqueeze(self.coil_dim)).squeeze(self.coil_dim)
+            image = self.image_model_list[idx](
+                image.unsqueeze(self.coil_dim)).squeeze(self.coil_dim)
 
             if not self.no_dc:
                 image = fft.fft2(
-                    utils.complex_mul(image.unsqueeze(self.coil_dim), sensitivity_maps),
+                    utils.complex_mul(image.unsqueeze(
+                        self.coil_dim), sensitivity_maps),
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,
@@ -195,7 +204,8 @@ class KIKINet(base_models.BaseMRIReconstructionModel, ABC):
 
             if idx < self.num_iter - 1:
                 kspace = fft.fft2(
-                    utils.complex_mul(image.unsqueeze(self.coil_dim), sensitivity_maps),
+                    utils.complex_mul(image.unsqueeze(
+                        self.coil_dim), sensitivity_maps),
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,
