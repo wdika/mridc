@@ -9,7 +9,7 @@ import mridc.collections.common.parts.fft as fft
 import mridc.collections.common.parts.utils as utils
 
 
-class RescaleByMax(object):
+class RescaleByMax:
     def __init__(self, slack=1e-6):
         self.slack = slack
 
@@ -25,7 +25,7 @@ class RescaleByMax(object):
         return torch.stack([data[i] * gamma[i] for i in range(data.shape[0])], 0)
 
 
-class SignalForwardModel(object):
+class SignalForwardModel:
     """Defines a signal forward model"""
 
     def __init__(self, sequence: Union[str, None] = None):
