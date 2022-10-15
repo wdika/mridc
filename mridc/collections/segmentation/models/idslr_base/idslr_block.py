@@ -71,10 +71,12 @@ class UnetEncoder(nn.Module):
         self.normalize = normalize
         self.norm_groups = norm_groups
 
-        self.down_sample_layers = torch.nn.ModuleList([unet_block.ConvBlock(in_chans, chans, drop_prob)])
+        self.down_sample_layers = torch.nn.ModuleList(
+            [unet_block.ConvBlock(in_chans, chans, drop_prob)])
         ch = chans
         for _ in range(num_pools - 1):
-            self.down_sample_layers.append(unet_block.ConvBlock(ch, ch * 2, drop_prob))
+            self.down_sample_layers.append(
+                unet_block.ConvBlock(ch, ch * 2, drop_prob))
             ch *= 2
         self.conv = unet_block.ConvBlock(ch, ch * 2, drop_prob)
 
@@ -134,15 +136,15 @@ class UnetEncoder(nn.Module):
         for layer in self.down_sample_layers:
             output = layer(output)
             stack.append(output)
-            output = torch.nn.functional.avg_pool2d(output, kernel_size=2, stride=2, padding=0)
+            output = torch.nn.functional.avg_pool2d(
+                output, kernel_size=2, stride=2, padding=0)
 
         output = self.conv(output)
         stack.append(output)
 
         if self.normalize:
             return stack, iscomplex, pad_sizes, mean, std
-        else:
-            return stack, iscomplex, pad_sizes
+        return stack, iscomplex, pad_sizes
 
 
 class UnetDecoder(nn.Module):
@@ -190,11 +192,13 @@ class UnetDecoder(nn.Module):
         self.up_conv = torch.nn.ModuleList()
         self.up_transpose_conv = torch.nn.ModuleList()
         for _ in range(num_pools - 1):
-            self.up_transpose_conv.append(unet_block.TransposeConvBlock(ch * 2, ch))
+            self.up_transpose_conv.append(
+                unet_block.TransposeConvBlock(ch * 2, ch))
             self.up_conv.append(unet_block.ConvBlock(ch * 2, ch, drop_prob))
             ch //= 2
 
-        self.up_transpose_conv.append(unet_block.TransposeConvBlock(ch * 2, ch))
+        self.up_transpose_conv.append(
+            unet_block.TransposeConvBlock(ch * 2, ch))
         self.up_conv.append(
             torch.nn.Sequential(
                 unet_block.ConvBlock(ch * 2, ch, drop_prob),
@@ -214,7 +218,7 @@ class UnetDecoder(nn.Module):
     @staticmethod
     def unpad(x: torch.Tensor, h_pad: List[int], w_pad: List[int], h_mult: int, w_mult: int) -> torch.Tensor:
         """Unpad the input."""
-        return x[..., h_pad[0] : h_mult - h_pad[1], w_pad[0] : w_mult - w_pad[1]]
+        return x[..., h_pad[0]: h_mult - h_pad[1], w_pad[0]: w_mult - w_pad[1]]
 
     def unnorm(self, x: torch.Tensor, mean: torch.Tensor, std: torch.Tensor) -> torch.Tensor:
         """Unnormalize the input."""

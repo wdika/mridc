@@ -27,7 +27,8 @@ class qMRISliceDataset(Dataset):
         use_dataset_cache: bool = False,
         sample_rate: Optional[float] = None,
         volume_sample_rate: Optional[float] = None,
-        dataset_cache_file: Union[str, Path, os.PathLike] = "dataset_cache.yaml",
+        dataset_cache_file: Union[str, Path,
+                                  os.PathLike] = "dataset_cache.yaml",
         num_cols: Optional[Tuple[int]] = None,
         mask_root: Union[str, Path, os.PathLike] = None,
         consecutive_slices: int = 1,
@@ -65,7 +66,8 @@ class qMRISliceDataset(Dataset):
         kspace_scaling_factor: A float that determines the scaling factor of the k-space data.
         """
         if sequence not in ("MEGRE", "FUTURE_SEQUENCES"):
-            raise ValueError(f'Sequence should be either "MEGRE" or "FUTURE_SEQUENCES". Found {sequence}.')
+            raise ValueError(
+                f'Sequence should be either "MEGRE" or "FUTURE_SEQUENCES". Found {sequence}.')
 
         if sample_rate is not None and volume_sample_rate is not None:
             raise ValueError(
@@ -104,18 +106,22 @@ class qMRISliceDataset(Dataset):
         if dataset_cache.get(root) is None or not use_dataset_cache:
             files = list(Path(root).iterdir())
             for fname in sorted(files):
-                metadata, num_slices = self._retrieve_metadata(fname, data_saved_per_slice=self.data_saved_per_slice)
+                metadata, num_slices = self._retrieve_metadata(
+                    fname, data_saved_per_slice=self.data_saved_per_slice)
                 if not utils.is_none(num_slices) and not utils.is_none(consecutive_slices):
                     num_slices = num_slices - (consecutive_slices - 1)
-                self.examples += [(fname, slice_ind, metadata) for slice_ind in range(num_slices)]
+                self.examples += [(fname, slice_ind, metadata)
+                                  for slice_ind in range(num_slices)]
 
             if dataset_cache.get(root) is None and use_dataset_cache:
                 dataset_cache[root] = self.examples
-                logging.info(f"Saving dataset cache to {self.dataset_cache_file}.")
+                logging.info(
+                    f"Saving dataset cache to {self.dataset_cache_file}.")
                 with open(self.dataset_cache_file, "wb") as f:  # type: ignore
                     yaml.dump(dataset_cache, f)  # type: ignore
         else:
-            logging.info(f"Using dataset cache from {self.dataset_cache_file}.")
+            logging.info(
+                f"Using dataset cache from {self.dataset_cache_file}.")
             self.examples = dataset_cache[root]
 
         # subsample if desired
@@ -128,15 +134,18 @@ class qMRISliceDataset(Dataset):
             random.shuffle(vol_names)
             num_volumes = round(len(vol_names) * volume_sample_rate)
             sampled_vols = vol_names[:num_volumes]
-            self.examples = [example for example in self.examples if example[0].stem in sampled_vols]
+            self.examples = [
+                example for example in self.examples if example[0].stem in sampled_vols]
 
         if num_cols:
-            self.examples = [ex for ex in self.examples if ex[2]["encoding_size"][1] in num_cols]  # type: ignore
+            self.examples = [ex for ex in self.examples if ex[2]
+                             ["encoding_size"][1] in num_cols]  # type: ignore
 
         # Create random number generator used for consecutive slice selection and set consecutive slice amount
         self.consecutive_slices = consecutive_slices
         if self.consecutive_slices < 1:
-            raise ValueError("consecutive_slices value is out of range, must be > 0.")
+            raise ValueError(
+                "consecutive_slices value is out of range, must be > 0.")
 
     @staticmethod
     def _retrieve_metadata(fname, data_saved_per_slice=False):
@@ -165,7 +174,8 @@ class qMRISliceDataset(Dataset):
             elif "reconstruction" in hf:
                 shape = hf["reconstruction"].shape
             else:
-                raise ValueError(f"{fname} does not contain kspace or reconstruction data.")
+                raise ValueError(
+                    f"{fname} does not contain kspace or reconstruction data.")
 
         num_slices = 1 if data_saved_per_slice else shape[0]
         metadata = {
@@ -195,7 +205,7 @@ class qMRISliceDataset(Dataset):
         if self.consecutive_slices == 1:
             if data.shape[0] == 1:
                 return data[0]
-            elif data.ndim != 2:
+            if data.ndim != 2:
                 return data[dataslice]
             return data
 
@@ -227,7 +237,8 @@ class qMRISliceDataset(Dataset):
             if key in k:
                 acc = k.split("_")[-1].split("x")[0]
                 if acc not in ["brain", "head"]:
-                    x = self.get_consecutive_slices(data, key + str(acc) + "x", dataslice)
+                    x = self.get_consecutive_slices(
+                        data, key + str(acc) + "x", dataslice)
                     if x.ndim == 3:
                         x = x[dataslice]
                     if (
@@ -249,11 +260,14 @@ class qMRISliceDataset(Dataset):
         fname, dataslice, metadata = self.examples[i]
         with h5py.File(fname, "r") as hf:
             if "kspace" in hf:
-                kspace = self.get_consecutive_slices(hf, "kspace", dataslice).astype(np.complex64)
+                kspace = self.get_consecutive_slices(
+                    hf, "kspace", dataslice).astype(np.complex64)
             elif "ksp" in hf:
-                kspace = self.get_consecutive_slices(hf, "ksp", dataslice).astype(np.complex64)
+                kspace = self.get_consecutive_slices(
+                    hf, "ksp", dataslice).astype(np.complex64)
             else:
-                raise ValueError("No kspace data found in file. Only 'kspace' or 'ksp' keys are supported.")
+                raise ValueError(
+                    "No kspace data found in file. Only 'kspace' or 'ksp' keys are supported.")
 
             if self.init_coil_dim in [3, 4, -1]:
                 # [nr_TEs, nr_channels, nr_rows, nr_cols]
@@ -262,15 +276,19 @@ class qMRISliceDataset(Dataset):
             kspace = kspace / self.kspace_scaling_factor
 
             if "sensitivity_map" in hf:
-                sensitivity_map = self.get_consecutive_slices(hf, "sensitivity_map", dataslice).astype(np.complex64)
+                sensitivity_map = self.get_consecutive_slices(
+                    hf, "sensitivity_map", dataslice).astype(np.complex64)
             elif "sense" in hf:
-                sensitivity_map = self.get_consecutive_slices(hf, "sense", dataslice).astype(np.complex64)
+                sensitivity_map = self.get_consecutive_slices(
+                    hf, "sense", dataslice).astype(np.complex64)
             elif self.sense_root is not None and self.sense_root != "None":
                 with h5py.File(Path(self.sense_root) / Path(str(fname).split("/")[-2]) / fname.name, "r") as sf:
                     if "sensitivity_map" in sf or "sensitivity_map" in next(iter(sf.keys())):
-                        sensitivity_map = self.get_consecutive_slices(sf, "sensitivity_map", dataslice)
+                        sensitivity_map = self.get_consecutive_slices(
+                            sf, "sensitivity_map", dataslice)
                     else:
-                        sensitivity_map = self.get_consecutive_slices(sf, "sense", dataslice)
+                        sensitivity_map = self.get_consecutive_slices(
+                            sf, "sense", dataslice)
                     sensitivity_map = sensitivity_map.squeeze().astype(np.complex64)
             else:
                 sensitivity_map = np.array([])
@@ -280,24 +298,28 @@ class qMRISliceDataset(Dataset):
                 sensitivity_map = np.transpose(sensitivity_map, (2, 0, 1))
 
             if "mask" in hf:
-                mask = np.asarray(self.get_consecutive_slices(hf, "mask", dataslice))
+                mask = np.asarray(
+                    self.get_consecutive_slices(hf, "mask", dataslice))
                 if mask.ndim == 3:
                     mask = mask[dataslice]
             elif any("mask_" in _ for _ in hf.keys()):
                 mask = self.check_stored_qdata(hf, "mask_", dataslice)
             elif self.mask_root is not None and self.mask_root != "None":
                 with h5py.File(Path(self.mask_root) / fname.name, "r") as mf:
-                    mask = np.asarray(self.get_consecutive_slices(mf, "mask", dataslice))
+                    mask = np.asarray(
+                        self.get_consecutive_slices(mf, "mask", dataslice))
             else:
                 mask = np.empty([])
 
             if "mask_brain" in hf:
-                mask_brain = np.asarray(self.get_consecutive_slices(hf, "mask_brain", dataslice))
+                mask_brain = np.asarray(
+                    self.get_consecutive_slices(hf, "mask_brain", dataslice))
             else:
                 mask_brain = np.empty([])
 
             if "mask_head" in hf.keys():
-                mask_head = np.asarray(self.get_consecutive_slices(hf, "mask_head", dataslice))
+                mask_head = np.asarray(
+                    self.get_consecutive_slices(hf, "mask_head", dataslice))
             else:
                 mask_head = np.empty([])
 
@@ -306,8 +328,10 @@ class qMRISliceDataset(Dataset):
             if any("B0_map_init_" in _ for _ in hf.keys()):
                 B0_map = self.check_stored_qdata(hf, "B0_map_init_", dataslice)
                 if all("B0_map_target" not in _ for _ in hf.keys()):
-                    raise ValueError("While B0 map initializations are found, no B0 map target found in file.")
-                B0_map_target = self.get_consecutive_slices(hf, "B0_map_target", dataslice)
+                    raise ValueError(
+                        "While B0 map initializations are found, no B0 map target found in file.")
+                B0_map_target = self.get_consecutive_slices(
+                    hf, "B0_map_target", dataslice)
                 B0_map.append(B0_map_target)
             else:
                 B0_map = np.empty([])
@@ -315,26 +339,34 @@ class qMRISliceDataset(Dataset):
             if any("S0_map_init_" in _ for _ in hf.keys()):
                 S0_map = self.check_stored_qdata(hf, "S0_map_init_", dataslice)
                 if all("S0_map_target" not in _ for _ in hf.keys()):
-                    raise ValueError("While S0 map initializations are found, no S0 map target found in file.")
-                S0_map_target = self.get_consecutive_slices(hf, "S0_map_target", dataslice)
+                    raise ValueError(
+                        "While S0 map initializations are found, no S0 map target found in file.")
+                S0_map_target = self.get_consecutive_slices(
+                    hf, "S0_map_target", dataslice)
                 S0_map.append(S0_map_target)
             else:
                 S0_map = np.empty([])
 
             if any("R2star_map_init_" in _ for _ in hf.keys()):
-                R2star_map = self.check_stored_qdata(hf, "R2star_map_init_", dataslice)
+                R2star_map = self.check_stored_qdata(
+                    hf, "R2star_map_init_", dataslice)
                 if all("R2star_map_target" not in _ for _ in hf.keys()):
-                    raise ValueError("While R2star map initializations are found, no R2star map target found in file.")
-                R2star_map_target = self.get_consecutive_slices(hf, "R2star_map_target", dataslice)
+                    raise ValueError(
+                        "While R2star map initializations are found, no R2star map target found in file.")
+                R2star_map_target = self.get_consecutive_slices(
+                    hf, "R2star_map_target", dataslice)
                 R2star_map.append(R2star_map_target)
             else:
                 R2star_map = np.empty([])
 
             if any("phi_map_init_" in _ for _ in hf.keys()):
-                phi_map = self.check_stored_qdata(hf, "phi_map_init_", dataslice)
+                phi_map = self.check_stored_qdata(
+                    hf, "phi_map_init_", dataslice)
                 if all("phi_map_target" not in _ for _ in hf.keys()):
-                    raise ValueError("While phi map initializations are found, no phi map target found in file.")
-                phi_map_target = self.get_consecutive_slices(hf, "phi_map_target", dataslice)
+                    raise ValueError(
+                        "While phi map initializations are found, no phi map target found in file.")
+                phi_map_target = self.get_consecutive_slices(
+                    hf, "phi_map_target", dataslice)
                 phi_map.append(phi_map_target)
             else:
                 phi_map = np.empty([])
@@ -342,13 +374,15 @@ class qMRISliceDataset(Dataset):
             qmaps = [B0_map, S0_map, R2star_map, phi_map]
 
             eta = (
-                self.get_consecutive_slices(hf, "eta", dataslice).astype(np.complex64) if "eta" in hf else np.array([])
+                self.get_consecutive_slices(hf, "eta", dataslice).astype(
+                    np.complex64) if "eta" in hf else np.array([])
             )
 
             if "reconstruction_sense" in hf:
                 self.recons_key = "reconstruction_sense"
 
-            target = self.get_consecutive_slices(hf, self.recons_key, dataslice) if self.recons_key in hf else None
+            target = self.get_consecutive_slices(
+                hf, self.recons_key, dataslice) if self.recons_key in hf else None
 
             attrs = dict(hf.attrs)
             attrs.update(metadata)
