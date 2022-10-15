@@ -42,8 +42,7 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
         super().__init__(cfg=cfg, trainer=trainer)
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
-        quantitative_module_dimensionality = cfg_dict.get(
-            "quantitative_module_dimensionality")
+        quantitative_module_dimensionality = cfg_dict.get("quantitative_module_dimensionality")
         if quantitative_module_dimensionality != 2:
             raise ValueError(
                 f"Only 2D is currently supported for qMRI models.Found {quantitative_module_dimensionality}"
@@ -62,97 +61,69 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
 
         self.cirim = torch.nn.ModuleList([])
 
-        self.use_reconstruction_module = cfg_dict.get(
-            "use_reconstruction_module")
+        self.use_reconstruction_module = cfg_dict.get("use_reconstruction_module")
         if self.use_reconstruction_module:
-            self.reconstruction_module_recurrent_filters = cfg_dict.get(
-                "reconstruction_module_recurrent_filters")
-            self.reconstruction_module_time_steps = 8 * \
-                math.ceil(cfg_dict.get("reconstruction_module_time_steps") / 8)
-            self.reconstruction_module_no_dc = cfg_dict.get(
-                "reconstruction_module_no_dc")
-            self.reconstruction_module_num_cascades = cfg_dict.get(
-                "reconstruction_module_num_cascades")
+            self.reconstruction_module_recurrent_filters = cfg_dict.get("reconstruction_module_recurrent_filters")
+            self.reconstruction_module_time_steps = 8 * math.ceil(cfg_dict.get("reconstruction_module_time_steps") / 8)
+            self.reconstruction_module_no_dc = cfg_dict.get("reconstruction_module_no_dc")
+            self.reconstruction_module_num_cascades = cfg_dict.get("reconstruction_module_num_cascades")
 
             for _ in range(self.reconstruction_module_num_cascades):
                 self.cirim.append(
                     rim_block.RIMBlock(
-                        recurrent_layer=cfg_dict.get(
-                            "reconstruction_module_recurrent_layer"),
-                        conv_filters=cfg_dict.get(
-                            "reconstruction_module_conv_filters"),
-                        conv_kernels=cfg_dict.get(
-                            "reconstruction_module_conv_kernels"),
-                        conv_dilations=cfg_dict.get(
-                            "reconstruction_module_conv_dilations"),
-                        conv_bias=cfg_dict.get(
-                            "reconstruction_module_conv_bias"),
+                        recurrent_layer=cfg_dict.get("reconstruction_module_recurrent_layer"),
+                        conv_filters=cfg_dict.get("reconstruction_module_conv_filters"),
+                        conv_kernels=cfg_dict.get("reconstruction_module_conv_kernels"),
+                        conv_dilations=cfg_dict.get("reconstruction_module_conv_dilations"),
+                        conv_bias=cfg_dict.get("reconstruction_module_conv_bias"),
                         recurrent_filters=self.reconstruction_module_recurrent_filters,
-                        recurrent_kernels=cfg_dict.get(
-                            "reconstruction_module_recurrent_kernels"),
-                        recurrent_dilations=cfg_dict.get(
-                            "reconstruction_module_recurrent_dilations"),
-                        recurrent_bias=cfg_dict.get(
-                            "reconstruction_module_recurrent_bias"),
+                        recurrent_kernels=cfg_dict.get("reconstruction_module_recurrent_kernels"),
+                        recurrent_dilations=cfg_dict.get("reconstruction_module_recurrent_dilations"),
+                        recurrent_bias=cfg_dict.get("reconstruction_module_recurrent_bias"),
                         depth=cfg_dict.get("reconstruction_module_depth"),
                         time_steps=self.reconstruction_module_time_steps,
-                        conv_dim=cfg_dict.get(
-                            "reconstruction_module_conv_dim"),
+                        conv_dim=cfg_dict.get("reconstruction_module_conv_dim"),
                         no_dc=self.reconstruction_module_no_dc,
                         fft_centered=self.fft_centered,
                         fft_normalization=self.fft_normalization,
                         spatial_dims=self.spatial_dims,
                         coil_dim=self.coil_dim - 1,
-                        dimensionality=cfg_dict.get(
-                            "reconstruction_module_dimensionality"),
+                        dimensionality=cfg_dict.get("reconstruction_module_dimensionality"),
                     )
                 )
 
             # Keep estimation through the cascades if keep_eta is True or re-estimate it if False.
-            self.reconstruction_module_keep_eta = cfg_dict.get(
-                "reconstruction_module_keep_eta")
+            self.reconstruction_module_keep_eta = cfg_dict.get("reconstruction_module_keep_eta")
 
             # initialize weights if not using pretrained cirim
             if not cfg_dict.get("pretrained", False):
-                std_init_range = 1 / \
-                    self.reconstruction_module_recurrent_filters[0] ** 0.5
-                self.cirim.apply(lambda module: rnn_utils.rnn_weights_init(
-                    module, std_init_range))
+                std_init_range = 1 / self.reconstruction_module_recurrent_filters[0] ** 0.5
+                self.cirim.apply(lambda module: rnn_utils.rnn_weights_init(module, std_init_range))
 
             self.dc_weight = torch.nn.Parameter(torch.ones(1))
             self.reconstruction_module_accumulate_estimates = cfg_dict.get(
                 "reconstruction_module_accumulate_estimates"
             )
 
-        quantitative_module_num_cascades = cfg_dict.get(
-            "quantitative_module_num_cascades")
+        quantitative_module_num_cascades = cfg_dict.get("quantitative_module_num_cascades")
         self.qcirim = torch.nn.ModuleList(
             [
                 qrim_block.qRIMBlock(
-                    recurrent_layer=cfg_dict.get(
-                        "quantitative_module_recurrent_layer"),
-                    conv_filters=cfg_dict.get(
-                        "quantitative_module_conv_filters"),
-                    conv_kernels=cfg_dict.get(
-                        "quantitative_module_conv_kernels"),
-                    conv_dilations=cfg_dict.get(
-                        "quantitative_module_conv_dilations"),
+                    recurrent_layer=cfg_dict.get("quantitative_module_recurrent_layer"),
+                    conv_filters=cfg_dict.get("quantitative_module_conv_filters"),
+                    conv_kernels=cfg_dict.get("quantitative_module_conv_kernels"),
+                    conv_dilations=cfg_dict.get("quantitative_module_conv_dilations"),
                     conv_bias=cfg_dict.get("quantitative_module_conv_bias"),
-                    recurrent_filters=cfg_dict.get(
-                        "quantitative_module_recurrent_filters"),
-                    recurrent_kernels=cfg_dict.get(
-                        "quantitative_module_recurrent_kernels"),
-                    recurrent_dilations=cfg_dict.get(
-                        "quantitative_module_recurrent_dilations"),
-                    recurrent_bias=cfg_dict.get(
-                        "quantitative_module_recurrent_bias"),
+                    recurrent_filters=cfg_dict.get("quantitative_module_recurrent_filters"),
+                    recurrent_kernels=cfg_dict.get("quantitative_module_recurrent_kernels"),
+                    recurrent_dilations=cfg_dict.get("quantitative_module_recurrent_dilations"),
+                    recurrent_bias=cfg_dict.get("quantitative_module_recurrent_bias"),
                     depth=cfg_dict.get("quantitative_module_depth"),
                     time_steps=cfg_dict.get("quantitative_module_time_steps"),
                     conv_dim=cfg_dict.get("quantitative_module_conv_dim"),
                     no_dc=cfg_dict.get("quantitative_module_no_dc"),
                     linear_forward_model=qrim_utils.SignalForwardModel(
-                        sequence=cfg_dict.get(
-                            "quantitative_module_signal_forward_model_sequence")
+                        sequence=cfg_dict.get("quantitative_module_signal_forward_model_sequence")
                     ),
                     fft_centered=self.fft_centered,
                     fft_normalization=self.fft_normalization,
@@ -165,11 +136,9 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
             ]
         )
 
-        self.accumulate_estimates = cfg_dict.get(
-            "quantitative_module_accumulate_estimates")
+        self.accumulate_estimates = cfg_dict.get("quantitative_module_accumulate_estimates")
 
-        self.gamma = torch.tensor(cfg_dict.get(
-            "quantitative_module_gamma_regularization_factors"))
+        self.gamma = torch.tensor(cfg_dict.get("quantitative_module_gamma_regularization_factors"))
         self.preprocessor = qrim_utils.RescaleByMax
 
     @common_classes.typecheck()
@@ -237,8 +206,7 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
                         sigma,
                         keep_eta=False if i == 0 else self.reconstruction_module_keep_eta,
                     )
-                    cascades_etas.append(
-                        [torch.view_as_complex(x) for x in prediction])
+                    cascades_etas.append([torch.view_as_complex(x) for x in prediction])
                 cascades_echoes_etas.append(cascades_etas)
                 echoes_etas.append(cascades_etas[-1][-1])
 
@@ -246,8 +214,7 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
             if eta.shape[-1] != 2:
                 eta = torch.view_as_real(eta)
             y = fft.fft2(
-                utils.complex_mul(eta.unsqueeze(self.coil_dim),
-                                  sensitivity_maps.unsqueeze(self.coil_dim - 1)),
+                utils.complex_mul(eta.unsqueeze(self.coil_dim), sensitivity_maps.unsqueeze(self.coil_dim - 1)),
                 self.fft_centered,
                 self.fft_normalization,
                 self.spatial_dims,
@@ -340,8 +307,7 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
             cascades_B0_maps.append(time_steps_B0_maps)
             cascades_phi_maps.append(time_steps_phi_maps)
 
-        pred = cascades_echoes_etas if self.use_reconstruction_module else torch.empty([
-        ])
+        pred = cascades_echoes_etas if self.use_reconstruction_module else torch.empty([])
 
         yield [pred, cascades_R2star_maps, cascades_S0_maps, cascades_B0_maps, cascades_phi_maps]
 
@@ -403,12 +369,10 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
                 """Calculate the ssim loss."""
                 x = x / torch.max(torch.abs(x))
                 y = (y / torch.max(torch.abs(y))).to(x)
-                max_value = torch.max(torch.abs(y)) - \
-                    torch.min(torch.abs(y)).unsqueeze(dim=0)
+                max_value = torch.max(torch.abs(y)) - torch.min(torch.abs(y)).unsqueeze(dim=0)
                 m = torch.abs(m).to(x)
 
-                loss = _loss_fn(x * m, y * m, data_range=max_value) * \
-                    self.loss_regularization_factors[map]
+                loss = _loss_fn(x * m, y * m, data_range=max_value) * self.loss_regularization_factors[map]
                 return loss
 
         else:
@@ -428,10 +392,8 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
         if self.accumulate_estimates:
             cascades_loss = []
             for cascade_pred in pred:
-                time_steps_loss = [
-                    loss_fn(target, time_step_pred, mask_brain) for time_step_pred in cascade_pred]
-                cascades_loss.append(
-                    torch.sum(torch.stack(time_steps_loss, dim=0)) / len(pred))
+                time_steps_loss = [loss_fn(target, time_step_pred, mask_brain) for time_step_pred in cascade_pred]
+                cascades_loss.append(torch.sum(torch.stack(time_steps_loss, dim=0)) / len(pred))
             yield sum(cascades_loss) / len(self.qcirim)
         else:
             return loss_fn(target, pred, mask_brain)
@@ -458,8 +420,7 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
         target = torch.abs(target / torch.max(torch.abs(target)))
 
         if "ssim" in str(_loss_fn).lower():
-            max_value = np.array(
-                torch.max(torch.abs(target)).item()).astype(np.float32)
+            max_value = np.array(torch.max(torch.abs(target)).item()).astype(np.float32)
 
             def loss_fn(x, y):
                 """Calculate the ssim loss."""
@@ -467,8 +428,7 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
                 return _loss_fn(
                     x,
                     y,
-                    data_range=torch.tensor(
-                        max_value).unsqueeze(dim=0).to(x.device),
+                    data_range=torch.tensor(max_value).unsqueeze(dim=0).to(x.device),
                 )
 
         else:
@@ -488,13 +448,10 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
                         loss_fn(target[:, echo_time, :, :], time_step_pred).mean() for time_step_pred in cascade_pred
                     ]
                     _loss = [
-                        x *
-                        torch.logspace(-1, 0, steps=self.reconstruction_module_time_steps).to(
-                            time_steps_loss[0])
+                        x * torch.logspace(-1, 0, steps=self.reconstruction_module_time_steps).to(time_steps_loss[0])
                         for x in time_steps_loss
                     ]
-                    cascades_loss.append(
-                        sum(sum(_loss) / self.reconstruction_module_time_steps))
+                    cascades_loss.append(sum(sum(_loss) / self.reconstruction_module_time_steps))
                 echoes_loss.append(sum(list(cascades_loss)) / len(self.cirim))
             yield sum(echoes_loss) / len(pred)
         else:
