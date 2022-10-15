@@ -358,11 +358,7 @@ class JRSMRIDataTransforms:
 
             target_reconstruction = utils.center_crop(target_reconstruction, self.crop_size)
 
-            if (
-                self.complex_data
-                and sensitivity_map is not None
-                and sensitivity_map.size != 0
-            ):
+            if self.complex_data and sensitivity_map is not None and sensitivity_map.size != 0:
                 sensitivity_map = (
                     fft.ifft2(
                         utils.complex_center_crop(
