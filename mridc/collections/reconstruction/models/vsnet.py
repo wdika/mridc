@@ -60,7 +60,8 @@ class VSNet(base_models.BaseMRIReconstructionModel, ABC):
         elif image_model_architecture == "MWCNN":
             image_model = mwcnn_.MWCNN(
                 input_channels=2,
-                first_conv_hidden_channels=cfg_dict.get("image_mwcnn_hidden_channels"),
+                first_conv_hidden_channels=cfg_dict.get(
+                    "image_mwcnn_hidden_channels"),
                 num_scales=cfg_dict.get("image_mwcnn_num_scales"),
                 bias=cfg_dict.get("image_mwcnn_bias"),
                 batchnorm=cfg_dict.get("image_mwcnn_batchnorm"),
@@ -82,8 +83,10 @@ class VSNet(base_models.BaseMRIReconstructionModel, ABC):
             )
 
         image_model = torch.nn.ModuleList([image_model] * num_cascades)
-        data_consistency_model = torch.nn.ModuleList([vsnet_block.DataConsistencyLayer()] * num_cascades)
-        weighted_average_model = torch.nn.ModuleList([vsnet_block.WeightedAverageTerm()] * num_cascades)
+        data_consistency_model = torch.nn.ModuleList(
+            [vsnet_block.DataConsistencyLayer()] * num_cascades)
+        weighted_average_model = torch.nn.ModuleList(
+            [vsnet_block.WeightedAverageTerm()] * num_cascades)
 
         self.model = vsnet_block.VSNetBlock(
             denoiser_block=image_model,
@@ -98,8 +101,10 @@ class VSNet(base_models.BaseMRIReconstructionModel, ABC):
 
         self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
-        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get(
+            "train_loss_fn") == "ssim" else L1Loss()
+        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get(
+            "eval_loss_fn") == "ssim" else L1Loss()
 
         self.accumulate_estimates = False
 
@@ -134,7 +139,8 @@ class VSNet(base_models.BaseMRIReconstructionModel, ABC):
              If self.accumulate_loss is True, returns a list of all intermediate estimates.
              If False, returns the final estimate.
         """
-        sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
+        sensitivity_maps = self.sens_net(
+            y, mask) if self.use_sens_net else sensitivity_maps
         image = self.model(y, sensitivity_maps, mask)
         image = torch.view_as_complex(
             utils.coil_combination(

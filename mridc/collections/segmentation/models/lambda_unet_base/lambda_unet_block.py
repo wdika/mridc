@@ -49,7 +49,8 @@ class LambdaLayer(nn.Module):
         self.q_depth = query_depth
         self.intra_depth = intra_depth
 
-        assert (out_channels % heads) == 0, "out_channels must be divisible by number of heads for multi-head query."
+        assert (out_channels %
+                heads) == 0, "out_channels must be divisible by number of heads for multi-head query."
         self.v_depth = out_channels // heads
         self.heads = heads
 
@@ -59,18 +60,22 @@ class LambdaLayer(nn.Module):
         self.temporal_kernel = temporal_kernel
 
         self.to_q = nn.Sequential(
-            nn.Conv2d(in_channels, query_depth * heads, kernel_size=1, bias=False),
+            nn.Conv2d(in_channels, query_depth * heads,
+                      kernel_size=1, bias=False),
             nn.BatchNorm2d(query_depth * heads),
         )
         self.to_k = nn.Sequential(
-            nn.Conv2d(in_channels, query_depth * intra_depth, kernel_size=1, bias=False),
+            nn.Conv2d(in_channels, query_depth * intra_depth,
+                      kernel_size=1, bias=False),
         )
         self.to_v = nn.Sequential(
-            nn.Conv2d(in_channels, self.v_depth * intra_depth, kernel_size=1, bias=False),
+            nn.Conv2d(in_channels, self.v_depth *
+                      intra_depth, kernel_size=1, bias=False),
             nn.BatchNorm2d(self.v_depth * intra_depth),
         )
 
-        assert (receptive_kernel % 2) == 1, "Receptive kernel size should be odd."
+        assert (receptive_kernel %
+                2) == 1, "Receptive kernel size should be odd."
         self.pos_conv = nn.Conv3d(
             intra_depth,
             query_depth,
@@ -80,7 +85,8 @@ class LambdaLayer(nn.Module):
 
         if temporal_kernel >= 3:
             assert temporal_kernel <= num_slices
-            assert (temporal_kernel % 2) == 1, "Temporal kernel size should be odd."
+            assert (temporal_kernel %
+                    2) == 1, "Temporal kernel size should be odd."
             self.temp_conv = nn.Conv2d(
                 intra_depth,
                 query_depth,
@@ -299,7 +305,8 @@ class LambdaUNet(unet_block.Unet):
         self.up_conv = nn.ModuleList()
         self.up_transpose_conv = nn.ModuleList()
         for _ in range(num_pool_layers - 1):
-            self.up_transpose_conv.append(unet_block.TransposeConvBlock(ch * 2, ch))
+            self.up_transpose_conv.append(
+                unet_block.TransposeConvBlock(ch * 2, ch))
             self.up_conv.append(
                 LambdaBlock(
                     ch * 2,
@@ -314,7 +321,8 @@ class LambdaUNet(unet_block.Unet):
             )
             ch //= 2
 
-        self.up_transpose_conv.append(unet_block.TransposeConvBlock(ch * 2, ch))
+        self.up_transpose_conv.append(
+            unet_block.TransposeConvBlock(ch * 2, ch))
         self.up_conv.append(
             nn.Sequential(
                 LambdaBlock(
