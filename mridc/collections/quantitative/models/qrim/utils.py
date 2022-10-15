@@ -220,7 +220,6 @@ def analytical_log_likelihood_gradient(
     -------
     Analytical gradient of the log-likelihood function.
     """
-
     nr_TEs = len(TEs)
 
     R2star_map = R2star_map.unsqueeze(0)
