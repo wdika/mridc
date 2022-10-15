@@ -25,5 +25,4 @@ def avoid_float16_autocast_context():
         if torch.cuda.is_bf16_supported():
             return torch.cuda.amp.autocast(dtype=torch.bfloat16)
         return torch.cuda.amp.autocast(dtype=torch.float32)
-    else:
-        return nullcontext()
+    return nullcontext()
