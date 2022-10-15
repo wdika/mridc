@@ -13,10 +13,8 @@ from mridc.core.config import hydra_runner
 
 @dataclass
 class DefaultConfig:
-    """
-    This is structured config for this application. It provides the schema used for validation of user-written \
-    spec file as well as default values of the selected parameters.
-    """
+    """This is structured config for this application. It provides the schema used for validation of user-written \
+    spec file as well as default values of the selected parameters."""
 
     dataset_name: str = MISSING
 
