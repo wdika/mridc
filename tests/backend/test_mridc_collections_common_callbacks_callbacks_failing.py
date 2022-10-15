@@ -6,7 +6,7 @@ import mridc.collections.common.callbacks.callbacks as module_0
 def test_case_0():
     try:
         log_epoch_time_callback_0 = module_0.LogEpochTimeCallback()
-        set_0 = {log_epoch_time_callback_0, log_epoch_time_callback_0}
+        set_0 = {log_epoch_time_callback_0}
         bool_0 = False
         list_0 = [log_epoch_time_callback_0]
         var_0 = log_epoch_time_callback_0.on_train_epoch_start(list_0, log_epoch_time_callback_0)

@@ -684,7 +684,7 @@ def test_case_3():
     bool_0 = None
     int_0 = 275
     bool_1 = False
-    set_0 = {str_0, float_0, bool_0, float_0}
+    set_0 = {str_0, float_0, bool_0}
     trainer_config_0 = module_0.TrainerConfig(
         float_0,
         str_0,
@@ -1447,7 +1447,7 @@ def test_case_6():
     assert trainer_config_1.strategy is None
     assert trainer_config_1.enable_checkpointing is False
     assert trainer_config_1.enable_model_summary is True
-    set_1 = {float_0, float_0}
+    set_1 = {float_0}
     int_6 = 49
     bool_9 = True
     float_1 = 1937.77703

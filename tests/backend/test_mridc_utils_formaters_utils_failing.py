@@ -21,7 +21,7 @@ def test_case_1():
         var_0 = module_0.check_color_support()
         assert var_0 is False
         bytes_0 = b"\x8f\xee@\x04V\xe3\xe7\x9e<p\x009l%\xe0\x87\x8a"
-        set_0 = {bytes_0, bytes_0}
+        set_0 = {bytes_0}
         var_1 = module_0.to_unicode(set_0)
     except BaseException:
         pass

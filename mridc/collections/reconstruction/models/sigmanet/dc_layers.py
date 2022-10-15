@@ -325,9 +325,7 @@ class ConjugateGradient(torch.autograd.Function):
 
 
 class DataVSLayer(torch.nn.Module):
-    """
-    DataLayer using variable splitting formulation
-    """
+    """DataLayer using variable splitting formulation"""
 
     def __init__(
         self,
@@ -416,9 +414,7 @@ class DataVSLayer(torch.nn.Module):
 
 
 class DCLayer(torch.nn.Module):
-    """
-    Data Consistency layer from DC-CNN, apply for single coil mainly
-    """
+    """Data Consistency layer from DC-CNN, apply for single coil mainly"""
 
     def __init__(
         self,

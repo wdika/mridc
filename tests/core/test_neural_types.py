@@ -34,7 +34,8 @@ class TestNeuralTypeSystem:
             def __str__(self):
                 return "bounding box from detection model"
 
-            def fields(self):
+            @staticmethod
+            def fields():
                 return ("X", "Y", "W", "H")
 
         T1 = NeuralType(
@@ -46,7 +47,8 @@ class TestNeuralTypeSystem:
             def __str__(self):
                 return "bad bounding box from detection model"
 
-            def fields(self):
+            @staticmethod
+            def fields():
                 return ("X", "Y", "H")
 
         T2 = NeuralType(

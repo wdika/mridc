@@ -291,7 +291,7 @@ def test_case_10():
         assert var_0.reset_cache is False
         var_1 = sensitivity_network_0.forward(float_0, float_0, float_0, int_0)
         assert var_1 == pytest.approx(-1946.6886, abs=0.01, rel=0.01)
-        set_0 = {complex_instance_norm_0, complex_instance_norm_0, complex_instance_norm_1, complex_instance_norm_0}
+        set_0 = {complex_instance_norm_0, complex_instance_norm_1}
         var_2 = complex_instance_norm_0.set_normalization(set_0)
     except BaseException:
         pass
@@ -339,7 +339,7 @@ def test_case_11():
         assert var_0.reset_cache is False
         var_1 = sensitivity_network_0.forward(float_0, float_0, float_0, int_0)
         assert var_1 == pytest.approx(-1946.6886, abs=0.01, rel=0.01)
-        set_0 = {complex_instance_norm_0, complex_instance_norm_0, complex_instance_norm_1, complex_instance_norm_0}
+        set_0 = {complex_instance_norm_0, complex_instance_norm_1}
         var_2 = complex_instance_norm_0.set_normalization(set_0)
     except BaseException:
         pass

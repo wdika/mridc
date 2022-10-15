@@ -22,7 +22,7 @@ def test_case_0():
 def test_case_1():
     try:
         bytes_0 = b"=<"
-        set_0 = {bytes_0, bytes_0, bytes_0}
+        set_0 = {bytes_0}
         float_0 = 10.02
         int_0 = None
         str_0 = "5F"
@@ -128,7 +128,7 @@ def test_case_7():
     try:
         str_0 = "mx\x0c%%JA"
         str_1 = "e@O-+Gd^Y\x0c.$<\n"
-        set_0 = {str_0, str_1, str_0}
+        set_0 = {str_0, str_1}
         bool_0 = True
         bytes_0 = b"\xc2G4!\xc8\x18X\x82\xfan\x8d?\x83\xe38\x173"
         tuple_0 = bool_0, bytes_0

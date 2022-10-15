@@ -19,7 +19,7 @@ def cls():
         """Dummy class."""
 
         def __init__(self, a, b=5, c: int = 0, d: "ABC" = None):
-            pass
+            raise NotImplementedError()
 
     return DummyClass
 

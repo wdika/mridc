@@ -90,7 +90,8 @@ class MockModel(ModelPT):
     def setup_test_data(self, test_data_config: Union[DictConfig, Dict]):
         self._test_dl = None
 
-    def list_available_models(self):
+    @staticmethod
+    def list_available_models():
         return []
 
 
@@ -102,8 +103,8 @@ def _mock_model_config():
 
 
 class TestSaveRestore:
+    @staticmethod
     def __test_restore_elsewhere(
-        self,
         model: ModelPT,
         attr_for_eq_check: Set[str] = None,
         override_config_path: Optional[Union[str, DictConfig]] = None,
