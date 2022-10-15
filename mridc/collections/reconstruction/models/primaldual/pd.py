@@ -29,11 +29,13 @@ class DualNet(nn.Module):
 
             self.dual_block = nn.Sequential(
                 *[
-                    nn.Conv2d(2 * (num_dual + 2), n_hidden, kernel_size=3, padding=1),
+                    nn.Conv2d(2 * (num_dual + 2), n_hidden,
+                              kernel_size=3, padding=1),
                     nn.PReLU(),
                     nn.Conv2d(n_hidden, n_hidden, kernel_size=3, padding=1),
                     nn.PReLU(),
-                    nn.Conv2d(n_hidden, 2 * num_dual, kernel_size=3, padding=1),
+                    nn.Conv2d(n_hidden, 2 * num_dual,
+                              kernel_size=3, padding=1),
                 ]
             )
         else:
@@ -85,11 +87,13 @@ class PrimalNet(nn.Module):
                 raise ValueError("Missing argument n_hidden.")
             self.primal_block = nn.Sequential(
                 *[
-                    nn.Conv2d(2 * (num_primal + 1), n_hidden, kernel_size=3, padding=1),
+                    nn.Conv2d(2 * (num_primal + 1), n_hidden,
+                              kernel_size=3, padding=1),
                     nn.PReLU(),
                     nn.Conv2d(n_hidden, n_hidden, kernel_size=3, padding=1),
                     nn.PReLU(),
-                    nn.Conv2d(n_hidden, 2 * num_primal, kernel_size=3, padding=1),
+                    nn.Conv2d(n_hidden, 2 * num_primal,
+                              kernel_size=3, padding=1),
                 ]
             )
         else:

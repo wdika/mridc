@@ -71,8 +71,10 @@ class VarNet(base_models.BaseMRIReconstructionModel, ABC):
         # initialize weights if not using pretrained vn
         # TODO if not cfg_dict.get("pretrained", False)
 
-        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get(
+            "train_loss_fn") == "ssim" else L1Loss()
+        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get(
+            "eval_loss_fn") == "ssim" else L1Loss()
 
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
         self.accumulate_estimates = False

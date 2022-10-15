@@ -45,7 +45,8 @@ class Conv2d(nn.Module):
                 )
             )
             if batchnorm:
-                self.conv.append(nn.BatchNorm2d(hidden_channels if idx != n_convs - 1 else out_channels, eps=1e-4))
+                self.conv.append(nn.BatchNorm2d(
+                    hidden_channels if idx != n_convs - 1 else out_channels, eps=1e-4))
             if idx != n_convs - 1:
                 self.conv.append(activation)
         self.conv = nn.Sequential(*self.conv)

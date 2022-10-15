@@ -29,7 +29,8 @@ def test_case_1():
         str_1 = "singlecoil"
         bool_0 = False
         int_0 = 667
-        fast_m_r_i_slice_dataset_0 = module_0.FastMRISliceDataset(str_0, str_1, str_1, float_0, bool_0, int_0)
+        fast_m_r_i_slice_dataset_0 = module_0.FastMRISliceDataset(
+            str_0, str_1, str_1, float_0, bool_0, int_0)
     except BaseException:
         pass
 
@@ -41,7 +42,8 @@ def test_case_2():
         str_1 = "singlecoil"
         bool_0 = False
         int_0 = 667
-        fast_m_r_i_slice_dataset_0 = module_0.FastMRISliceDataset(str_0, str_1, str_1, float_0, bool_0, int_0)
+        fast_m_r_i_slice_dataset_0 = module_0.FastMRISliceDataset(
+            str_0, str_1, str_1, float_0, bool_0, int_0)
     except BaseException:
         pass
 
@@ -70,7 +72,8 @@ def test_case_5():
     try:
         float_0 = 1123.465167
         str_0 = ".Q(:M<u4e_7z"
-        fast_m_r_i_slice_dataset_0 = module_0.FastMRISliceDataset(str_0, float_0)
+        fast_m_r_i_slice_dataset_0 = module_0.FastMRISliceDataset(
+            str_0, float_0)
     except BaseException:
         pass
 
@@ -82,7 +85,8 @@ def test_case_6():
         str_1 = "SLURM_PROCID"
         dict_0 = {str_1: path_0, path_0: str_0}
         bool_0 = True
-        fast_m_r_i_combined_slice_dataset_0 = module_0.FastMRICombinedSliceDataset(str_1, dict_0, dict_0, bool_0)
+        fast_m_r_i_combined_slice_dataset_0 = module_0.FastMRICombinedSliceDataset(
+            str_1, dict_0, dict_0, bool_0)
     except BaseException:
         pass
 
@@ -108,7 +112,8 @@ def test_case_8():
         float_0 = -646.7015
         str_0 = "iEiLA"
         list_0 = [str_0, float_0, float_0]
-        fast_m_r_i_combined_slice_dataset_0 = module_0.FastMRICombinedSliceDataset(str_0, list_0)
+        fast_m_r_i_combined_slice_dataset_0 = module_0.FastMRICombinedSliceDataset(
+            str_0, list_0)
     except BaseException:
         pass
 
@@ -118,7 +123,8 @@ def test_case_9():
         float_0 = -646.7015
         str_0 = "iEiLA"
         list_0 = [str_0, float_0, float_0]
-        fast_m_r_i_combined_slice_dataset_0 = module_0.FastMRICombinedSliceDataset(str_0, list_0)
+        fast_m_r_i_combined_slice_dataset_0 = module_0.FastMRICombinedSliceDataset(
+            str_0, list_0)
     except BaseException:
         pass
 
