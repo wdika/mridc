@@ -123,13 +123,13 @@ class ExampleModel(ModelPT):
         # return torch.optim.Adam(self.parameters(), lr=0.1)
 
     def list_available_models(self):
-        pass
+        raise NotImplementedError()
 
     def setup_training_data(self):
-        pass
+        raise NotImplementedError()
 
     def setup_validation_data(self):
-        pass
+        raise NotImplementedError()
 
     def validation_epoch_end(self, loss):
         self.log("val_loss", torch.stack(loss).mean())
