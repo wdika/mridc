@@ -41,13 +41,15 @@ def test_case_0():
         str_0 = "NtC\ta.aT$F"
         set_0 = {str_0, bool_0, int_0}
         bytes_0 = b"@S\t\xa6\x80\x18\xffe\xedp\x81l\x85\x81\xb8\xe6\xeb\xee"
-        base_m_r_i_d_c_formatter_0 = module_0.BaseMRIDCFormatter(set_0, bytes_0)
+        base_m_r_i_d_c_formatter_0 = module_0.BaseMRIDCFormatter(
+            set_0, bytes_0)
         assert base_m_r_i_d_c_formatter_0.datefmt == "%Y-%m-%d %H:%M:%S"
         assert (
             module_0.BaseMRIDCFormatter.DEFAULT_FORMAT
             == "%(color)s[MRIDC %(levelname)1.1s %(asctime)s %(module)s:%(lineno)d]%(end_color)s %(message)s"
         )
-        debug_m_r_i_d_c_formatter_0 = module_0.DebugMRIDCFormatter(int_0, str_0)
+        debug_m_r_i_d_c_formatter_0 = module_0.DebugMRIDCFormatter(
+            int_0, str_0)
         assert debug_m_r_i_d_c_formatter_0.datefmt == "%Y-%m-%d %H:%M:%S"
         assert (
             module_0.DebugMRIDCFormatter.DEFAULT_FORMAT
@@ -65,7 +67,8 @@ def test_case_1():
         float_0 = None
         str_1 = "RELU"
         base_m_r_i_d_c_formatter_0 = None
-        debug_m_r_i_d_c_formatter_0 = module_0.DebugMRIDCFormatter(float_0, base_m_r_i_d_c_formatter_0)
+        debug_m_r_i_d_c_formatter_0 = module_0.DebugMRIDCFormatter(
+            float_0, base_m_r_i_d_c_formatter_0)
         assert debug_m_r_i_d_c_formatter_0.datefmt == "%Y-%m-%d %H:%M:%S"
         assert module_0.ForegroundColors.BLACK == "\x1b[30m"
         assert module_0.ForegroundColors.BLUE == "\x1b[34m"
@@ -88,7 +91,8 @@ def test_case_1():
             module_0.DebugMRIDCFormatter.DEFAULT_FORMAT
             == "%(color)s[MRIDC %(levelname)1.1s %(asctime)s %(module)s:%(lineno)d rank:%(rank)s]%(end_color)s %(message)s"
         )
-        base_formatter_0 = module_0.BaseFormatter(str_0, float_0, str_1, debug_m_r_i_d_c_formatter_0)
+        base_formatter_0 = module_0.BaseFormatter(
+            str_0, float_0, str_1, debug_m_r_i_d_c_formatter_0)
         assert base_formatter_0.datefmt == "RELU"
         assert (
             module_0.BaseFormatter.DEFAULT_FORMAT
@@ -103,7 +107,8 @@ def test_case_1():
             (50): "\x1b[31m",
         }
         str_2 = "H 4_/t<\n"
-        base_m_r_i_d_c_formatter_1 = module_0.BaseMRIDCFormatter(base_formatter_0, int_0, str_2)
+        base_m_r_i_d_c_formatter_1 = module_0.BaseMRIDCFormatter(
+            base_formatter_0, int_0, str_2)
         assert base_m_r_i_d_c_formatter_1.datefmt == "H 4_/t<\n"
         assert (
             module_0.BaseMRIDCFormatter.DEFAULT_FORMAT
@@ -117,7 +122,8 @@ def test_case_1():
         assert base_formatter_1.datefmt == "%Y-%m-%d %H:%M:%S"
         tuple_0 = ()
         bool_0 = None
-        base_m_r_i_d_c_formatter_2 = module_0.BaseMRIDCFormatter(tuple_0, bool_0)
+        base_m_r_i_d_c_formatter_2 = module_0.BaseMRIDCFormatter(
+            tuple_0, bool_0)
         assert base_m_r_i_d_c_formatter_2.datefmt == "%Y-%m-%d %H:%M:%S"
         tuple_1 = float_1, set_0, base_formatter_1, base_m_r_i_d_c_formatter_2
         base_formatter_2 = module_0.BaseFormatter(str_3, tuple_1)
@@ -164,13 +170,15 @@ def test_case_2():
             (40): "\x1b[35m",
             (50): "\x1b[31m",
         }
-        base_m_r_i_d_c_formatter_0 = module_0.BaseMRIDCFormatter(base_formatter_0, tuple_0)
+        base_m_r_i_d_c_formatter_0 = module_0.BaseMRIDCFormatter(
+            base_formatter_0, tuple_0)
         assert base_m_r_i_d_c_formatter_0.datefmt == "%Y-%m-%d %H:%M:%S"
         assert (
             module_0.BaseMRIDCFormatter.DEFAULT_FORMAT
             == "%(color)s[MRIDC %(levelname)1.1s %(asctime)s %(module)s:%(lineno)d]%(end_color)s %(message)s"
         )
-        base_m_r_i_d_c_formatter_1 = module_0.BaseMRIDCFormatter(int_0, base_m_r_i_d_c_formatter_0)
+        base_m_r_i_d_c_formatter_1 = module_0.BaseMRIDCFormatter(
+            int_0, base_m_r_i_d_c_formatter_0)
         assert base_m_r_i_d_c_formatter_1.datefmt == "%Y-%m-%d %H:%M:%S"
         base_formatter_1 = module_0.BaseFormatter(base_m_r_i_d_c_formatter_1)
         assert base_formatter_1.datefmt == "%Y-%m-%d %H:%M:%S"
@@ -185,7 +193,8 @@ def test_case_2():
             == "%(color)s[MRIDC %(levelname)1.1s %(asctime)s %(module)s:%(lineno)d rank:%(rank)s]%(end_color)s %(message)s"
         )
         float_1 = 1101.558147
-        base_m_r_i_d_c_formatter_3 = module_0.BaseMRIDCFormatter(int_0, float_1)
+        base_m_r_i_d_c_formatter_3 = module_0.BaseMRIDCFormatter(
+            int_0, float_1)
         assert base_m_r_i_d_c_formatter_3.datefmt == "%Y-%m-%d %H:%M:%S"
         base_formatter_2 = module_0.BaseFormatter(float_0)
         assert base_formatter_2.datefmt == "%Y-%m-%d %H:%M:%S"
@@ -200,7 +209,8 @@ def test_case_3():
         tuple_0 = (debug_m_r_i_d_c_formatter_0,)
         str_0 = "<0'U[v\"blH?S"
         bytes_0 = b"\xf9\x10\x87\x02\xed\xa9mv\x1c\xcc\xf1\xdeL\xae"
-        base_m_r_i_d_c_formatter_0 = module_0.BaseMRIDCFormatter(debug_m_r_i_d_c_formatter_0, bytes_0)
+        base_m_r_i_d_c_formatter_0 = module_0.BaseMRIDCFormatter(
+            debug_m_r_i_d_c_formatter_0, bytes_0)
         assert base_m_r_i_d_c_formatter_0.datefmt == "%Y-%m-%d %H:%M:%S"
         assert module_0.ForegroundColors.BLACK == "\x1b[30m"
         assert module_0.ForegroundColors.BLUE == "\x1b[34m"

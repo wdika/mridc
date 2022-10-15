@@ -39,7 +39,8 @@ class AggregatorLoss(Loss):
         super().__init__()
         self._num_losses = num_inputs
         if weights is not None and len(weights) != num_inputs:
-            raise ValueError("Length of weights should be equal to the number of inputs (num_inputs)")
+            raise ValueError(
+                "Length of weights should be equal to the number of inputs (num_inputs)")
 
         self._weights = weights
 

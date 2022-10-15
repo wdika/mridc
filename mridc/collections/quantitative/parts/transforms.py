@@ -137,7 +137,8 @@ class qMRIDataTransforms:
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
         self.max_norm = max_norm
-        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [
+            -2, -1]
         self.coil_dim = coil_dim - 1
 
         self.shift_B0_input = shift_B0_input
@@ -246,11 +247,15 @@ class qMRIDataTransforms:
 
         if self.apply_prewhitening:
             kspace = torch.stack(
-                [self.prewhitening(kspace[echo]) for echo in range(kspace.shape[0])], dim=0  # type: ignore
+                # type: ignore
+                [self.prewhitening(kspace[echo])
+                 for echo in range(kspace.shape[0])],
+                dim=0,
             )
 
         if self.gcc is not None:
-            kspace = torch.stack([self.gcc(kspace[echo]) for echo in range(kspace.shape[0])], dim=0)
+            kspace = torch.stack([self.gcc(kspace[echo])
+                                 for echo in range(kspace.shape[0])], dim=0)
             if isinstance(sensitivity_map, torch.Tensor):
                 sensitivity_map = fft.ifft2(
                     self.gcc(
@@ -268,9 +273,11 @@ class qMRIDataTransforms:
 
         # Apply zero-filling on kspace
         if self.kspace_zero_filling_size is not None and self.kspace_zero_filling_size not in ("", "None"):
-            padding_top = np.floor_divide(abs(int(self.kspace_zero_filling_size[0]) - kspace.shape[2]), 2)
+            padding_top = np.floor_divide(
+                abs(int(self.kspace_zero_filling_size[0]) - kspace.shape[2]), 2)
             padding_bottom = padding_top
-            padding_left = np.floor_divide(abs(int(self.kspace_zero_filling_size[1]) - kspace.shape[3]), 2)
+            padding_left = np.floor_divide(
+                abs(int(self.kspace_zero_filling_size[1]) - kspace.shape[3]), 2)
             padding_right = padding_left
 
             kspace = torch.view_as_complex(kspace)
@@ -301,7 +308,8 @@ class qMRIDataTransforms:
             )
 
         # Initial estimation
-        eta = utils.to_tensor(eta) if eta is not None and eta.size != 0 else torch.tensor([])
+        eta = utils.to_tensor(
+            eta) if eta is not None and eta.size != 0 else torch.tensor([])
 
         # If the target is not given, we need to compute it.
         if self.coil_combination_method.upper() == "RSS":
@@ -427,7 +435,8 @@ class qMRIDataTransforms:
             acc = torch.tensor([1])
 
             if mask is None:
-                mask = torch.ones(masked_kspace.shape[-3], masked_kspace.shape[-2]).type(torch.float32)  # type: ignore
+                mask = torch.ones(
+                    masked_kspace.shape[-3], masked_kspace.shape[-2]).type(torch.float32)  # type: ignore
             else:
                 mask = torch.from_numpy(mask)
 
@@ -438,7 +447,8 @@ class qMRIDataTransforms:
                     mask = mask.permute(1, 0)
                 elif mask.shape[0] != masked_kspace.shape[1]:  # type: ignore
                     mask = torch.ones(
-                        [masked_kspace.shape[-3], masked_kspace.shape[-2]], dtype=torch.float32  # type: ignore
+                        [masked_kspace.shape[-3], masked_kspace.shape[-2]
+                         ], dtype=torch.float32  # type: ignore
                     )
 
             if mask.shape[-2] == 1:  # 1D mask
@@ -491,7 +501,8 @@ class qMRIDataTransforms:
                     _masked_kspace = torch.stack(_masked_kspace, dim=0)
                     _mask = _i_mask.unsqueeze(0)
                 else:
-                    raise ValueError(f"Unsupported data dimensionality {self.dimensionality}D.")
+                    raise ValueError(
+                        f"Unsupported data dimensionality {self.dimensionality}D.")
                 masked_kspaces.append(_masked_kspace)
                 masks.append(_mask.byte())
                 accs.append(_acc)
@@ -508,13 +519,15 @@ class qMRIDataTransforms:
                 padding = (acq_start, acq_end)
                 if (not utils.is_none(padding[0]) and not utils.is_none(padding[1])) and padding[0] != 0:
                     _mask[:, :, : padding[0]] = 0
-                    _mask[:, :, padding[1] :] = 0  # padding value inclusive on right of zeros
+                    # padding value inclusive on right of zeros
+                    _mask[:, :, padding[1]:] = 0
 
                 if isinstance(_mask, np.ndarray):
                     _mask = torch.from_numpy(_mask).unsqueeze(0).unsqueeze(-1)
 
                 if self.shift_mask:
-                    _mask = torch.fft.fftshift(_mask, dim=(self.spatial_dims[0] - 1, self.spatial_dims[1] - 1))
+                    _mask = torch.fft.fftshift(_mask, dim=(
+                        self.spatial_dims[0] - 1, self.spatial_dims[1] - 1))
 
                 if self.crop_size is not None and self.crop_size not in ("", "None") and self.crop_before_masking:
                     _mask = utils.complex_center_crop(_mask, self.crop_size)
@@ -524,7 +537,8 @@ class qMRIDataTransforms:
             masked_kspace = masked_kspaces
             mask = masks
             acc = 1
-        elif not utils.is_none(mask) and mask.ndim != 0:  # and not is_none(self.mask_func):
+        # and not is_none(self.mask_func):
+        elif not utils.is_none(mask) and mask.ndim != 0:
             for _mask in mask:
                 if list(_mask.shape) == [kspace.shape[-3], kspace.shape[-2]]:
                     mask = torch.from_numpy(_mask).unsqueeze(0).unsqueeze(-1)
@@ -533,13 +547,15 @@ class qMRIDataTransforms:
             padding = (acq_start, acq_end)
             if (not utils.is_none(padding[0]) and not utils.is_none(padding[1])) and padding[0] != 0:
                 mask[:, :, : padding[0]] = 0
-                mask[:, :, padding[1] :] = 0  # padding value inclusive on right of zeros
+                # padding value inclusive on right of zeros
+                mask[:, :, padding[1]:] = 0
 
             if isinstance(mask, np.ndarray):
                 mask = torch.from_numpy(mask).unsqueeze(0).unsqueeze(-1)
 
             if self.shift_mask:
-                mask = torch.fft.fftshift(mask, dim=(self.spatial_dims[0] - 1, self.spatial_dims[1] - 1))
+                mask = torch.fft.fftshift(mask, dim=(
+                    self.spatial_dims[0] - 1, self.spatial_dims[1] - 1))
 
             if self.crop_size is not None and self.crop_size not in ("", "None") and self.crop_before_masking:
                 mask = utils.complex_center_crop(mask, self.crop_size)
@@ -599,7 +615,8 @@ class qMRIDataTransforms:
                 )
             )
 
-            mask = utils.center_crop(mask.squeeze(-1), self.crop_size).unsqueeze(-1)
+            mask = utils.center_crop(
+                mask.squeeze(-1), self.crop_size).unsqueeze(-1)
 
         mask_head = torch.ones_like(mask_brain)
 
@@ -645,7 +662,8 @@ class qMRIDataTransforms:
             phi_map_init = phi_maps_init
 
             mask_brain_tmp = torch.ones_like(torch.abs(mask_brain))
-            mask_brain_tmp = mask_brain_tmp.unsqueeze(0) if mask_brain.dim() == 2 else mask_brain_tmp
+            mask_brain_tmp = mask_brain_tmp.unsqueeze(
+                0) if mask_brain.dim() == 2 else mask_brain_tmp
             imspace = utils.sense(
                 fft.ifft2(
                     kspace,
@@ -678,7 +696,8 @@ class qMRIDataTransforms:
                 S0_map = [torch.from_numpy(x).squeeze(0) for x in S0_map]
                 S0_map_target = S0_map[-1]
                 S0_map_init = S0_map[:-1]
-                R2star_map = [torch.from_numpy(x).squeeze(0) for x in R2star_map]
+                R2star_map = [torch.from_numpy(x).squeeze(0)
+                              for x in R2star_map]
                 R2star_map_target = R2star_map[-1]
                 R2star_map_init = R2star_map[:-1]
                 phi_map = [torch.from_numpy(x).squeeze(0) for x in phi_map]
@@ -713,9 +732,11 @@ class qMRIDataTransforms:
                         spatial_dims=self.spatial_dims,
                     )
                 elif self.fft_normalization in ("none", None) and self.max_norm:
-                    imspace = torch.fft.ifftn(torch.view_as_complex(kspace), dim=list(self.spatial_dims), norm=None)
+                    imspace = torch.fft.ifftn(torch.view_as_complex(
+                        kspace), dim=list(self.spatial_dims), norm=None)
                     imspace = imspace / torch.max(torch.abs(imspace))
-                    kspace = torch.view_as_real(torch.fft.fftn(imspace, dim=list(self.spatial_dims), norm=None))
+                    kspace = torch.view_as_real(torch.fft.fftn(
+                        imspace, dim=list(self.spatial_dims), norm=None))
 
                 masked_kspaces = []
                 for y in masked_kspace:
@@ -735,9 +756,11 @@ class qMRIDataTransforms:
                             spatial_dims=self.spatial_dims,
                         )
                     elif self.fft_normalization in ("none", None) and self.max_norm:
-                        imspace = torch.fft.ifftn(torch.view_as_complex(y), dim=list(self.spatial_dims), norm=None)
+                        imspace = torch.fft.ifftn(torch.view_as_complex(
+                            y), dim=list(self.spatial_dims), norm=None)
                         imspace = imspace / torch.max(torch.abs(imspace))
-                        y = torch.view_as_real(torch.fft.fftn(imspace, dim=list(self.spatial_dims), norm=None))
+                        y = torch.view_as_real(torch.fft.fftn(
+                            imspace, dim=list(self.spatial_dims), norm=None))
                     masked_kspaces.append(y)
                 masked_kspace = masked_kspaces
             elif self.fft_normalization in ("backward", "ortho", "forward"):
@@ -770,17 +793,22 @@ class qMRIDataTransforms:
                     spatial_dims=self.spatial_dims,
                 )
             elif self.fft_normalization in ("none", None) and self.max_norm:
-                imspace = torch.fft.ifftn(torch.view_as_complex(masked_kspace), dim=list(self.spatial_dims), norm=None)
+                imspace = torch.fft.ifftn(torch.view_as_complex(
+                    masked_kspace), dim=list(self.spatial_dims), norm=None)
                 imspace = imspace / torch.max(torch.abs(imspace))
-                masked_kspace = torch.view_as_real(torch.fft.fftn(imspace, dim=list(self.spatial_dims), norm=None))
+                masked_kspace = torch.view_as_real(torch.fft.fftn(
+                    imspace, dim=list(self.spatial_dims), norm=None))
 
-                imspace = torch.fft.ifftn(torch.view_as_complex(kspace), dim=list(self.spatial_dims), norm=None)
+                imspace = torch.fft.ifftn(torch.view_as_complex(
+                    kspace), dim=list(self.spatial_dims), norm=None)
                 imspace = imspace / torch.max(torch.abs(imspace))
-                kspace = torch.view_as_real(torch.fft.fftn(imspace, dim=list(self.spatial_dims), norm=None))
+                kspace = torch.view_as_real(torch.fft.fftn(
+                    imspace, dim=list(self.spatial_dims), norm=None))
 
             if self.max_norm:
                 if sensitivity_map.size != 0:
-                    sensitivity_map = sensitivity_map / torch.max(torch.abs(sensitivity_map))
+                    sensitivity_map = sensitivity_map / \
+                        torch.max(torch.abs(sensitivity_map))
 
                 if eta.size != 0 and eta.ndim > 2:
                     eta = eta / torch.max(torch.abs(eta))
@@ -865,18 +893,22 @@ class GaussianSmoothing(torch.nn.Module):
         # The gaussian kernel is the product of the gaussian function of each dimension.
         kernel = 1
         meshgrids = torch.meshgrid(
-            [torch.arange(size, dtype=torch.float32) for size in kernel_size], indexing="ij"  # type: ignore
+            # type: ignore
+            [torch.arange(size, dtype=torch.float32) for size in kernel_size],
+            indexing="ij",
         )
         for size, std, mgrid in zip(kernel_size, sigma, meshgrids):  # type: ignore
             mean = (size - 1) / 2
-            kernel *= 1 / (std * math.sqrt(2 * math.pi)) * torch.exp(-(((mgrid - mean) / std) ** 2) / 2)
+            kernel *= 1 / (std * math.sqrt(2 * math.pi)) * \
+                torch.exp(-(((mgrid - mean) / std) ** 2) / 2)
 
         # Make sure sum of values in gaussian kernel equals 1.
         kernel = kernel / torch.sum(kernel)
 
         # Reshape to depthwise convolutional weight
         kernel = kernel.view(1, 1, *kernel.size())  # type: ignore
-        kernel = kernel.repeat(channels, *[1] * (kernel.dim() - 1))  # type: ignore
+        kernel = kernel.repeat(
+            channels, *[1] * (kernel.dim() - 1))  # type: ignore
 
         self.register_buffer("weight", kernel)
         self.groups = channels
@@ -888,7 +920,8 @@ class GaussianSmoothing(torch.nn.Module):
         elif dim == 3:
             self.conv = F.conv3d
         else:
-            raise RuntimeError("Only 1, 2 and 3 dimensions are supported. Received {}.".format(dim))
+            raise RuntimeError(
+                "Only 1, 2 and 3 dimensions are supported. Received {}.".format(dim))
 
     def forward(self, input):
         """
@@ -920,7 +953,8 @@ class GaussianSmoothing(torch.nn.Module):
                 self.spatial_dims,
             ).permute(0, 3, 1, 2)
 
-        x = self.conv(input, weight=self.weight.to(input), groups=self.groups).to(input).detach()
+        x = self.conv(input, weight=self.weight.to(input),
+                      groups=self.groups).to(input).detach()
 
         if self.shift:
             x = x.permute(0, 2, 3, 1)
@@ -957,7 +991,8 @@ class LeastSquares:
             return torch.matmul(torch.pinverse(Y), A)
         else:
             return torch.matmul(
-                torch.matmul(torch.inverse(torch.matmul(Y.permute(0, 2, 1), Y)), Y.permute(0, 2, 1)), A
+                torch.matmul(torch.inverse(torch.matmul(
+                    Y.permute(0, 2, 1), Y)), Y.permute(0, 2, 1)), A
             )
 
     def lstq_pinv_complex_np(self, A, Y, lamb=0.0):
@@ -1068,7 +1103,8 @@ def R2star_S0_mapping(
         The S0 map.
     """
     prediction = torch.abs(torch.view_as_complex(prediction)) + 1e-8
-    prediction_flatten = torch.flatten(prediction, start_dim=1, end_dim=-1).detach().cpu()  # .numpy()
+    prediction_flatten = torch.flatten(
+        prediction, start_dim=1, end_dim=-1).detach().cpu()  # .numpy()
     TEs = torch.tensor(TEs).to(prediction_flatten)
 
     # TODO: this part needs a proper implementation in PyTorch
@@ -1151,14 +1187,17 @@ def B0_phi_mapping(
         fft_normalization=fft_normalization,
         spatial_dims=spatial_dims,
     )
-    prediction = prediction.unsqueeze(1).permute([0, 1, 4, 2, 3])  # add a dummy batch dimension
+    prediction = prediction.unsqueeze(1).permute(
+        [0, 1, 4, 2, 3])  # add a dummy batch dimension
     for i in range(prediction.shape[0]):
-        prediction[i] = smoothing(F.pad(prediction[i], (4, 4, 4, 4), mode="reflect"))
+        prediction[i] = smoothing(
+            F.pad(prediction[i], (4, 4, 4, 4), mode="reflect"))
     prediction = prediction.permute([0, 1, 3, 4, 2]).squeeze(1)
 
     if shift:
         prediction = fft.ifft2(
-            torch.fft.fftshift(fft.fft2(prediction, fft_centered, fft_normalization, spatial_dims), dim=(1, 2)),
+            torch.fft.fftshift(fft.fft2(
+                prediction, fft_centered, fft_normalization, spatial_dims), dim=(1, 2)),
             fft_centered,
             fft_normalization,
             spatial_dims,
@@ -1173,7 +1212,8 @@ def B0_phi_mapping(
     # loop over echo times
     for i in range(phase.shape[0]):
         phase_unwrapped[i] = torch.from_numpy(
-            unwrap_phase(np.ma.array(phase[i].detach().cpu().numpy(), mask=mask_head_np)).data
+            unwrap_phase(np.ma.array(
+                phase[i].detach().cpu().numpy(), mask=mask_head_np)).data
         ).to(prediction)
 
     phase_diff_set = []
@@ -1181,12 +1221,14 @@ def B0_phi_mapping(
 
     # obtain phase differences and TE differences
     for i in range(phase_unwrapped.shape[0] - TEnotused):
-        phase_diff_set.append(torch.flatten(phase_unwrapped[i + 1] - phase_unwrapped[i]))
+        phase_diff_set.append(torch.flatten(
+            phase_unwrapped[i + 1] - phase_unwrapped[i]))
         phase_diff_set[i] = (
             phase_diff_set[i]
             - torch.round(
                 torch.abs(
-                    torch.sum(phase_diff_set[i] * torch.flatten(brain_mask_descale))
+                    torch.sum(phase_diff_set[i] *
+                              torch.flatten(brain_mask_descale))
                     / torch.sum(brain_mask_descale)
                     / 2
                     / np.pi
@@ -1202,13 +1244,15 @@ def B0_phi_mapping(
 
     # least squares fitting to obtain phase map
     B0_map_tmp = lsq.lstq_pinv(
-        phase_diff_set.unsqueeze(2).permute(1, 0, 2), TE_diff.unsqueeze(1) * scaling_factor  # type: ignore
+        phase_diff_set.unsqueeze(2).permute(1, 0, 2), TE_diff.unsqueeze(
+            1) * scaling_factor  # type: ignore
     )
     B0_map = B0_map_tmp.reshape(shape[-3], shape[-2])
     B0_map = B0_map * torch.abs(head_mask)
 
     # obtain phi map
-    phi_map = (phase_unwrapped[0] - scaling_factor * TEs[0] * B0_map).squeeze(0)  # type: ignore
+    phi_map = (phase_unwrapped[0] - scaling_factor *
+               TEs[0] * B0_map).squeeze(0)  # type: ignore
 
     return B0_map.to(prediction), phi_map.to(prediction)
 
@@ -1260,10 +1304,12 @@ def S0_mapping_complex(
 
     TEs = torch.tensor(TEs).to(prediction)
 
-    R2star_B0_complex_map = R2star_map.to(prediction) + 1j * B0_map.to(prediction)
+    R2star_B0_complex_map = R2star_map.to(
+        prediction) + 1j * B0_map.to(prediction)
     R2star_B0_complex_map_flatten = R2star_B0_complex_map.flatten()
 
-    TEs_r2 = TEs[0:4].unsqueeze(1) * -R2star_B0_complex_map_flatten  # type: ignore
+    TEs_r2 = TEs[0:4].unsqueeze(
+        1) * -R2star_B0_complex_map_flatten  # type: ignore
 
     S0_map = lsq.lstq_pinv_complex_np(
         prediction_flatten.permute(1, 0).unsqueeze(2),
@@ -1274,7 +1320,8 @@ def S0_mapping_complex(
 
     if shift:
         S0_map = fft.ifft2(
-            torch.fft.fftshift(fft.fft2(S0_map, fft_centered, fft_normalization, spatial_dims), dim=(0, 1)),
+            torch.fft.fftshift(fft.fft2(S0_map, fft_centered,
+                               fft_normalization, spatial_dims), dim=(0, 1)),
             fft_centered,
             fft_normalization,
             spatial_dims,
