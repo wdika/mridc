@@ -15,8 +15,7 @@ class RescaleByMax(object):
 
     def forward(self, data):
         """Apply scaling."""
-        gamma = torch.max(torch.max(torch.abs(data), 3, keepdim=True)[
-                          0], 2, keepdim=True)[0] + self.slack
+        gamma = torch.max(torch.max(torch.abs(data), 3, keepdim=True)[0], 2, keepdim=True)[0] + self.slack
         data = data / gamma
         return data, gamma
 
@@ -109,12 +108,8 @@ class SignalForwardModel(object):
             [
                 torch.stack(
                     (
-                        S0_map_real *
-                        first_term(i) * second_term(i) -
-                        S0_map_imag * first_term(i) * third_term(i),
-                        S0_map_real *
-                        first_term(i) * third_term(i) + S0_map_imag *
-                        first_term(i) * second_term(i),
+                        S0_map_real * first_term(i) * second_term(i) - S0_map_imag * first_term(i) * third_term(i),
+                        S0_map_real * first_term(i) * third_term(i) + S0_map_imag * first_term(i) * second_term(i),
                     ),
                     -1,
                 )
@@ -147,10 +142,8 @@ class SignalForwardModel(object):
             [
                 torch.stack(
                     (
-                        S0_map * torch.exp(-TEs[i] *
-                                           self.scaling * R2star_map),
-                        S0_map * torch.exp(-TEs[i] *
-                                           self.scaling * R2star_map),
+                        S0_map * torch.exp(-TEs[i] * self.scaling * R2star_map),
+                        S0_map * torch.exp(-TEs[i] * self.scaling * R2star_map),
                     ),
                     -1,
                 )
@@ -241,8 +234,7 @@ def analytical_log_likelihood_gradient(
     S0_map_imag = phi_map
 
     pred_kspace = fft.fft2(
-        expand_op(pred.unsqueeze(coil_dim),
-                  sensitivity_maps.unsqueeze(0).unsqueeze(coil_dim - 1)),
+        expand_op(pred.unsqueeze(coil_dim), sensitivity_maps.unsqueeze(0).unsqueeze(coil_dim - 1)),
         fft_centered,
         fft_normalization,
         spatial_dims,
@@ -266,18 +258,15 @@ def analytical_log_likelihood_gradient(
         return torch.sin(B0_map * scaling * -TEs[i])
 
     S0_part_der = torch.stack(
-        [torch.stack((first_term(i) * second_term(i), -first_term(i)
-                     * third_term(i)), -1) for i in range(nr_TEs)], 1
+        [torch.stack((first_term(i) * second_term(i), -first_term(i) * third_term(i)), -1) for i in range(nr_TEs)], 1
     )
 
     R2str_part_der = torch.stack(
         [
             torch.stack(
                 (
-                    -TEs[i] * scaling * first_term(i) * (
-                        S0_map_real * second_term(i) - S0_map_imag * third_term(i)),
-                    -TEs[i] * scaling * first_term(
-                        i) * (-S0_map_real * third_term(i) - S0_map_imag * second_term(i)),
+                    -TEs[i] * scaling * first_term(i) * (S0_map_real * second_term(i) - S0_map_imag * third_term(i)),
+                    -TEs[i] * scaling * first_term(i) * (-S0_map_real * third_term(i) - S0_map_imag * second_term(i)),
                 ),
                 -1,
             )
@@ -287,27 +276,21 @@ def analytical_log_likelihood_gradient(
     )
 
     S0_map_real_grad = (
-        diff_data_inverse[..., 0] * S0_part_der[..., 0] -
-        diff_data_inverse[..., 1] * S0_part_der[..., 1]
+        diff_data_inverse[..., 0] * S0_part_der[..., 0] - diff_data_inverse[..., 1] * S0_part_der[..., 1]
     )
     S0_map_imag_grad = (
-        diff_data_inverse[..., 0] * S0_part_der[..., 1] +
-        diff_data_inverse[..., 1] * S0_part_der[..., 0]
+        diff_data_inverse[..., 0] * S0_part_der[..., 1] + diff_data_inverse[..., 1] * S0_part_der[..., 0]
     )
     R2star_map_real_grad = (
-        diff_data_inverse[..., 0] * R2str_part_der[..., 0] -
-        diff_data_inverse[..., 1] * R2str_part_der[..., 1]
+        diff_data_inverse[..., 0] * R2str_part_der[..., 0] - diff_data_inverse[..., 1] * R2str_part_der[..., 1]
     )
     R2star_map_imag_grad = (
-        diff_data_inverse[..., 0] * R2str_part_der[..., 1] +
-        diff_data_inverse[..., 1] * R2str_part_der[..., 0]
+        diff_data_inverse[..., 0] * R2str_part_der[..., 1] + diff_data_inverse[..., 1] * R2str_part_der[..., 0]
     )
 
-    S0_map_grad = torch.stack(
-        [S0_map_real_grad, S0_map_imag_grad], -1).squeeze()
+    S0_map_grad = torch.stack([S0_map_real_grad, S0_map_imag_grad], -1).squeeze()
     S0_map_grad = torch.mean(S0_map_grad, 0)
-    R2star_map_grad = torch.stack(
-        [R2star_map_real_grad, R2star_map_imag_grad], -1).squeeze()
+    R2star_map_grad = torch.stack([R2star_map_real_grad, R2star_map_imag_grad], -1).squeeze()
     R2star_map_grad = torch.mean(R2star_map_grad, 0)
 
     return torch.stack([R2star_map_grad[..., 0], S0_map_grad[..., 0], R2star_map_grad[..., 1], S0_map_grad[..., 1]], 0)
