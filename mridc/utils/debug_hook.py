@@ -52,8 +52,7 @@ def get_forward_hook(name, trainer, rank, logger, dump_to_file=False):
                         headers.append("input")
                     input_norm = i.data.norm()
                     values.append(f"{input_norm}")
-                    logger(
-                        f"debug_info_forward/{name}_rank{rank}_input{n}", input_norm)
+                    logger(f"debug_info_forward/{name}_rank{rank}_input{n}", input_norm)
             if isinstance(outputs, tuple):
                 for n, i in enumerate(outputs):
                     if isinstance(i, torch.Tensor) and i.dtype in [torch.float, torch.half, torch.bfloat16]:
@@ -61,8 +60,7 @@ def get_forward_hook(name, trainer, rank, logger, dump_to_file=False):
                             headers.append("output")
                         output_norm = i.data.norm()
                         values.append(f"{output_norm}")
-                        logger(
-                            f"debug_info_forward/{name}_rank{rank}_output{n}", output_norm)
+                        logger(f"debug_info_forward/{name}_rank{rank}_output{n}", output_norm)
             else:
                 headers.append("output")
                 values.append(f"{outputs.data.norm()}")
@@ -121,8 +119,7 @@ def get_backward_hook(name, trainer, rank, logger, dump_to_file=False):
                         headers.append("input")
                     input_norm = i.data.norm()
                     values.append(f"{input_norm}")
-                    logger(
-                        f"debug_info_backward/{name}_rank{rank}_input{n}", input_norm)
+                    logger(f"debug_info_backward/{name}_rank{rank}_input{n}", input_norm)
             if isinstance(outputs, tuple):
                 for n, i in enumerate(outputs):
                     if isinstance(i, torch.Tensor) and i.dtype in [torch.float, torch.half, torch.bfloat16]:
@@ -130,8 +127,7 @@ def get_backward_hook(name, trainer, rank, logger, dump_to_file=False):
                             headers.append("output")
                         output_norm = i.data.norm()
                         values.append(f"{output_norm}")
-                        logger(
-                            f"debug_info_backward/{name}_rank{rank}_output{n}", output_norm)
+                        logger(f"debug_info_backward/{name}_rank{rank}_output{n}", output_norm)
             else:
                 headers.append("output")
                 values.append(f"{outputs.data.norm()}")
@@ -188,8 +184,7 @@ def get_tensor_hook(module, name, trainer, rank, logger, dump_to_file=False):
         weight_norm = weight.data.norm()
         grad_norm = grad.data.norm()
         logger(f"debug_info_tensors/{name}_rank{rank}_grad_norm", grad_norm)
-        logger(
-            f"debug_info_tensors/{name}_rank{rank}_weight_norm", weight_norm)
+        logger(f"debug_info_tensors/{name}_rank{rank}_weight_norm", weight_norm)
         values.append(f"{weight_norm}")
         values.append(f"{grad_norm}")
         values.append(f"{trainer.global_step}")
@@ -220,11 +215,8 @@ def register_debug_hooks(module, trainer, logger, dump_to_file=False):
         rank = torch.distributed.get_rank()
     for name, tensor in module.named_parameters():
         if name != "":
-            tensor.register_hook(get_tensor_hook(
-                module, name, trainer, rank, logger, dump_to_file))
+            tensor.register_hook(get_tensor_hook(module, name, trainer, rank, logger, dump_to_file))
     for name, layer in module.named_modules():
         if name != "":
-            layer.register_forward_hook(get_forward_hook(
-                name, trainer, rank, logger, dump_to_file))
-            layer.register_full_backward_hook(get_backward_hook(
-                name, trainer, rank, logger, dump_to_file))
+            layer.register_forward_hook(get_forward_hook(name, trainer, rank, logger, dump_to_file))
+            layer.register_full_backward_hook(get_backward_hook(name, trainer, rank, logger, dump_to_file))

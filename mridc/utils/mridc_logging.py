@@ -49,8 +49,7 @@ class Logger(metaclass=Singleton):
     # Level 50
     CRITICAL = _logging.CRITICAL
 
-    _level_names = {0: "NOTSET", 10: "DEBUG", 20: "INFO",
-                    30: "WARNING", 40: "ERROR", 50: "CRITICAL"}
+    _level_names = {0: "NOTSET", 10: "DEBUG", 20: "INFO", 30: "WARNING", 40: "ERROR", 50: "CRITICAL"}
 
     def __init__(self, capture_warnings=True):
 
@@ -93,8 +92,7 @@ class Logger(metaclass=Singleton):
                 if is_global_rank_zero():
                     # Add a memoryhandler for error messages. Only logged on rank 0
                     self._handlers["memory_err"] = MemoryHandler(-1)
-                    self._handlers["memory_err"].addFilter(
-                        lambda record: record.levelno > _logging.INFO)
+                    self._handlers["memory_err"].addFilter(lambda record: record.levelno > _logging.INFO)
                     formatter = BaseMRIDCFormatter
                     self._handlers["memory_err"].setFormatter(formatter())
                     self._logger.addHandler(self._handlers["memory_err"])
@@ -116,8 +114,7 @@ class Logger(metaclass=Singleton):
     def remove_stream_handlers(self):
         """Removes StreamHandler that log to stdout and stderr from the logger."""
         if self._logger is None:
-            raise RuntimeError(
-                "Impossible to set handlers if the Logger is not predefined")
+            raise RuntimeError("Impossible to set handlers if the Logger is not predefined")
 
         # ======== Remove Handler if already existing ========
 
@@ -140,24 +137,18 @@ class Logger(metaclass=Singleton):
         variable is set, all logs are sent to stderr instead.
         """
         if self._logger is None:
-            raise RuntimeError(
-                "Impossible to set handlers if the Logger is not predefined")
+            raise RuntimeError("Impossible to set handlers if the Logger is not predefined")
 
         # Add the output handler.
         if get_envbool(MRIDC_ENV_VARNAME_REDIRECT_LOGS_TO_STDERR, False):
-            self._handlers["stream_stdout"] = _logging.StreamHandler(
-                sys.stderr)
+            self._handlers["stream_stdout"] = _logging.StreamHandler(sys.stderr)
 
         else:
-            self._handlers["stream_stdout"] = _logging.StreamHandler(
-                sys.stdout)
-            self._handlers["stream_stdout"].addFilter(
-                lambda record: record.levelno <= _logging.INFO)
+            self._handlers["stream_stdout"] = _logging.StreamHandler(sys.stdout)
+            self._handlers["stream_stdout"].addFilter(lambda record: record.levelno <= _logging.INFO)
 
-            self._handlers["stream_stderr"] = _logging.StreamHandler(
-                sys.stderr)
-            self._handlers["stream_stderr"].addFilter(
-                lambda record: record.levelno > _logging.INFO)
+            self._handlers["stream_stderr"] = _logging.StreamHandler(sys.stderr)
+            self._handlers["stream_stderr"].addFilter(lambda record: record.levelno > _logging.INFO)
 
         self._handlers["stream_stdout"].setFormatter(formatter())
         self._logger.addHandler(self._handlers["stream_stdout"])
@@ -180,8 +171,7 @@ class Logger(metaclass=Singleton):
         closed.
         """
         if self._logger is None:
-            raise RuntimeError(
-                "Impossible to set handlers if the Logger is not predefined")
+            raise RuntimeError("Impossible to set handlers if the Logger is not predefined")
 
         self._handlers["file"] = _logging.FileHandler(log_file)
         formatter = BaseMRIDCFormatter
@@ -200,12 +190,10 @@ class Logger(metaclass=Singleton):
         MemoryHandler is closed.
         """
         if self._logger is None:
-            raise RuntimeError(
-                "Impossible to set handlers if the Logger is not predefined")
+            raise RuntimeError("Impossible to set handlers if the Logger is not predefined")
 
         self._handlers["file_err"] = _logging.FileHandler(log_file)
-        self._handlers["file_err"].addFilter(
-            lambda record: record.levelno > _logging.INFO)
+        self._handlers["file_err"].addFilter(lambda record: record.levelno > _logging.INFO)
 
         formatter = BaseMRIDCFormatter
         self._handlers["file_err"].setFormatter(formatter())
@@ -241,8 +229,7 @@ class Logger(metaclass=Singleton):
     def patch_stderr_handler(self, stream):
         """Sends messages that should log to stderr to stream instead. Useful for unittests"""
         if self._logger is None:
-            raise RuntimeError(
-                "Impossible to patch logging handlers if handler does not exist")
+            raise RuntimeError("Impossible to patch logging handlers if handler does not exist")
         try:
             old_stream = self._handlers["stream_stderr"].stream
             if old_stream is None:
@@ -258,8 +245,7 @@ class Logger(metaclass=Singleton):
 
             yield stream
         except (KeyError, ValueError) as e:
-            raise RuntimeError(
-                "Impossible to patch logging handlers if handler does not exist") from e
+            raise RuntimeError("Impossible to patch logging handlers if handler does not exist") from e
 
         finally:
             # Port backwards set_stream() from python 3.7
@@ -274,8 +260,7 @@ class Logger(metaclass=Singleton):
     def patch_stdout_handler(self, stream):
         """Sends messages that should log to stdout to stream instead. Useful for unittests"""
         if self._logger is None:
-            raise RuntimeError(
-                "Impossible to patch logging handlers if handler does not exist")
+            raise RuntimeError("Impossible to patch logging handlers if handler does not exist")
         try:
             old_stream = self._handlers["stream_stdout"].stream
             if old_stream is None:
@@ -291,8 +276,7 @@ class Logger(metaclass=Singleton):
 
             yield stream
         except (KeyError, ValueError) as e:
-            raise RuntimeError(
-                "Impossible to patch logging handlers if handler does not exist") from e
+            raise RuntimeError("Impossible to patch logging handlers if handler does not exist") from e
 
         finally:
             # Port backwards set_stream() from python 3.7

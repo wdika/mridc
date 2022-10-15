@@ -91,16 +91,14 @@ class IWT(nn.Module):
         IWT of `x`.
         """
         batch, in_channel, in_height, in_width = x.size()
-        out_channel, out_height, out_width = int(
-            in_channel / (self._r**2)), self._r * in_height, self._r * in_width
+        out_channel, out_height, out_width = int(in_channel / (self._r**2)), self._r * in_height, self._r * in_width
 
         x1 = x[:, 0:out_channel, :, :] / 2
-        x2 = x[:, out_channel: out_channel * 2, :, :] / 2
-        x3 = x[:, out_channel * 2: out_channel * 3, :, :] / 2
-        x4 = x[:, out_channel * 3: out_channel * 4, :, :] / 2
+        x2 = x[:, out_channel : out_channel * 2, :, :] / 2
+        x3 = x[:, out_channel * 2 : out_channel * 3, :, :] / 2
+        x4 = x[:, out_channel * 3 : out_channel * 4, :, :] / 2
 
-        h = torch.zeros([batch, out_channel, out_height,
-                        out_width], dtype=x.dtype).to(x.device)
+        h = torch.zeros([batch, out_channel, out_height, out_width], dtype=x.dtype).to(x.device)
 
         h[:, :, 0::2, 0::2] = x1 - x2 - x3 + x4
         h[:, :, 1::2, 0::2] = x1 - x2 + x3 - x4
@@ -167,8 +165,7 @@ class ConvBlock(nn.Module):
         ]
 
         if batchnorm:
-            net.append(nn.BatchNorm2d(
-                num_features=out_channels, eps=1e-4, momentum=0.95))
+            net.append(nn.BatchNorm2d(num_features=out_channels, eps=1e-4, momentum=0.95))
         net.append(activation)
 
         self.net = nn.Sequential(*net)
@@ -249,8 +246,7 @@ class DilatedConvBlock(nn.Module):
         ]
 
         if batchnorm:
-            net.append(nn.BatchNorm2d(
-                num_features=in_channels, eps=1e-4, momentum=0.95))
+            net.append(nn.BatchNorm2d(num_features=in_channels, eps=1e-4, momentum=0.95))
         net.append(activation)
         if out_channels is None:
             out_channels = in_channels
@@ -265,8 +261,7 @@ class DilatedConvBlock(nn.Module):
             )
         )
         if batchnorm:
-            net.append(nn.BatchNorm2d(
-                num_features=in_channels, eps=1e-4, momentum=0.95))
+            net.append(nn.BatchNorm2d(num_features=in_channels, eps=1e-4, momentum=0.95))
         net.append(activation)
 
         self.net = nn.Sequential(*net)
@@ -335,8 +330,7 @@ class MWCNN(nn.Module):
 
         self.down = nn.ModuleList()
         for idx in range(num_scales):
-            in_channels = input_channels if idx == 0 else first_conv_hidden_channels * \
-                2 ** (idx + 1)
+            in_channels = input_channels if idx == 0 else first_conv_hidden_channels * 2 ** (idx + 1)
             out_channels = first_conv_hidden_channels * 2**idx
             dilations = (2, 1) if idx != num_scales - 1 else (2, 3)
             self.down.append(
@@ -372,8 +366,7 @@ class MWCNN(nn.Module):
         self.up = nn.ModuleList()
         for idx in range(num_scales)[::-1]:
             in_channels = first_conv_hidden_channels * 2**idx
-            out_channels = input_channels if idx == 0 else first_conv_hidden_channels * \
-                2 ** (idx + 1)
+            out_channels = input_channels if idx == 0 else first_conv_hidden_channels * 2 ** (idx + 1)
             dilations = (2, 1) if idx != num_scales - 1 else (3, 2)
             self.up.append(
                 nn.Sequential(
@@ -482,13 +475,11 @@ class MWCNN(nn.Module):
         for idx in range(self.num_scales):
             if idx != self.num_scales - 1:
                 x = (
-                    self.crop_to_shape(self.IWT(self.up[idx](
-                        x)), res_values[self.num_scales - 2 - idx].shape[-2:])
+                    self.crop_to_shape(self.IWT(self.up[idx](x)), res_values[self.num_scales - 2 - idx].shape[-2:])
                     + res_values[self.num_scales - 2 - idx]
                 )
             else:
-                x = self.crop_to_shape(
-                    self.up[idx](x), input_tensor.shape[-2:])
+                x = self.crop_to_shape(self.up[idx](x), input_tensor.shape[-2:])
                 if res:
                     x += input_tensor
         return x

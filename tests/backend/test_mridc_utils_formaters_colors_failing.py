@@ -278,8 +278,7 @@ def test_case_1():
         assert ansi_codes_3 is not None
         str_1 = "/2>7T\\\x0c=KCv$l"
         str_2 = "Unable to coerce '"
-        dict_0 = {str_1: var_1, str_2: ansi_codes_2,
-                  str_2: float_0, str_1: float_0}
+        dict_0 = {str_1: var_1, str_2: ansi_codes_2, str_2: float_0, str_1: float_0}
         ansi_codes_4 = module_0.AnsiCodes()
         assert ansi_codes_4 is not None
         var_8 = ansi_cursor_0.BACK(ansi_codes_1)

@@ -39,10 +39,8 @@ class GlobalAverageLossMetric(Metric):
         super().__init__(
             compute_on_step=compute_on_step, dist_sync_on_step=dist_sync_on_step, process_group=process_group
         )
-        self.add_state("loss_sum", torch.tensor(
-            0.0, dtype=torch.float64), dist_reduce_fx="sum")
-        self.add_state("num_measurements", torch.tensor(
-            0, dtype=torch.int64), dist_reduce_fx="sum")
+        self.add_state("loss_sum", torch.tensor(0.0, dtype=torch.float64), dist_reduce_fx="sum")
+        self.add_state("num_measurements", torch.tensor(0, dtype=torch.int64), dist_reduce_fx="sum")
         self.take_avg_loss = take_avg_loss
 
     def update(self, loss, num_measurements):

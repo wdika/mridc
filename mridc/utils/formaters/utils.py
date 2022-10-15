@@ -43,8 +43,7 @@ def to_unicode(value):
             return value
 
         if not isinstance(value, bytes):
-            raise TypeError(
-                "Expected bytes, unicode, or None; got %r" % type(value))
+            raise TypeError("Expected bytes, unicode, or None; got %r" % type(value))
 
         return value.decode("utf-8")
 

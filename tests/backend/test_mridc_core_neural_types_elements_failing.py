@@ -32,8 +32,7 @@ def test_case_0():
         dict_0 = {}
         index_0 = module_0.Index()
         assert index_0 is not None
-        probability_distribution_samples_type_0 = module_0.ProbabilityDistributionSamplesType(
-            **dict_0)
+        probability_distribution_samples_type_0 = module_0.ProbabilityDistributionSamplesType(**dict_0)
         assert probability_distribution_samples_type_0 is not None
         normal_distribution_mean_type_0 = module_0.NormalDistributionMeanType()
         assert normal_distribution_mean_type_0 is not None
@@ -111,8 +110,7 @@ def test_case_3():
         list_0 = []
         normal_distribution_mean_type_0 = module_0.NormalDistributionMeanType()
         element_type_0 = module_0.ElementType()
-        neural_type_comparison_result_0 = element_type_0.compare(
-            normal_distribution_mean_type_0)
+        neural_type_comparison_result_0 = element_type_0.compare(normal_distribution_mean_type_0)
         assert neural_type_comparison_result_0 == module_1.NeuralTypeComparisonResult.GREATER
         categorical_values_type_0 = module_0.CategoricalValuesType(*list_0)
         str_0 = "`G%4O/W"
@@ -151,11 +149,9 @@ def test_case_4():
         predictions_type_0 = module_0.PredictionsType()
         str_0 = "_IsyBSMp)H9/X/"
         list_0 = []
-        sequence_to_sequence_alignment_type_0 = module_0.SequenceToSequenceAlignmentType(
-            *list_0)
+        sequence_to_sequence_alignment_type_0 = module_0.SequenceToSequenceAlignmentType(*list_0)
         element_type_0 = module_0.ElementType()
-        neural_type_comparison_result_0 = element_type_0.compare(
-            sequence_to_sequence_alignment_type_0)
+        neural_type_comparison_result_0 = element_type_0.compare(sequence_to_sequence_alignment_type_0)
         assert neural_type_comparison_result_0 == module_1.NeuralTypeComparisonResult.GREATER
         list_1 = [predictions_type_0, str_0, predictions_type_0]
         recurrents_type_0 = module_0.RecurrentsType(*list_1)
@@ -200,18 +196,15 @@ def test_case_7():
         var_0 = element_type_0.__repr__()
         assert var_0 == "ElementType"
         normal_distribution_log_variance_type_0 = module_0.NormalDistributionLogVarianceType()
-        list_1 = [normal_distribution_samples_type_0,
-                  normal_distribution_samples_type_0, probs_type_0]
-        normal_distribution_samples_type_1 = module_0.NormalDistributionSamplesType(
-            *list_0)
+        list_1 = [normal_distribution_samples_type_0, normal_distribution_samples_type_0, probs_type_0]
+        normal_distribution_samples_type_1 = module_0.NormalDistributionSamplesType(*list_0)
         element_type_1 = module_0.ElementType()
         var_1 = element_type_1.__str__()
         assert (
             var_1
             == "Abstract class defining semantics of the tensor elements. We are relying on Python for inheritance checking"
         )
-        neural_type_comparison_result_0 = element_type_0.compare(
-            element_type_0)
+        neural_type_comparison_result_0 = element_type_0.compare(element_type_0)
         assert loss_type_0 is not None
         assert normal_distribution_samples_type_0 is not None
         assert logprobs_type_0 is not None
@@ -243,13 +236,11 @@ def test_case_7():
         assert module_1.NeuralTypeComparisonResult.UNCHECKED == module_1.NeuralTypeComparisonResult.UNCHECKED
         probability_distribution_samples_type_0 = module_0.ProbabilityDistributionSamplesType()
         assert probability_distribution_samples_type_0 is not None
-        neural_type_comparison_result_1 = element_type_1.compare(
-            probability_distribution_samples_type_0)
+        neural_type_comparison_result_1 = element_type_1.compare(probability_distribution_samples_type_0)
         assert neural_type_comparison_result_1 == module_1.NeuralTypeComparisonResult.GREATER
         var_2 = element_type_0.__repr__()
         assert var_2 == "ElementType"
-        sequence_to_sequence_alignment_type_0 = module_0.SequenceToSequenceAlignmentType(
-            *list_1)
+        sequence_to_sequence_alignment_type_0 = module_0.SequenceToSequenceAlignmentType(*list_1)
     except BaseException:
         pass
 
@@ -260,8 +251,7 @@ def test_case_8():
         var_0 = element_type_0.__repr__()
         assert var_0 == "ElementType"
         element_type_1 = module_0.ElementType()
-        neural_type_comparison_result_0 = element_type_1.compare(
-            element_type_0)
+        neural_type_comparison_result_0 = element_type_1.compare(element_type_0)
         assert element_type_0 is not None
         assert element_type_1 is not None
         assert neural_type_comparison_result_0 == module_1.NeuralTypeComparisonResult.SAME
@@ -287,7 +277,6 @@ def test_case_8():
         assert string_type_0 is not None
         str_0 = ">C%$^5Il:t_\r"
         dict_0 = {str_0: string_type_0}
-        probability_distribution_samples_type_0 = module_0.ProbabilityDistributionSamplesType(
-            **dict_0)
+        probability_distribution_samples_type_0 = module_0.ProbabilityDistributionSamplesType(**dict_0)
     except BaseException:
         pass

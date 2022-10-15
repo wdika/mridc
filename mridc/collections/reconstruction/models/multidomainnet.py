@@ -34,8 +34,7 @@ class MultiDomainNet(base_models.BaseMRIReconstructionModel, ABC):
 
         standardization = cfg_dict["standardization"]
         if standardization:
-            self.standardization = multidomain_.StandardizationLayer(
-                self.coil_dim, -1)
+            self.standardization = multidomain_.StandardizationLayer(self.coil_dim, -1)
 
         self.unet = multidomain_.MultiDomainUnet2d(
             # if standardization, in_channels is 4 due to standardized input
@@ -52,10 +51,8 @@ class MultiDomainNet(base_models.BaseMRIReconstructionModel, ABC):
 
         self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
-        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get(
-            "train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get(
-            "eval_loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
+        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
 
         self.accumulate_estimates = False
 
@@ -120,8 +117,7 @@ class MultiDomainNet(base_models.BaseMRIReconstructionModel, ABC):
         if hasattr(self, "standardization"):
             image = self.standardization(image, sensitivity_maps)
 
-        output_image = self._compute_model_per_coil(
-            self.unet, image.permute(0, 1, 4, 2, 3)).permute(0, 1, 3, 4, 2)
+        output_image = self._compute_model_per_coil(self.unet, image.permute(0, 1, 4, 2, 3)).permute(0, 1, 3, 4, 2)
         output_image = utils.coil_combination(
             output_image, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim
         )

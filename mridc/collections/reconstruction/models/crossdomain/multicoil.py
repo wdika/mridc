@@ -43,8 +43,7 @@ class MultiCoil(nn.Module):
             if subselected_data.shape[-1] == 2 and subselected_data.dim() == 4:
                 output.append(self.model(subselected_data.permute(0, 3, 1, 2)))
             else:
-                output.append(self.model(subselected_data.unsqueeze(
-                    self.coil_dim)).squeeze(self.coil_dim))
+                output.append(self.model(subselected_data.unsqueeze(self.coil_dim)).squeeze(self.coil_dim))
         output = torch.stack(output, dim=self.coil_dim)
         return output
 
@@ -68,8 +67,7 @@ class MultiCoil(nn.Module):
             batch, coil, channels, height, width = x.size()
             x = x.reshape(batch * coil, channels, height, width).contiguous()
             x = self.model(x).permute(0, 2, 3, 1)
-            x = x.reshape(batch, coil, height, width, -
-                          1).permute(0, 1, 4, 2, 3)
+            x = x.reshape(batch, coil, height, width, -1).permute(0, 1, 4, 2, 3)
         else:
             x = self._compute_model_per_coil(x).contiguous()
 

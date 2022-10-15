@@ -103,8 +103,7 @@ class Metrics:
         stddevs = self.stddevs()
         metric_names = sorted(list(means))
 
-        res = " ".join(
-            f"{name} = {means[name]:.4g} +/- {2 * stddevs[name]:.4g}" for name in metric_names) + "\n"
+        res = " ".join(f"{name} = {means[name]:.4g} +/- {2 * stddevs[name]:.4g}" for name in metric_names) + "\n"
 
         with open(f"{self.output_path}metrics.txt", "a") as output:
             output.write(f"{self.method}: {res}")
@@ -144,8 +143,7 @@ def run_evaluation(
     -------
     dict: A dict where the keys are metric names and the values are the mean of the metric.
     """
-    _metrics = Metrics(METRIC_FUNCS, output_path,
-                       method) if arguments.type == "mean_std" else {}
+    _metrics = Metrics(METRIC_FUNCS, output_path, method) if arguments.type == "mean_std" else {}
 
     for tgt_file in tqdm(arguments.target_path.iterdir()):
         if exists(arguments.predictions_path / tgt_file.name):
@@ -155,8 +153,7 @@ def run_evaluation(
                 kspace = target["kspace"][()]
 
                 if arguments.sense_path is not None:
-                    sense = h5py.File(arguments.sense_path /
-                                      tgt_file.name, "r")["sensitivity_map"][()]
+                    sense = h5py.File(arguments.sense_path / tgt_file.name, "r")["sensitivity_map"][()]
                 elif "sensitivity_map" in target:
                     sense = target["sensitivity_map"][()]
 
@@ -195,8 +192,7 @@ def run_evaluation(
                 if mask_background:
                     for sl in range(target.shape[0]):
                         mask = convex_hull_image(
-                            np.where(np.abs(target[sl]) > threshold_otsu(
-                                np.abs(target[sl])), 1, 0)  # type: ignore
+                            np.where(np.abs(target[sl]) > threshold_otsu(np.abs(target[sl])), 1, 0)  # type: ignore
                         )
                         target[sl] = target[sl] * mask
                         recons[sl] = recons[sl] * mask
@@ -233,42 +229,31 @@ def run_evaluation(
                         _metrics["PARAMS"] = no_params
 
                         if not exists(arguments.output_path):
-                            pd.DataFrame(columns=_metrics.keys()).to_csv(
-                                arguments.output_path, index=False, mode="w")
-                        pd.DataFrame(_metrics).to_csv(
-                            arguments.output_path, index=False, header=False, mode="a")
+                            pd.DataFrame(columns=_metrics.keys()).to_csv(arguments.output_path, index=False, mode="w")
+                        pd.DataFrame(_metrics).to_csv(arguments.output_path, index=False, header=False, mode="a")
 
     return _metrics
 
 
 if __name__ == "__main__":
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-    parser.add_argument("target_path", type=pathlib.Path,
-                        help="Path to the ground truth data")
-    parser.add_argument("predictions_path", type=pathlib.Path,
-                        help="Path to reconstructions")
-    parser.add_argument("output_path", type=str,
-                        help="Path to save the metrics")
-    parser.add_argument("--sense_path", type=pathlib.Path,
-                        help="Path to the sense data")
+    parser.add_argument("target_path", type=pathlib.Path, help="Path to the ground truth data")
+    parser.add_argument("predictions_path", type=pathlib.Path, help="Path to reconstructions")
+    parser.add_argument("output_path", type=str, help="Path to save the metrics")
+    parser.add_argument("--sense_path", type=pathlib.Path, help="Path to the sense data")
     parser.add_argument(
         "--challenge",
-        choices=["singlecoil", "multicoil",
-                 "multicoil_sense", "multicoil_other"],
+        choices=["singlecoil", "multicoil", "multicoil_sense", "multicoil_other"],
         default="multicoil_other",
         help="Which challenge",
     )
-    parser.add_argument("--crop_size", nargs="+",
-                        default=None, help="Set crop size.")
-    parser.add_argument("--method", type=str, required=True,
-                        help="Model's name to evaluate")
-    parser.add_argument("--acceleration", type=int,
-                        required=True, default=None)
+    parser.add_argument("--crop_size", nargs="+", default=None, help="Set crop size.")
+    parser.add_argument("--method", type=str, required=True, help="Model's name to evaluate")
+    parser.add_argument("--acceleration", type=int, required=True, default=None)
     parser.add_argument("--no_params", type=str, required=True, default=None)
     parser.add_argument(
         "--acquisition",
-        choices=["CORPD_FBK", "CORPDFS_FBK", "AXT1",
-                 "AXT1PRE", "AXT1POST", "AXT2", "AXFLAIR"],
+        choices=["CORPD_FBK", "CORPDFS_FBK", "AXT1", "AXT1PRE", "AXT1POST", "AXT2", "AXFLAIR"],
         default=None,
         help="If set, only volumes of the specified acquisition type are used for "
         "evaluation. By default, all volumes are included.",
@@ -276,16 +261,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--fill_pred_path", action="store_true", help="Find reconstructions folder in predictions path"
     )
-    parser.add_argument("--mask_background", action="store_true",
-                        help="Toggle to mask background")
-    parser.add_argument(
-        "--type", choices=["mean_std", "all_slices"], default="mean_std", help="Output type.")
-    parser.add_argument("--slice_start", type=int,
-                        help="Select to skip first slices")
-    parser.add_argument("--slice_end", type=int,
-                        help="Select to skip last slices")
-    parser.add_argument("--coil_dim", type=int, default=1,
-                        help="The coil dimension")
+    parser.add_argument("--mask_background", action="store_true", help="Toggle to mask background")
+    parser.add_argument("--type", choices=["mean_std", "all_slices"], default="mean_std", help="Output type.")
+    parser.add_argument("--slice_start", type=int, help="Select to skip first slices")
+    parser.add_argument("--slice_end", type=int, help="Select to skip last slices")
+    parser.add_argument("--coil_dim", type=int, default=1, help="The coil dimension")
 
     args = parser.parse_args()
 
