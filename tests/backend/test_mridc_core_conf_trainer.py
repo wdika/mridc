@@ -27,22 +27,17 @@ def test_case_0():
     assert trainer_config_0.enable_progress_bar is False
     assert trainer_config_0.overfit_batches == "fq5r?IhM3Tt"
     assert trainer_config_0.track_grad_norm is None
-    assert trainer_config_0.check_val_every_n_epoch == pytest.approx(
-        -1760.55, abs=0.01, rel=0.01)
+    assert trainer_config_0.check_val_every_n_epoch == pytest.approx(-1760.55, abs=0.01, rel=0.01)
     assert trainer_config_0.fast_dev_run is None
     assert trainer_config_0.accumulate_grad_batches == 1
     assert trainer_config_0.max_epochs == 1000
     assert trainer_config_0.min_epochs == 1
     assert trainer_config_0.max_steps == -1
     assert trainer_config_0.min_steps is None
-    assert trainer_config_0.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_0.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_0.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_0.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_0.log_every_n_steps == 50
     assert trainer_config_0.accelerator is None
     assert trainer_config_0.sync_batchnorm is False
@@ -61,8 +56,7 @@ def test_case_0():
     assert trainer_config_0.plugins is None
     assert trainer_config_0.move_metrics_to_cpu is False
     assert trainer_config_0.multiple_trainloader_mode == "max_size_cycle"
-    assert trainer_config_0.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_0.gradient_clip_algorithm == "norm"
     assert trainer_config_0.max_time is None
     assert trainer_config_0.reload_dataloaders_every_n_epochs == 0
@@ -80,8 +74,7 @@ def test_case_0():
     assert module_0.TrainerConfig.auto_select_gpus is False
     assert module_0.TrainerConfig.tpu_cores is None
     assert module_0.TrainerConfig.enable_progress_bar is True
-    assert module_0.TrainerConfig.overfit_batches == pytest.approx(
-        0.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.overfit_batches == pytest.approx(0.0, abs=0.01, rel=0.01)
     assert module_0.TrainerConfig.track_grad_norm == -1
     assert module_0.TrainerConfig.check_val_every_n_epoch == 1
     assert module_0.TrainerConfig.fast_dev_run is False
@@ -90,14 +83,10 @@ def test_case_0():
     assert module_0.TrainerConfig.min_epochs == 1
     assert module_0.TrainerConfig.max_steps == -1
     assert module_0.TrainerConfig.min_steps is None
-    assert module_0.TrainerConfig.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert module_0.TrainerConfig.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert module_0.TrainerConfig.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert module_0.TrainerConfig.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert module_0.TrainerConfig.log_every_n_steps == 50
     assert module_0.TrainerConfig.accelerator is None
     assert module_0.TrainerConfig.sync_batchnorm is False
@@ -116,8 +105,7 @@ def test_case_0():
     assert module_0.TrainerConfig.plugins is None
     assert module_0.TrainerConfig.move_metrics_to_cpu is False
     assert module_0.TrainerConfig.multiple_trainloader_mode == "max_size_cycle"
-    assert module_0.TrainerConfig.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert module_0.TrainerConfig.gradient_clip_algorithm == "norm"
     assert module_0.TrainerConfig.max_time is None
     assert module_0.TrainerConfig.reload_dataloaders_every_n_epochs == 0
@@ -145,20 +133,16 @@ def test_case_0():
     )
     assert trainer_config_1.logger is False
     assert trainer_config_1.callbacks == (
-        {(True)
-          : ', available options are ["mean", "sum", "none"].', (False): True},
+        {(True): ', available options are ["mean", "sum", "none"].', (False): True},
         b'\x97\x01=\x9a}"\xc0"2',
         "Target",
-        {(True)
-          : ', available options are ["mean", "sum", "none"].', (False): True},
+        {(True): ', available options are ["mean", "sum", "none"].', (False): True},
     )
     assert trainer_config_1.default_root_dir == (
-        {(True)
-          : ', available options are ["mean", "sum", "none"].', (False): True},
+        {(True): ', available options are ["mean", "sum", "none"].', (False): True},
         b'\x97\x01=\x9a}"\xc0"2',
         "Target",
-        {(True)
-          : ', available options are ["mean", "sum", "none"].', (False): True},
+        {(True): ', available options are ["mean", "sum", "none"].', (False): True},
     )
     assert trainer_config_1.gradient_clip_val is False
     assert trainer_config_1.num_nodes == 96
@@ -167,12 +151,10 @@ def test_case_0():
     assert trainer_config_1.tpu_cores == ["Target", 1433, "Target"]
     assert trainer_config_1.enable_progress_bar == ', available options are ["mean", "sum", "none"].'
     assert trainer_config_1.overfit_batches == (
-        {(True)
-          : ', available options are ["mean", "sum", "none"].', (False): True},
+        {(True): ', available options are ["mean", "sum", "none"].', (False): True},
         b'\x97\x01=\x9a}"\xc0"2',
         "Target",
-        {(True)
-          : ', available options are ["mean", "sum", "none"].', (False): True},
+        {(True): ', available options are ["mean", "sum", "none"].', (False): True},
     )
     assert trainer_config_1.track_grad_norm is True
     assert trainer_config_1.check_val_every_n_epoch == 96
@@ -182,14 +164,10 @@ def test_case_0():
     assert trainer_config_1.min_epochs == 1
     assert trainer_config_1.max_steps == -1
     assert trainer_config_1.min_steps is None
-    assert trainer_config_1.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_1.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_1.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_1.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_1.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_1.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_1.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_1.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_1.log_every_n_steps == 50
     assert trainer_config_1.accelerator is None
     assert trainer_config_1.sync_batchnorm is False
@@ -208,8 +186,7 @@ def test_case_0():
     assert trainer_config_1.plugins is None
     assert trainer_config_1.move_metrics_to_cpu is False
     assert trainer_config_1.multiple_trainloader_mode == "max_size_cycle"
-    assert trainer_config_1.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_1.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_1.gradient_clip_algorithm == "norm"
     assert trainer_config_1.max_time is None
     assert trainer_config_1.reload_dataloaders_every_n_epochs == 0
@@ -222,8 +199,7 @@ def test_case_0():
     none_type_0 = None
     int_4 = 2665
     str_3 = "g=)"
-    trainer_config_2 = module_0.TrainerConfig(
-        str_2, int_2, int_4, bool_2, bool_3, int_3, str_3, bool_1)
+    trainer_config_2 = module_0.TrainerConfig(str_2, int_2, int_4, bool_2, bool_3, int_3, str_3, bool_1)
     assert trainer_config_2.logger == ', available options are ["mean", "sum", "none"].'
     assert trainer_config_2.callbacks == 1433
     assert trainer_config_2.default_root_dir == 2665
@@ -233,8 +209,7 @@ def test_case_0():
     assert trainer_config_2.auto_select_gpus == "g=)"
     assert trainer_config_2.tpu_cores is True
     assert trainer_config_2.enable_progress_bar is True
-    assert trainer_config_2.overfit_batches == pytest.approx(
-        0.0, abs=0.01, rel=0.01)
+    assert trainer_config_2.overfit_batches == pytest.approx(0.0, abs=0.01, rel=0.01)
     assert trainer_config_2.track_grad_norm == -1
     assert trainer_config_2.check_val_every_n_epoch == 1
     assert trainer_config_2.fast_dev_run is False
@@ -243,14 +218,10 @@ def test_case_0():
     assert trainer_config_2.min_epochs == 1
     assert trainer_config_2.max_steps == -1
     assert trainer_config_2.min_steps is None
-    assert trainer_config_2.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_2.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_2.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_2.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_2.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_2.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_2.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_2.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_2.log_every_n_steps == 50
     assert trainer_config_2.accelerator is None
     assert trainer_config_2.sync_batchnorm is False
@@ -269,8 +240,7 @@ def test_case_0():
     assert trainer_config_2.plugins is None
     assert trainer_config_2.move_metrics_to_cpu is False
     assert trainer_config_2.multiple_trainloader_mode == "max_size_cycle"
-    assert trainer_config_2.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_2.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_2.gradient_clip_algorithm == "norm"
     assert trainer_config_2.max_time is None
     assert trainer_config_2.reload_dataloaders_every_n_epochs == 0
@@ -292,12 +262,10 @@ def test_case_0():
     assert trainer_config_3.tpu_cores == 96
     assert trainer_config_3.enable_progress_bar == "Target"
     assert trainer_config_3.overfit_batches == (
-        {(True)
-          : ', available options are ["mean", "sum", "none"].', (False): True},
+        {(True): ', available options are ["mean", "sum", "none"].', (False): True},
         b'\x97\x01=\x9a}"\xc0"2',
         "Target",
-        {(True)
-          : ', available options are ["mean", "sum", "none"].', (False): True},
+        {(True): ', available options are ["mean", "sum", "none"].', (False): True},
     )
     assert trainer_config_3.track_grad_norm is True
     assert trainer_config_3.check_val_every_n_epoch is False
@@ -307,14 +275,10 @@ def test_case_0():
     assert trainer_config_3.min_epochs == 1
     assert trainer_config_3.max_steps == -1
     assert trainer_config_3.min_steps is None
-    assert trainer_config_3.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_3.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_3.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_3.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_3.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_3.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_3.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_3.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_3.log_every_n_steps == 50
     assert trainer_config_3.accelerator is None
     assert trainer_config_3.sync_batchnorm is False
@@ -333,8 +297,7 @@ def test_case_0():
     assert trainer_config_3.plugins is None
     assert trainer_config_3.move_metrics_to_cpu is False
     assert trainer_config_3.multiple_trainloader_mode == "max_size_cycle"
-    assert trainer_config_3.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_3.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_3.gradient_clip_algorithm == "norm"
     assert trainer_config_3.max_time is None
     assert trainer_config_3.reload_dataloaders_every_n_epochs == 0
@@ -356,8 +319,7 @@ def test_case_1():
     trainer_config_0 = module_0.TrainerConfig(
         float_0, any_0, bool_0, any_0, bool_1, int_0, bool_1, any_0, bool_2, str_0, bool_2, int_0
     )
-    assert trainer_config_0.logger == pytest.approx(
-        -2850.6, abs=0.01, rel=0.01)
+    assert trainer_config_0.logger == pytest.approx(-2850.6, abs=0.01, rel=0.01)
     assert trainer_config_0.callbacks is None
     assert trainer_config_0.default_root_dir is None
     assert trainer_config_0.gradient_clip_val is None
@@ -375,14 +337,10 @@ def test_case_1():
     assert trainer_config_0.min_epochs == 1
     assert trainer_config_0.max_steps == -1
     assert trainer_config_0.min_steps is None
-    assert trainer_config_0.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_0.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_0.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_0.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_0.log_every_n_steps == 50
     assert trainer_config_0.accelerator is None
     assert trainer_config_0.sync_batchnorm is False
@@ -401,8 +359,7 @@ def test_case_1():
     assert trainer_config_0.plugins is None
     assert trainer_config_0.move_metrics_to_cpu is False
     assert trainer_config_0.multiple_trainloader_mode == "max_size_cycle"
-    assert trainer_config_0.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_0.gradient_clip_algorithm == "norm"
     assert trainer_config_0.max_time is None
     assert trainer_config_0.reload_dataloaders_every_n_epochs == 0
@@ -420,8 +377,7 @@ def test_case_1():
     assert module_0.TrainerConfig.auto_select_gpus is False
     assert module_0.TrainerConfig.tpu_cores is None
     assert module_0.TrainerConfig.enable_progress_bar is True
-    assert module_0.TrainerConfig.overfit_batches == pytest.approx(
-        0.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.overfit_batches == pytest.approx(0.0, abs=0.01, rel=0.01)
     assert module_0.TrainerConfig.track_grad_norm == -1
     assert module_0.TrainerConfig.check_val_every_n_epoch == 1
     assert module_0.TrainerConfig.fast_dev_run is False
@@ -430,14 +386,10 @@ def test_case_1():
     assert module_0.TrainerConfig.min_epochs == 1
     assert module_0.TrainerConfig.max_steps == -1
     assert module_0.TrainerConfig.min_steps is None
-    assert module_0.TrainerConfig.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert module_0.TrainerConfig.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert module_0.TrainerConfig.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert module_0.TrainerConfig.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert module_0.TrainerConfig.log_every_n_steps == 50
     assert module_0.TrainerConfig.accelerator is None
     assert module_0.TrainerConfig.sync_batchnorm is False
@@ -456,8 +408,7 @@ def test_case_1():
     assert module_0.TrainerConfig.plugins is None
     assert module_0.TrainerConfig.move_metrics_to_cpu is False
     assert module_0.TrainerConfig.multiple_trainloader_mode == "max_size_cycle"
-    assert module_0.TrainerConfig.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert module_0.TrainerConfig.gradient_clip_algorithm == "norm"
     assert module_0.TrainerConfig.max_time is None
     assert module_0.TrainerConfig.reload_dataloaders_every_n_epochs == 0
@@ -488,8 +439,7 @@ def test_case_2():
     assert trainer_config_0.auto_select_gpus is False
     assert trainer_config_0.tpu_cores == "./+UX?\x0b%u?Zb6?"
     assert trainer_config_0.enable_progress_bar is True
-    assert trainer_config_0.overfit_batches == pytest.approx(
-        -2434.11453, abs=0.01, rel=0.01)
+    assert trainer_config_0.overfit_batches == pytest.approx(-2434.11453, abs=0.01, rel=0.01)
     assert trainer_config_0.track_grad_norm is None
     assert trainer_config_0.check_val_every_n_epoch == 1
     assert trainer_config_0.fast_dev_run is False
@@ -498,14 +448,10 @@ def test_case_2():
     assert trainer_config_0.min_epochs == 1
     assert trainer_config_0.max_steps == -1
     assert trainer_config_0.min_steps is None
-    assert trainer_config_0.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_0.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_0.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_0.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_0.log_every_n_steps == 50
     assert trainer_config_0.accelerator is None
     assert trainer_config_0.sync_batchnorm is False
@@ -524,8 +470,7 @@ def test_case_2():
     assert trainer_config_0.plugins is None
     assert trainer_config_0.move_metrics_to_cpu is False
     assert trainer_config_0.multiple_trainloader_mode == "max_size_cycle"
-    assert trainer_config_0.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_0.gradient_clip_algorithm == "norm"
     assert trainer_config_0.max_time is None
     assert trainer_config_0.reload_dataloaders_every_n_epochs == 0
@@ -543,8 +488,7 @@ def test_case_2():
     assert module_0.TrainerConfig.auto_select_gpus is False
     assert module_0.TrainerConfig.tpu_cores is None
     assert module_0.TrainerConfig.enable_progress_bar is True
-    assert module_0.TrainerConfig.overfit_batches == pytest.approx(
-        0.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.overfit_batches == pytest.approx(0.0, abs=0.01, rel=0.01)
     assert module_0.TrainerConfig.track_grad_norm == -1
     assert module_0.TrainerConfig.check_val_every_n_epoch == 1
     assert module_0.TrainerConfig.fast_dev_run is False
@@ -553,14 +497,10 @@ def test_case_2():
     assert module_0.TrainerConfig.min_epochs == 1
     assert module_0.TrainerConfig.max_steps == -1
     assert module_0.TrainerConfig.min_steps is None
-    assert module_0.TrainerConfig.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert module_0.TrainerConfig.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert module_0.TrainerConfig.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert module_0.TrainerConfig.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert module_0.TrainerConfig.log_every_n_steps == 50
     assert module_0.TrainerConfig.accelerator is None
     assert module_0.TrainerConfig.sync_batchnorm is False
@@ -579,8 +519,7 @@ def test_case_2():
     assert module_0.TrainerConfig.plugins is None
     assert module_0.TrainerConfig.move_metrics_to_cpu is False
     assert module_0.TrainerConfig.multiple_trainloader_mode == "max_size_cycle"
-    assert module_0.TrainerConfig.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert module_0.TrainerConfig.gradient_clip_algorithm == "norm"
     assert module_0.TrainerConfig.max_time is None
     assert module_0.TrainerConfig.reload_dataloaders_every_n_epochs == 0
@@ -637,14 +576,10 @@ def test_case_2():
     assert trainer_config_2.min_epochs == 1
     assert trainer_config_2.max_steps == -1
     assert trainer_config_2.min_steps is None
-    assert trainer_config_2.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_2.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_2.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_2.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_2.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_2.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_2.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_2.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_2.log_every_n_steps == 50
     assert trainer_config_2.accelerator is None
     assert trainer_config_2.sync_batchnorm is False
@@ -663,8 +598,7 @@ def test_case_2():
     assert trainer_config_2.plugins is None
     assert trainer_config_2.move_metrics_to_cpu is False
     assert trainer_config_2.multiple_trainloader_mode == "max_size_cycle"
-    assert trainer_config_2.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_2.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_2.gradient_clip_algorithm == "norm"
     assert trainer_config_2.max_time is None
     assert trainer_config_2.reload_dataloaders_every_n_epochs == 0
@@ -694,8 +628,7 @@ def test_case_2():
         int_4,
     )
     assert trainer_config_3.logger is None
-    assert trainer_config_3.callbacks == (
-        False, b"\xde\xe2z\x0b\x00z\x82\xec\xd1\xbf")
+    assert trainer_config_3.callbacks == (False, b"\xde\xe2z\x0b\x00z\x82\xec\xd1\xbf")
     assert trainer_config_3.default_root_dir == 2083
     assert trainer_config_3.gradient_clip_val == 2083
     assert trainer_config_3.num_nodes == 2083
@@ -707,20 +640,15 @@ def test_case_2():
     assert trainer_config_3.track_grad_norm is True
     assert trainer_config_3.check_val_every_n_epoch == "P@w %3NHryNf]*O"
     assert trainer_config_3.fast_dev_run == "P@w %3NHryNf]*O"
-    assert trainer_config_3.accumulate_grad_batches == pytest.approx(
-        -1771.0, abs=0.01, rel=0.01)
+    assert trainer_config_3.accumulate_grad_batches == pytest.approx(-1771.0, abs=0.01, rel=0.01)
     assert trainer_config_3.max_epochs == 31
     assert trainer_config_3.min_epochs == 1
     assert trainer_config_3.max_steps == -1
     assert trainer_config_3.min_steps is None
-    assert trainer_config_3.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_3.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_3.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_3.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_3.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_3.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_3.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_3.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_3.log_every_n_steps == 50
     assert trainer_config_3.accelerator is None
     assert trainer_config_3.sync_batchnorm is False
@@ -739,8 +667,7 @@ def test_case_2():
     assert trainer_config_3.plugins is None
     assert trainer_config_3.move_metrics_to_cpu is False
     assert trainer_config_3.multiple_trainloader_mode == "max_size_cycle"
-    assert trainer_config_3.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_3.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_3.gradient_clip_algorithm == "norm"
     assert trainer_config_3.max_time is None
     assert trainer_config_3.reload_dataloaders_every_n_epochs == 0
@@ -796,14 +723,10 @@ def test_case_3():
     assert trainer_config_0.min_epochs == 275
     assert trainer_config_0.max_steps is None
     assert trainer_config_0.min_steps is False
-    assert trainer_config_0.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_0.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_0.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_0.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_0.log_every_n_steps == 50
     assert trainer_config_0.accelerator is None
     assert trainer_config_0.sync_batchnorm is False
@@ -822,8 +745,7 @@ def test_case_3():
     assert trainer_config_0.plugins is None
     assert trainer_config_0.move_metrics_to_cpu is False
     assert trainer_config_0.multiple_trainloader_mode == "max_size_cycle"
-    assert trainer_config_0.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_0.gradient_clip_algorithm == "norm"
     assert trainer_config_0.max_time is None
     assert trainer_config_0.reload_dataloaders_every_n_epochs == 0
@@ -841,8 +763,7 @@ def test_case_3():
     assert module_0.TrainerConfig.auto_select_gpus is False
     assert module_0.TrainerConfig.tpu_cores is None
     assert module_0.TrainerConfig.enable_progress_bar is True
-    assert module_0.TrainerConfig.overfit_batches == pytest.approx(
-        0.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.overfit_batches == pytest.approx(0.0, abs=0.01, rel=0.01)
     assert module_0.TrainerConfig.track_grad_norm == -1
     assert module_0.TrainerConfig.check_val_every_n_epoch == 1
     assert module_0.TrainerConfig.fast_dev_run is False
@@ -851,14 +772,10 @@ def test_case_3():
     assert module_0.TrainerConfig.min_epochs == 1
     assert module_0.TrainerConfig.max_steps == -1
     assert module_0.TrainerConfig.min_steps is None
-    assert module_0.TrainerConfig.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert module_0.TrainerConfig.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert module_0.TrainerConfig.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert module_0.TrainerConfig.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert module_0.TrainerConfig.log_every_n_steps == 50
     assert module_0.TrainerConfig.accelerator is None
     assert module_0.TrainerConfig.sync_batchnorm is False
@@ -877,8 +794,7 @@ def test_case_3():
     assert module_0.TrainerConfig.plugins is None
     assert module_0.TrainerConfig.move_metrics_to_cpu is False
     assert module_0.TrainerConfig.multiple_trainloader_mode == "max_size_cycle"
-    assert module_0.TrainerConfig.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert module_0.TrainerConfig.gradient_clip_algorithm == "norm"
     assert module_0.TrainerConfig.max_time is None
     assert module_0.TrainerConfig.reload_dataloaders_every_n_epochs == 0
@@ -907,8 +823,7 @@ def test_case_4():
     assert trainer_config_0.tpu_cores == -130
     assert trainer_config_0.enable_progress_bar is False
     assert trainer_config_0.overfit_batches is None
-    assert trainer_config_0.track_grad_norm == pytest.approx(
-        0.1, abs=0.01, rel=0.01)
+    assert trainer_config_0.track_grad_norm == pytest.approx(0.1, abs=0.01, rel=0.01)
     assert trainer_config_0.check_val_every_n_epoch is None
     assert trainer_config_0.fast_dev_run == -130
     assert trainer_config_0.accumulate_grad_batches is False
@@ -916,14 +831,10 @@ def test_case_4():
     assert trainer_config_0.min_epochs == 1
     assert trainer_config_0.max_steps == -1
     assert trainer_config_0.min_steps is None
-    assert trainer_config_0.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_0.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_0.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_0.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_0.log_every_n_steps == 50
     assert trainer_config_0.accelerator is None
     assert trainer_config_0.sync_batchnorm is False
@@ -942,8 +853,7 @@ def test_case_4():
     assert trainer_config_0.plugins is None
     assert trainer_config_0.move_metrics_to_cpu is False
     assert trainer_config_0.multiple_trainloader_mode == "max_size_cycle"
-    assert trainer_config_0.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_0.gradient_clip_algorithm == "norm"
     assert trainer_config_0.max_time is None
     assert trainer_config_0.reload_dataloaders_every_n_epochs == 0
@@ -961,8 +871,7 @@ def test_case_4():
     assert module_0.TrainerConfig.auto_select_gpus is False
     assert module_0.TrainerConfig.tpu_cores is None
     assert module_0.TrainerConfig.enable_progress_bar is True
-    assert module_0.TrainerConfig.overfit_batches == pytest.approx(
-        0.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.overfit_batches == pytest.approx(0.0, abs=0.01, rel=0.01)
     assert module_0.TrainerConfig.track_grad_norm == -1
     assert module_0.TrainerConfig.check_val_every_n_epoch == 1
     assert module_0.TrainerConfig.fast_dev_run is False
@@ -971,14 +880,10 @@ def test_case_4():
     assert module_0.TrainerConfig.min_epochs == 1
     assert module_0.TrainerConfig.max_steps == -1
     assert module_0.TrainerConfig.min_steps is None
-    assert module_0.TrainerConfig.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert module_0.TrainerConfig.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert module_0.TrainerConfig.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert module_0.TrainerConfig.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert module_0.TrainerConfig.log_every_n_steps == 50
     assert module_0.TrainerConfig.accelerator is None
     assert module_0.TrainerConfig.sync_batchnorm is False
@@ -997,8 +902,7 @@ def test_case_4():
     assert module_0.TrainerConfig.plugins is None
     assert module_0.TrainerConfig.move_metrics_to_cpu is False
     assert module_0.TrainerConfig.multiple_trainloader_mode == "max_size_cycle"
-    assert module_0.TrainerConfig.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert module_0.TrainerConfig.gradient_clip_algorithm == "norm"
     assert module_0.TrainerConfig.max_time is None
     assert module_0.TrainerConfig.reload_dataloaders_every_n_epochs == 0
@@ -1057,16 +961,11 @@ def test_case_5():
     assert trainer_config_0.max_epochs == "e"
     assert trainer_config_0.min_epochs is None
     assert trainer_config_0.max_steps is None
-    assert trainer_config_0.min_steps == pytest.approx(
-        1898.11652, abs=0.01, rel=0.01)
-    assert trainer_config_0.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_0.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_0.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_0.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.min_steps == pytest.approx(1898.11652, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_0.log_every_n_steps == 50
     assert trainer_config_0.accelerator is None
     assert trainer_config_0.sync_batchnorm is False
@@ -1085,8 +984,7 @@ def test_case_5():
     assert trainer_config_0.plugins is None
     assert trainer_config_0.move_metrics_to_cpu is False
     assert trainer_config_0.multiple_trainloader_mode == "max_size_cycle"
-    assert trainer_config_0.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_0.gradient_clip_algorithm == "norm"
     assert trainer_config_0.max_time is None
     assert trainer_config_0.reload_dataloaders_every_n_epochs == 0
@@ -1104,8 +1002,7 @@ def test_case_5():
     assert module_0.TrainerConfig.auto_select_gpus is False
     assert module_0.TrainerConfig.tpu_cores is None
     assert module_0.TrainerConfig.enable_progress_bar is True
-    assert module_0.TrainerConfig.overfit_batches == pytest.approx(
-        0.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.overfit_batches == pytest.approx(0.0, abs=0.01, rel=0.01)
     assert module_0.TrainerConfig.track_grad_norm == -1
     assert module_0.TrainerConfig.check_val_every_n_epoch == 1
     assert module_0.TrainerConfig.fast_dev_run is False
@@ -1114,14 +1011,10 @@ def test_case_5():
     assert module_0.TrainerConfig.min_epochs == 1
     assert module_0.TrainerConfig.max_steps == -1
     assert module_0.TrainerConfig.min_steps is None
-    assert module_0.TrainerConfig.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert module_0.TrainerConfig.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert module_0.TrainerConfig.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert module_0.TrainerConfig.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert module_0.TrainerConfig.log_every_n_steps == 50
     assert module_0.TrainerConfig.accelerator is None
     assert module_0.TrainerConfig.sync_batchnorm is False
@@ -1140,8 +1033,7 @@ def test_case_5():
     assert module_0.TrainerConfig.plugins is None
     assert module_0.TrainerConfig.move_metrics_to_cpu is False
     assert module_0.TrainerConfig.multiple_trainloader_mode == "max_size_cycle"
-    assert module_0.TrainerConfig.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert module_0.TrainerConfig.gradient_clip_algorithm == "norm"
     assert module_0.TrainerConfig.max_time is None
     assert module_0.TrainerConfig.reload_dataloaders_every_n_epochs == 0
@@ -1191,17 +1083,12 @@ def test_case_5():
     assert trainer_config_1.accumulate_grad_batches == "FhqU2\tE?%9&\t1w"
     assert trainer_config_1.max_epochs is None
     assert trainer_config_1.min_epochs is False
-    assert trainer_config_1.max_steps == pytest.approx(
-        1898.11652, abs=0.01, rel=0.01)
+    assert trainer_config_1.max_steps == pytest.approx(1898.11652, abs=0.01, rel=0.01)
     assert trainer_config_1.min_steps is None
-    assert trainer_config_1.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_1.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_1.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_1.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_1.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_1.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_1.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_1.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_1.log_every_n_steps == 50
     assert trainer_config_1.accelerator is None
     assert trainer_config_1.sync_batchnorm is False
@@ -1220,8 +1107,7 @@ def test_case_5():
     assert trainer_config_1.plugins is None
     assert trainer_config_1.move_metrics_to_cpu is False
     assert trainer_config_1.multiple_trainloader_mode == "max_size_cycle"
-    assert trainer_config_1.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_1.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_1.gradient_clip_algorithm == "norm"
     assert trainer_config_1.max_time is None
     assert trainer_config_1.reload_dataloaders_every_n_epochs == 0
@@ -1261,14 +1147,10 @@ def test_case_5():
     assert trainer_config_2.min_epochs == 1
     assert trainer_config_2.max_steps == -1
     assert trainer_config_2.min_steps is None
-    assert trainer_config_2.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_2.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_2.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_2.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_2.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_2.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_2.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_2.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_2.log_every_n_steps == 50
     assert trainer_config_2.accelerator is None
     assert trainer_config_2.sync_batchnorm is False
@@ -1287,8 +1169,7 @@ def test_case_5():
     assert trainer_config_2.plugins is None
     assert trainer_config_2.move_metrics_to_cpu is False
     assert trainer_config_2.multiple_trainloader_mode == "max_size_cycle"
-    assert trainer_config_2.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_2.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_2.gradient_clip_algorithm == "norm"
     assert trainer_config_2.max_time is None
     assert trainer_config_2.reload_dataloaders_every_n_epochs == 0
@@ -1320,8 +1201,7 @@ def test_case_5():
     )
     assert trainer_config_3.logger == []
     assert trainer_config_3.callbacks == "r\x0c7\n"
-    assert trainer_config_3.default_root_dir == pytest.approx(
-        -158.8, abs=0.01, rel=0.01)
+    assert trainer_config_3.default_root_dir == pytest.approx(-158.8, abs=0.01, rel=0.01)
     assert trainer_config_3.gradient_clip_val == 1191
     assert trainer_config_3.num_nodes is False
     assert trainer_config_3.gpus is False
@@ -1337,14 +1217,10 @@ def test_case_5():
     assert trainer_config_3.min_epochs is False
     assert trainer_config_3.max_steps == -1
     assert trainer_config_3.min_steps is None
-    assert trainer_config_3.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_3.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_3.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_3.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_3.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_3.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_3.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_3.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_3.log_every_n_steps == 50
     assert trainer_config_3.accelerator is None
     assert trainer_config_3.sync_batchnorm is False
@@ -1363,8 +1239,7 @@ def test_case_5():
     assert trainer_config_3.plugins is None
     assert trainer_config_3.move_metrics_to_cpu is False
     assert trainer_config_3.multiple_trainloader_mode == "max_size_cycle"
-    assert trainer_config_3.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_3.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_3.gradient_clip_algorithm == "norm"
     assert trainer_config_3.max_time is None
     assert trainer_config_3.reload_dataloaders_every_n_epochs == 0
@@ -1432,19 +1307,15 @@ def test_case_6():
     assert trainer_config_0.track_grad_norm == "n,bHT\n=%|Pae"
     assert trainer_config_0.check_val_every_n_epoch is False
     assert trainer_config_0.fast_dev_run == "o2d\\G'Xs3a/c\x0c"
-    assert trainer_config_0.accumulate_grad_batches == {
-        "n,bHT\n=%|Pae": 107, (True): -2698}
+    assert trainer_config_0.accumulate_grad_batches == {"n,bHT\n=%|Pae": 107, (True): -2698}
     assert trainer_config_0.max_epochs is None
     assert trainer_config_0.min_epochs is True
     assert trainer_config_0.max_steps is False
-    assert trainer_config_0.min_steps == pytest.approx(
-        -1394.79, abs=0.01, rel=0.01)
+    assert trainer_config_0.min_steps == pytest.approx(-1394.79, abs=0.01, rel=0.01)
     assert trainer_config_0.limit_train_batches == 2213
     assert trainer_config_0.limit_val_batches is False
-    assert trainer_config_0.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_0.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_0.log_every_n_steps == 50
     assert trainer_config_0.accelerator is None
     assert trainer_config_0.sync_batchnorm is False
@@ -1463,8 +1334,7 @@ def test_case_6():
     assert trainer_config_0.plugins is None
     assert trainer_config_0.move_metrics_to_cpu is False
     assert trainer_config_0.multiple_trainloader_mode == "max_size_cycle"
-    assert trainer_config_0.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_0.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_0.gradient_clip_algorithm == "norm"
     assert trainer_config_0.max_time is None
     assert trainer_config_0.reload_dataloaders_every_n_epochs == 0
@@ -1482,8 +1352,7 @@ def test_case_6():
     assert module_0.TrainerConfig.auto_select_gpus is False
     assert module_0.TrainerConfig.tpu_cores is None
     assert module_0.TrainerConfig.enable_progress_bar is True
-    assert module_0.TrainerConfig.overfit_batches == pytest.approx(
-        0.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.overfit_batches == pytest.approx(0.0, abs=0.01, rel=0.01)
     assert module_0.TrainerConfig.track_grad_norm == -1
     assert module_0.TrainerConfig.check_val_every_n_epoch == 1
     assert module_0.TrainerConfig.fast_dev_run is False
@@ -1492,14 +1361,10 @@ def test_case_6():
     assert module_0.TrainerConfig.min_epochs == 1
     assert module_0.TrainerConfig.max_steps == -1
     assert module_0.TrainerConfig.min_steps is None
-    assert module_0.TrainerConfig.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert module_0.TrainerConfig.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert module_0.TrainerConfig.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert module_0.TrainerConfig.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert module_0.TrainerConfig.log_every_n_steps == 50
     assert module_0.TrainerConfig.accelerator is None
     assert module_0.TrainerConfig.sync_batchnorm is False
@@ -1518,8 +1383,7 @@ def test_case_6():
     assert module_0.TrainerConfig.plugins is None
     assert module_0.TrainerConfig.move_metrics_to_cpu is False
     assert module_0.TrainerConfig.multiple_trainloader_mode == "max_size_cycle"
-    assert module_0.TrainerConfig.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert module_0.TrainerConfig.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert module_0.TrainerConfig.gradient_clip_algorithm == "norm"
     assert module_0.TrainerConfig.max_time is None
     assert module_0.TrainerConfig.reload_dataloaders_every_n_epochs == 0
@@ -1547,20 +1411,15 @@ def test_case_6():
     assert trainer_config_1.track_grad_norm is True
     assert trainer_config_1.check_val_every_n_epoch is None
     assert trainer_config_1.fast_dev_run == "\\wbSW&4F`\x0b\r~cs5j8"
-    assert trainer_config_1.accumulate_grad_batches == (
-        None, None, True, "mOA=\tB")
+    assert trainer_config_1.accumulate_grad_batches == (None, None, True, "mOA=\tB")
     assert trainer_config_1.max_epochs is True
     assert trainer_config_1.min_epochs == 1
     assert trainer_config_1.max_steps == -1
     assert trainer_config_1.min_steps is None
-    assert trainer_config_1.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_1.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_1.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_1.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_1.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_1.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_1.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_1.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_1.log_every_n_steps == 50
     assert trainer_config_1.accelerator is None
     assert trainer_config_1.sync_batchnorm is False
@@ -1579,8 +1438,7 @@ def test_case_6():
     assert trainer_config_1.plugins is None
     assert trainer_config_1.move_metrics_to_cpu is False
     assert trainer_config_1.multiple_trainloader_mode == "max_size_cycle"
-    assert trainer_config_1.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_1.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_1.gradient_clip_algorithm == "norm"
     assert trainer_config_1.max_time is None
     assert trainer_config_1.reload_dataloaders_every_n_epochs == 0
@@ -1626,8 +1484,7 @@ def test_case_6():
         bool_10,
         bool_0,
     )
-    assert trainer_config_2.logger == pytest.approx(
-        -1394.79, abs=0.01, rel=0.01)
+    assert trainer_config_2.logger == pytest.approx(-1394.79, abs=0.01, rel=0.01)
     assert trainer_config_2.callbacks is False
     assert trainer_config_2.default_root_dir == 107
     assert len(trainer_config_2.gradient_clip_val) == 1
@@ -1637,8 +1494,7 @@ def test_case_6():
     assert trainer_config_2.tpu_cores is False
     assert trainer_config_2.enable_progress_bar == "\\wbSW&4F`\x0b\r~cs5j8"
     assert trainer_config_2.overfit_batches is True
-    assert trainer_config_2.track_grad_norm == pytest.approx(
-        1937.77703, abs=0.01, rel=0.01)
+    assert trainer_config_2.track_grad_norm == pytest.approx(1937.77703, abs=0.01, rel=0.01)
     assert (
         trainer_config_2.check_val_every_n_epoch
         == """This class represents axis semantics and (optionally) it's dimensionality
@@ -1660,14 +1516,10 @@ def test_case_6():
     assert trainer_config_2.min_epochs is False
     assert trainer_config_2.max_steps is False
     assert trainer_config_2.min_steps is None
-    assert trainer_config_2.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_2.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_2.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_2.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_2.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_2.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_2.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_2.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_2.log_every_n_steps == 50
     assert trainer_config_2.accelerator is None
     assert trainer_config_2.sync_batchnorm is False
@@ -1686,8 +1538,7 @@ def test_case_6():
     assert trainer_config_2.plugins is None
     assert trainer_config_2.move_metrics_to_cpu is False
     assert trainer_config_2.multiple_trainloader_mode == "max_size_cycle"
-    assert trainer_config_2.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_2.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_2.gradient_clip_algorithm == "norm"
     assert trainer_config_2.max_time is None
     assert trainer_config_2.reload_dataloaders_every_n_epochs == 0
@@ -1744,14 +1595,10 @@ def test_case_6():
     assert trainer_config_3.min_epochs == "LPDNET"
     assert trainer_config_3.max_steps == 3101
     assert trainer_config_3.min_steps == []
-    assert trainer_config_3.limit_train_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_3.limit_val_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_3.limit_test_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
-    assert trainer_config_3.val_check_interval == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_3.limit_train_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_3.limit_val_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_3.limit_test_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
+    assert trainer_config_3.val_check_interval == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_3.log_every_n_steps == 50
     assert trainer_config_3.accelerator is None
     assert trainer_config_3.sync_batchnorm is False
@@ -1770,8 +1617,7 @@ def test_case_6():
     assert trainer_config_3.plugins is None
     assert trainer_config_3.move_metrics_to_cpu is False
     assert trainer_config_3.multiple_trainloader_mode == "max_size_cycle"
-    assert trainer_config_3.limit_predict_batches == pytest.approx(
-        1.0, abs=0.01, rel=0.01)
+    assert trainer_config_3.limit_predict_batches == pytest.approx(1.0, abs=0.01, rel=0.01)
     assert trainer_config_3.gradient_clip_algorithm == "norm"
     assert trainer_config_3.max_time is None
     assert trainer_config_3.reload_dataloaders_every_n_epochs == 0

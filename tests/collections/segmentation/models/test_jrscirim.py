@@ -579,7 +579,7 @@ def test_jrscirim(shape, cfg, center_fractions, accelerations, dimensionality, s
 
     outputs, masks = [], []
     for i in range(x.shape[0]):
-        output, mask, _ = utils.apply_mask(x[i: i + 1], mask_func, seed=123)
+        output, mask, _ = utils.apply_mask(x[i : i + 1], mask_func, seed=123)
         outputs.append(output)
         masks.append(mask)
 
@@ -623,8 +623,7 @@ def test_jrscirim(shape, cfg, center_fractions, accelerations, dimensionality, s
         pred_reconstruction = pred_reconstruction[-1]
 
     if dimensionality == 3 or consecutive_slices > 1:
-        x = x.reshape([x.shape[0] * x.shape[1], x.shape[2],
-                      x.shape[3], x.shape[4], x.shape[5]])
+        x = x.reshape([x.shape[0] * x.shape[1], x.shape[2], x.shape[3], x.shape[4], x.shape[5]])
     if x.shape[-1] == 2:
         x = x[..., 0] + 1j * x[..., 1]
 
@@ -632,30 +631,26 @@ def test_jrscirim(shape, cfg, center_fractions, accelerations, dimensionality, s
         x = x.sum(coil_dim - 1)  # sum over coils
         if pred_reconstruction.dim() == 4:
             pred_reconstruction = pred_reconstruction.reshape(
-                pred_reconstruction.shape[0] *
-                pred_reconstruction.shape[1], *pred_reconstruction.shape[2:]
+                pred_reconstruction.shape[0] * pred_reconstruction.shape[1], *pred_reconstruction.shape[2:]
             )
         if pred_reconstruction.shape != x.shape:
             raise AssertionError
         if output.dim() == 6:
             output = output.reshape(
-                [output.shape[0] * output.shape[1], output.shape[2],
-                    output.shape[3], output.shape[4], output.shape[5]]
+                [output.shape[0] * output.shape[1], output.shape[2], output.shape[3], output.shape[4], output.shape[5]]
             )
             coil_dim -= 1
         output = torch.view_as_complex(output).sum(coil_dim)
         output = torch.stack([output for _ in range(segmentation_classes)], 1)
         if consecutive_slices > 1:
             pred_segmentation = pred_segmentation.reshape(
-                pred_segmentation.shape[0] *
-                pred_segmentation.shape[1], *pred_segmentation.shape[2:]
+                pred_segmentation.shape[0] * pred_segmentation.shape[1], *pred_segmentation.shape[2:]
             )
         if pred_segmentation.shape != output.shape:
             raise AssertionError
     else:
         if pred_reconstruction.shape[1:] != x.shape[2:]:
             raise AssertionError
-        output = torch.view_as_complex(torch.stack(
-            [output for _ in range(segmentation_classes)], 1).sum(coil_dim + 1))
+        output = torch.view_as_complex(torch.stack([output for _ in range(segmentation_classes)], 1).sum(coil_dim + 1))
         if pred_segmentation.shape != output.shape:
             raise AssertionError

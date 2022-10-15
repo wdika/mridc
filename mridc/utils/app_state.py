@@ -319,8 +319,7 @@ class AppState(metaclass=Singleton):
                 idx = self._model_guid_map[guid].gidx
             else:
                 idx = len(self._model_guid_map)
-            self._model_guid_map[guid] = ModelMetadataRegistry(
-                guid, idx, restoration_path=restoration_path)
+            self._model_guid_map[guid] = ModelMetadataRegistry(guid, idx, restoration_path=restoration_path)
 
     def reset_model_guid_registry(self):
         """Resets the model guid registry."""

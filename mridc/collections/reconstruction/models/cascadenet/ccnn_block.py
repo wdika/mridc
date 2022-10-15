@@ -49,8 +49,7 @@ class CascadeNetBlock(torch.nn.Module):
         self.model = model
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
-        self.spatial_dims = spatial_dims if spatial_dims is not None else [
-            -2, -1]
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
         self.coil_dim = coil_dim
         self.no_dc = no_dc
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
@@ -126,12 +125,10 @@ class CascadeNetBlock(torch.nn.Module):
             torch.Tensor, shape [batch_size, height, width, 2]
         """
         zero = torch.zeros(1, 1, 1, 1, 1).to(pred)
-        soft_dc = torch.where(mask.bool(), pred -
-                              ref_kspace, zero) * self.dc_weight
+        soft_dc = torch.where(mask.bool(), pred - ref_kspace, zero) * self.dc_weight
 
         eta = self.sens_reduce(pred, sens_maps)
-        eta = self.model(eta.squeeze(self.coil_dim).permute(
-            0, 3, 1, 2)).permute(0, 2, 3, 1)
+        eta = self.model(eta.squeeze(self.coil_dim).permute(0, 3, 1, 2)).permute(0, 2, 3, 1)
         eta = self.sens_expand(eta, sens_maps)
 
         if not self.no_dc:

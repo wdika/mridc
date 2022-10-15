@@ -177,8 +177,7 @@ def register_scheduler_params(name: str, scheduler_params: SchedulerParams):
     scheduler_params: SchedulerParams class
     """
     if name in AVAILABLE_SCHEDULER_PARAMS:
-        raise ValueError(
-            f"Cannot override pre-existing optimizers. Conflicting optimizer name = {name}")
+        raise ValueError(f"Cannot override pre-existing optimizers. Conflicting optimizer name = {name}")
 
     AVAILABLE_SCHEDULER_PARAMS[name] = scheduler_params  # type: ignore
 
