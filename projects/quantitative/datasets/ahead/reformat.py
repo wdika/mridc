@@ -38,12 +38,15 @@ def iterate_qmap(qmap, name):
 
 
 def main(args):
-    out_dir_data = Path(str(args.out_path) + "/multicoil_" + str(args.set) + "/")
+    out_dir_data = Path(str(args.out_path) +
+                        "/multicoil_" + str(args.set) + "/")
     out_dir_data.mkdir(parents=True, exist_ok=True)
 
     files = list(Path(args.file_path).iterdir())
-    files = [files[i] for i in range(len(files)) if "Subcortex" in str(files[i])]
-    files = [glob.glob(str(plane) + "/" + "*.h5") for i in range(len(files)) for plane in list(files[i].iterdir())]
+    files = [files[i]
+             for i in range(len(files)) if "Subcortex" in str(files[i])]
+    files = [glob.glob(str(plane) + "/" + "*.h5")
+             for i in range(len(files)) for plane in list(files[i].iterdir())]
 
     maps = []
     data = []
@@ -147,7 +150,8 @@ def main(args):
             elif "subsampling_mask" in key:
                 masks.append([key, data[key][()]])
 
-        R2_star_recons, R2_star_inits, R2_star_targets, R2_star_accs = iterate_qmap(R2star_maps, "R2star_map")
+        R2_star_recons, R2_star_inits, R2_star_targets, R2_star_accs = iterate_qmap(
+            R2star_maps, "R2star_map")
 
         masks_accs = []
         _masks = []
@@ -157,9 +161,12 @@ def main(args):
                 masks_accs.append(acc)
                 _masks.append([f"mask_{acc}x", val])
 
-        B0_recons, B0_inits, B0_targets, B0_accs = iterate_qmap(B0_maps, "B0_map")
-        S0_recons, S0_inits, S0_targets, S0_accs = iterate_qmap(S0_maps, "S0_map")
-        phi_recons, phi_inits, phi_targets, phi_accs = iterate_qmap(phi_maps, "phi_map")
+        B0_recons, B0_inits, B0_targets, B0_accs = iterate_qmap(
+            B0_maps, "B0_map")
+        S0_recons, S0_inits, S0_targets, S0_accs = iterate_qmap(
+            S0_maps, "S0_map")
+        phi_recons, phi_inits, phi_targets, phi_accs = iterate_qmap(
+            phi_maps, "phi_map")
         if len(R2_star_recons) != 0 and len(B0_recons) != 0 and len(S0_recons) != 0 and len(phi_recons) != 0:
             hf = h5py.File(Path(f"{str(out_dir_data)}/{fname}"), "w")
 
@@ -199,9 +206,12 @@ def main(args):
 
 # noinspection PyTypeChecker
 def create_arg_parser():
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("file_path", type=str, help="Path of the files to be converted.")
-    parser.add_argument("out_path", type=str, help="Path to save the converted files.")
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("file_path", type=str,
+                        help="Path of the files to be converted.")
+    parser.add_argument("out_path", type=str,
+                        help="Path to save the converted files.")
     parser.add_argument("set", type=str, help="train/val/test")
     return parser
 

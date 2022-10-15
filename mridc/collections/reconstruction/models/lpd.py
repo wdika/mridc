@@ -53,12 +53,14 @@ class LPDNet(base_models.BaseMRIReconstructionModel, ABC):
                 *[
                     mwcnn_.MWCNN(
                         input_channels=2 * (self.num_primal + 1),
-                        first_conv_hidden_channels=cfg_dict.get("primal_mwcnn_hidden_channels"),
+                        first_conv_hidden_channels=cfg_dict.get(
+                            "primal_mwcnn_hidden_channels"),
                         num_scales=cfg_dict.get("primal_mwcnn_num_scales"),
                         bias=cfg_dict.get("primal_mwcnn_bias"),
                         batchnorm=cfg_dict.get("primal_mwcnn_batchnorm"),
                     ),
-                    torch.nn.Conv2d(2 * (self.num_primal + 1), 2 * self.num_primal, kernel_size=1),
+                    torch.nn.Conv2d(2 * (self.num_primal + 1),
+                                    2 * self.num_primal, kernel_size=1),
                 ]
             )
         elif primal_model_architecture in ["UNET", "NORMUNET"]:
@@ -112,10 +114,12 @@ class LPDNet(base_models.BaseMRIReconstructionModel, ABC):
             )
 
         self.primal_net = torch.nn.ModuleList(
-            [pd.PrimalNet(self.num_primal, primal_architecture=primal_model) for _ in range(self.num_iter)]
+            [pd.PrimalNet(self.num_primal, primal_architecture=primal_model)
+             for _ in range(self.num_iter)]
         )
         self.dual_net = torch.nn.ModuleList(
-            [pd.DualNet(self.num_dual, dual_architecture=dual_model) for _ in range(self.num_iter)]
+            [pd.DualNet(self.num_dual, dual_architecture=dual_model)
+             for _ in range(self.num_iter)]
         )
 
         self.fft_centered = cfg_dict.get("fft_centered")
@@ -123,8 +127,10 @@ class LPDNet(base_models.BaseMRIReconstructionModel, ABC):
         self.spatial_dims = cfg_dict.get("spatial_dims")
         self.coil_dim = cfg_dict.get("coil_dim")
 
-        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get(
+            "train_loss_fn") == "ssim" else L1Loss()
+        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get(
+            "eval_loss_fn") == "ssim" else L1Loss()
 
         self.accumulate_estimates = False
 
@@ -161,7 +167,8 @@ class LPDNet(base_models.BaseMRIReconstructionModel, ABC):
         """
         input_image = utils.complex_mul(
             fft.ifft2(
-                torch.where(mask == 0, torch.tensor([0.0], dtype=y.dtype).to(y.device), y),
+                torch.where(mask == 0, torch.tensor(
+                    [0.0], dtype=y.dtype).to(y.device), y),
                 centered=self.fft_centered,
                 normalization=self.fft_normalization,
                 spatial_dims=self.spatial_dims,
@@ -169,7 +176,8 @@ class LPDNet(base_models.BaseMRIReconstructionModel, ABC):
             utils.complex_conj(sensitivity_maps),
         ).sum(self.coil_dim)
         dual_buffer = torch.cat([y] * self.num_dual, -1).to(y.device)
-        primal_buffer = torch.cat([input_image] * self.num_primal, -1).to(y.device)
+        primal_buffer = torch.cat(
+            [input_image] * self.num_primal, -1).to(y.device)
 
         for idx in range(self.num_iter):
             # Dual
@@ -178,7 +186,8 @@ class LPDNet(base_models.BaseMRIReconstructionModel, ABC):
                 mask == 0,
                 torch.tensor([0.0], dtype=f_2.dtype).to(f_2.device),
                 fft.fft2(
-                    utils.complex_mul(f_2.unsqueeze(self.coil_dim), sensitivity_maps),
+                    utils.complex_mul(f_2.unsqueeze(
+                        self.coil_dim), sensitivity_maps),
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,
@@ -192,7 +201,8 @@ class LPDNet(base_models.BaseMRIReconstructionModel, ABC):
             h_1 = torch.view_as_real(h_1[..., 0] + 1j * h_1[..., 1])
             h_1 = utils.complex_mul(
                 fft.ifft2(
-                    torch.where(mask == 0, torch.tensor([0.0], dtype=h_1.dtype).to(h_1.device), h_1),
+                    torch.where(mask == 0, torch.tensor(
+                        [0.0], dtype=h_1.dtype).to(h_1.device), h_1),
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,

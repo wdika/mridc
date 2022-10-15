@@ -43,7 +43,8 @@ class RAdam(Optimizer):
                     continue
                 grad = p.grad.data.float()
                 if grad.is_sparse:
-                    raise RuntimeError("RAdam does not support sparse gradients")
+                    raise RuntimeError(
+                        "RAdam does not support sparse gradients")
 
                 p_data_fp32 = p.data.float()
 
@@ -55,7 +56,8 @@ class RAdam(Optimizer):
                     state["exp_avg_sq"] = torch.zeros_like(p_data_fp32)
                 else:
                     state["exp_avg"] = state["exp_avg"].type_as(p_data_fp32)
-                    state["exp_avg_sq"] = state["exp_avg_sq"].type_as(p_data_fp32)
+                    state["exp_avg_sq"] = state["exp_avg_sq"].type_as(
+                        p_data_fp32)
 
                 exp_avg, exp_avg_sq = state["exp_avg"], state["exp_avg_sq"]
                 beta1, beta2 = group["betas"]
@@ -71,7 +73,8 @@ class RAdam(Optimizer):
                     buffered[0] = state["step"]
                     beta2_t = beta2 ** state["step"]
                     N_sma_max = 2 / (1 - beta2) - 1
-                    N_sma = N_sma_max - 2 * state["step"] * beta2_t / (1 - beta2_t)
+                    N_sma = N_sma_max - 2 * \
+                        state["step"] * beta2_t / (1 - beta2_t)
                     buffered[1] = N_sma
 
                     # more conservative since it's an approximated value
@@ -94,7 +97,8 @@ class RAdam(Optimizer):
                     buffered[2] = step_size
 
                 if group["weight_decay"] != 0:
-                    p_data_fp32.add_(-group["weight_decay"] * group["lr"], p_data_fp32)
+                    p_data_fp32.add_(-group["weight_decay"]
+                                     * group["lr"], p_data_fp32)
 
                 # more conservative since it's an approximated value
                 if N_sma >= 5:

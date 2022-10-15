@@ -129,7 +129,8 @@ def test_case_7():
         assert module_0.DatasetConfig.pin_memory is True
         str_0 = "Set crop size."
         str_1 = "E?W5"
-        dict_0 = {str_0: bool_1, str_0: bool_1, str_0: dataset_config_0, str_1: dataset_config_0}
+        dict_0 = {str_0: bool_1, str_0: bool_1,
+                  str_0: dataset_config_0, str_1: dataset_config_0}
         dataset_0 = module_0.Dataset(**dict_0)
     except BaseException:
         pass
