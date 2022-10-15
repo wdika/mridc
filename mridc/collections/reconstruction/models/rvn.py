@@ -44,7 +44,8 @@ class RecurrentVarNet(base_models.BaseMRIReconstructionModel, ABC):
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
         self.in_channels = cfg_dict.get("in_channels")
-        self.recurrent_hidden_channels = cfg_dict.get("recurrent_hidden_channels")
+        self.recurrent_hidden_channels = cfg_dict.get(
+            "recurrent_hidden_channels")
         self.recurrent_num_layers = cfg_dict.get("recurrent_num_layers")
         self.no_parameter_sharing = cfg_dict.get("no_parameter_sharing")
 
@@ -52,7 +53,8 @@ class RecurrentVarNet(base_models.BaseMRIReconstructionModel, ABC):
         self.num_steps = 8 * math.ceil(cfg_dict.get("num_steps") / 8)
 
         self.learned_initializer = cfg_dict.get("learned_initializer")
-        self.initializer_initialization = cfg_dict.get("initializer_initialization")
+        self.initializer_initialization = cfg_dict.get(
+            "initializer_initialization")
         self.initializer_channels = cfg_dict.get("initializer_channels")
         self.initializer_dilations = cfg_dict.get("initializer_dilations")
 
@@ -106,10 +108,13 @@ class RecurrentVarNet(base_models.BaseMRIReconstructionModel, ABC):
 
         # initialize weights if not using pretrained cirim
         if not cfg_dict.get("pretrained", False):
-            self.block_list.apply(lambda module: rnn_utils.rnn_weights_init(module, std_init_range))
+            self.block_list.apply(
+                lambda module: rnn_utils.rnn_weights_init(module, std_init_range))
 
-        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get(
+            "train_loss_fn") == "ssim" else L1Loss()
+        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get(
+            "eval_loss_fn") == "ssim" else L1Loss()
 
         self.accumulate_estimates = False
 
@@ -168,7 +173,8 @@ class RecurrentVarNet(base_models.BaseMRIReconstructionModel, ABC):
                         "`'initial_image` is required as input if initializer_initialization "
                         f"is {self.initializer_initialization}."
                     )
-                initializer_input_image = kwargs["initial_image"].unsqueeze(self.coil_dim)
+                initializer_input_image = kwargs["initial_image"].unsqueeze(
+                    self.coil_dim)
             elif self.initializer_initialization == "zero_filled":
                 initializer_input_image = fft.ifft2(
                     y,
@@ -206,7 +212,8 @@ class RecurrentVarNet(base_models.BaseMRIReconstructionModel, ABC):
             normalization=self.fft_normalization,
             spatial_dims=self.spatial_dims,
         )
-        eta = utils.coil_combination(eta, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim)
+        eta = utils.coil_combination(
+            eta, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim)
         eta = torch.view_as_complex(eta)
         _, eta = utils.center_crop_to_smallest(target, eta)
         return eta

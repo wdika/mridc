@@ -89,7 +89,8 @@ class ExampleModel(pl.LightningModule, ABC):
     def training_step(self, batch, batch_idx):
         """Set training step."""
         output = self.l1(batch)
-        output = torch.nn.functional.l1_loss(output, torch.ones(output.size()).to(output.device))
+        output = torch.nn.functional.l1_loss(
+            output, torch.ones(output.size()).to(output.device))
         return {"loss": output}
 
     def configure_optimizers(self):
@@ -107,8 +108,10 @@ class Callback(pl.callbacks.Callback):
         count = module.my_opt.param_groups[0]["count"]
         if trainer.global_step != count or trainer.global_step != module.max_steps:
             logging.debug(f"max_epochs: {trainer.max_epochs}")
-            logging.debug(f"accumulate_grad_batches: {trainer.accumulate_grad_batches}")
-            logging.debug(f"limit_train_batches: {trainer.limit_train_batches}")
+            logging.debug(
+                f"accumulate_grad_batches: {trainer.accumulate_grad_batches}")
+            logging.debug(
+                f"limit_train_batches: {trainer.limit_train_batches}")
             logging.debug(f"num_processes: {trainer.num_processes}")
             logging.debug(f"batch_size: {module.batch_size}")
             logging.debug(f"dataset_len: {module.dataset_len}")
@@ -122,9 +125,11 @@ class Callback(pl.callbacks.Callback):
     def assert_counts(trainer, module, count):
         """Assert that the number of steps is correct"""
         if trainer.global_step != count:
-            raise AssertionError(f"{trainer.global_step} != {count} != {module.max_steps}")
+            raise AssertionError(
+                f"{trainer.global_step} != {count} != {module.max_steps}")
         if trainer.global_step != module.max_steps:
-            raise AssertionError(f"{trainer.global_step} != {count} != {module.max_steps}")
+            raise AssertionError(
+                f"{trainer.global_step} != {count} != {module.max_steps}")
 
 
 class SchedulerNoOpCallback(Callback):
@@ -151,9 +156,11 @@ class SchedulerNoOpCallback(Callback):
         num_skips = torch.div(module.max_steps, 3, rounding_mode="trunc")
         extra_steps = module.max_steps + num_skips
         if trainer.global_step != count:
-            raise AssertionError(f"{trainer.global_step} != {count} != {extra_steps}")
+            raise AssertionError(
+                f"{trainer.global_step} != {count} != {extra_steps}")
         if trainer.global_step != extra_steps:
-            raise AssertionError(f"{trainer.global_step} != {count} != {extra_steps}")
+            raise AssertionError(
+                f"{trainer.global_step} != {count} != {extra_steps}")
 
 
 class TestOptimizersSchedulers:
@@ -306,7 +313,8 @@ class TestOptimizersSchedulers:
         class TempSchedParams(CosineAnnealingParams):
             """Temporary scheduler class."""
 
-        optim.lr_scheduler.register_scheduler("TempSched", TempSched, TempSchedParams)
+        optim.lr_scheduler.register_scheduler(
+            "TempSched", TempSched, TempSchedParams)
 
         model = TempModel()
         opt_cls = get_optimizer("novograd")
@@ -325,12 +333,14 @@ class TestOptimizersSchedulers:
         opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
 
         basic_sched_config = {"name": "CosineAnnealing", "max_steps": 10}
-        scheduler_setup = optim.lr_scheduler.prepare_lr_scheduler(opt, basic_sched_config)
+        scheduler_setup = optim.lr_scheduler.prepare_lr_scheduler(
+            opt, basic_sched_config)
         if not isinstance(scheduler_setup["scheduler"], optim.lr_scheduler.CosineAnnealing):
             raise AssertionError
 
         dict_config = omegaconf.OmegaConf.create(basic_sched_config)
-        scheduler_setup = optim.lr_scheduler.prepare_lr_scheduler(opt, dict_config)
+        scheduler_setup = optim.lr_scheduler.prepare_lr_scheduler(
+            opt, dict_config)
         if not isinstance(scheduler_setup["scheduler"], optim.lr_scheduler.CosineAnnealing):
             raise AssertionError
 
@@ -346,12 +356,14 @@ class TestOptimizersSchedulers:
             "params": {"min_lr": 0.1},
             "max_steps": self.MAX_STEPS,
         }
-        scheduler_setup = optim.lr_scheduler.prepare_lr_scheduler(opt, basic_sched_config)
+        scheduler_setup = optim.lr_scheduler.prepare_lr_scheduler(
+            opt, basic_sched_config)
         if not isinstance(scheduler_setup["scheduler"], optim.lr_scheduler.CosineAnnealing):
             raise AssertionError
 
         dict_config = omegaconf.OmegaConf.create(basic_sched_config)
-        scheduler_setup = optim.lr_scheduler.prepare_lr_scheduler(opt, dict_config)
+        scheduler_setup = optim.lr_scheduler.prepare_lr_scheduler(
+            opt, dict_config)
         if not isinstance(scheduler_setup["scheduler"], optim.lr_scheduler.CosineAnnealing):
             raise AssertionError
 
@@ -363,7 +375,8 @@ class TestOptimizersSchedulers:
         opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
 
         # No warmup case
-        policy = optim.lr_scheduler.WarmupPolicy(opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
+        policy = optim.lr_scheduler.WarmupPolicy(
+            opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
         if initial_lr != self.INITIAL_LR:
@@ -382,7 +395,8 @@ class TestOptimizersSchedulers:
             raise AssertionError
 
         # Warmup steps available
-        policy = optim.lr_scheduler.WarmupPolicy(opt, warmup_steps=5, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
+        policy = optim.lr_scheduler.WarmupPolicy(
+            opt, warmup_steps=5, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
         if initial_lr >= self.INITIAL_LR:
@@ -411,7 +425,8 @@ class TestOptimizersSchedulers:
         opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
 
         # No warmup case
-        policy = optim.lr_scheduler.WarmupHoldPolicy(opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
+        policy = optim.lr_scheduler.WarmupHoldPolicy(
+            opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
         if initial_lr != self.INITIAL_LR:
@@ -430,7 +445,8 @@ class TestOptimizersSchedulers:
             raise AssertionError
 
         # Warmup steps available
-        policy = optim.lr_scheduler.WarmupHoldPolicy(opt, warmup_steps=5, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
+        policy = optim.lr_scheduler.WarmupHoldPolicy(
+            opt, warmup_steps=5, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
         if initial_lr >= self.INITIAL_LR:
@@ -484,7 +500,8 @@ class TestOptimizersSchedulers:
         opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
 
         # No warmup case
-        policy = optim.lr_scheduler.WarmupAnnealing(opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
+        policy = optim.lr_scheduler.WarmupAnnealing(
+            opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
         if initial_lr != self.INITIAL_LR:
@@ -503,7 +520,8 @@ class TestOptimizersSchedulers:
             raise AssertionError
 
         # Warmup steps available
-        policy = optim.lr_scheduler.WarmupAnnealing(opt, warmup_steps=5, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
+        policy = optim.lr_scheduler.WarmupAnnealing(
+            opt, warmup_steps=5, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
         if initial_lr >= self.INITIAL_LR:
@@ -557,7 +575,8 @@ class TestOptimizersSchedulers:
         opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
 
         # No warmup case
-        policy = optim.lr_scheduler.SquareAnnealing(opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
+        policy = optim.lr_scheduler.SquareAnnealing(
+            opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
         if initial_lr != self.INITIAL_LR:
@@ -576,7 +595,8 @@ class TestOptimizersSchedulers:
             raise AssertionError
 
         # Warmup steps available
-        policy = optim.lr_scheduler.SquareAnnealing(opt, warmup_steps=5, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
+        policy = optim.lr_scheduler.SquareAnnealing(
+            opt, warmup_steps=5, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
         if initial_lr >= self.INITIAL_LR:
@@ -606,7 +626,8 @@ class TestOptimizersSchedulers:
         opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
 
         # No warmup case
-        policy = SquareRootAnnealing(opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
+        policy = SquareRootAnnealing(
+            opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
         if initial_lr != self.INITIAL_LR:
@@ -657,7 +678,8 @@ class TestOptimizersSchedulers:
         opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
 
         # No warmup case
-        policy = optim.lr_scheduler.CosineAnnealing(opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
+        policy = optim.lr_scheduler.CosineAnnealing(
+            opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
         if initial_lr != self.INITIAL_LR:
@@ -676,7 +698,8 @@ class TestOptimizersSchedulers:
             raise AssertionError
 
         # Warmup steps available
-        policy = optim.lr_scheduler.CosineAnnealing(opt, warmup_steps=5, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
+        policy = optim.lr_scheduler.CosineAnnealing(
+            opt, warmup_steps=5, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
         if initial_lr >= self.INITIAL_LR:
@@ -769,7 +792,8 @@ class TestOptimizersSchedulers:
             if i <= 5:
                 assert policy1.get_last_lr()[0] <= self.INITIAL_LR
             else:
-                assert self.MIN_LR <= policy1.get_last_lr()[0] <= self.INITIAL_LR
+                assert self.MIN_LR <= policy1.get_last_lr()[
+                    0] <= self.INITIAL_LR
                 assert policy1.get_last_lr()[0] <= policy2.get_last_lr()[0]
 
             opt1.step()
@@ -915,7 +939,8 @@ class TestOptimizersSchedulers:
         opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
 
         # No warmup case
-        policy = optim.lr_scheduler.InverseSquareRootAnnealing(opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
+        policy = optim.lr_scheduler.InverseSquareRootAnnealing(
+            opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
         if initial_lr != self.INITIAL_LR:
@@ -966,7 +991,8 @@ class TestOptimizersSchedulers:
         opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
 
         # No warmup case
-        policy = optim.lr_scheduler.CosineAnnealing(opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
+        policy = optim.lr_scheduler.CosineAnnealing(
+            opt, max_steps=self.MAX_STEPS, min_lr=self.MIN_LR)
         initial_lr = policy.get_last_lr()[0]
 
         if initial_lr != self.INITIAL_LR:
@@ -1073,11 +1099,13 @@ class TestOptimizersSchedulers:
 
             limit_train_batches_int = random.randint(1, 10)
             limit_train_batches_float = 1.0
-            limit_train_batches = random.choice([limit_train_batches_int, limit_train_batches_float])
+            limit_train_batches = random.choice(
+                [limit_train_batches_int, limit_train_batches_float])
             max_epochs = random.randint(4, 20)
             devices = random.randint(1, 5)
             dataset_len = random.randint(20, devices * 500)
-            batch_size = random.randint(math.ceil(5.0 / devices), min(dataset_len // devices, 128))
+            batch_size = random.randint(
+                math.ceil(5.0 / devices), min(dataset_len // devices, 128))
             train(
                 max_epochs,
                 accumulate_grad_batches,

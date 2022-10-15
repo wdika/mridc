@@ -92,7 +92,8 @@ class ExampleModel(ModelPT):
                 "max_steps": -1,
             }
         )
-        trainer = OmegaConf.create(OmegaConf.to_container(trainer, resolve=True))
+        trainer = OmegaConf.create(
+            OmegaConf.to_container(trainer, resolve=True))
         trainer = pl.Trainer(**trainer)
 
         super().__init__(cfg=cfg, trainer=trainer)
@@ -109,7 +110,8 @@ class ExampleModel(ModelPT):
 
     def forward(self, batch):
         output = self.l1(batch)
-        output = torch.nn.functional.l1_loss(output, torch.zeros(output.size()).to(output.device))
+        output = torch.nn.functional.l1_loss(
+            output, torch.zeros(output.size()).to(output.device))
         return output
 
     def validation_step(self, batch, batch_idx):

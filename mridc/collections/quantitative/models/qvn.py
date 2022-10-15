@@ -41,7 +41,8 @@ class qVarNet(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
         super().__init__(cfg=cfg, trainer=trainer)
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
-        quantitative_module_dimensionality = cfg_dict.get("quantitative_module_dimensionality")
+        quantitative_module_dimensionality = cfg_dict.get(
+            "quantitative_module_dimensionality")
         if quantitative_module_dimensionality != 2:
             raise ValueError(
                 f"Only 2D is currently supported for qMRI models.Found {quantitative_module_dimensionality}"
@@ -56,21 +57,30 @@ class qVarNet(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
 
         self.vn = torch.nn.ModuleList([])
 
-        self.use_reconstruction_module = cfg_dict.get("use_reconstruction_module")
+        self.use_reconstruction_module = cfg_dict.get(
+            "use_reconstruction_module")
         if self.use_reconstruction_module:
-            self.reconstruction_module_num_cascades = cfg_dict.get("reconstruction_module_num_cascades")
-            self.reconstruction_module_no_dc = cfg_dict.get("reconstruction_module_no_dc")
+            self.reconstruction_module_num_cascades = cfg_dict.get(
+                "reconstruction_module_num_cascades")
+            self.reconstruction_module_no_dc = cfg_dict.get(
+                "reconstruction_module_no_dc")
 
             for _ in range(self.reconstruction_module_num_cascades):
                 self.vn.append(
                     qvn_block.qVarNetBlock(
                         unet_block.NormUnet(
-                            chans=cfg_dict.get("reconstruction_module_channels"),
-                            num_pools=cfg_dict.get("reconstruction_module_pooling_layers"),
-                            in_chans=cfg_dict.get("reconstruction_module_in_channels"),
-                            out_chans=cfg_dict.get("reconstruction_module_out_channels"),
-                            padding_size=cfg_dict.get("reconstruction_module_padding_size"),
-                            normalize=cfg_dict.get("reconstruction_module_normalize"),
+                            chans=cfg_dict.get(
+                                "reconstruction_module_channels"),
+                            num_pools=cfg_dict.get(
+                                "reconstruction_module_pooling_layers"),
+                            in_chans=cfg_dict.get(
+                                "reconstruction_module_in_channels"),
+                            out_chans=cfg_dict.get(
+                                "reconstruction_module_out_channels"),
+                            padding_size=cfg_dict.get(
+                                "reconstruction_module_padding_size"),
+                            normalize=cfg_dict.get(
+                                "reconstruction_module_normalize"),
                         ),
                         fft_centered=self.fft_centered,
                         fft_normalization=self.fft_normalization,
@@ -85,17 +95,23 @@ class qVarNet(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
                 "reconstruction_module_accumulate_estimates"
             )
 
-        quantitative_module_num_cascades = cfg_dict.get("quantitative_module_num_cascades")
+        quantitative_module_num_cascades = cfg_dict.get(
+            "quantitative_module_num_cascades")
         self.qvn = torch.nn.ModuleList(
             [
                 qvn_block.qVarNetBlock(
                     unet_block.NormUnet(
                         chans=cfg_dict.get("quantitative_module_channels"),
-                        num_pools=cfg_dict.get("quantitative_module_pooling_layers"),
-                        in_chans=cfg_dict.get("quantitative_module_in_channels"),
-                        out_chans=cfg_dict.get("quantitative_module_out_channels"),
-                        padding_size=cfg_dict.get("quantitative_module_padding_size"),
-                        normalize=cfg_dict.get("quantitative_module_normalize"),
+                        num_pools=cfg_dict.get(
+                            "quantitative_module_pooling_layers"),
+                        in_chans=cfg_dict.get(
+                            "quantitative_module_in_channels"),
+                        out_chans=cfg_dict.get(
+                            "quantitative_module_out_channels"),
+                        padding_size=cfg_dict.get(
+                            "quantitative_module_padding_size"),
+                        normalize=cfg_dict.get(
+                            "quantitative_module_normalize"),
                     ),
                     fft_centered=self.fft_centered,
                     fft_normalization=self.fft_normalization,
@@ -103,16 +119,19 @@ class qVarNet(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
                     coil_dim=self.coil_dim,
                     no_dc=cfg_dict.get("quantitative_module_no_dc"),
                     linear_forward_model=qrim_utils.SignalForwardModel(
-                        sequence=cfg_dict.get("quantitative_module_signal_forward_model_sequence")
+                        sequence=cfg_dict.get(
+                            "quantitative_module_signal_forward_model_sequence")
                     ),
                 )
                 for _ in range(quantitative_module_num_cascades)
             ]
         )
 
-        self.accumulate_estimates = cfg_dict.get("quantitative_module_accumulate_estimates")
+        self.accumulate_estimates = cfg_dict.get(
+            "quantitative_module_accumulate_estimates")
 
-        self.gamma = torch.tensor(cfg_dict.get("quantitative_module_gamma_regularization_factors"))
+        self.gamma = torch.tensor(cfg_dict.get(
+            "quantitative_module_gamma_regularization_factors"))
         self.preprocessor = qrim_utils.RescaleByMax
 
     @common_classes.typecheck()
@@ -165,7 +184,8 @@ class qVarNet(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
                 prediction = y[:, echo, ...].clone()
                 for cascade in self.vn:
                     # Forward pass through the cascades
-                    prediction = cascade(prediction, y[:, echo, ...], sensitivity_maps, sampling_mask.squeeze(1))
+                    prediction = cascade(
+                        prediction, y[:, echo, ...], sensitivity_maps, sampling_mask.squeeze(1))
                 estimation = fft.ifft2(
                     prediction,
                     centered=self.fft_centered,
@@ -181,7 +201,8 @@ class qVarNet(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
             if eta.shape[-1] != 2:
                 eta = torch.view_as_real(eta)
             y = fft.fft2(
-                utils.complex_mul(eta.unsqueeze(self.coil_dim), sensitivity_maps.unsqueeze(self.coil_dim - 1)),
+                utils.complex_mul(eta.unsqueeze(self.coil_dim),
+                                  sensitivity_maps.unsqueeze(self.coil_dim - 1)),
                 self.fft_centered,
                 self.fft_normalization,
                 self.spatial_dims,
