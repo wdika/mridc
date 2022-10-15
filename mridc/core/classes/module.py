@@ -54,7 +54,8 @@ class NeuralModule(Module, Typing, Serialization, FileIO, ABC):
     def as_frozen(self):
         """Context manager which temporarily freezes a module, yields control and finally unfreezes the module."""
         training_mode = self.training
-        grad_map = {pname: param.requires_grad for pname, param in self.named_parameters()}
+        grad_map = {pname: param.requires_grad for pname,
+                    param in self.named_parameters()}
 
         self.freeze()
         try:

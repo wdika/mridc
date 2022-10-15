@@ -71,8 +71,10 @@ class CRNNet(base_models.BaseMRIReconstructionModel, ABC):
         # initialize weights if not using pretrained ccnn
         # TODO if not ccnn_cfg_dict.get("pretrained", False)
 
-        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get(
+            "train_loss_fn") == "ssim" else L1Loss()
+        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get(
+            "eval_loss_fn") == "ssim" else L1Loss()
 
         self.accumulate_estimates = True
 
@@ -131,7 +133,8 @@ class CRNNet(base_models.BaseMRIReconstructionModel, ABC):
         pred = fft.ifft2(
             pred, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
         )
-        pred = utils.coil_combination(pred, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim)
+        pred = utils.coil_combination(
+            pred, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim)
         pred = torch.view_as_complex(pred)
         _, pred = utils.center_crop_to_smallest(target, pred)
         return pred
@@ -158,14 +161,17 @@ class CRNNet(base_models.BaseMRIReconstructionModel, ABC):
         target = torch.abs(target / torch.max(torch.abs(target)))
 
         if "ssim" in str(_loss_fn).lower():
-            max_value = np.array(torch.max(torch.abs(target)).item()).astype(np.float32)
+            max_value = np.array(
+                torch.max(torch.abs(target)).item()).astype(np.float32)
 
             def loss_fn(x, y):
                 """Calculate the ssim loss."""
                 return _loss_fn(
                     x.unsqueeze(dim=self.coil_dim),
-                    torch.abs(y / torch.max(torch.abs(y))).unsqueeze(dim=self.coil_dim),
-                    data_range=torch.tensor(max_value).unsqueeze(dim=0).to(x.device),
+                    torch.abs(y / torch.max(torch.abs(y))
+                              ).unsqueeze(dim=self.coil_dim),
+                    data_range=torch.tensor(
+                        max_value).unsqueeze(dim=0).to(x.device),
                 )
 
         else:
@@ -174,6 +180,8 @@ class CRNNet(base_models.BaseMRIReconstructionModel, ABC):
                 """Calculate other loss."""
                 return _loss_fn(x, torch.abs(y / torch.max(torch.abs(y))))
 
-        iterations_loss = [loss_fn(target, iteration_pred) for iteration_pred in pred]
-        _loss = [x * torch.logspace(-1, 0, steps=self.num_iterations).to(iterations_loss[0]) for x in iterations_loss]
+        iterations_loss = [loss_fn(target, iteration_pred)
+                           for iteration_pred in pred]
+        _loss = [x * torch.logspace(-1, 0, steps=self.num_iterations).to(
+            iterations_loss[0]) for x in iterations_loss]
         yield sum(sum(_loss) / self.num_iterations)

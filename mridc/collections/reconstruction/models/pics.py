@@ -98,9 +98,11 @@ class PICS(base_models.BaseMRIReconstructionModel, ABC):
             Predicted data.
         """
         if "cuda" in str(self._device):
-            pred = bart.bart(1, f"pics -d0 -g -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
+            pred = bart.bart(
+                1, f"pics -d0 -g -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
         else:
-            pred = bart.bart(1, f"pics -d0 -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
+            pred = bart.bart(
+                1, f"pics -d0 -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
         _, pred = utils.center_crop_to_smallest(target, pred)
         return pred
 
@@ -151,10 +153,13 @@ class PICS(base_models.BaseMRIReconstructionModel, ABC):
 
         sensitivity_maps = torch.view_as_complex(sensitivity_maps)
         if self.pics_centered:
-            sensitivity_maps = torch.fft.fftshift(sensitivity_maps, dim=self.spatial_dims)
-        sensitivity_maps = sensitivity_maps.permute(0, 2, 3, 1).detach().cpu().numpy()  # type: ignore
+            sensitivity_maps = torch.fft.fftshift(
+                sensitivity_maps, dim=self.spatial_dims)
+        sensitivity_maps = sensitivity_maps.permute(
+            0, 2, 3, 1).detach().cpu().numpy()  # type: ignore
 
-        prediction = torch.from_numpy(self.forward(y, sensitivity_maps, mask, target)).unsqueeze(0)
+        prediction = torch.from_numpy(self.forward(
+            y, sensitivity_maps, mask, target)).unsqueeze(0)
         if self.pics_centered:
             prediction = torch.fft.fftshift(prediction, dim=self.spatial_dims)
 
@@ -172,8 +177,10 @@ class PICS(base_models.BaseMRIReconstructionModel, ABC):
 
         target = target.numpy()  # type: ignore
         output = output.numpy()  # type: ignore
-        self.mse_vals[fname][slice_num] = torch.tensor(metrics.mse(target, output)).view(1)
-        self.nmse_vals[fname][slice_num] = torch.tensor(metrics.nmse(target, output)).view(1)
+        self.mse_vals[fname][slice_num] = torch.tensor(
+            metrics.mse(target, output)).view(1)
+        self.nmse_vals[fname][slice_num] = torch.tensor(
+            metrics.nmse(target, output)).view(1)
         self.ssim_vals[fname][slice_num] = torch.tensor(
             metrics.ssim(target, output, maxval=output.max() - output.min())
         ).view(1)

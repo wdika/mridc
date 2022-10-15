@@ -163,7 +163,7 @@ def test_crnn(shape, cfg, center_fractions, accelerations, dimensionality, train
 
     outputs, masks = [], []
     for i in range(x.shape[0]):
-        output, mask, _ = utils.apply_mask(x[i : i + 1], mask_func, seed=123)
+        output, mask, _ = utils.apply_mask(x[i: i + 1], mask_func, seed=123)
         outputs.append(output)
         masks.append(mask)
 
@@ -183,7 +183,8 @@ def test_crnn(shape, cfg, center_fractions, accelerations, dimensionality, train
     crnn = CRNNet(cfg, trainer=trainer)
 
     with torch.no_grad():
-        y = crnn.forward(output, output, mask, output, target=torch.abs(torch.view_as_complex(output)))
+        y = crnn.forward(output, output, mask, output,
+                         target=torch.abs(torch.view_as_complex(output)))
 
         try:
             y = next(y)
@@ -193,7 +194,8 @@ def test_crnn(shape, cfg, center_fractions, accelerations, dimensionality, train
         y = y[-1]
 
     if dimensionality == 3:
-        x = x.reshape([x.shape[0] * x.shape[1], x.shape[2], x.shape[3], x.shape[4], x.shape[5]])
+        x = x.reshape([x.shape[0] * x.shape[1], x.shape[2],
+                      x.shape[3], x.shape[4], x.shape[5]])
 
     if y.shape[1:] != x.shape[2:4]:
         raise AssertionError

@@ -15,7 +15,8 @@ def test_case_0():
     assert sched_config_0.min_lr == pytest.approx(0.0, abs=0.01, rel=0.01)
     assert sched_config_0.last_epoch == -1
     assert module_0.SchedConfig.name == "???"
-    assert module_0.SchedConfig.min_lr == pytest.approx(0.0, abs=0.01, rel=0.01)
+    assert module_0.SchedConfig.min_lr == pytest.approx(
+        0.0, abs=0.01, rel=0.01)
     assert module_0.SchedConfig.last_epoch == -1
     optim_config_0 = module_0.OptimConfig()
     assert optim_config_0.name == "???"

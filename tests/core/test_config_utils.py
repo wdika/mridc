@@ -40,7 +40,8 @@ class TestConfigUtils:
             c: int = 0
             d: Any = None
 
-        result = config_utils.assert_dataclass_signature_match(cls, DummyDataClass)
+        result = config_utils.assert_dataclass_signature_match(
+            cls, DummyDataClass)
         signatures_match, cls_subset, dataclass_subset = result
 
         if not signatures_match:
@@ -63,7 +64,8 @@ class TestConfigUtils:
             c: int = 0
             d: Any = None
 
-        result = config_utils.assert_dataclass_signature_match(cls, DummyDataClass, ignore_args=["e"])
+        result = config_utils.assert_dataclass_signature_match(
+            cls, DummyDataClass, ignore_args=["e"])
         signatures_match, cls_subset, dataclass_subset = result
 
         if not signatures_match:
@@ -86,7 +88,8 @@ class TestConfigUtils:
             c: int = 0
             e: Any = None  # Assume remapped
 
-        result = config_utils.assert_dataclass_signature_match(cls, DummyDataClass, remap_args={"e": "d"})
+        result = config_utils.assert_dataclass_signature_match(
+            cls, DummyDataClass, remap_args={"e": "d"})
         signatures_match, cls_subset, dataclass_subset = result
 
         if not signatures_match:
