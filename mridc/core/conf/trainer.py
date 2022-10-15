@@ -59,7 +59,8 @@ class TrainerConfig:
     multiple_trainloader_mode: str = "max_size_cycle"
     limit_predict_batches: float = 1.0
     gradient_clip_algorithm: str = "norm"
-    max_time: Optional[Any] = None  # can be one of Union[str, timedelta, Dict[str, int], None]
+    # can be one of Union[str, timedelta, Dict[str, int], None]
+    max_time: Optional[Any] = None
     reload_dataloaders_every_n_epochs: int = 0
     ipus: Optional[int] = None
     devices: Any = None

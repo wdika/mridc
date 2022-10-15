@@ -926,7 +926,8 @@ def prepare_lr_scheduler(
             # Get and instantiate the Config dataclass for this scheduler
             scheduler_params_cls = get_scheduler_config(scheduler_params_name, **scheduler_params_override)
             scheduler_params = scheduler_params_cls  # instantiate the parameters object
-            scheduler_args = vars(scheduler_params)  # extract just the dictionary from the Config object
+            # extract just the dictionary from the Config object
+            scheduler_args = vars(scheduler_params)
 
     # Extract value to monitor in losses, if provided.
     if "monitor" in scheduler_config:

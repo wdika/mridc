@@ -188,7 +188,8 @@ class LPDNet(base_models.BaseMRIReconstructionModel, ABC):
 
             # Primal
             h_1 = dual_buffer[..., 0:2].clone()
-            h_1 = torch.view_as_real(h_1[..., 0] + 1j * h_1[..., 1])  # needed for python3.9
+            # needed for python3.9
+            h_1 = torch.view_as_real(h_1[..., 0] + 1j * h_1[..., 1])
             h_1 = utils.complex_mul(
                 fft.ifft2(
                     torch.where(mask == 0, torch.tensor([0.0], dtype=h_1.dtype).to(h_1.device), h_1),

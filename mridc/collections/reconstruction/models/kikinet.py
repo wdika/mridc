@@ -161,7 +161,8 @@ class KIKINet(base_models.BaseMRIReconstructionModel, ABC):
             kspace = self.kspace_model_list[idx](kspace)
             if kspace.shape[-1] != 2:
                 kspace = kspace.permute(0, 1, 3, 4, 2).to(target)
-                kspace = torch.view_as_real(kspace[..., 0] + 1j * kspace[..., 1])  # this is necessary, but why?
+                # this is necessary, but why?
+                kspace = torch.view_as_real(kspace[..., 0] + 1j * kspace[..., 1])
 
             image = utils.complex_mul(
                 fft.ifft2(
