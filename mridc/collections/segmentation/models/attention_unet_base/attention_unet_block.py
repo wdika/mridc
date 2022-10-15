@@ -30,9 +30,12 @@ class AttentionGate(nn.Module):
         self.in_chans_g = in_chans_g
         self.out_chans = out_chans
 
-        self.W_x = nn.Sequential(nn.Conv2d(self.in_chans_x, out_chans, kernel_size=2, padding=0, stride=2, bias=False))
-        self.W_g = nn.Sequential(nn.Conv2d(self.in_chans_g, out_chans, kernel_size=1, padding=0, bias=True))
-        self.psi = nn.Sequential(nn.Conv2d(self.out_chans, 1, kernel_size=1, padding=0, bias=True))
+        self.W_x = nn.Sequential(nn.Conv2d(
+            self.in_chans_x, out_chans, kernel_size=2, padding=0, stride=2, bias=False))
+        self.W_g = nn.Sequential(
+            nn.Conv2d(self.in_chans_g, out_chans, kernel_size=1, padding=0, bias=True))
+        self.psi = nn.Sequential(
+            nn.Conv2d(self.out_chans, 1, kernel_size=1, padding=0, bias=True))
 
     def forward(self, x: torch.Tensor, g: torch.Tensor) -> torch.Tensor:
         """
@@ -52,10 +55,12 @@ class AttentionGate(nn.Module):
         """
         W_x = self.W_x(x)
         w_g = self.W_g(g)
-        W_g = nn.functional.interpolate(w_g, size=(W_x.shape[-2], W_x.shape[-1]), mode="bilinear", align_corners=False)
+        W_g = nn.functional.interpolate(w_g, size=(
+            W_x.shape[-2], W_x.shape[-1]), mode="bilinear", align_corners=False)
         f = nn.functional.relu(W_x + W_g, inplace=True)
         a = torch.sigmoid(self.psi(f))
-        a = nn.functional.interpolate(a, size=(x.shape[-2], x.shape[-1]), mode="bilinear", align_corners=False)
+        a = nn.functional.interpolate(
+            a, size=(x.shape[-2], x.shape[-1]), mode="bilinear", align_corners=False)
         return a * x
 
 
@@ -107,10 +112,12 @@ class AttentionUnet(nn.Module):
         self.num_pool_layers = num_pool_layers
         self.drop_prob = drop_prob
 
-        self.down_sample_layers = nn.ModuleList([unet_block.ConvBlock(in_chans, chans, drop_prob)])
+        self.down_sample_layers = nn.ModuleList(
+            [unet_block.ConvBlock(in_chans, chans, drop_prob)])
         ch = chans
         for _ in range(num_pool_layers - 1):
-            self.down_sample_layers.append(block(ch, ch * 2, drop_prob, **kwargs))
+            self.down_sample_layers.append(
+                block(ch, ch * 2, drop_prob, **kwargs))
             ch *= 2
         self.conv = block(ch, ch * 2, drop_prob, **kwargs)
 
@@ -118,12 +125,14 @@ class AttentionUnet(nn.Module):
         self.up_transpose_conv = nn.ModuleList()
         self.up_attention_gates = nn.ModuleList()
         for _ in range(num_pool_layers - 1):
-            self.up_transpose_conv.append(unet_block.TransposeConvBlock(ch * 2, ch))
+            self.up_transpose_conv.append(
+                unet_block.TransposeConvBlock(ch * 2, ch))
             self.up_conv.append(unet_block.ConvBlock(ch * 2, ch, drop_prob))
             self.up_attention_gates.append(AttentionGate(ch, ch * 2, ch))
             ch //= 2
 
-        self.up_transpose_conv.append(unet_block.TransposeConvBlock(ch * 2, ch))
+        self.up_transpose_conv.append(
+            unet_block.TransposeConvBlock(ch * 2, ch))
         self.up_conv.append(
             nn.Sequential(
                 unet_block.ConvBlock(ch * 2, ch, drop_prob, **kwargs),
@@ -153,7 +162,8 @@ class AttentionUnet(nn.Module):
         for layer in self.down_sample_layers:
             output = layer(output)
             stack.append(output)
-            output = nn.functional.avg_pool2d(output, kernel_size=2, stride=2, padding=0)
+            output = nn.functional.avg_pool2d(
+                output, kernel_size=2, stride=2, padding=0)
 
         output = self.conv(output)
 

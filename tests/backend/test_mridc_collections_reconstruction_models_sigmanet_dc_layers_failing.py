@@ -35,7 +35,8 @@ def test_case_1():
         data_i_d_layer_0 = module_0.DataIDLayer(**dict_0)
         assert conjugate_gradient_0 is not None
         assert data_i_d_layer_0.training is True
-        data_prox_c_g_layer_0 = module_0.DataProxCGLayer(int_0, conjugate_gradient_0, data_i_d_layer_0, bool_0)
+        data_prox_c_g_layer_0 = module_0.DataProxCGLayer(
+            int_0, conjugate_gradient_0, data_i_d_layer_0, bool_0)
         assert data_prox_c_g_layer_0.training is True
         assert data_prox_c_g_layer_0.lambdaa_init == 1612
         assert data_prox_c_g_layer_0.fft_centered is True
@@ -196,7 +197,8 @@ def test_case_6():
         assert data_g_d_layer_1.fft_centered == 'XZ>>"*x'
         assert data_g_d_layer_1.fft_normalization == (-2518, -525)
         assert data_g_d_layer_1.spatial_dims == [-2, -1]
-        var_0 = data_g_d_layer_1.forward(int_0, float_0, list_0, data_g_d_layer_0)
+        var_0 = data_g_d_layer_1.forward(
+            int_0, float_0, list_0, data_g_d_layer_0)
     except BaseException:
         pass
 
@@ -242,8 +244,10 @@ def test_case_8():
         float_0 = -200.7
         data_prox_c_g_layer_0 = module_0.DataProxCGLayer(float_0)
         assert data_prox_c_g_layer_0.training is True
-        assert data_prox_c_g_layer_0.lambdaa_init == pytest.approx(-200.7, abs=0.01, rel=0.01)
-        assert data_prox_c_g_layer_0.tol == pytest.approx(1e-06, abs=0.01, rel=0.01)
+        assert data_prox_c_g_layer_0.lambdaa_init == pytest.approx(
+            -200.7, abs=0.01, rel=0.01)
+        assert data_prox_c_g_layer_0.tol == pytest.approx(
+            1e-06, abs=0.01, rel=0.01)
         assert data_prox_c_g_layer_0.iter == 10
         assert data_prox_c_g_layer_0.fft_centered is True
         assert data_prox_c_g_layer_0.fft_normalization == "ortho"
@@ -304,6 +308,7 @@ def test_case_10():
         assert data_prox_c_g_layer_0.fft_centered is True
         assert data_prox_c_g_layer_0.fft_normalization == "ortho"
         assert data_prox_c_g_layer_0.spatial_dims == [-2, -1]
-        var_0 = data_prox_c_g_layer_0.forward(bool_0, conjugate_gradient_0, str_0, str_1)
+        var_0 = data_prox_c_g_layer_0.forward(
+            bool_0, conjugate_gradient_0, str_0, str_1)
     except BaseException:
         pass

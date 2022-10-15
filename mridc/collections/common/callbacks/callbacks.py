@@ -27,4 +27,5 @@ class LogEpochTimeCallback(Callback):
         """Called at the end of each epoch."""
         curr_time = time.time()
         duration = curr_time - self.epoch_start
-        trainer.logger.log_metrics({"epoch_time": duration}, step=trainer.global_step)
+        trainer.logger.log_metrics(
+            {"epoch_time": duration}, step=trainer.global_step)

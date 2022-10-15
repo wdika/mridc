@@ -31,11 +31,13 @@ def test_slice_datasets(fastmri_mock_dataset, monkeypatch):
         """
         return metadata[str(fname)]
 
-    monkeypatch.setattr(MRISliceDataset, "_retrieve_metadata", retrieve_metadata_mock)
+    monkeypatch.setattr(
+        MRISliceDataset, "_retrieve_metadata", retrieve_metadata_mock)
 
     for challenge in ("multicoil", "singlecoil"):
         for split in ("train", "val", "test", "challenge"):
-            dataset = MRISliceDataset(knee_path / f"{challenge}_{split}", transform=None, challenge=challenge)
+            dataset = MRISliceDataset(
+                knee_path / f"{challenge}_{split}", transform=None, challenge=challenge)
 
             if len(dataset) <= 0:
                 raise AssertionError
@@ -44,7 +46,8 @@ def test_slice_datasets(fastmri_mock_dataset, monkeypatch):
 
     for challenge in ("multicoil",):
         for split in ("train", "val", "test", "challenge"):
-            dataset = MRISliceDataset(brain_path / f"{challenge}_{split}", transform=None, challenge=challenge)
+            dataset = MRISliceDataset(
+                brain_path / f"{challenge}_{split}", transform=None, challenge=challenge)
 
             if len(dataset) <= 0:
                 raise AssertionError
@@ -78,11 +81,13 @@ def test_slice_dataset_with_transform(fastmri_mock_dataset, monkeypatch):
         """
         return metadata[str(fname)]
 
-    monkeypatch.setattr(MRISliceDataset, "_retrieve_metadata", retrieve_metadata_mock)
+    monkeypatch.setattr(
+        MRISliceDataset, "_retrieve_metadata", retrieve_metadata_mock)
 
     for challenge in ("multicoil", "singlecoil"):
         for split in ("train", "val", "test", "challenge"):
-            dataset = MRISliceDataset(knee_path / f"{challenge}_{split}", transform=None, challenge=challenge)
+            dataset = MRISliceDataset(
+                knee_path / f"{challenge}_{split}", transform=None, challenge=challenge)
 
             if len(dataset) <= 0:
                 raise AssertionError
@@ -91,7 +96,8 @@ def test_slice_dataset_with_transform(fastmri_mock_dataset, monkeypatch):
 
     for challenge in ("multicoil",):
         for split in ("train", "val", "test", "challenge"):
-            dataset = MRISliceDataset(brain_path / f"{challenge}_{split}", transform=None, challenge=challenge)
+            dataset = MRISliceDataset(
+                brain_path / f"{challenge}_{split}", transform=None, challenge=challenge)
 
             if len(dataset) <= 0:
                 raise AssertionError
@@ -125,10 +131,12 @@ def test_slice_dataset_with_transform_and_challenge(fastmri_mock_dataset, monkey
         """
         return metadata[str(fname)]
 
-    monkeypatch.setattr(MRISliceDataset, "_retrieve_metadata", retrieve_metadata_mock)
+    monkeypatch.setattr(
+        MRISliceDataset, "_retrieve_metadata", retrieve_metadata_mock)
 
     for split in ("train", "val", "test", "challenge"):
-        dataset = MRISliceDataset(knee_path / f"multicoil_{split}", transform=None, challenge="multicoil")
+        dataset = MRISliceDataset(
+            knee_path / f"multicoil_{split}", transform=None, challenge="multicoil")
 
         if len(dataset) <= 0:
             raise AssertionError
@@ -136,7 +144,8 @@ def test_slice_dataset_with_transform_and_challenge(fastmri_mock_dataset, monkey
             raise AssertionError
 
     for split in ("train", "val", "test", "challenge"):
-        dataset = MRISliceDataset(brain_path / f"multicoil_{split}", transform=None, challenge="multicoil")
+        dataset = MRISliceDataset(
+            brain_path / f"multicoil_{split}", transform=None, challenge="multicoil")
 
         if len(dataset) <= 0:
             raise AssertionError

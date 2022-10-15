@@ -29,12 +29,15 @@ class MultiDomainConv2d(nn.Module):
     ):
         super().__init__()
 
-        self.image_conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels // 2, **kwargs)
-        self.kspace_conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels // 2, **kwargs)
+        self.image_conv = nn.Conv2d(
+            in_channels=in_channels, out_channels=out_channels // 2, **kwargs)
+        self.kspace_conv = nn.Conv2d(
+            in_channels=in_channels, out_channels=out_channels // 2, **kwargs)
 
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
-        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [
+            -2, -1]
         self.coil_dim = 1
 
     def forward(self, image):
@@ -79,11 +82,14 @@ class MultiDomainConvTranspose2d(nn.Module):
     ):
         super().__init__()
 
-        self.image_conv = nn.ConvTranspose2d(in_channels=in_channels, out_channels=out_channels // 2, **kwargs)
-        self.kspace_conv = nn.ConvTranspose2d(in_channels=in_channels, out_channels=out_channels // 2, **kwargs)
+        self.image_conv = nn.ConvTranspose2d(
+            in_channels=in_channels, out_channels=out_channels // 2, **kwargs)
+        self.kspace_conv = nn.ConvTranspose2d(
+            in_channels=in_channels, out_channels=out_channels // 2, **kwargs)
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
-        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [
+            -2, -1]
         self.coil_dim = 1
 
     def forward(self, image):
@@ -143,7 +149,8 @@ class MultiDomainConvBlock(nn.Module):
 
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
-        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [
+            -2, -1]
         self.coil_dim = coil_dim
 
         self.in_channels = in_channels
@@ -269,14 +276,16 @@ class StandardizationLayer(nn.Module):
 
     def forward(self, coil_images: torch.Tensor, sensitivity_map: torch.Tensor) -> torch.Tensor:
         """Forward pass."""
-        combined_image = utils.complex_mul(coil_images, utils.complex_conj(sensitivity_map)).sum(self.coil_dim)
+        combined_image = utils.complex_mul(
+            coil_images, utils.complex_conj(sensitivity_map)).sum(self.coil_dim)
         residual_image = combined_image.unsqueeze(self.coil_dim) - utils.complex_mul(
             combined_image.unsqueeze(self.coil_dim), sensitivity_map
         )
         return torch.cat(
             [
                 torch.cat(
-                    [combined_image, residual_image.select(self.coil_dim, idx)],
+                    [combined_image, residual_image.select(
+                        self.coil_dim, idx)],
                     self.channel_dim,
                 ).unsqueeze(self.coil_dim)
                 for idx in range(coil_images.size(self.coil_dim))
@@ -325,7 +334,8 @@ class MultiDomainUnet2d(nn.Module):
         self.dropout_probability = dropout_probability
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
-        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [
+            -2, -1]
         self.coil_dim = coil_dim
 
         self.down_sample_layers = nn.ModuleList(
