@@ -35,7 +35,7 @@ class SegmentationLambdaUNet(base_segmentation_models.BaseMRIJointReconstruction
         self.input_channels = cfg_dict.get("segmentation_module_input_channels", 2)
         if self.input_channels == 0:
             raise ValueError("Segmentation module input channels cannot be 0.")
-        elif self.input_channels > 2:
+        if self.input_channels > 2:
             raise ValueError(
                 "Segmentation module input channels must be either 1 or 2. Found: {}".format(self.input_channels)
             )
