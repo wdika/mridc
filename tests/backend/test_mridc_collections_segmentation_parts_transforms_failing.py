@@ -47,11 +47,13 @@ def test_case_2():
         tensor_0 = None
         str_0 = "VW\\D&Q!eGht"
         int_1 = -3934
-        tuple_0 = (tensor_0, tensor_0, tensor_0, tensor_0, tensor_0, tensor_0, tensor_0, str_0, int_1, tensor_0)
+        tuple_0 = (tensor_0, tensor_0, tensor_0, tensor_0, tensor_0,
+                   tensor_0, tensor_0, str_0, int_1, tensor_0)
         dict_0 = {str_0: str_0, str_0: tuple_0}
         list_0 = [tuple_0, dict_0]
         bool_1 = False
-        j_r_s_m_r_i_data_transforms_0 = module_0.JRSMRIDataTransforms(int_0, list_0, bool_0, bool_1, str_0, int_0)
+        j_r_s_m_r_i_data_transforms_0 = module_0.JRSMRIDataTransforms(
+            int_0, list_0, bool_0, bool_1, str_0, int_0)
     except BaseException:
         pass
 
@@ -82,13 +84,16 @@ def test_case_4():
         j_r_s_m_r_i_data_transforms_0 = module_0.JRSMRIDataTransforms(
             float_0, none_type_0, float_0, float_1, none_type_1, bool_0
         )
-        assert j_r_s_m_r_i_data_transforms_0.complex_data == pytest.approx(1377.416813, abs=0.01, rel=0.01)
+        assert j_r_s_m_r_i_data_transforms_0.complex_data == pytest.approx(
+            1377.416813, abs=0.01, rel=0.01)
         assert j_r_s_m_r_i_data_transforms_0.coil_combination_method == "SENSE"
         assert j_r_s_m_r_i_data_transforms_0.dimensionality == 2
         assert j_r_s_m_r_i_data_transforms_0.mask_func is None
         assert j_r_s_m_r_i_data_transforms_0.shift_mask is False
-        assert j_r_s_m_r_i_data_transforms_0.mask_center_scale == pytest.approx(0.02, abs=0.01, rel=0.01)
-        assert j_r_s_m_r_i_data_transforms_0.half_scan_percentage == pytest.approx(0.0, abs=0.01, rel=0.01)
+        assert j_r_s_m_r_i_data_transforms_0.mask_center_scale == pytest.approx(
+            0.02, abs=0.01, rel=0.01)
+        assert j_r_s_m_r_i_data_transforms_0.half_scan_percentage == pytest.approx(
+            0.0, abs=0.01, rel=0.01)
         assert j_r_s_m_r_i_data_transforms_0.remask is False
         assert j_r_s_m_r_i_data_transforms_0.crop_size is None
         assert j_r_s_m_r_i_data_transforms_0.kspace_crop is False
@@ -108,7 +113,8 @@ def test_case_4():
         mask_func_0 = None
         list_0 = [bool_1, mask_func_0]
         ndarray_0 = None
-        dict_0 = {mask_func_0: j_r_s_m_r_i_data_transforms_0, j_r_s_m_r_i_data_transforms_0: list_0}
+        dict_0 = {mask_func_0: j_r_s_m_r_i_data_transforms_0,
+                  j_r_s_m_r_i_data_transforms_0: list_0}
         str_0 = "\rn(|RLF_llJ"
         int_0 = -1335
         tuple_0 = j_r_s_m_r_i_data_transforms_0.__call__(
@@ -140,8 +146,10 @@ def test_case_5():
         assert j_r_s_m_r_i_data_transforms_0.dimensionality == 2
         assert j_r_s_m_r_i_data_transforms_0.mask_func is None
         assert j_r_s_m_r_i_data_transforms_0.shift_mask is False
-        assert j_r_s_m_r_i_data_transforms_0.mask_center_scale == pytest.approx(0.02, abs=0.01, rel=0.01)
-        assert j_r_s_m_r_i_data_transforms_0.half_scan_percentage == pytest.approx(0.0, abs=0.01, rel=0.01)
+        assert j_r_s_m_r_i_data_transforms_0.mask_center_scale == pytest.approx(
+            0.02, abs=0.01, rel=0.01)
+        assert j_r_s_m_r_i_data_transforms_0.half_scan_percentage == pytest.approx(
+            0.0, abs=0.01, rel=0.01)
         assert j_r_s_m_r_i_data_transforms_0.remask is False
         assert j_r_s_m_r_i_data_transforms_0.crop_size is None
         assert j_r_s_m_r_i_data_transforms_0.kspace_crop is False

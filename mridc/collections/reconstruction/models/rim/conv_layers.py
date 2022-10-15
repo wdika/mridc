@@ -70,9 +70,12 @@ class ConvNonlinear(nn.Module):
             raise ValueError("Please specify a proper nonlinearity")
 
         self.padding = [
-            torch.nn.ReplicationPad1d(torch.div(dilation * (kernel_size - 1), 2, rounding_mode="trunc").item()),
-            torch.nn.ReplicationPad2d(torch.div(dilation * (kernel_size - 1), 2, rounding_mode="trunc").item()),
-            torch.nn.ReplicationPad3d(torch.div(dilation * (kernel_size - 1), 2, rounding_mode="trunc").item()),
+            torch.nn.ReplicationPad1d(
+                torch.div(dilation * (kernel_size - 1), 2, rounding_mode="trunc").item()),
+            torch.nn.ReplicationPad2d(
+                torch.div(dilation * (kernel_size - 1), 2, rounding_mode="trunc").item()),
+            torch.nn.ReplicationPad3d(
+                torch.div(dilation * (kernel_size - 1), 2, rounding_mode="trunc").item()),
         ][conv_dim - 1]
 
         self.conv_layer = self.conv_class(
@@ -88,7 +91,8 @@ class ConvNonlinear(nn.Module):
 
     def reset_parameters(self):
         """Resets the parameters of the convolutional layer."""
-        torch.nn.init.kaiming_normal_(self.conv_layer.weight, nonlinearity="relu")
+        torch.nn.init.kaiming_normal_(
+            self.conv_layer.weight, nonlinearity="relu")
 
         if self.conv_layer.bias is not None:
             nn.init.zeros_(self.conv_layer.bias)
@@ -116,7 +120,8 @@ class ConvNonlinear(nn.Module):
     def check_forward_input(self, _input):
         """Checks input for correct size and shape."""
         if _input.size(1) != self.input_size:
-            raise RuntimeError(f"input has inconsistent input_size: got {_input.size(1)}, expected {self.input_size}")
+            raise RuntimeError(
+                f"input has inconsistent input_size: got {_input.size(1)}, expected {self.input_size}")
 
     def forward(self, _input):
         """Forward pass of the convolutional layer."""

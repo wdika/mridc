@@ -207,7 +207,7 @@ def test_recurrentvarnet(shape, cfg, center_fractions, accelerations, dimensiona
 
     outputs, masks = [], []
     for i in range(x.shape[0]):
-        output, mask, _ = utils.apply_mask(x[i : i + 1], mask_func, seed=123)
+        output, mask, _ = utils.apply_mask(x[i: i + 1], mask_func, seed=123)
         outputs.append(output)
         masks.append(mask)
 
@@ -227,10 +227,12 @@ def test_recurrentvarnet(shape, cfg, center_fractions, accelerations, dimensiona
     rvn = RecurrentVarNet(cfg, trainer=trainer)
 
     with torch.no_grad():
-        y = rvn.forward(output, output, mask, output, eta=x.sum(1), target=torch.abs(torch.view_as_complex(output)))
+        y = rvn.forward(output, output, mask, output, eta=x.sum(
+            1), target=torch.abs(torch.view_as_complex(output)))
 
     if dimensionality == 3:
-        x = x.reshape([x.shape[0] * x.shape[1], x.shape[2], x.shape[3], x.shape[4], x.shape[5]])
+        x = x.reshape([x.shape[0] * x.shape[1], x.shape[2],
+                      x.shape[3], x.shape[4], x.shape[5]])
 
     if y.shape[1:] != x.shape[2:4]:
         raise AssertionError
