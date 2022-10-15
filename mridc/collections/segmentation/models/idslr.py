@@ -41,8 +41,7 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
-        self.use_reconstruction_module = cfg_dict.get(
-            "use_reconstruction_module", True)
+        self.use_reconstruction_module = cfg_dict.get("use_reconstruction_module", True)
 
         self.fft_centered = cfg_dict.get("fft_centered")
         self.fft_normalization = cfg_dict.get("fft_normalization")
@@ -53,11 +52,9 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
         self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
         self.dimensionality = cfg_dict.get("dimensionality", 2)
         if self.dimensionality != 2:
-            raise NotImplementedError(
-                f"Currently only 2D is supported for segmentation, got {self.dimensionality}D.")
+            raise NotImplementedError(f"Currently only 2D is supported for segmentation, got {self.dimensionality}D.")
 
-        self.reconstruction_module_input_channels = cfg_dict.get(
-            "reconstruction_module_input_channels", 2)
+        self.reconstruction_module_input_channels = cfg_dict.get("reconstruction_module_input_channels", 2)
         out_chans = cfg_dict.get("reconstruction_module_output_channels", 2)
         seg_out_chans = cfg_dict.get("segmentation_module_output_channels", 2)
         num_iters = cfg_dict.get("num_iters", 5)
@@ -108,8 +105,7 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
             norm_groups=norm_groups,
         )
 
-        self.dc = nn.ModuleList([idslr_block.DC(soft_dc=soft_dc)
-                                for _ in range(num_cascades)])
+        self.dc = nn.ModuleList([idslr_block.DC(soft_dc=soft_dc) for _ in range(num_cascades)])
         self.num_iters = num_iters
 
         self.reconstruction_module_accumulate_estimates = cfg_dict.get(
@@ -150,41 +146,33 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
         """
         if self.consecutive_slices > 1:
             batch, slices = y.shape[0], y.shape[1]
-            y = y.reshape(y.shape[0] * y.shape[1], *
-                          y.shape[2:])  # type: ignore
+            y = y.reshape(y.shape[0] * y.shape[1], *y.shape[2:])  # type: ignore
             sensitivity_maps = sensitivity_maps.reshape(
                 # type: ignore
                 sensitivity_maps.shape[0] * sensitivity_maps.shape[1],
                 *sensitivity_maps.shape[2:],
             )
-            mask = mask.reshape(
-                mask.shape[0] * mask.shape[1], *mask.shape[2:])  # type: ignore
+            mask = mask.reshape(mask.shape[0] * mask.shape[1], *mask.shape[2:])  # type: ignore
 
         # In case of deviating number of coils, we need to pad up to maximum number of coils == number of input \
         # channels for the reconstruction module
         num_coils = y.shape[1]
         if num_coils * 2 != self.reconstruction_module_input_channels:
-            num_coils_to_add = (
-                self.reconstruction_module_input_channels - num_coils * 2) // 2
-            dummy_coil_data = torch.zeros_like(torch.movedim(
-                y, self.coil_dim, 0)[0]).unsqueeze(self.coil_dim)
+            num_coils_to_add = (self.reconstruction_module_input_channels - num_coils * 2) // 2
+            dummy_coil_data = torch.zeros_like(torch.movedim(y, self.coil_dim, 0)[0]).unsqueeze(self.coil_dim)
             for _ in range(num_coils_to_add):
                 y = torch.cat([y, dummy_coil_data], dim=self.coil_dim)
-                sensitivity_maps = torch.cat(
-                    [sensitivity_maps, dummy_coil_data], dim=self.coil_dim)
+                sensitivity_maps = torch.cat([sensitivity_maps, dummy_coil_data], dim=self.coil_dim)
 
         preds = []
         for encoder, decoder, dc in zip(self.encoders, self.decoders, self.dc):
             tmp = []
             for _ in range(self.num_iters):
-                image_space = fft.ifft2(
-                    y, self.fft_centered, self.fft_normalization, self.spatial_dims)
+                image_space = fft.ifft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims)
                 output = encoder(image_space)
                 pred_reconstruction, pad_sizes = output[0].copy(), output[2]
                 pred_kspace = fft.fft2(
-                    image_space -
-                    decoder(
-                        *output), self.fft_centered, self.fft_normalization, self.spatial_dims
+                    image_space - decoder(*output), self.fft_centered, self.fft_normalization, self.spatial_dims
                 )
                 y = dc(pred_kspace, y, mask)
                 tmp.append(
@@ -193,15 +181,12 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
                     )
                 )
             preds.append(tmp)
-        pred_segmentation = self.seg_head(
-            pred_reconstruction, False, pad_sizes)
-        pred_segmentation = torch.abs(
-            pred_segmentation / torch.abs(torch.max(pred_segmentation)))
+        pred_segmentation = self.seg_head(pred_reconstruction, False, pad_sizes)
+        pred_segmentation = torch.abs(pred_segmentation / torch.abs(torch.max(pred_segmentation)))
         if self.consecutive_slices > 1:
             # get batch size and number of slices from y, because if the reconstruction module is used they will not
             # be saved before
-            pred_segmentation = pred_segmentation.view(
-                [batch, slices, *pred_segmentation.shape[1:]])
+            pred_segmentation = pred_segmentation.view([batch, slices, *pred_segmentation.shape[1:]])
 
         return preds, pred_segmentation
 
@@ -262,8 +247,7 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
         target = torch.abs(target / torch.max(torch.abs(target)))
 
         if "ssim" in str(_loss_fn).lower():
-            max_value = np.array(
-                torch.max(torch.abs(target)).item()).astype(np.float32)
+            max_value = np.array(torch.max(torch.abs(target)).item()).astype(np.float32)
 
             def loss_fn(x, y):
                 """Calculate the ssim loss."""
@@ -271,8 +255,7 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
                 return _loss_fn(
                     x,
                     y,
-                    data_range=torch.tensor(
-                        max_value).unsqueeze(dim=0).to(x.device),
+                    data_range=torch.tensor(max_value).unsqueeze(dim=0).to(x.device),
                 )
 
         else:
@@ -286,8 +269,7 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
         if self.reconstruction_module_accumulate_estimates:
             cascades_loss = []
             for cascade_pred in pred:
-                time_steps_loss = [loss_fn(target, time_step_pred)
-                                   for time_step_pred in cascade_pred]
+                time_steps_loss = [loss_fn(target, time_step_pred) for time_step_pred in cascade_pred]
                 _loss = [
                     x * torch.logspace(-1, 0, steps=self.num_iters).to(time_steps_loss[0]) for x in time_steps_loss
                 ]
