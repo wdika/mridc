@@ -103,7 +103,8 @@ def parse_optimizer_args(
                 return optimizer_params
             # If we are provided a partial class instantiation of a Config, instantiate it and retrieve its vars
             # as a dictionary.
-            optimizer_params = vars(optimizer_params_cls)  # instantiate the parameters object
+            # instantiate the parameters object
+            optimizer_params = vars(optimizer_params_cls)
             return optimizer_params
 
         # simply return the dictionary that was provided

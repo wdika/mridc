@@ -61,13 +61,12 @@ class SignalForwardModel(object):
             TEs = torch.Tensor([3.0, 11.5, 20.0, 28.5])
         if self.sequence == "megre":
             return self.MEGRESignalModel(R2star_map, S0_map, B0_map, phi_map, TEs)
-        elif self.sequence == "megre_no_phase":
+        if self.sequence == "megre_no_phase":
             return self.MEGRENoPhaseSignalModel(R2star_map, S0_map, TEs)
-        else:
-            raise ValueError(
-                "Only MEGRE and MEGRE no phase are supported are signal forward model at the moment. "
-                f"Found {self.sequence}"
-            )
+        raise ValueError(
+            "Only MEGRE and MEGRE no phase are supported are signal forward model at the moment. "
+            f"Found {self.sequence}"
+        )
 
     def MEGRESignalModel(
         self,
@@ -96,9 +95,14 @@ class SignalForwardModel(object):
         S0_map_real = S0_map
         S0_map_imag = phi_map
 
-        first_term = lambda i: torch.exp(-TEs[i] * self.scaling * R2star_map)
-        second_term = lambda i: torch.cos(B0_map * self.scaling * -TEs[i])
-        third_term = lambda i: torch.sin(B0_map * self.scaling * -TEs[i])
+        def first_term(i):
+            return torch.exp(-TEs[i] * self.scaling * R2star_map)
+
+        def second_term(i):
+            return torch.cos(B0_map * self.scaling * -TEs[i])
+
+        def third_term(i):
+            return torch.sin(B0_map * self.scaling * -TEs[i])
 
         pred = torch.stack(
             [
@@ -244,9 +248,14 @@ def analytical_log_likelihood_gradient(
         dim=coil_dim,
     )
 
-    first_term = lambda i: torch.exp(-TEs[i] * scaling * R2star_map)
-    second_term = lambda i: torch.cos(B0_map * scaling * -TEs[i])
-    third_term = lambda i: torch.sin(B0_map * scaling * -TEs[i])
+    def first_term(i):
+        return torch.exp(-TEs[i] * scaling * R2star_map)
+
+    def second_term(i):
+        return torch.cos(B0_map * scaling * -TEs[i])
+
+    def third_term(i):
+        return torch.sin(B0_map * scaling * -TEs[i])
 
     S0_part_der = torch.stack(
         [torch.stack((first_term(i) * second_term(i), -first_term(i) * third_term(i)), -1) for i in range(nr_TEs)], 1

@@ -414,7 +414,8 @@ class Serialization(ABC):
 
             # Attempt class path resolution from config `target` class (if it exists)
             if "target" in config:
-                target_cls = config["target"]  # No guarantee that this is a omegaconf class
+                # No guarantee that this is a omegaconf class
+                target_cls = config["target"]
                 imported_cls = None
                 try:
                     # try to import the target class

@@ -141,8 +141,7 @@ class UnetEncoder(nn.Module):
 
         if self.normalize:
             return stack, iscomplex, pad_sizes, mean, std
-        else:
-            return stack, iscomplex, pad_sizes
+        return stack, iscomplex, pad_sizes
 
 
 class UnetDecoder(nn.Module):

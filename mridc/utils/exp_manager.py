@@ -59,8 +59,10 @@ class CallbackParams:
     """Parameters for a callback"""
 
     filepath: Optional[str] = None  # Deprecated
-    dirpath: Optional[str] = None  # If None, exp_manager will attempt to handle the filepath
-    filename: Optional[str] = None  # If None, exp_manager will attempt to handle the filepath
+    # If None, exp_manager will attempt to handle the filepath
+    dirpath: Optional[str] = None
+    # If None, exp_manager will attempt to handle the filepath
+    filename: Optional[str] = None
     monitor: Optional[str] = "val_loss"
     verbose: Optional[bool] = True
     save_last: Optional[bool] = True
@@ -68,12 +70,15 @@ class CallbackParams:
     save_weights_only: Optional[bool] = False
     mode: Optional[str] = "min"
     every_n_epochs: Optional[int] = 1
-    prefix: Optional[str] = None  # If None, exp_manager will attempt to handle the filepath
+    # If None, exp_manager will attempt to handle the filepath
+    prefix: Optional[str] = None
     postfix: str = ".mridc"
     save_best_model: bool = False
     always_save_mridc: bool = False
-    save_mridc_on_train_end: Optional[bool] = True  # Automatically save .mridc file during on_train_end hook
-    model_parallel_size: Optional[int] = None  # tensor parallel size * pipeline parallel size
+    # Automatically save .mridc file during on_train_end hook
+    save_mridc_on_train_end: Optional[bool] = True
+    # tensor parallel size * pipeline parallel size
+    model_parallel_size: Optional[int] = None
 
 
 @dataclass
@@ -261,7 +266,8 @@ def exp_manager(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None)
     cfg = OmegaConf.create(OmegaConf.to_container(cfg, resolve=True))
     cfg = OmegaConf.merge(schema, cfg)
 
-    error_checks(trainer, cfg)  # Ensures that trainer options are compliant with MRIDC and exp_manager arguments
+    # Ensures that trainer options are compliant with MRIDC and exp_manager arguments
+    error_checks(trainer, cfg)
 
     log_dir, exp_dir, name, version = get_log_dir(
         trainer=trainer,
@@ -294,7 +300,8 @@ def exp_manager(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None)
     app_state.checkpoint_callback_params = cfg.checkpoint_callback_params
 
     # Create the logging directory if it does not exist
-    os.makedirs(log_dir, exist_ok=True)  # Cannot limit creation to global zero as all ranks write to own log file
+    # Cannot limit creation to global zero as all ranks write to own log file
+    os.makedirs(log_dir, exist_ok=True)
     logging.info(f"Experiments will be logged at {log_dir}")
     trainer._default_root_dir = log_dir
 
@@ -383,7 +390,8 @@ def error_checks(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None
             " Please note that this is not tested in MRIDC and could result in errors."
         )
 
-    if trainer.num_devices > 1 and not isinstance(trainer.strategy, DDPStrategy):  # type: ignore
+    # type: ignore
+    if trainer.num_devices > 1 and not isinstance(trainer.strategy, DDPStrategy):
         logging.error(
             "You are running multi-gpu without ddp.Please note that this is not tested in MRIDC and could result in "
             "errors."
@@ -758,10 +766,12 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
             checkpoint = str(checkpoint)
             if checkpoint.endswith("-last.ckpt"):
                 continue
-            index = checkpoint.find(self.monitor) + len(self.monitor) + 1  # Find monitor in str + 1 for '='
+            # Find monitor in str + 1 for '='
+            index = checkpoint.find(self.monitor) + len(self.monitor) + 1
             if index != -1:
                 if match := re.search("[A-z]", checkpoint[index:]):
-                    value = checkpoint[index : index + match.start() - 1]  # -1 due to separator hypen
+                    # -1 due to separator hypen
+                    value = checkpoint[index : index + match.start() - 1]
                     self.best_k_models[checkpoint] = float(value)
         if not self.best_k_models:
             return  # No saved checkpoints yet

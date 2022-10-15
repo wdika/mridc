@@ -248,7 +248,8 @@ class JRSMRIDataTransforms:
         if self.complex_data:
             if self.apply_prewhitening:
                 kspace = torch.stack(
-                    [self.prewhitening(kspace[echo]) for echo in range(kspace.shape[0])], dim=0  # type: ignore
+                    [self.prewhitening(kspace[echo]) for echo in range(kspace.shape[0])],  # type: ignore
+                    dim=0,
                 )
 
             if self.gcc is not None:
@@ -413,7 +414,8 @@ class JRSMRIDataTransforms:
                     padding = (acq_start, acq_end)
                     if (not utils.is_none(padding[0]) and not utils.is_none(padding[1])) and padding[0] != 0:
                         _mask[:, :, : padding[0]] = 0
-                        _mask[:, :, padding[1] :] = 0  # padding value inclusive on right of zeros
+                        # padding value inclusive on right of zeros
+                        _mask[:, :, padding[1] :] = 0
 
                     if isinstance(_mask, np.ndarray):
                         _mask = torch.from_numpy(_mask).unsqueeze(0).unsqueeze(-1)
@@ -429,7 +431,8 @@ class JRSMRIDataTransforms:
                 masked_kspace = masked_kspaces
                 mask = masks
                 acc = 1
-            elif not utils.is_none(mask) and mask.ndim != 0:  # and not is_none(self.mask_func):
+            # and not is_none(self.mask_func):
+            elif not utils.is_none(mask) and mask.ndim != 0:
                 for _mask in mask:
                     if list(_mask.shape) == [kspace.shape[-3], kspace.shape[-2]]:
                         mask = torch.from_numpy(_mask).unsqueeze(0).unsqueeze(-1)
@@ -438,7 +441,8 @@ class JRSMRIDataTransforms:
                 padding = (acq_start, acq_end)
                 if (not utils.is_none(padding[0]) and not utils.is_none(padding[1])) and padding[0] != 0:
                     mask[:, :, : padding[0]] = 0
-                    mask[:, :, padding[1] :] = 0  # padding value inclusive on right of zeros
+                    # padding value inclusive on right of zeros
+                    mask[:, :, padding[1] :] = 0
 
                 if isinstance(mask, np.ndarray):
                     mask = torch.from_numpy(mask).unsqueeze(0).unsqueeze(-1)
@@ -457,7 +461,9 @@ class JRSMRIDataTransforms:
                 acc = torch.tensor([1])
 
                 if mask is None or mask.ndim == 0:
-                    mask = torch.ones(masked_kspace.shape[-3], masked_kspace.shape[-2]).type(torch.float32)  # type: ignore
+                    mask = torch.ones(masked_kspace.shape[-3], masked_kspace.shape[-2]).type(  # type: ignore
+                        torch.float32
+                    )
                 else:
                     mask = torch.from_numpy(mask)
 

@@ -246,7 +246,8 @@ class qMRIDataTransforms:
 
         if self.apply_prewhitening:
             kspace = torch.stack(
-                [self.prewhitening(kspace[echo]) for echo in range(kspace.shape[0])], dim=0  # type: ignore
+                [self.prewhitening(kspace[echo]) for echo in range(kspace.shape[0])],  # type: ignore
+                dim=0,
             )
 
         if self.gcc is not None:
@@ -508,7 +509,8 @@ class qMRIDataTransforms:
                 padding = (acq_start, acq_end)
                 if (not utils.is_none(padding[0]) and not utils.is_none(padding[1])) and padding[0] != 0:
                     _mask[:, :, : padding[0]] = 0
-                    _mask[:, :, padding[1] :] = 0  # padding value inclusive on right of zeros
+                    # padding value inclusive on right of zeros
+                    _mask[:, :, padding[1] :] = 0
 
                 if isinstance(_mask, np.ndarray):
                     _mask = torch.from_numpy(_mask).unsqueeze(0).unsqueeze(-1)
@@ -524,7 +526,8 @@ class qMRIDataTransforms:
             masked_kspace = masked_kspaces
             mask = masks
             acc = 1
-        elif not utils.is_none(mask) and mask.ndim != 0:  # and not is_none(self.mask_func):
+        # and not is_none(self.mask_func):
+        elif not utils.is_none(mask) and mask.ndim != 0:
             for _mask in mask:
                 if list(_mask.shape) == [kspace.shape[-3], kspace.shape[-2]]:
                     mask = torch.from_numpy(_mask).unsqueeze(0).unsqueeze(-1)
@@ -533,7 +536,8 @@ class qMRIDataTransforms:
             padding = (acq_start, acq_end)
             if (not utils.is_none(padding[0]) and not utils.is_none(padding[1])) and padding[0] != 0:
                 mask[:, :, : padding[0]] = 0
-                mask[:, :, padding[1] :] = 0  # padding value inclusive on right of zeros
+                # padding value inclusive on right of zeros
+                mask[:, :, padding[1] :] = 0
 
             if isinstance(mask, np.ndarray):
                 mask = torch.from_numpy(mask).unsqueeze(0).unsqueeze(-1)
@@ -865,7 +869,8 @@ class GaussianSmoothing(torch.nn.Module):
         # The gaussian kernel is the product of the gaussian function of each dimension.
         kernel = 1
         meshgrids = torch.meshgrid(
-            [torch.arange(size, dtype=torch.float32) for size in kernel_size], indexing="ij"  # type: ignore
+            [torch.arange(size, dtype=torch.float32) for size in kernel_size],  # type: ignore
+            indexing="ij",
         )
         for size, std, mgrid in zip(kernel_size, sigma, meshgrids):  # type: ignore
             mean = (size - 1) / 2
@@ -888,7 +893,7 @@ class GaussianSmoothing(torch.nn.Module):
         elif dim == 3:
             self.conv = F.conv3d
         else:
-            raise RuntimeError("Only 1, 2 and 3 dimensions are supported. Received {}.".format(dim))
+            raise RuntimeError(f"Only 1, 2 and 3 dimensions are supported. Received {dim}.")
 
     def forward(self, input):
         """
@@ -955,21 +960,17 @@ class LeastSquares:
         """Differentiable inverse least square."""
         if Y.dim() == 2:
             return torch.matmul(torch.pinverse(Y), A)
-        else:
-            return torch.matmul(
-                torch.matmul(torch.inverse(torch.matmul(Y.permute(0, 2, 1), Y)), Y.permute(0, 2, 1)), A
-            )
+        return torch.matmul(torch.matmul(torch.inverse(torch.matmul(Y.permute(0, 2, 1), Y)), Y.permute(0, 2, 1)), A)
 
     def lstq_pinv_complex_np(self, A, Y, lamb=0.0):
         """Differentiable inverse least square for stacked complex inputs."""
         if Y.ndim == 2:
             return np.matmul(np.linalg.pinv(Y), A)
-        else:
-            Y = Y.to(self.device)
-            A = A.to(Y)
-            x = torch.matmul(torch.conj(Y).permute(0, 2, 1), Y)
-            x = torch.matmul(torch.inverse(x), torch.conj(Y).permute(0, 2, 1))
-            return torch.bmm(x, A)[..., 0]
+        Y = Y.to(self.device)
+        A = A.to(Y)
+        x = torch.matmul(torch.conj(Y).permute(0, 2, 1), Y)
+        x = torch.matmul(torch.inverse(x), torch.conj(Y).permute(0, 2, 1))
+        return torch.bmm(x, A)[..., 0]
 
 
 def R2star_B0_real_S0_complex_mapping(

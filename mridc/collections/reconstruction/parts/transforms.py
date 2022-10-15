@@ -378,7 +378,8 @@ class MRIDataTransforms:
             padding = (acq_start, acq_end)
             if (not utils.is_none(padding[0]) and not utils.is_none(padding[1])) and padding[0] != 0:
                 mask[:, :, : padding[0]] = 0
-                mask[:, :, padding[1] :] = 0  # padding value inclusive on right of zeros
+                # padding value inclusive on right of zeros
+                mask[:, :, padding[1] :] = 0
 
             if isinstance(mask, np.ndarray):
                 mask = torch.from_numpy(mask).unsqueeze(0).unsqueeze(-1)

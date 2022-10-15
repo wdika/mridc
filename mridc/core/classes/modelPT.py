@@ -126,20 +126,23 @@ class ModelPT(LightningModule, Model):
                 logging.warning(
                     "If you intend to do training or fine-tuning, please call the ModelPT.setup_training_data() "
                     "method and provide a valid configuration file to setup the train data loader.\n"
-                    f"Train config : \n{OmegaConf.to_yaml(self._cfg.train_ds)}"  # type: ignore
+                    # type: ignore
+                    f"Train config : \n{OmegaConf.to_yaml(self._cfg.train_ds)}"
                 )
             if "validation_ds" in self._cfg and self._cfg.validation_ds is not None:  # type: ignore
                 logging.warning(
                     "If you intend to do validation, please call the ModelPT.setup_validation_data() or "
                     "ModelPT.setup_multiple_validation_data() method and provide a valid configuration file to "
                     "setup the validation data loader(s). \n"
-                    f"Validation config : \n{OmegaConf.to_yaml(self._cfg.validation_ds)}"  # type: ignore
+                    # type: ignore
+                    f"Validation config : \n{OmegaConf.to_yaml(self._cfg.validation_ds)}"
                 )
             if "test_ds" in self._cfg and self._cfg.test_ds is not None:  # type: ignore
                 logging.warning(
                     "Please call the ModelPT.setup_test_data() or ModelPT.setup_multiple_test_data() method "
                     "and provide a valid configuration file to setup the test data loader(s).\n"
-                    f"Test config : \n{OmegaConf.to_yaml(self._cfg.test_ds)}"  # type: ignore
+                    # type: ignore
+                    f"Test config : \n{OmegaConf.to_yaml(self._cfg.test_ds)}"
                 )
 
         # ModelPT wrappers over subclass implementations
@@ -224,10 +227,12 @@ class ModelPT(LightningModule, Model):
             if app_state.data_parallel_rank == 0:
                 maybe_make_save_dir(Path(save_path))
             # connector checks for ranks properly, no need to check here
-            self._save_restore_connector.save_to(self, str(save_path))  # downstream tasks expect str, not Path
+            # downstream tasks expect str, not Path
+            self._save_restore_connector.save_to(self, str(save_path))
         elif is_global_rank_zero():
             maybe_make_save_dir(Path(save_path))
-            self._save_restore_connector.save_to(self, str(save_path))  # downstream tasks expect str, not Path
+            # downstream tasks expect str, not Path
+            self._save_restore_connector.save_to(self, str(save_path))
 
     @classmethod
     def restore_from(  # type: ignore
@@ -746,7 +751,7 @@ class ModelPT(LightningModule, Model):
                 "test_loss" in dataloader_logs
                 and "test_loss" not in output_dict  # type: ignore
                 and dataloader_idx == self._test_dl_idx
-            ):  # type: ignore
+            ):
                 output_dict["test_loss"] = dataloader_logs["test_loss"]  # type: ignore
 
             # For every item in the result dictionary

@@ -442,7 +442,8 @@ class BaseqMRIReconstructionModel(base_reconstruction_models.BaseMRIReconstructi
         self.acc = r if r != 0 else acc
         tensorboard_logs = {
             f"train_loss_{self.acc}x": train_loss.item(),  # type: ignore
-            f"loss_reconstruction_{self.acc}x": lossrecon.item(),  # type: ignore
+            # type: ignore
+            f"loss_reconstruction_{self.acc}x": lossrecon.item(),
             f"loss_R2star_{self.acc}x": lossR2star.item(),  # type: ignore
             f"loss_S0_{self.acc}x": lossS0.item(),  # type: ignore
             f"loss_B0_{self.acc}x": lossB0.item(),  # type: ignore
@@ -663,7 +664,8 @@ class BaseqMRIReconstructionModel(base_reconstruction_models.BaseMRIReconstructi
         if self.use_reconstruction_module:
             for echo_time in range(target.shape[1]):  # type: ignore
                 self.log_image(
-                    f"{key}/reconstruction_echo_{echo_time}/target", target[:, echo_time, :, :]  # type: ignore
+                    f"{key}/reconstruction_echo_{echo_time}/target",
+                    target[:, echo_time, :, :],  # type: ignore
                 )  # type: ignore
                 self.log_image(f"{key}/reconstruction_echo_{echo_time}/reconstruction", recon_pred[:, echo_time, :, :])
                 self.log_image(
@@ -965,7 +967,8 @@ class BaseqMRIReconstructionModel(base_reconstruction_models.BaseMRIReconstructi
         if self.use_reconstruction_module:
             for echo_time in range(target.shape[1]):  # type: ignore
                 self.log_image(
-                    f"{key}/reconstruction_echo_{echo_time}/target", target[:, echo_time, :, :]  # type: ignore
+                    f"{key}/reconstruction_echo_{echo_time}/target",
+                    target[:, echo_time, :, :],  # type: ignore
                 )  # type: ignore
                 self.log_image(f"{key}/reconstruction_echo_{echo_time}/reconstruction", recon_pred[:, echo_time, :, :])
                 self.log_image(

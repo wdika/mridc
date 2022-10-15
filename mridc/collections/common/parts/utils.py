@@ -332,7 +332,8 @@ def apply_mask(
 
     if padding is not None and padding[0] != 0:
         mask[:, :, : padding[0]] = 0
-        mask[:, :, padding[1] :] = 0  # padding value inclusive on right of zeros
+        # padding value inclusive on right of zeros
+        mask[:, :, padding[1] :] = 0
 
     if shift:
         mask = torch.fft.fftshift(mask, dim=(1, 2))
