@@ -48,11 +48,9 @@ class WarmupPolicy(_LRScheduler):
         last_epoch: Last epoch
         """
         if warmup_steps is not None and warmup_ratio is not None:
-            raise AssertionError(
-                "Either use particular number of step or ratio")
+            raise AssertionError("Either use particular number of step or ratio")
         if warmup_ratio is not None and max_steps is None:
-            raise AssertionError(
-                "If there is a ratio, there should be a total steps")
+            raise AssertionError("If there is a ratio, there should be a total steps")
 
         # It is necessary to assign all attributes *before* __init__,
         # as class is wrapped by an inner class.
@@ -118,12 +116,10 @@ class SquareRootConstantPolicy(_LRScheduler):
         last_epoch: Last epoch
         """
         if constant_steps is not None and constant_ratio is not None:
-            raise AssertionError(
-                "Either use particular number of step or ratio")
+            raise AssertionError("Either use particular number of step or ratio")
 
         if constant_ratio is not None and max_steps is None:
-            raise AssertionError(
-                "If there is a ratio, there should be a total steps")
+            raise AssertionError("If there is a ratio, there should be a total steps")
 
         # It is necessary to assign all attributes *before* __init__, as class is wrapped by an inner class.
         self.max_steps = max_steps
@@ -205,11 +201,9 @@ class WarmupHoldPolicy(WarmupPolicy):
         last_epoch: Last epoch.
         """
         if hold_steps is not None and hold_ratio is not None:
-            raise AssertionError(
-                "Either use particular number of step or ratio")
+            raise AssertionError("Either use particular number of step or ratio")
         if hold_ratio is not None and max_steps is None:
-            raise AssertionError(
-                "If there is a ratio, there should be a total steps")
+            raise AssertionError("If there is a ratio, there should be a total steps")
 
         self.min_lr = min_lr
         self._last_warmup_lr = 0.0
@@ -301,13 +295,11 @@ class WarmupAnnealHoldPolicy(_LRScheduler):
         last_epoch: The index of last epoch.
         """
         if warmup_steps is not None and warmup_ratio is not None:
-            raise AssertionError(
-                "Either use particular number of step or ratio")
+            raise AssertionError("Either use particular number of step or ratio")
         if constant_steps is not None and constant_ratio is not None:
             raise AssertionError("Either use constant_steps or constant_ratio")
         if warmup_ratio is not None and max_steps is None:
-            raise AssertionError(
-                "If there is a ratio, there should be a total steps")
+            raise AssertionError("If there is a ratio, there should be a total steps")
 
         # It is necessary to assign all attributes *before* __init__, as class is wrapped by an inner class.
         self.max_steps = max_steps
@@ -326,8 +318,7 @@ class WarmupAnnealHoldPolicy(_LRScheduler):
         else:
             self.constant_steps = 0
 
-        self.decay_steps = max_steps - \
-            (self.constant_steps + self.warmup_steps)
+        self.decay_steps = max_steps - (self.constant_steps + self.warmup_steps)
 
         self.min_lr = min_lr
         super().__init__(optimizer, last_epoch)
@@ -444,8 +435,7 @@ class SquareAnnealing(WarmupPolicy):
     """Anneal learning rate by square."""
 
     def __init__(self, optimizer, *, max_steps, min_lr=1e-5, last_epoch=-1, **kwargs):
-        super().__init__(optimizer=optimizer, max_steps=max_steps,
-                         last_epoch=last_epoch, min_lr=min_lr, **kwargs)
+        super().__init__(optimizer=optimizer, max_steps=max_steps, last_epoch=last_epoch, min_lr=min_lr, **kwargs)
 
     def _get_lr(self, step):
         """Get learning rate at current step."""
@@ -464,8 +454,7 @@ class SquareRootAnnealing(WarmupPolicy):
     """Anneal learning rate by square root."""
 
     def __init__(self, optimizer, *, max_steps, min_lr=0, last_epoch=-1, **kwargs):
-        super().__init__(optimizer=optimizer, max_steps=max_steps,
-                         last_epoch=last_epoch, min_lr=min_lr, **kwargs)
+        super().__init__(optimizer=optimizer, max_steps=max_steps, last_epoch=last_epoch, min_lr=min_lr, **kwargs)
 
     def _get_lr(self, step):
         """Get learning rate at current step."""
@@ -484,8 +473,7 @@ class CosineAnnealing(WarmupAnnealHoldPolicy):
     """Anneal learning rate by cosine."""
 
     def __init__(self, optimizer, *, max_steps, min_lr=0, last_epoch=-1, **kwargs):
-        super().__init__(optimizer=optimizer, max_steps=max_steps,
-                         last_epoch=last_epoch, min_lr=min_lr, **kwargs)
+        super().__init__(optimizer=optimizer, max_steps=max_steps, last_epoch=last_epoch, min_lr=min_lr, **kwargs)
 
     def _get_lr(self, step):
         """Get learning rate at current step."""
@@ -543,11 +531,9 @@ class NoamAnnealing(_LRScheduler):
     ):
         self._normalize = d_model ** (-0.5)
         if warmup_steps is not None and warmup_ratio is not None:
-            raise AssertionError(
-                "Either use particular number of step or ratio")
+            raise AssertionError("Either use particular number of step or ratio")
         if warmup_ratio is not None and max_steps is None:
-            raise AssertionError(
-                "If there is a ratio, there should be a total steps")
+            raise AssertionError("If there is a ratio, there should be a total steps")
 
         # It is necessary to assign all attributes *before* __init__,
         # as class is wrapped by an inner class.
@@ -585,8 +571,7 @@ class NoamAnnealing(_LRScheduler):
     def _noam_annealing(self, initial_lr, step):
         """Noam learning rate annealing."""
         mult = (
-            self._normalize * min(step ** (-0.5), step *
-                                  (self.warmup_steps ** (-1.5)))
+            self._normalize * min(step ** (-0.5), step * (self.warmup_steps ** (-1.5)))
             if self.warmup_steps > 0
             else self._normalize * step ** (-0.5)
         )
@@ -636,14 +621,12 @@ class NoamHoldAnnealing(WarmupHoldPolicy):
             Last epoch to start the schedule from. Should be between 0 and max_steps.
         """
         self.decay_rate = decay_rate
-        super().__init__(optimizer=optimizer, max_steps=max_steps,
-                         last_epoch=last_epoch, min_lr=min_lr, **kwargs)
+        super().__init__(optimizer=optimizer, max_steps=max_steps, last_epoch=last_epoch, min_lr=min_lr, **kwargs)
 
     def _get_lr(self, step):
         """Get the learning rate for the given step."""
         if self.warmup_steps is None or self.warmup_steps == 0:
-            raise ValueError(
-                "Noam scheduler cannot be used without warmup steps")
+            raise ValueError("Noam scheduler cannot be used without warmup steps")
 
         if self.hold_steps > 0:
             hold_steps = self.hold_steps - self.warmup_steps
@@ -667,14 +650,12 @@ class WarmupAnnealing(WarmupPolicy):
     """Warmup learning rate annealing."""
 
     def __init__(self, optimizer, *, max_steps, last_epoch=-1, min_lr=0.0, **kwargs):
-        super().__init__(optimizer=optimizer, max_steps=max_steps,
-                         last_epoch=last_epoch, min_lr=min_lr, **kwargs)
+        super().__init__(optimizer=optimizer, max_steps=max_steps, last_epoch=last_epoch, min_lr=min_lr, **kwargs)
 
     def _get_lr(self, step):
         """Get learning rate at current step."""
         delta_lr = self.base_lrs[0] - self.min_lr
-        mult = (step - self.warmup_steps) / \
-            (self.max_steps - self.warmup_steps)
+        mult = (step - self.warmup_steps) / (self.max_steps - self.warmup_steps)
         return [self.min_lr + (1 - mult) * delta_lr for _ in self.base_lrs]
 
 
@@ -682,8 +663,7 @@ class InverseSquareRootAnnealing(WarmupPolicy):
     """Inverse square root learning rate annealing."""
 
     def __init__(self, optimizer, *, max_steps, last_epoch=-1, min_lr=0.0, **kwargs):
-        super().__init__(optimizer=optimizer, max_steps=max_steps,
-                         **kwargs, last_epoch=last_epoch, min_lr=min_lr)
+        super().__init__(optimizer=optimizer, max_steps=max_steps, **kwargs, last_epoch=last_epoch, min_lr=min_lr)
 
     def _get_lr(self, step):
         """Get learning rate at current step."""
@@ -695,8 +675,7 @@ class T5InverseSquareRootAnnealing(SquareRootConstantPolicy):
     """Inverse square root learning rate annealing."""
 
     def __init__(self, optimizer, *, max_steps, last_epoch=-1, min_lr=0.0, **kwargs):
-        super().__init__(optimizer=optimizer, max_steps=max_steps,
-                         **kwargs, last_epoch=last_epoch, min_lr=min_lr)
+        super().__init__(optimizer=optimizer, max_steps=max_steps, **kwargs, last_epoch=last_epoch, min_lr=min_lr)
 
     def _get_lr(self, step):
         """Get learning rate at current step."""
@@ -710,8 +689,7 @@ class PolynomialDecayAnnealing(WarmupPolicy):
         self.power = power
         self.cycle = cycle
 
-        super().__init__(optimizer=optimizer, max_steps=max_steps,
-                         last_epoch=last_epoch, min_lr=min_lr, **kwargs)
+        super().__init__(optimizer=optimizer, max_steps=max_steps, last_epoch=last_epoch, min_lr=min_lr, **kwargs)
 
     def _get_lr(self, step):
         """Get learning rate at current step."""
@@ -735,8 +713,7 @@ class PolynomialHoldDecayAnnealing(WarmupHoldPolicy):
         self.power = power
         self.cycle = cycle
 
-        super().__init__(optimizer=optimizer, max_steps=max_steps,
-                         last_epoch=last_epoch, min_lr=min_lr, **kwargs)
+        super().__init__(optimizer=optimizer, max_steps=max_steps, last_epoch=last_epoch, min_lr=min_lr, **kwargs)
 
     def _get_lr(self, step):
         """Get learning rate at current step."""
@@ -744,8 +721,7 @@ class PolynomialHoldDecayAnnealing(WarmupHoldPolicy):
             _poly_decay(
                 initial_lr,
                 step=step - self.hold_steps,
-                decay_steps=self.max_steps -
-                max(self.warmup_steps, self.hold_steps),
+                decay_steps=self.max_steps - max(self.warmup_steps, self.hold_steps),
                 power=self.power,
                 min_lr=self.min_lr,
                 cycle=self.cycle,
@@ -766,14 +742,12 @@ def register_scheduler(name: str, scheduler: _LRScheduler, scheduler_params: Sch
     scheduler_params: The parameters as a dataclass of the scheduler
     """
     if name in AVAILABLE_SCHEDULERS:
-        raise ValueError(
-            f"Cannot override pre-existing schedulers. Conflicting scheduler name = {name}")
+        raise ValueError(f"Cannot override pre-existing schedulers. Conflicting scheduler name = {name}")
 
     AVAILABLE_SCHEDULERS[name] = scheduler
 
     sched_name = f"{scheduler.__name__}_params"
-    register_scheduler_params(
-        name=sched_name, scheduler_params=scheduler_params)
+    register_scheduler_params(name=sched_name, scheduler_params=scheduler_params)
 
 
 def get_scheduler(name: str, **kwargs: Optional[Dict[str, Any]]) -> _LRScheduler:
@@ -872,14 +846,12 @@ def prepare_lr_scheduler(
 
     # Build nested dictionary for convenience out of structured objects
     if isinstance(scheduler_config, DictConfig):
-        scheduler_config = OmegaConf.to_container(
-            scheduler_config, resolve=True)
+        scheduler_config = OmegaConf.to_container(scheduler_config, resolve=True)
 
     elif dataclasses.is_dataclass(scheduler_config):
         # Recursively transform data classes to basic dictionaries
         scheduler_config = OmegaConf.create(scheduler_config)
-        scheduler_config = OmegaConf.to_container(
-            scheduler_config, resolve=True)
+        scheduler_config = OmegaConf.to_container(scheduler_config, resolve=True)
 
     # Test to see if config follows above schema
     add_max_args_flag = True
@@ -905,8 +877,7 @@ def prepare_lr_scheduler(
             scheduler_args.pop("reduce_on_plateau", None)
     else:
         # Return gracefully in case `sched` was not supplied; inform user
-        logging.info(
-            "Scheduler not initialized as no `sched` config supplied to setup_optimizer()")
+        logging.info("Scheduler not initialized as no `sched` config supplied to setup_optimizer()")
         return None
 
     # Try instantiation of scheduler params from config class path
@@ -950,12 +921,10 @@ def prepare_lr_scheduler(
             # If params is itself a dict config object provided explicitly in Dict Config
             # Resolve to dictionary for convenience
             if isinstance(scheduler_params_override, DictConfig):
-                scheduler_params_override = OmegaConf.to_container(
-                    scheduler_params_override, resolve=True)
+                scheduler_params_override = OmegaConf.to_container(scheduler_params_override, resolve=True)
 
             # Get and instantiate the Config dataclass for this scheduler
-            scheduler_params_cls = get_scheduler_config(
-                scheduler_params_name, **scheduler_params_override)
+            scheduler_params_cls = get_scheduler_config(scheduler_params_name, **scheduler_params_override)
             scheduler_params = scheduler_params_cls  # instantiate the parameters object
             # extract just the dictionary from the Config object
             scheduler_args = vars(scheduler_params)
@@ -992,8 +961,7 @@ def prepare_lr_scheduler(
 
         # Get iters_per_batch
         max_epochs = scheduler_config.get("t_max_epochs")
-        accumulate_grad_batches = scheduler_config.get(
-            "t_accumulate_grad_batches")
+        accumulate_grad_batches = scheduler_config.get("t_accumulate_grad_batches")
         limit_train_batches = scheduler_config.get("t_limit_train_batches")
         num_workers = scheduler_config.get("t_num_workers")
 
@@ -1007,11 +975,9 @@ def prepare_lr_scheduler(
             if train_dataloader.batch_sampler.micro_batch_size is not None:
                 batch_size = train_dataloader.batch_sampler.micro_batch_size
             else:
-                raise ValueError(
-                    f"Could not find batch_size from batch_sampler: {train_dataloader.batch_sampler}")
+                raise ValueError(f"Could not find batch_size from batch_sampler: {train_dataloader.batch_sampler}")
         else:
-            raise ValueError(
-                f"Could not find batch_size from train_dataloader: {train_dataloader}")
+            raise ValueError(f"Could not find batch_size from train_dataloader: {train_dataloader}")
         drop_last = train_dataloader.drop_last
 
         max_steps = compute_max_steps(
@@ -1053,8 +1019,7 @@ def prepare_lr_scheduler(
 
     # Wrap the schedule in PTL arguments to perform stepwise computation
     # Rather than epoch level computation
-    reduce_lr_on_plateau = isinstance(
-        schedule, optim.lr_scheduler.ReduceLROnPlateau)
+    reduce_lr_on_plateau = isinstance(schedule, optim.lr_scheduler.ReduceLROnPlateau)
 
     return {
         "scheduler": schedule,
