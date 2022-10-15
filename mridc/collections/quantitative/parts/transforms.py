@@ -960,21 +960,19 @@ class LeastSquares:
         """Differentiable inverse least square."""
         if Y.dim() == 2:
             return torch.matmul(torch.pinverse(Y), A)
-        else:
-            return torch.matmul(
-                torch.matmul(torch.inverse(torch.matmul(Y.permute(0, 2, 1), Y)), Y.permute(0, 2, 1)), A
-            )
+        return torch.matmul(
+            torch.matmul(torch.inverse(torch.matmul(Y.permute(0, 2, 1), Y)), Y.permute(0, 2, 1)), A
+        )
 
     def lstq_pinv_complex_np(self, A, Y, lamb=0.0):
         """Differentiable inverse least square for stacked complex inputs."""
         if Y.ndim == 2:
             return np.matmul(np.linalg.pinv(Y), A)
-        else:
-            Y = Y.to(self.device)
-            A = A.to(Y)
-            x = torch.matmul(torch.conj(Y).permute(0, 2, 1), Y)
-            x = torch.matmul(torch.inverse(x), torch.conj(Y).permute(0, 2, 1))
-            return torch.bmm(x, A)[..., 0]
+        Y = Y.to(self.device)
+        A = A.to(Y)
+        x = torch.matmul(torch.conj(Y).permute(0, 2, 1), Y)
+        x = torch.matmul(torch.inverse(x), torch.conj(Y).permute(0, 2, 1))
+        return torch.bmm(x, A)[..., 0]
 
 
 def R2star_B0_real_S0_complex_mapping(

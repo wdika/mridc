@@ -37,7 +37,7 @@ def get_dir_size(path="."):
 def get_size(path="."):
     if os.path.isfile(path):
         return os.path.getsize(path)
-    elif os.path.isdir(path):
+    if os.path.isdir(path):
         return get_dir_size(path)
 
 

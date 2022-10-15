@@ -61,13 +61,12 @@ class SignalForwardModel(object):
             TEs = torch.Tensor([3.0, 11.5, 20.0, 28.5])
         if self.sequence == "megre":
             return self.MEGRESignalModel(R2star_map, S0_map, B0_map, phi_map, TEs)
-        elif self.sequence == "megre_no_phase":
+        if self.sequence == "megre_no_phase":
             return self.MEGRENoPhaseSignalModel(R2star_map, S0_map, TEs)
-        else:
-            raise ValueError(
-                "Only MEGRE and MEGRE no phase are supported are signal forward model at the moment. "
-                f"Found {self.sequence}"
-            )
+        raise ValueError(
+            "Only MEGRE and MEGRE no phase are supported are signal forward model at the moment. "
+            f"Found {self.sequence}"
+        )
 
     def MEGRESignalModel(
         self,

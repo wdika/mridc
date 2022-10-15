@@ -14,8 +14,7 @@ def avoid_bfloat16_autocast_context():
     """If the current autocast context is bfloat16, cast it to float32."""
     if torch.is_autocast_enabled() and torch.get_autocast_gpu_dtype() == torch.bfloat16:
         return torch.cuda.amp.autocast(dtype=torch.float32)
-    else:
-        return nullcontext()
+    return nullcontext()
 
 
 def avoid_float16_autocast_context():
@@ -25,7 +24,6 @@ def avoid_float16_autocast_context():
             return torch.cuda.amp.autocast(dtype=torch.float32)
         if torch.cuda.is_bf16_supported():
             return torch.cuda.amp.autocast(dtype=torch.bfloat16)
-        else:
-            return torch.cuda.amp.autocast(dtype=torch.float32)
+        return torch.cuda.amp.autocast(dtype=torch.float32)
     else:
         return nullcontext()
