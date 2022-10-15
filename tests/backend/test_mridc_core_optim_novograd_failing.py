@@ -56,8 +56,7 @@ def test_case_4():
         set_0 = set()
         bool_1 = True
         bytes_0 = b"\x8e\xa4\xd3\xc29\x00>>\x87\xa7"
-        dict_0 = {bool_1: bool_0, bool_1: bool_0,
-                  bool_0: bool_0, bytes_0: bool_1}
+        dict_0 = {bool_1: bool_0, bool_1: bool_0, bool_0: bool_0, bytes_0: bool_1}
         novograd_0 = module_0.Novograd(set_0, bool_1, dict_0)
     except BaseException:
         pass
@@ -73,7 +72,6 @@ def test_case_5():
         bytes_1 = b"6h\xe4jZ^\xed\x85\x08X8\xee$"
         bool_0 = True
         float_1 = -239.0
-        novograd_0 = module_0.Novograd(
-            bytes_1, bool_0, bytes_0, float_1, list_0, float_0, list_0)
+        novograd_0 = module_0.Novograd(bytes_1, bool_0, bytes_0, float_1, list_0, float_0, list_0)
     except BaseException:
         pass

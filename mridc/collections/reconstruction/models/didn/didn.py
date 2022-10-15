@@ -75,16 +75,14 @@ class ReconBlock(nn.Module):
             [
                 nn.Sequential(
                     *[
-                        nn.Conv2d(
-                            in_channels=in_channels, out_channels=in_channels, kernel_size=3, padding=1),
+                        nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=3, padding=1),
                         nn.PReLU(),
                     ]
                 )
                 for _ in range(num_convs - 1)
             ]
         )
-        self.convs.append(nn.Conv2d(in_channels=in_channels,
-                          out_channels=in_channels, kernel_size=3, padding=1))
+        self.convs.append(nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=3, padding=1))
         self.num_convs = num_convs
 
     def forward(self, input_data):
@@ -135,45 +133,34 @@ class DUB(nn.Module):
         self.out_channels = out_channels
 
         # Scale 1
-        self.conv1_1 = nn.Sequential(
-            *[nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1), nn.PReLU()] * 2)
-        self.down1 = nn.Conv2d(in_channels, in_channels * 2,
-                               kernel_size=3, stride=2, padding=1)
+        self.conv1_1 = nn.Sequential(*[nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1), nn.PReLU()] * 2)
+        self.down1 = nn.Conv2d(in_channels, in_channels * 2, kernel_size=3, stride=2, padding=1)
         # Scale 2
         self.conv2_1 = nn.Sequential(
             *[nn.Conv2d(in_channels * 2, in_channels * 2, kernel_size=3, padding=1), nn.PReLU()]
         )
-        self.down2 = nn.Conv2d(
-            in_channels * 2, in_channels * 4, kernel_size=3, stride=2, padding=1)
+        self.down2 = nn.Conv2d(in_channels * 2, in_channels * 4, kernel_size=3, stride=2, padding=1)
         # Scale 3
         self.conv3_1 = nn.Sequential(
             *[
-                nn.Conv2d(in_channels * 4, in_channels *
-                          4, kernel_size=3, padding=1),
+                nn.Conv2d(in_channels * 4, in_channels * 4, kernel_size=3, padding=1),
                 nn.PReLU(),
             ]
         )
-        self.up1 = nn.Sequential(
-            *[Subpixel(in_channels * 4, in_channels * 2, 2, 1, 0)])
+        self.up1 = nn.Sequential(*[Subpixel(in_channels * 4, in_channels * 2, 2, 1, 0)])
         # Scale 2
-        self.conv_agg_1 = nn.Conv2d(
-            in_channels * 4, in_channels * 2, kernel_size=1)
+        self.conv_agg_1 = nn.Conv2d(in_channels * 4, in_channels * 2, kernel_size=1)
         self.conv2_2 = nn.Sequential(
             *[
-                nn.Conv2d(in_channels * 2, in_channels *
-                          2, kernel_size=3, padding=1),
+                nn.Conv2d(in_channels * 2, in_channels * 2, kernel_size=3, padding=1),
                 nn.PReLU(),
             ]
         )
-        self.up2 = nn.Sequential(
-            *[Subpixel(in_channels * 2, in_channels, 2, 1, 0)])
+        self.up2 = nn.Sequential(*[Subpixel(in_channels * 2, in_channels, 2, 1, 0)])
         # Scale 1
-        self.conv_agg_2 = nn.Conv2d(
-            in_channels * 2, in_channels, kernel_size=1)
-        self.conv1_2 = nn.Sequential(
-            *[nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1), nn.PReLU()] * 2)
-        self.conv_out = nn.Sequential(
-            *[nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1), nn.PReLU()])
+        self.conv_agg_2 = nn.Conv2d(in_channels * 2, in_channels, kernel_size=1)
+        self.conv1_2 = nn.Sequential(*[nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1), nn.PReLU()] * 2)
+        self.conv_out = nn.Sequential(*[nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1), nn.PReLU()])
 
     @staticmethod
     def pad(x):
@@ -301,13 +288,10 @@ class DIDN(nn.Module):
             padding=1,
         )
         self.dubs = nn.ModuleList(
-            [DUB(in_channels=hidden_channels, out_channels=hidden_channels)
-             for _ in range(num_dubs)]
+            [DUB(in_channels=hidden_channels, out_channels=hidden_channels) for _ in range(num_dubs)]
         )
-        self.recon_block = ReconBlock(
-            in_channels=hidden_channels, num_convs=num_convs_recon)
-        self.recon_agg = nn.Conv2d(
-            in_channels=hidden_channels * num_dubs, out_channels=hidden_channels, kernel_size=1)
+        self.recon_block = ReconBlock(in_channels=hidden_channels, num_convs=num_convs_recon)
+        self.recon_agg = nn.Conv2d(in_channels=hidden_channels * num_dubs, out_channels=hidden_channels, kernel_size=1)
         self.conv = nn.Sequential(
             *[
                 nn.Conv2d(
@@ -327,8 +311,7 @@ class DIDN(nn.Module):
             padding=1,
         )
         self.num_dubs = num_dubs
-        self.skip_connection = (
-            in_channels == out_channels) and skip_connection
+        self.skip_connection = (in_channels == out_channels) and skip_connection
 
     @staticmethod
     def crop_to_shape(x, shape):

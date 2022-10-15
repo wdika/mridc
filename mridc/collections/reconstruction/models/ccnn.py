@@ -73,10 +73,8 @@ class CascadeNet(models_base.BaseMRIReconstructionModel, ABC):
 
         # initialize weights if not using pretrained ccnn
         # TODO if not cfg_dict.get("pretrained", False)
-        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get(
-            "train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get(
-            "eval_loss_fn") == "ssim" else L1Loss()
+        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
+        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
 
         self.accumulate_estimates = False
         self.dc_weight = torch.nn.Parameter(torch.ones(1))

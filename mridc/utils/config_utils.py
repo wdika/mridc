@@ -45,12 +45,10 @@ def update_model_config(model_cls: MRIDCConfig, update_cfg: "DictConfig", drop_m
     infrastructure.
     """
     if not _HAS_HYDRA:
-        logging.error(
-            "This function requires Hydra/Omegaconf and it was not installed.")
+        logging.error("This function requires Hydra/Omegaconf and it was not installed.")
         sys.exit(1)
     if not (is_dataclass(model_cls) or isinstance(model_cls, DictConfig)):
-        raise ValueError(
-            "`model_cfg` must be a dataclass or a structured OmegaConf object")
+        raise ValueError("`model_cfg` must be a dataclass or a structured OmegaConf object")
 
     if not isinstance(update_cfg, DictConfig):
         update_cfg = OmegaConf.create(update_cfg)
@@ -73,8 +71,7 @@ def update_model_config(model_cls: MRIDCConfig, update_cfg: "DictConfig", drop_m
     )
 
     # Add optim and sched additional keys to model cls
-    model_cls = _add_subconfig_keys(
-        model_cls, update_cfg, subconfig_key="optim")
+    model_cls = _add_subconfig_keys(model_cls, update_cfg, subconfig_key="optim")
 
     # Perform full merge of model config class and update config
     # Remove ModelPT artifact `target`
@@ -113,8 +110,7 @@ def _update_subconfig(
     The updated DictConfig for the MRIDCConfig
     """
     if not _HAS_HYDRA:
-        logging.error(
-            "This function requires Hydra/Omegaconf and it was not installed.")
+        logging.error("This function requires Hydra/Omegaconf and it was not installed.")
         sys.exit(1)
     with open_dict(model_cfg.model):
         # If update config has the key, but model cfg doesnt have the key
@@ -157,8 +153,7 @@ def _add_subconfig_keys(model_cfg: "DictConfig", update_cfg: "DictConfig", subco
     A ModelPT DictConfig with additional keys added to the sub-config.
     """
     if not _HAS_HYDRA:
-        logging.error(
-            "This function requires Hydra/Omegaconf and it was not installed.")
+        logging.error("This function requires Hydra/Omegaconf and it was not installed.")
         sys.exit(1)
     with open_dict(model_cfg.model):
         # Create copy of original model sub config
@@ -231,14 +226,12 @@ def assert_dataclass_signature_match(
             if original_arg in class_params:
                 class_params.remove(original_arg)  # type: ignore
                 class_params.add(new_arg)  # type: ignore
-                logging.info(
-                    f"Remapped {original_arg} -> {new_arg} in {cls.__name__}")
+                logging.info(f"Remapped {original_arg} -> {new_arg} in {cls.__name__}")
 
             if original_arg in dataclass_params:
                 dataclass_params.remove(original_arg)  # type: ignore
                 dataclass_params.add(new_arg)  # type: ignore
-                logging.info(
-                    f"Remapped {original_arg} -> {new_arg} in {datacls.__name__}")
+                logging.info(f"Remapped {original_arg} -> {new_arg} in {datacls.__name__}")
 
     if ignore_args is not None:
         ignore_args = set(ignore_args)  # type: ignore
@@ -247,22 +240,18 @@ def assert_dataclass_signature_match(
         dataclass_params = dataclass_params - ignore_args  # type: ignore
         logging.info(f"Removing ignored arguments - {ignore_args}")
 
-    intersection: Set[type] = set.intersection(
-        class_params, dataclass_params)  # type: ignore
+    intersection: Set[type] = set.intersection(class_params, dataclass_params)  # type: ignore
     subset_cls = class_params - intersection  # type: ignore
     subset_datacls = dataclass_params - intersection  # type: ignore
 
     if (len(class_params) != len(dataclass_params)) or len(subset_cls) > 0 or len(subset_datacls) > 0:
-        logging.error(
-            f"Class {cls.__name__} arguments do not match " f"Dataclass {datacls.__name__}!")
+        logging.error(f"Class {cls.__name__} arguments do not match " f"Dataclass {datacls.__name__}!")
 
         if len(subset_cls) > 0:
-            logging.error(
-                f"Class {cls.__name__} has additional arguments :\n" f"{subset_cls}")
+            logging.error(f"Class {cls.__name__} has additional arguments :\n" f"{subset_cls}")
 
         if len(subset_datacls):
-            logging.error(
-                f"Dataclass {datacls.__name__} has additional arguments :\n{subset_datacls}")
+            logging.error(f"Dataclass {datacls.__name__} has additional arguments :\n{subset_datacls}")
 
         return False, subset_cls, subset_datacls
     return True, None, None

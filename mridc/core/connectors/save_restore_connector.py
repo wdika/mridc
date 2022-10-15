@@ -51,12 +51,9 @@ class SaveRestoreConnector:
                 if hasattr(model, "artifacts") and model.artifacts is not None:
                     self._handle_artifacts(model, mridc_file_folder=tmpdir)
                     # We should not update self._cfg here - the model can still be in use
-                    self._update_artifact_paths(
-                        model, path2yaml_file=config_yaml)
-                self._save_state_dict_to_disk(
-                    model.state_dict(), model_weights)
-                self._make_mridc_file_from_folder(
-                    filename=save_path, source_dir=tmpdir)
+                    self._update_artifact_paths(model, path2yaml_file=config_yaml)
+                self._save_state_dict_to_disk(model.state_dict(), model_weights)
+                self._make_mridc_file_from_folder(filename=save_path, source_dir=tmpdir)
         else:
             return
 
@@ -120,8 +117,7 @@ class SaveRestoreConnector:
                     tmpdir = self.model_extracted_dir
                 else:
                     # Extract the mridc file into the temporary directory
-                    self._unpack_mridc_file(
-                        path2file=restore_path, out_folder=tmpdir)
+                    self._unpack_mridc_file(path2file=restore_path, out_folder=tmpdir)
 
                 # Change current working directory to the temporary directory
                 os.chdir(tmpdir)
@@ -146,30 +142,23 @@ class SaveRestoreConnector:
                     instance = conf
                     return instance
                 if app_state.model_parallel_rank is not None and app_state.model_parallel_size > 1:
-                    model_weights = self._inject_model_parallel_rank_for_ckpt(
-                        tmpdir, self.model_weights_ckpt)
+                    model_weights = self._inject_model_parallel_rank_for_ckpt(tmpdir, self.model_weights_ckpt)
                 else:
-                    model_weights = os.path.join(
-                        tmpdir, self.model_weights_ckpt)
+                    model_weights = os.path.join(tmpdir, self.model_weights_ckpt)
                 OmegaConf.set_struct(conf, True)
                 os.chdir(cwd)
                 # get the class
-                calling_cls._set_model_restore_state(
-                    is_being_restored=True, folder=tmpdir)  # type: ignore
-                instance = calling_cls.from_config_dict(
-                    config=conf, trainer=trainer)
+                calling_cls._set_model_restore_state(is_being_restored=True, folder=tmpdir)  # type: ignore
+                instance = calling_cls.from_config_dict(config=conf, trainer=trainer)
                 instance = instance.to(map_location)
                 # add load_state_dict override
                 if app_state.model_parallel_size is not None and app_state.model_parallel_size > 1:
-                    model_weights = self._inject_model_parallel_rank_for_ckpt(
-                        tmpdir, self.model_weights_ckpt)
+                    model_weights = self._inject_model_parallel_rank_for_ckpt(tmpdir, self.model_weights_ckpt)
                 instance.load_state_dict(
                     self._load_state_dict_from_disk(model_weights, map_location=map_location), strict=strict
                 )
-                logging.info(
-                    f"Model {instance.__class__.__name__} was successfully restored from {restore_path}.")
-                instance._set_model_restore_state(
-                    is_being_restored=False)  # type: ignore
+                logging.info(f"Model {instance.__class__.__name__} was successfully restored from {restore_path}.")
+                instance._set_model_restore_state(is_being_restored=False)  # type: ignore
             finally:
                 os.chdir(cwd)
 
@@ -179,8 +168,7 @@ class SaveRestoreConnector:
     def load_instance_with_state_dict(instance, state_dict, strict):
         """Loads the state dict into the instance."""
         instance.load_state_dict(state_dict, strict=strict)
-        instance._set_model_restore_state(
-            is_being_restored=False)  # type: ignore
+        instance._set_model_restore_state(is_being_restored=False)  # type: ignore
 
     def restore_from(
         self,
@@ -228,8 +216,7 @@ class SaveRestoreConnector:
 
         _, instance, state_dict = loaded_params
         self.load_instance_with_state_dict(instance, state_dict, strict)
-        logging.info(
-            f"Model {instance.__class__.__name__} was successfully restored from {restore_path}.")
+        logging.info(f"Model {instance.__class__.__name__} was successfully restored from {restore_path}.")
         return instance
 
     def extract_state_dict_from(self, restore_path: str, save_dir: str, split_by_module: bool = False):
@@ -276,8 +263,7 @@ class SaveRestoreConnector:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             try:
-                self._unpack_mridc_file(
-                    path2file=restore_path, out_folder=tmpdir)
+                self._unpack_mridc_file(path2file=restore_path, out_folder=tmpdir)
                 os.chdir(tmpdir)
                 model_weights = os.path.join(tmpdir, self.model_weights_ckpt)
                 state_dict = self._load_state_dict_from_disk(model_weights)
@@ -289,18 +275,14 @@ class SaveRestoreConnector:
                 else:
                     key_set = {key.split(".")[0] for key in state_dict.keys()}
                     for primary_key in key_set:
-                        inner_keys = [key for key in state_dict.keys() if key.split(".")[
-                            0] == primary_key]
+                        inner_keys = [key for key in state_dict.keys() if key.split(".")[0] == primary_key]
                         state_dict_subset = {
                             ".".join(inner_key.split(".")[1:]): state_dict[inner_key] for inner_key in inner_keys
                         }
-                        filepath = os.path.join(
-                            save_dir, f"{primary_key}.ckpt")
-                        self._save_state_dict_to_disk(
-                            state_dict_subset, filepath)
+                        filepath = os.path.join(save_dir, f"{primary_key}.ckpt")
+                        self._save_state_dict_to_disk(state_dict_subset, filepath)
 
-                logging.info(
-                    f"Checkpoints from {restore_path} were successfully extracted into {save_dir}.")
+                logging.info(f"Checkpoints from {restore_path} were successfully extracted into {save_dir}.")
             finally:
                 os.chdir(cwd)
 
@@ -344,8 +326,7 @@ class SaveRestoreConnector:
         # without its key having been overridden, this pathway will be used.
         src_obj_name = os.path.basename(src)
         if app_state.mridc_file_folder is not None:
-            src_obj_path = os.path.abspath(os.path.join(
-                app_state.mridc_file_folder, src_obj_name))
+            src_obj_path = os.path.abspath(os.path.join(app_state.mridc_file_folder, src_obj_name))
         else:
             src_obj_path = src_obj_name
 
@@ -355,8 +336,7 @@ class SaveRestoreConnector:
             artifact_item.path_type = mridc.utils.model_utils.ArtifactPathType.LOCAL_PATH  # type: ignore
 
         elif src.startswith("mridc:"):
-            return_path = os.path.abspath(os.path.join(
-                app_state.mridc_file_folder, src[5:]))
+            return_path = os.path.abspath(os.path.join(app_state.mridc_file_folder, src[5:]))
             artifact_item.path_type = mridc.utils.model_utils.ArtifactPathType.TAR_PATH  # type: ignore
 
         elif os.path.exists(src_obj_path):
@@ -397,15 +377,13 @@ class SaveRestoreConnector:
         for conf_path, artiitem in model.artifacts.items():
             if artiitem.path_type == mridc.utils.model_utils.ArtifactPathType.LOCAL_PATH:
                 if not os.path.exists(artiitem.path):
-                    raise FileNotFoundError(
-                        f"Artifact {conf_path} not found at location: {artiitem.path}")
+                    raise FileNotFoundError(f"Artifact {conf_path} not found at location: {artiitem.path}")
 
                 # Generate new uniq artifact name and copy it to mridc_file_folder
                 # Note uuid.uuid4().hex is guaranteed to be 32 character long
                 artifact_base_name = os.path.basename(artiitem.path)
                 artifact_uniq_name = f"{uuid.uuid4().hex}_{artifact_base_name}"
-                shutil.copy2(artiitem.path, os.path.join(
-                    mridc_file_folder, artifact_uniq_name))
+                shutil.copy2(artiitem.path, os.path.join(mridc_file_folder, artifact_uniq_name))
 
                 # Update artifacts registry
                 artiitem.hashed_path = f"mridc:{artifact_uniq_name}"
@@ -416,13 +394,11 @@ class SaveRestoreConnector:
                 tarfile_artifacts.append((conf_path, artiitem))
 
             else:
-                raise ValueError(
-                    "Directly referencing artifacts from other mridc files isn't supported yet")
+                raise ValueError("Directly referencing artifacts from other mridc files isn't supported yet")
 
         # Process current tarfile artifacts by unpacking the previous tarfile and extract the artifacts
         # that are currently required.
-        model_metadata = app_state.get_model_metadata_from_guid(
-            model.model_guid)
+        model_metadata = app_state.get_model_metadata_from_guid(model.model_guid)
         if tarfile_artifacts and model_metadata.restoration_path is not None:
             # Need to step into mridc archive to extract file
             # Get path where the command is executed - the artifacts will be "retrieved" there
@@ -431,21 +407,17 @@ class SaveRestoreConnector:
             try:
                 # Step into the mridc archive to try and find the file
                 with tempfile.TemporaryDirectory() as archive_dir:
-                    self._unpack_mridc_file(
-                        path2file=model_metadata.restoration_path, out_folder=archive_dir)
+                    self._unpack_mridc_file(path2file=model_metadata.restoration_path, out_folder=archive_dir)
                     os.chdir(archive_dir)
                     for conf_path, artiitem in tarfile_artifacts:
                         # Get basename and copy it to mridc_file_folder
                         if "mridc:" in artiitem.path:
-                            artifact_base_name = artiitem.path.split("mridc:")[
-                                1]
+                            artifact_base_name = artiitem.path.split("mridc:")[1]
                         else:
-                            artifact_base_name = os.path.basename(
-                                artiitem.path)
+                            artifact_base_name = os.path.basename(artiitem.path)
                         # no need to hash here as we are in tarfile_artifacts which are already hashed
                         artifact_uniq_name = artifact_base_name
-                        shutil.copy2(artifact_base_name, os.path.join(
-                            mridc_file_folder, artifact_uniq_name))
+                        shutil.copy2(artifact_base_name, os.path.join(mridc_file_folder, artifact_uniq_name))
 
                         # Update artifacts registry
                         new_artiitem = mridc.utils.model_utils.ArtifactItem()
@@ -479,8 +451,7 @@ class SaveRestoreConnector:
         into the checkpoint file name.
         """
         model_weights = os.path.join(dirname, basename)
-        model_weights = mridc.utils.model_utils.inject_model_parallel_rank(
-            model_weights)
+        model_weights = mridc.utils.model_utils.inject_model_parallel_rank(model_weights)
         return model_weights
 
     @staticmethod

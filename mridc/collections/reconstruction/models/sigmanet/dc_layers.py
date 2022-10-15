@@ -50,8 +50,7 @@ class DataGDLayer(torch.nn.Module):
 
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
-        self.spatial_dims = spatial_dims if spatial_dims is not None else [
-            -2, -1]
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
 
     def forward(self, x, y, smaps, mask):
         """
@@ -123,8 +122,7 @@ class DataProxCGLayer(torch.nn.Module):
 
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
-        self.spatial_dims = spatial_dims if spatial_dims is not None else [
-            -2, -1]
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
 
     def forward(self, x, f, smaps, mask):
         """
@@ -176,8 +174,7 @@ class ConjugateGradient(torch.autograd.Function):
         r = x0.clone()
         p = x0.clone()
         x0x0 = (x0.pow(2)).view(nBatch, -1).sum(-1)
-        rr = torch.stack([(r.pow(2)).view(nBatch, -1).sum(-1),
-                         torch.zeros(nBatch).to(x0.device)], dim=-1)
+        rr = torch.stack([(r.pow(2)).view(nBatch, -1).sum(-1), torch.zeros(nBatch).to(x0.device)], dim=-1)
 
         it = 0
         while torch.min(rr[..., 0] / x0x0) > tol and it < max_iter:
@@ -189,17 +186,12 @@ class ConjugateGradient(torch.autograd.Function):
 
             re1, im1 = torch.unbind(data1, -1)
             re2, im2 = torch.unbind(data2, -1)
-            alpha = torch.stack(
-                [re1 * re2 + im1 * im2, im1 * re2 - re1 * im2], -1) / utils.complex_abs(data2) ** 2
+            alpha = torch.stack([re1 * re2 + im1 * im2, im1 * re2 - re1 * im2], -1) / utils.complex_abs(data2) ** 2
 
-            x += utils.complex_mul(alpha.reshape(nBatch,
-                                   1, 1, 1, -1), p.clone())
-            r -= utils.complex_mul(alpha.reshape(nBatch,
-                                   1, 1, 1, -1), q.clone())
-            rr_new = torch.stack([(r.pow(2)).view(
-                nBatch, -1).sum(-1), torch.zeros(nBatch).to(x0.device)], dim=-1)
-            beta = torch.stack(
-                [rr_new[..., 0] / rr[..., 0], torch.zeros(nBatch).to(x0.device)], dim=-1)
+            x += utils.complex_mul(alpha.reshape(nBatch, 1, 1, 1, -1), p.clone())
+            r -= utils.complex_mul(alpha.reshape(nBatch, 1, 1, 1, -1), q.clone())
+            rr_new = torch.stack([(r.pow(2)).view(nBatch, -1).sum(-1), torch.zeros(nBatch).to(x0.device)], dim=-1)
+            beta = torch.stack([rr_new[..., 0] / rr[..., 0], torch.zeros(nBatch).to(x0.device)], dim=-1)
             p = r.clone() + utils.complex_mul(beta.reshape(nBatch, 1, 1, 1, -1), p)
             rr = rr_new.clone()
         return x
@@ -368,8 +360,7 @@ class DataVSLayer(torch.nn.Module):
 
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
-        self.spatial_dims = spatial_dims if spatial_dims is not None else [
-            -2, -1]
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
 
     def forward(self, x, y, smaps, mask):
         """
@@ -396,8 +387,7 @@ class DataVSLayer(torch.nn.Module):
             -4,
             keepdim=True,
         )
-        k_dc = (1 - mask) * A_x + mask * \
-            (self.alpha * A_x + (1 - self.alpha) * y)
+        k_dc = (1 - mask) * A_x + mask * (self.alpha * A_x + (1 - self.alpha) * y)
         x_dc = torch.sum(
             utils.complex_mul(
                 fft.ifft2(
@@ -456,8 +446,7 @@ class DCLayer(torch.nn.Module):
 
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
-        self.spatial_dims = spatial_dims if spatial_dims is not None else [
-            -2, -1]
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
 
     def forward(self, x, y, mask):
         """
@@ -476,8 +465,7 @@ class DCLayer(torch.nn.Module):
         A_x = fft.fft2(
             x, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
         )
-        k_dc = (1 - mask) * A_x + mask * \
-            (self.lambda_ * A_x + (1 - self.lambda_) * y)
+        k_dc = (1 - mask) * A_x + mask * (self.lambda_ * A_x + (1 - self.lambda_) * y)
         return fft.ifft2(
             k_dc, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
         )
