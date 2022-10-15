@@ -195,7 +195,7 @@ class qMRISliceDataset(Dataset):
         if self.consecutive_slices == 1:
             if data.shape[0] == 1:
                 return data[0]
-            elif data.ndim != 2:
+            if data.ndim != 2:
                 return data[dataslice]
             return data
 
@@ -256,7 +256,8 @@ class qMRISliceDataset(Dataset):
                 raise ValueError("No kspace data found in file. Only 'kspace' or 'ksp' keys are supported.")
 
             if self.init_coil_dim in [3, 4, -1]:
-                kspace = np.transpose(kspace, (0, 3, 1, 2))  # [nr_TEs, nr_channels, nr_rows, nr_cols]
+                # [nr_TEs, nr_channels, nr_rows, nr_cols]
+                kspace = np.transpose(kspace, (0, 3, 1, 2))
 
             kspace = kspace / self.kspace_scaling_factor
 
@@ -275,7 +276,8 @@ class qMRISliceDataset(Dataset):
                 sensitivity_map = np.array([])
 
             if self.init_coil_dim in [3, 4, -1]:
-                sensitivity_map = np.transpose(sensitivity_map, (2, 0, 1))  # [nr_channels, nr_rows, nr_cols]
+                # [nr_channels, nr_rows, nr_cols]
+                sensitivity_map = np.transpose(sensitivity_map, (2, 0, 1))
 
             if "mask" in hf:
                 mask = np.asarray(self.get_consecutive_slices(hf, "mask", dataslice))

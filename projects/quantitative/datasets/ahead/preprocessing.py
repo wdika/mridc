@@ -70,7 +70,8 @@ def _dataloder(subjectID: str, datapath: str):
             # load brain mask
             brain_mask = sitk.ReadImage(os.path.join(folders[0], "nii", "mask_inv2_te2_m_corr.nii"))
             brain_mask = sitk.GetArrayFromImage(brain_mask)
-            brain_mask = np.flip(np.transpose(brain_mask, (0, 2, 1)), 1)  # need to flip! in the second axis!
+            # need to flip! in the second axis!
+            brain_mask = np.flip(np.transpose(brain_mask, (0, 2, 1)), 1)
 
     return coilimgs, sense_complex, brain_mask
 

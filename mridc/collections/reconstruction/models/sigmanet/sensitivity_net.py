@@ -186,8 +186,6 @@ class SensitivityNetwork(torch.nn.Module):
         self.gradD = torch.nn.ModuleList([datalayer for _ in range(self.num_iter)])
 
         self.save_space = save_space
-        if self.save_space:
-            self.forward = self.forward_save_space
         self.reset_cache = reset_cache
 
     def forward(self, x, y, smaps, mask):
@@ -204,6 +202,9 @@ class SensitivityNetwork(torch.nn.Module):
         -------
         Output data.
         """
+        if self.save_space:
+            return self.forward_save_space(x, y, smaps, mask)
+
         x_all = [x]
         x_half_all = []
         if self.shared_params:

@@ -37,7 +37,8 @@ class MultiDomainNet(base_models.BaseMRIReconstructionModel, ABC):
             self.standardization = multidomain_.StandardizationLayer(self.coil_dim, -1)
 
         self.unet = multidomain_.MultiDomainUnet2d(
-            in_channels=4 if standardization else 2,  # if standardization, in_channels is 4 due to standardized input
+            # if standardization, in_channels is 4 due to standardized input
+            in_channels=4 if standardization else 2,
             out_channels=2,
             num_filters=cfg_dict["num_filters"],
             num_pool_layers=cfg_dict["num_pool_layers"],

@@ -148,7 +148,9 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
             batch, slices = y.shape[0], y.shape[1]
             y = y.reshape(y.shape[0] * y.shape[1], *y.shape[2:])  # type: ignore
             sensitivity_maps = sensitivity_maps.reshape(
-                sensitivity_maps.shape[0] * sensitivity_maps.shape[1], *sensitivity_maps.shape[2:]  # type: ignore
+                # type: ignore
+                sensitivity_maps.shape[0] * sensitivity_maps.shape[1],
+                *sensitivity_maps.shape[2:],
             )
             mask = mask.reshape(mask.shape[0] * mask.shape[1], *mask.shape[2:])  # type: ignore
 

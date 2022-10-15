@@ -255,7 +255,8 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
             _pred_reconstruction = torch.view_as_real(_pred_reconstruction)
         if self.consecutive_slices > 1 and _pred_reconstruction.dim() == 5:
             _pred_reconstruction = _pred_reconstruction.reshape(  # type: ignore
-                _pred_reconstruction.shape[0] * _pred_reconstruction.shape[1],  # type: ignore
+                # type: ignore
+                _pred_reconstruction.shape[0] * _pred_reconstruction.shape[1],
                 *_pred_reconstruction.shape[2:],  # type: ignore
             )
         if _pred_reconstruction.shape[-1] == 2:  # type: ignore

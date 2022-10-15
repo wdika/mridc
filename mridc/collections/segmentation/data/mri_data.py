@@ -203,7 +203,7 @@ class JRSMRISliceDataset(Dataset):
         if self.consecutive_slices == 1:
             if data.shape[0] == 1:
                 return data[0]
-            elif data.ndim != 2:
+            if data.ndim != 2:
                 return data[dataslice]
             return data
 

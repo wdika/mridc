@@ -24,7 +24,8 @@ class LogMode(enum.IntEnum):
     """Enum for the different logging modes."""
 
     EACH = 0  # Log the message each time
-    ONCE = 1  # Log the message only once. The same message will not be logged again.
+    # Log the message only once. The same message will not be logged again.
+    ONCE = 1
 
 
 class Logger(metaclass=Singleton):

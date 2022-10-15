@@ -35,7 +35,7 @@ class SegmentationLambdaUNet(base_segmentation_models.BaseMRIJointReconstruction
         self.input_channels = cfg_dict.get("segmentation_module_input_channels", 2)
         if self.input_channels == 0:
             raise ValueError("Segmentation module input channels cannot be 0.")
-        elif self.input_channels > 2:
+        if self.input_channels > 2:
             raise ValueError(
                 "Segmentation module input channels must be either 1 or 2. Found: {}".format(self.input_channels)
             )
@@ -90,7 +90,8 @@ class SegmentationLambdaUNet(base_segmentation_models.BaseMRIJointReconstruction
         if self.consecutive_slices > 1:
             batch, slices = init_reconstruction_pred.shape[:2]
             init_reconstruction_pred = init_reconstruction_pred.reshape(  # type: ignore
-                init_reconstruction_pred.shape[0] * init_reconstruction_pred.shape[1],  # type: ignore
+                # type: ignore
+                init_reconstruction_pred.shape[0] * init_reconstruction_pred.shape[1],
                 init_reconstruction_pred.shape[2],  # type: ignore
                 init_reconstruction_pred.shape[3],  # type: ignore
                 init_reconstruction_pred.shape[4],  # type: ignore
