@@ -16,8 +16,7 @@ def test_case_1():
     try:
         str_0 = "^1D8&AV(,"
         main_params_optimizer_wrapper_0 = None
-        grad_bucket_0 = module_0.GradBucket(
-            str_0, main_params_optimizer_wrapper_0)
+        grad_bucket_0 = module_0.GradBucket(str_0, main_params_optimizer_wrapper_0)
     except BaseException:
         pass
 
@@ -74,7 +73,6 @@ def test_case_8():
 def test_case_9():
     try:
         str_0 = "%M"
-        main_params_optimizer_wrapper_0 = module_0.MainParamsOptimizerWrapper(
-            str_0)
+        main_params_optimizer_wrapper_0 = module_0.MainParamsOptimizerWrapper(str_0)
     except BaseException:
         pass

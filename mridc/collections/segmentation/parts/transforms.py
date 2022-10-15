@@ -114,15 +114,13 @@ class JRSMRIDataTransforms:
         self.complex_data = complex_data
         if not self.complex_data:
             if not utils.is_none(coil_combination_method):
-                raise ValueError(
-                    "Coil combination method for non-complex data should be None.")
+                raise ValueError("Coil combination method for non-complex data should be None.")
         else:
             self.coil_combination_method = coil_combination_method
         self.dimensionality = dimensionality
         if not self.complex_data:
             if not utils.is_none(mask_func):
-                raise ValueError(
-                    "Mask function for non-complex data should be None.")
+                raise ValueError("Mask function for non-complex data should be None.")
         else:
             self.mask_func = mask_func
         self.shift_mask = shift_mask
@@ -132,34 +130,29 @@ class JRSMRIDataTransforms:
         self.crop_size = crop_size
         if not self.complex_data:
             if kspace_crop:
-                raise ValueError(
-                    "K-space crop for non-complex data should be None.")
+                raise ValueError("K-space crop for non-complex data should be None.")
         else:
             self.kspace_crop = kspace_crop
         self.crop_before_masking = crop_before_masking
         if not self.complex_data:
             if not utils.is_none(kspace_zero_filling_size):
-                raise ValueError(
-                    "K-space zero filling size for non-complex data should be None.")
+                raise ValueError("K-space zero filling size for non-complex data should be None.")
         else:
             self.kspace_zero_filling_size = kspace_zero_filling_size
         self.normalize_inputs = normalize_inputs
         self.max_norm = max_norm
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
-        self.spatial_dims = spatial_dims if spatial_dims is not None else [
-            -2, -1]
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
         if not self.complex_data:
             if not utils.is_none(coil_dim):
-                raise ValueError(
-                    "Coil dimension for non-complex data should be None.")
+                raise ValueError("Coil dimension for non-complex data should be None.")
         else:
             self.coil_dim = coil_dim - 1
 
         if not self.complex_data:
             if apply_prewhitening:
-                raise ValueError(
-                    "Prewhitening for non-complex data cannot be applied.")
+                raise ValueError("Prewhitening for non-complex data cannot be applied.")
         else:
             self.apply_prewhitening = apply_prewhitening
             self.prewhitening = (
@@ -256,14 +249,12 @@ class JRSMRIDataTransforms:
             if self.apply_prewhitening:
                 kspace = torch.stack(
                     # type: ignore
-                    [self.prewhitening(kspace[echo])
-                     for echo in range(kspace.shape[0])],
+                    [self.prewhitening(kspace[echo]) for echo in range(kspace.shape[0])],
                     dim=0,
                 )
 
             if self.gcc is not None:
-                kspace = torch.stack([self.gcc(kspace[echo])
-                                     for echo in range(kspace.shape[0])], dim=0)
+                kspace = torch.stack([self.gcc(kspace[echo]) for echo in range(kspace.shape[0])], dim=0)
                 if isinstance(sensitivity_map, torch.Tensor):
                     sensitivity_map = fft.ifft2(
                         self.gcc(
@@ -281,11 +272,9 @@ class JRSMRIDataTransforms:
 
             # Apply zero-filling on kspace
             if self.kspace_zero_filling_size is not None and self.kspace_zero_filling_size not in ("", "None"):
-                padding_top = np.floor_divide(
-                    abs(int(self.kspace_zero_filling_size[0]) - kspace.shape[2]), 2)
+                padding_top = np.floor_divide(abs(int(self.kspace_zero_filling_size[0]) - kspace.shape[2]), 2)
                 padding_bottom = padding_top
-                padding_left = np.floor_divide(
-                    abs(int(self.kspace_zero_filling_size[1]) - kspace.shape[3]), 2)
+                padding_left = np.floor_divide(abs(int(self.kspace_zero_filling_size[1]) - kspace.shape[3]), 2)
                 padding_right = padding_left
 
                 kspace = torch.view_as_complex(kspace)
@@ -303,8 +292,7 @@ class JRSMRIDataTransforms:
                 sensitivity_map = torch.view_as_complex(sensitivity_map)
                 sensitivity_map = torch.nn.functional.pad(
                     sensitivity_map,
-                    pad=(padding_left, padding_right,
-                         padding_top, padding_bottom),
+                    pad=(padding_left, padding_right, padding_top, padding_bottom),
                     mode="constant",
                     value=0,
                 )
@@ -344,10 +332,8 @@ class JRSMRIDataTransforms:
             else:
                 raise ValueError("No target found")
 
-            target_reconstruction = torch.view_as_complex(
-                target_reconstruction)  # type: ignore
-            target_reconstruction = torch.abs(
-                target_reconstruction / torch.max(torch.abs(target_reconstruction)))
+            target_reconstruction = torch.view_as_complex(target_reconstruction)  # type: ignore
+            target_reconstruction = torch.abs(target_reconstruction / torch.max(torch.abs(target_reconstruction)))
         else:
             target_reconstruction = imspace
 
@@ -371,8 +357,7 @@ class JRSMRIDataTransforms:
 
             self.crop_size = (int(h), int(w))
 
-            target_reconstruction = utils.center_crop(
-                target_reconstruction, self.crop_size)
+            target_reconstruction = utils.center_crop(target_reconstruction, self.crop_size)
 
             if self.complex_data:
                 if sensitivity_map is not None and sensitivity_map.size != 0:
@@ -396,8 +381,7 @@ class JRSMRIDataTransforms:
                     )
 
             if segmentation_labels is not None:
-                segmentation_labels = utils.center_crop(
-                    segmentation_labels, self.crop_size)
+                segmentation_labels = utils.center_crop(segmentation_labels, self.crop_size)
 
         if self.complex_data:
             # Cropping before masking will maintain the shape of original kspace intact for masking.
@@ -432,19 +416,16 @@ class JRSMRIDataTransforms:
                     if (not utils.is_none(padding[0]) and not utils.is_none(padding[1])) and padding[0] != 0:
                         _mask[:, :, : padding[0]] = 0
                         # padding value inclusive on right of zeros
-                        _mask[:, :, padding[1]:] = 0
+                        _mask[:, :, padding[1] :] = 0
 
                     if isinstance(_mask, np.ndarray):
-                        _mask = torch.from_numpy(
-                            _mask).unsqueeze(0).unsqueeze(-1)
+                        _mask = torch.from_numpy(_mask).unsqueeze(0).unsqueeze(-1)
 
                     if self.shift_mask:
-                        _mask = torch.fft.fftshift(_mask, dim=(
-                            self.spatial_dims[0] - 1, self.spatial_dims[1] - 1))
+                        _mask = torch.fft.fftshift(_mask, dim=(self.spatial_dims[0] - 1, self.spatial_dims[1] - 1))
 
                     if self.crop_size is not None and self.crop_size not in ("", "None") and self.crop_before_masking:
-                        _mask = utils.complex_center_crop(
-                            _mask, self.crop_size)
+                        _mask = utils.complex_center_crop(_mask, self.crop_size)
 
                     masked_kspaces.append(kspace * _mask + 0.0)
                     masks.append(_mask)
@@ -455,22 +436,20 @@ class JRSMRIDataTransforms:
             elif not utils.is_none(mask) and mask.ndim != 0:
                 for _mask in mask:
                     if list(_mask.shape) == [kspace.shape[-3], kspace.shape[-2]]:
-                        mask = torch.from_numpy(
-                            _mask).unsqueeze(0).unsqueeze(-1)
+                        mask = torch.from_numpy(_mask).unsqueeze(0).unsqueeze(-1)
                         break
 
                 padding = (acq_start, acq_end)
                 if (not utils.is_none(padding[0]) and not utils.is_none(padding[1])) and padding[0] != 0:
                     mask[:, :, : padding[0]] = 0
                     # padding value inclusive on right of zeros
-                    mask[:, :, padding[1]:] = 0
+                    mask[:, :, padding[1] :] = 0
 
                 if isinstance(mask, np.ndarray):
                     mask = torch.from_numpy(mask).unsqueeze(0).unsqueeze(-1)
 
                 if self.shift_mask:
-                    mask = torch.fft.fftshift(mask, dim=(
-                        self.spatial_dims[0] - 1, self.spatial_dims[1] - 1))
+                    mask = torch.fft.fftshift(mask, dim=(self.spatial_dims[0] - 1, self.spatial_dims[1] - 1))
 
                 if self.crop_size is not None and self.crop_size not in ("", "None") and self.crop_before_masking:
                     mask = utils.complex_center_crop(mask, self.crop_size)
@@ -496,8 +475,7 @@ class JRSMRIDataTransforms:
                         mask = mask.permute(1, 0)
                     elif mask.shape[0] != masked_kspace.shape[1]:  # type: ignore
                         mask = torch.ones(
-                            [masked_kspace.shape[-3], masked_kspace.shape[-2]
-                             ], dtype=torch.float32  # type: ignore
+                            [masked_kspace.shape[-3], masked_kspace.shape[-2]], dtype=torch.float32  # type: ignore
                         )
 
                 if mask.shape[-2] == 1:  # 1D mask
@@ -550,8 +528,7 @@ class JRSMRIDataTransforms:
                         _masked_kspace = torch.stack(_masked_kspace, dim=0)
                         _mask = _i_mask.unsqueeze(0)
                     else:
-                        raise ValueError(
-                            f"Unsupported data dimensionality {self.dimensionality}D.")
+                        raise ValueError(f"Unsupported data dimensionality {self.dimensionality}D.")
                     masked_kspaces.append(_masked_kspace)
                     masks.append(_mask.byte())
                     accs.append(_acc)
@@ -610,8 +587,7 @@ class JRSMRIDataTransforms:
                     )
                 )
 
-                mask = utils.center_crop(
-                    mask.squeeze(-1), self.crop_size).unsqueeze(-1)
+                mask = utils.center_crop(mask.squeeze(-1), self.crop_size).unsqueeze(-1)
 
             if self.normalize_inputs:
                 if isinstance(self.mask_func, list):
@@ -635,8 +611,7 @@ class JRSMRIDataTransforms:
                             torch.view_as_complex(kspace), dim=list(self.spatial_dims), norm=None
                         )
                         imspace = imspace / torch.max(torch.abs(imspace))
-                        kspace = torch.view_as_real(torch.fft.fftn(
-                            imspace, dim=list(self.spatial_dims), norm=None))
+                        kspace = torch.view_as_real(torch.fft.fftn(imspace, dim=list(self.spatial_dims), norm=None))
 
                     masked_kspaces = []
                     for y in masked_kspace:
@@ -648,8 +623,7 @@ class JRSMRIDataTransforms:
                                 spatial_dims=self.spatial_dims,
                             )
                             if self.max_norm:
-                                imspace = imspace / \
-                                    torch.max(torch.abs(imspace))
+                                imspace = imspace / torch.max(torch.abs(imspace))
                             y = fft.fft2(
                                 imspace,
                                 centered=self.fft_centered,
@@ -657,11 +631,9 @@ class JRSMRIDataTransforms:
                                 spatial_dims=self.spatial_dims,
                             )
                         elif self.fft_normalization in ("none", None) and self.max_norm:
-                            imspace = torch.fft.ifftn(torch.view_as_complex(
-                                y), dim=list(self.spatial_dims), norm=None)
+                            imspace = torch.fft.ifftn(torch.view_as_complex(y), dim=list(self.spatial_dims), norm=None)
                             imspace = imspace / torch.max(torch.abs(imspace))
-                            y = torch.view_as_real(torch.fft.fftn(
-                                imspace, dim=list(self.spatial_dims), norm=None))
+                            y = torch.view_as_real(torch.fft.fftn(imspace, dim=list(self.spatial_dims), norm=None))
                         masked_kspaces.append(y)
                     masked_kspace = masked_kspaces
                 elif self.fft_normalization in ("backward", "ortho", "forward"):
@@ -698,21 +670,16 @@ class JRSMRIDataTransforms:
                         torch.view_as_complex(masked_kspace), dim=list(self.spatial_dims), norm=None
                     )
                     imspace = imspace / torch.max(torch.abs(imspace))
-                    masked_kspace = torch.view_as_real(torch.fft.fftn(
-                        imspace, dim=list(self.spatial_dims), norm=None))
+                    masked_kspace = torch.view_as_real(torch.fft.fftn(imspace, dim=list(self.spatial_dims), norm=None))
 
-                    imspace = torch.fft.ifftn(torch.view_as_complex(
-                        kspace), dim=list(self.spatial_dims), norm=None)
+                    imspace = torch.fft.ifftn(torch.view_as_complex(kspace), dim=list(self.spatial_dims), norm=None)
                     imspace = imspace / torch.max(torch.abs(imspace))
-                    kspace = torch.view_as_real(torch.fft.fftn(
-                        imspace, dim=list(self.spatial_dims), norm=None))
+                    kspace = torch.view_as_real(torch.fft.fftn(imspace, dim=list(self.spatial_dims), norm=None))
 
                 if self.max_norm:
                     if sensitivity_map.size != 0:
-                        sensitivity_map = sensitivity_map / \
-                            torch.max(torch.abs(sensitivity_map))
-                    target_reconstruction = target_reconstruction / \
-                        torch.max(torch.abs(target_reconstruction))
+                        sensitivity_map = sensitivity_map / torch.max(torch.abs(sensitivity_map))
+                    target_reconstruction = target_reconstruction / torch.max(torch.abs(target_reconstruction))
 
             if isinstance(self.mask_func, list):
                 etas = []

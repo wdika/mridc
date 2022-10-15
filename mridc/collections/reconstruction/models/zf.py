@@ -152,10 +152,8 @@ class ZF(base_models.BaseMRIReconstructionModel, ABC):
 
         target = target.numpy()  # type: ignore
         output = output.numpy()  # type: ignore
-        self.mse_vals[fname][slice_num] = torch.tensor(
-            metrics.mse(target, output)).view(1)
-        self.nmse_vals[fname][slice_num] = torch.tensor(
-            metrics.nmse(target, output)).view(1)
+        self.mse_vals[fname][slice_num] = torch.tensor(metrics.mse(target, output)).view(1)
+        self.nmse_vals[fname][slice_num] = torch.tensor(metrics.nmse(target, output)).view(1)
         self.ssim_vals[fname][slice_num] = torch.tensor(
             metrics.ssim(target, output, maxval=output.max() - output.min())
         ).view(1)

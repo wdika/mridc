@@ -12,8 +12,7 @@ def test_case_0():
         float_0 = -1128.125
         int_0 = 713
         tuple_0 = (int_0,)
-        j_r_s_m_r_i_slice_dataset_0 = module_0.JRSMRISliceDataset(
-            str_0, str_0, float_0, str_0, tuple_0)
+        j_r_s_m_r_i_slice_dataset_0 = module_0.JRSMRISliceDataset(str_0, str_0, float_0, str_0, tuple_0)
     except BaseException:
         pass
 
@@ -29,8 +28,7 @@ def test_case_2():
     try:
         str_0 = '8sP"w+:mI'
         bool_0 = False
-        j_r_s_m_r_i_slice_dataset_0 = module_0.JRSMRISliceDataset(
-            str_0, str_0, bool_0)
+        j_r_s_m_r_i_slice_dataset_0 = module_0.JRSMRISliceDataset(str_0, str_0, bool_0)
     except BaseException:
         pass
 
@@ -52,8 +50,7 @@ def test_case_3():
         int_0 = None
         bool_1 = True
         str_1 = "`E9:@}N&Ufdf|"
-        j_r_s_m_r_i_slice_dataset_0 = module_0.JRSMRISliceDataset(
-            path_0, path_1, bool_0, str_0, int_0, bool_1, str_1)
+        j_r_s_m_r_i_slice_dataset_0 = module_0.JRSMRISliceDataset(path_0, path_1, bool_0, str_0, int_0, bool_1, str_1)
     except BaseException:
         pass
 
@@ -69,8 +66,7 @@ def test_case_5():
     try:
         path_0 = module_2.Path()
         bool_0 = True
-        j_r_s_m_r_i_slice_dataset_0 = module_0.JRSMRISliceDataset(
-            path_0, path_0, path_0, bool_0)
+        j_r_s_m_r_i_slice_dataset_0 = module_0.JRSMRISliceDataset(path_0, path_0, path_0, bool_0)
     except BaseException:
         pass
 
@@ -94,8 +90,7 @@ def test_case_7():
         int_0 = 37
         float_0 = 71.667
         int_1 = -1069
-        j_r_s_m_r_i_slice_dataset_0 = module_0.JRSMRISliceDataset(
-            str_0, float_0, int_1, int_0)
+        j_r_s_m_r_i_slice_dataset_0 = module_0.JRSMRISliceDataset(str_0, float_0, int_1, int_0)
     except BaseException:
         pass
 
@@ -106,8 +101,7 @@ def test_case_8():
         none_type_0 = None
         int_0 = -672
         bool_0 = True
-        j_r_s_m_r_i_slice_dataset_0 = module_0.JRSMRISliceDataset(
-            str_0, str_0, none_type_0, int_0, int_0, bool_0)
+        j_r_s_m_r_i_slice_dataset_0 = module_0.JRSMRISliceDataset(str_0, str_0, none_type_0, int_0, int_0, bool_0)
     except BaseException:
         pass
 
@@ -116,7 +110,6 @@ def test_case_9():
     try:
         path_0 = module_2.Path()
         float_0 = 660.925
-        j_r_s_m_r_i_slice_dataset_0 = module_0.JRSMRISliceDataset(
-            path_0, path_0, float_0)
+        j_r_s_m_r_i_slice_dataset_0 = module_0.JRSMRISliceDataset(path_0, path_0, float_0)
     except BaseException:
         pass

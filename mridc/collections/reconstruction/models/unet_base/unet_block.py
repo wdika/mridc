@@ -108,7 +108,7 @@ class NormUnet(torch.nn.Module):
     @staticmethod
     def unpad(x: torch.Tensor, h_pad: List[int], w_pad: List[int], h_mult: int, w_mult: int) -> torch.Tensor:
         """Unpad the input."""
-        return x[..., h_pad[0]: h_mult - h_pad[1], w_pad[0]: w_mult - w_pad[1]]
+        return x[..., h_pad[0] : h_mult - h_pad[1], w_pad[0] : w_mult - w_pad[1]]
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass of the network."""
@@ -165,8 +165,7 @@ class Unet(torch.nn.Module):
         self.num_pool_layers = num_pool_layers
         self.drop_prob = drop_prob
 
-        self.down_sample_layers = torch.nn.ModuleList(
-            [ConvBlock(in_chans, chans, drop_prob)])
+        self.down_sample_layers = torch.nn.ModuleList([ConvBlock(in_chans, chans, drop_prob)])
         ch = chans
         for _ in range(num_pool_layers - 1):
             self.down_sample_layers.append(ConvBlock(ch, ch * 2, drop_prob))
@@ -183,8 +182,7 @@ class Unet(torch.nn.Module):
         self.up_transpose_conv.append(TransposeConvBlock(ch * 2, ch))
         self.up_conv.append(
             torch.nn.Sequential(
-                ConvBlock(ch * 2, ch, drop_prob), torch.nn.Conv2d(ch,
-                                                                  self.out_chans, kernel_size=1, stride=1)
+                ConvBlock(ch * 2, ch, drop_prob), torch.nn.Conv2d(ch, self.out_chans, kernel_size=1, stride=1)
             )
         )
 
@@ -205,8 +203,7 @@ class Unet(torch.nn.Module):
         for layer in self.down_sample_layers:
             output = layer(output)
             stack.append(output)
-            output = torch.nn.functional.avg_pool2d(
-                output, kernel_size=2, stride=2, padding=0)
+            output = torch.nn.functional.avg_pool2d(output, kernel_size=2, stride=2, padding=0)
 
         output = self.conv(output)
 
@@ -251,13 +248,11 @@ class ConvBlock(torch.nn.Module):
         self.drop_prob = drop_prob
 
         self.layers = torch.nn.Sequential(
-            torch.nn.Conv2d(in_chans, out_chans, kernel_size=3,
-                            padding=1, bias=False),
+            torch.nn.Conv2d(in_chans, out_chans, kernel_size=3, padding=1, bias=False),
             torch.nn.InstanceNorm2d(out_chans),
             torch.nn.LeakyReLU(negative_slope=0.2, inplace=True),
             torch.nn.Dropout2d(drop_prob),
-            torch.nn.Conv2d(out_chans, out_chans,
-                            kernel_size=3, padding=1, bias=False),
+            torch.nn.Conv2d(out_chans, out_chans, kernel_size=3, padding=1, bias=False),
             torch.nn.InstanceNorm2d(out_chans),
             torch.nn.LeakyReLU(negative_slope=0.2, inplace=True),
             torch.nn.Dropout2d(drop_prob),
@@ -295,8 +290,7 @@ class TransposeConvBlock(torch.nn.Module):
         self.out_chans = out_chans
 
         self.layers = torch.nn.Sequential(
-            torch.nn.ConvTranspose2d(
-                in_chans, out_chans, kernel_size=2, stride=2, bias=False),
+            torch.nn.ConvTranspose2d(in_chans, out_chans, kernel_size=2, stride=2, bias=False),
             torch.nn.InstanceNorm2d(out_chans),
             torch.nn.LeakyReLU(negative_slope=0.2, inplace=True),
         )

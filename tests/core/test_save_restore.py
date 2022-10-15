@@ -64,15 +64,13 @@ class MockModel(ModelPT):
                 "max_steps": -1,
             }
         )
-        trainer = OmegaConf.create(
-            OmegaConf.to_container(trainer, resolve=True))
+        trainer = OmegaConf.create(OmegaConf.to_container(trainer, resolve=True))
         trainer = pl.Trainer(**trainer)
         super().__init__(cfg=cfg, trainer=trainer)
         self.w = torch.nn.Linear(10, 1)
         # mock temp file
         if "temp_file" in self.cfg and self.cfg.temp_file is not None:
-            self.temp_file = self.register_artifact(
-                "temp_file", self.cfg.temp_file)
+            self.temp_file = self.register_artifact("temp_file", self.cfg.temp_file)
             with open(self.temp_file, "r", encoding="utf-8") as f:
                 self.temp_data = f.readlines()
         else:
@@ -124,16 +122,13 @@ class TestSaveRestore:
             with tempfile.TemporaryDirectory() as save_folder:
                 save_folder_path = save_folder
                 # Where model will be saved
-                model_save_path = os.path.join(
-                    save_folder, f"{model.__class__.__name__}.mridc")
+                model_save_path = os.path.join(save_folder, f"{model.__class__.__name__}.mridc")
                 model.save_to(save_path=model_save_path)
                 # Where model will be restored from
-                model_restore_path = os.path.join(
-                    restore_folder, f"{model.__class__.__name__}.mridc")
+                model_restore_path = os.path.join(restore_folder, f"{model.__class__.__name__}.mridc")
                 shutil.copy(model_save_path, model_restore_path)
             # at this point save_folder should not exist
-            assert save_folder_path is not None and not os.path.exists(
-                save_folder_path)
+            assert save_folder_path is not None and not os.path.exists(save_folder_path)
             assert not os.path.exists(model_save_path)
             assert os.path.exists(model_restore_path)
             # attempt to restore
@@ -177,8 +172,7 @@ class TestSaveRestore:
                 cfg.model.xyz = "abc"
 
             # Save test (with overriden config as OmegaConf object)
-            model_copy = self.__test_restore_elsewhere(
-                model, map_location="cpu", override_config_path=cfg)
+            model_copy = self.__test_restore_elsewhere(model, map_location="cpu", override_config_path=cfg)
 
         # Restore test
         diff = model.w.weight - model_copy.w.weight
@@ -263,18 +257,13 @@ class TestSaveRestore:
             model = MockModel(cfg=cfg.model)
             model_with_custom_connector = MockModel(cfg=cfg.model)
             model_with_custom_connector._save_restore_connector = MySaveRestoreConnector()
-            model_with_custom_connector.save_to(
-                os.path.join(tmpdir, "save_custom.mridc"))
+            model_with_custom_connector.save_to(os.path.join(tmpdir, "save_custom.mridc"))
 
-            assert os.path.exists(os.path.join(
-                tmpdir, "save_custom_XYZ.mridc"))
-            assert isinstance(model._save_restore_connector,
-                              save_restore_connector.SaveRestoreConnector)
-            assert isinstance(
-                model_with_custom_connector._save_restore_connector, MySaveRestoreConnector)
+            assert os.path.exists(os.path.join(tmpdir, "save_custom_XYZ.mridc"))
+            assert isinstance(model._save_restore_connector, save_restore_connector.SaveRestoreConnector)
+            assert isinstance(model_with_custom_connector._save_restore_connector, MySaveRestoreConnector)
 
-            assert type(
-                MockModel._save_restore_connector) == save_restore_connector.SaveRestoreConnector
+            assert type(MockModel._save_restore_connector) == save_restore_connector.SaveRestoreConnector
 
     @pytest.mark.unit
     def test_restore_from_save_restore_connector(self):
@@ -296,15 +285,13 @@ class TestSaveRestore:
             model_with_custom_connector._save_restore_connector = MySaveRestoreConnector()
             model_with_custom_connector.save_to(save_path)
 
-            assert os.path.exists(os.path.join(
-                tmpdir, "save_custom_XYZ.mridc"))
+            assert os.path.exists(os.path.join(tmpdir, "save_custom_XYZ.mridc"))
 
             restored_model = MockModelV2.restore_from(
                 save_path.replace(".mridc", "_XYZ.mridc"), save_restore_connector=MySaveRestoreConnector()
             )
             assert type(restored_model) == MockModelV2
-            assert type(
-                restored_model._save_restore_connector) == MySaveRestoreConnector
+            assert type(restored_model._save_restore_connector) == MySaveRestoreConnector
 
     @pytest.mark.unit
     def test_mock_model_model_collision(self):
@@ -352,8 +339,7 @@ class TestSaveRestore:
                 # extract the contents to this dir apriori
                 # simulate by extracting now before calling restore_from
                 connector = MySaveRestoreConnector()
-                MySaveRestoreConnector._unpack_mridc_file(
-                    mridc_filepath, extracted_tempdir)
+                MySaveRestoreConnector._unpack_mridc_file(mridc_filepath, extracted_tempdir)
                 assert get_size(extracted_tempdir) > 0
 
             # delete the old directory and preserve only the new extracted directory (escape scope of old dir)
@@ -363,20 +349,16 @@ class TestSaveRestore:
 
             # note, we pass in the "old" mridc_filepath, stored somewhere other than the extracted directory
             # this mridc_filepath is no longer valid, and has been deleted.
-            restored_model = MockModelV2.restore_from(
-                mridc_filepath, save_restore_connector=connector)
+            restored_model = MockModelV2.restore_from(mridc_filepath, save_restore_connector=connector)
         assert type(restored_model) == MockModelV2
-        assert type(
-            restored_model._save_restore_connector) == MySaveRestoreConnector
+        assert type(restored_model._save_restore_connector) == MySaveRestoreConnector
 
         # assert models have correct restoration information and paths
         appstate = AppState()
-        original_metadata = appstate.get_model_metadata_from_guid(
-            model_with_custom_connector.model_guid)
+        original_metadata = appstate.get_model_metadata_from_guid(model_with_custom_connector.model_guid)
         assert original_metadata.restoration_path is None
 
-        restored_metadata = appstate.get_model_metadata_from_guid(
-            restored_model.model_guid)
+        restored_metadata = appstate.get_model_metadata_from_guid(restored_model.model_guid)
         assert restored_metadata.restoration_path is not None
 
         # assert that the restore path was the path of the pre-extracted directory
