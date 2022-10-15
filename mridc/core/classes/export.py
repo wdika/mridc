@@ -91,8 +91,7 @@ class Exportable(ABC):
                 input_example = out_example
             all_out.append(out)
             all_descr.append(descr)
-            logging.info(
-                f"Successfully exported {model.__class__.__name__} to {out_name}")
+            logging.info(f"Successfully exported {model.__class__.__name__} to {out_name}")
         return (all_out, all_descr)
 
     def _export(
@@ -127,8 +126,7 @@ class Exportable(ABC):
         my_args = locals().copy()
         my_args.pop("self")
 
-        exportables = [m for m in self.modules() if isinstance(
-            m, Exportable)]  # type: ignore
+        exportables = [m for m in self.modules() if isinstance(m, Exportable)]  # type: ignore
         qual_name = f"{self.__module__}.{self.__class__.__qualname__}"
         format = get_export_format(output)
         output_descr = f"{qual_name} exported to {format}"
@@ -159,33 +157,28 @@ class Exportable(ABC):
                 # Run (possibly overridden) prepare methods before calling forward()
                 for ex in exportables:
                     ex._prepare_for_export(**my_args, noreplace=True)
-                self._prepare_for_export(
-                    output=output, input_example=input_example, **my_args)
+                self._prepare_for_export(output=output, input_example=input_example, **my_args)
 
                 input_list, input_dict = parse_input_example(input_example)
                 input_names = self.input_names
                 output_names = self.output_names
-                output_example = tuple(self.forward(
-                    *input_list, **input_dict))  # type: ignore
+                output_example = tuple(self.forward(*input_list, **input_dict))  # type: ignore
 
                 if format == ExportFormat.TORCHSCRIPT:
                     if check_trace:
                         if isinstance(check_trace, bool):
-                            check_trace_input = {"forward": tuple(
-                                input_list) + tuple(input_dict.values())}
+                            check_trace_input = {"forward": tuple(input_list) + tuple(input_dict.values())}
                         else:
                             check_trace_input = check_trace  # type: ignore
                     jitted_model = torch.jit.trace_module(
                         self,
-                        {"forward": tuple(input_list) +
-                         tuple(input_dict.values())},
+                        {"forward": tuple(input_list) + tuple(input_dict.values())},
                         strict=True,
                         check_trace=check_trace,
                         check_tolerance=check_tolerance,
                     )
                     if not self.training:  # type: ignore
-                        jitted_model = torch.jit.optimize_for_inference(
-                            torch.jit.freeze(jitted_model))
+                        jitted_model = torch.jit.optimize_for_inference(torch.jit.freeze(jitted_model))
                     if verbose:
                         logging.info(f"JIT code:\n{jitted_model.code}")
                     jitted_model.save(output)
@@ -193,10 +186,8 @@ class Exportable(ABC):
                 elif format == ExportFormat.ONNX:
                     # dynamic axis is a mapping from input/output_name => list of "dynamic" indices
                     if dynamic_axes is None:
-                        dynamic_axes = get_dynamic_axes(
-                            self.input_module.input_types, input_names)
-                        dynamic_axes.update(get_dynamic_axes(
-                            self.output_module.output_types, output_names))
+                        dynamic_axes = get_dynamic_axes(self.input_module.input_types, input_names)
+                        dynamic_axes.update(get_dynamic_axes(self.output_module.output_types, output_names))
 
                     torch.onnx.export(
                         self,
@@ -213,15 +204,12 @@ class Exportable(ABC):
 
                     if check_trace:
                         check_trace_input = (
-                            [input_example] if isinstance(
-                                check_trace, bool) else check_trace  # type: ignore
+                            [input_example] if isinstance(check_trace, bool) else check_trace  # type: ignore
                         )
-                        verify_runtime(
-                            self, output, check_trace_input, input_names)
+                        verify_runtime(self, output, check_trace_input, input_names)
 
                 else:
-                    raise ValueError(
-                        f"Encountered unknown export format {format}.")
+                    raise ValueError(f"Encountered unknown export format {format}.")
         finally:
             typecheck.set_typecheck_enabled(enabled=True)
             if forward_method:

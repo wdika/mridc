@@ -16,8 +16,7 @@ def test_case_0():
         int_0 = 2995
         bool_0 = False
         str_2 = "K*Mhv.gNeb@s"
-        conv_m_g_u_cell_0 = module_0.ConvMGUCell(
-            set_0, int_0, bool_0, str_2, list_0)
+        conv_m_g_u_cell_0 = module_0.ConvMGUCell(set_0, int_0, bool_0, str_2, list_0)
     except BaseException:
         pass
 
@@ -41,8 +40,7 @@ def test_case_2():
         float_0 = -620.458312
         float_1 = -413.84748
         tuple_0 = ()
-        conv_m_g_u_cell_0 = module_0.ConvMGUCell(
-            str_0, float_0, float_1, tuple_0)
+        conv_m_g_u_cell_0 = module_0.ConvMGUCell(str_0, float_0, float_1, tuple_0)
     except BaseException:
         pass
 
@@ -53,8 +51,7 @@ def test_case_3():
         int_0 = -1458
         str_0 = "$b'L\x0bfBS3JR="
         float_0 = 3462.34
-        ind_r_n_n_cell_0 = module_0.IndRNNCell(
-            float_0, int_0, bool_0, str_0, float_0)
+        ind_r_n_n_cell_0 = module_0.IndRNNCell(float_0, int_0, bool_0, str_0, float_0)
     except BaseException:
         pass
 
@@ -76,8 +73,7 @@ def test_case_5():
         bytes_0 = b"+]\r)h\x08\x8b"
         dict_0 = {}
         str_1 = "[i9"
-        ind_r_n_n_cell_base_0 = module_0.IndRNNCellBase(
-            bytes_0, str_0, dict_0, str_1, dict_0, bool_0)
+        ind_r_n_n_cell_base_0 = module_0.IndRNNCellBase(bytes_0, str_0, dict_0, str_1, dict_0, bool_0)
     except BaseException:
         pass
 
@@ -118,8 +114,7 @@ def test_case_9():
         bool_0 = True
         bytes_0 = b"\x925\xde\xe7wuB\xd2eZR."
         str_0 = "n~*0SXm'8cOM^,~4}"
-        conv_g_r_u_cell_0 = module_0.ConvGRUCell(
-            str_0, set_0, bool_0, bytes_0, bool_0)
+        conv_g_r_u_cell_0 = module_0.ConvGRUCell(str_0, set_0, bool_0, bytes_0, bool_0)
     except BaseException:
         pass
 
@@ -132,7 +127,6 @@ def test_case_10():
         float_0 = 615.7
         set_0 = {bytes_0, bytes_0}
         dict_0 = {}
-        conv_m_g_u_cell_base_0 = module_0.ConvMGUCellBase(
-            bytes_0, str_0, bool_0, float_0, set_0, dict_0)
+        conv_m_g_u_cell_base_0 = module_0.ConvMGUCellBase(bytes_0, str_0, bool_0, float_0, set_0, dict_0)
     except BaseException:
         pass

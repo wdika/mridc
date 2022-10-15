@@ -40,16 +40,14 @@ def log_likelihood_gradient(
     """
     coil_dim = 1
 
-    eta_real, eta_imag = map(
-        lambda x: torch.unsqueeze(x, coil_dim), eta.chunk(2, -1))
+    eta_real, eta_imag = map(lambda x: torch.unsqueeze(x, coil_dim), eta.chunk(2, -1))
     sense_real, sense_imag = sense.chunk(2, -1)
 
     re_se = eta_real * sense_real - eta_imag * sense_imag
     im_se = eta_real * sense_imag + eta_imag * sense_real
     pred = torch.cat((re_se, im_se), -1)
 
-    pred = fft.fft2(pred, centered=fft_centered,
-                    normalization=fft_normalization, spatial_dims=spatial_dims)
+    pred = fft.fft2(pred, centered=fft_centered, normalization=fft_normalization, spatial_dims=spatial_dims)
 
     pred = fft.ifft2(
         mask * (pred - masked_kspace),
@@ -59,10 +57,8 @@ def log_likelihood_gradient(
     )
     pred_real, pred_imag = pred.chunk(2, -1)
 
-    re_out = torch.sum(pred_real * sense_real + pred_imag *
-                       sense_imag, coil_dim) / (sigma**2.0)
-    im_out = torch.sum(pred_imag * sense_real - pred_real *
-                       sense_imag, coil_dim) / (sigma**2.0)
+    re_out = torch.sum(pred_real * sense_real + pred_imag * sense_imag, coil_dim) / (sigma**2.0)
+    im_out = torch.sum(pred_imag * sense_real - pred_real * sense_imag, coil_dim) / (sigma**2.0)
 
     eta_real = eta_real.squeeze(coil_dim)
     eta_imag = eta_imag.squeeze(coil_dim)

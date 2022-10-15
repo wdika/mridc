@@ -323,8 +323,7 @@ def apply_mask(
     shape[:-3] = 1
 
     if existing_mask is None:
-        mask, acc = mask_func(
-            shape, seed, half_scan_percentage=half_scan_percentage, scale=center_scale)
+        mask, acc = mask_func(shape, seed, half_scan_percentage=half_scan_percentage, scale=center_scale)
     else:
         mask = existing_mask
         acc = mask.size / mask.sum()
@@ -334,7 +333,7 @@ def apply_mask(
     if padding is not None and padding[0] != 0:
         mask[:, :, : padding[0]] = 0
         # padding value inclusive on right of zeros
-        mask[:, :, padding[1]:] = 0
+        mask[:, :, padding[1] :] = 0
 
     if shift:
         mask = torch.fft.fftshift(mask, dim=(1, 2))
@@ -402,8 +401,7 @@ def batched_mask_center(
         raise ValueError("mask_from and mask_to must have batch_size length.")
 
     if mask_from.shape[0] == 1:
-        mask = mask_center(x, int(mask_from), int(
-            mask_to), mask_type=mask_type)
+        mask = mask_center(x, int(mask_from), int(mask_to), mask_type=mask_type)
     else:
         mask = torch.zeros_like(x)
         for i, (start, end) in enumerate(zip(mask_from, mask_to)):

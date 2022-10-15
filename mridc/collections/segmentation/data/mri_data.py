@@ -25,8 +25,7 @@ class JRSMRISliceDataset(Dataset):
         sample_rate: Optional[float] = None,
         volume_sample_rate: Optional[float] = None,
         use_dataset_cache: bool = False,
-        dataset_cache_file: Union[str, Path,
-                                  os.PathLike] = "dataset_cache.yaml",
+        dataset_cache_file: Union[str, Path, os.PathLike] = "dataset_cache.yaml",
         num_cols: Optional[Tuple[int]] = None,
         consecutive_slices: int = 1,
         segmentation_classes: int = 2,
@@ -107,48 +106,39 @@ class JRSMRISliceDataset(Dataset):
         if dataset_cache.get(root) is None or not use_dataset_cache:
             files = list(Path(root).iterdir())
             for fname in sorted(files):
-                metadata, num_slices = self._retrieve_metadata(
-                    fname, data_saved_per_slice=self.data_saved_per_slice)
+                metadata, num_slices = self._retrieve_metadata(fname, data_saved_per_slice=self.data_saved_per_slice)
                 if not is_none(num_slices) and not is_none(consecutive_slices):
                     num_slices = num_slices - (consecutive_slices - 1)
-                self.examples += [(fname, slice_ind, metadata)
-                                  for slice_ind in range(num_slices)]
+                self.examples += [(fname, slice_ind, metadata) for slice_ind in range(num_slices)]
 
             if dataset_cache.get(root) is None and use_dataset_cache:
                 dataset_cache[root] = self.examples
-                logging.info(
-                    f"Saving dataset cache to {self.dataset_cache_file}.")
+                logging.info(f"Saving dataset cache to {self.dataset_cache_file}.")
                 with open(self.dataset_cache_file, "wb") as f:  # type: ignore
                     yaml.dump(dataset_cache, f)  # type: ignore
         else:
-            logging.info(
-                f"Using dataset cache from {self.dataset_cache_file}.")
+            logging.info(f"Using dataset cache from {self.dataset_cache_file}.")
             self.examples = dataset_cache[root]
 
         # subsample if desired
         if sample_rate < 1.0:  # type: ignore
             random.shuffle(self.examples)
-            num_examples = round(len(self.examples) *
-                                 sample_rate)  # type: ignore
+            num_examples = round(len(self.examples) * sample_rate)  # type: ignore
             self.examples = self.examples[:num_examples]
         elif volume_sample_rate < 1.0:  # type: ignore
             vol_names = sorted(list({f[0].stem for f in self.examples}))
             random.shuffle(vol_names)
-            num_volumes = round(
-                len(vol_names) * volume_sample_rate)  # type: ignore
+            num_volumes = round(len(vol_names) * volume_sample_rate)  # type: ignore
             sampled_vols = vol_names[:num_volumes]
-            self.examples = [
-                example for example in self.examples if example[0].stem in sampled_vols]
+            self.examples = [example for example in self.examples if example[0].stem in sampled_vols]
 
         if not is_none(num_cols):
-            self.examples = [ex for ex in self.examples if ex[2]
-                             ["encoding_size"][1] in num_cols]  # type: ignore
+            self.examples = [ex for ex in self.examples if ex[2]["encoding_size"][1] in num_cols]  # type: ignore
 
         # Create random number generator used for consecutive slice selection and set consecutive slice amount
         self.consecutive_slices = consecutive_slices
         if self.consecutive_slices < 1:
-            raise ValueError(
-                "consecutive_slices value is out of range, must be > 0.")
+            raise ValueError("consecutive_slices value is out of range, must be > 0.")
         self.segmentation_classes = segmentation_classes
         self.segmentation_classes_to_remove = segmentation_classes_to_remove
         self.segmentation_classes_to_combine = segmentation_classes_to_combine
@@ -183,8 +173,7 @@ class JRSMRISliceDataset(Dataset):
             elif "reconstruction" in hf:
                 shape = hf["reconstruction"].shape
             else:
-                raise ValueError(
-                    f"{fname} does not contain kspace or reconstruction data.")
+                raise ValueError(f"{fname} does not contain kspace or reconstruction data.")
 
         num_slices = 1 if data_saved_per_slice else shape[0]
         metadata = {
@@ -252,14 +241,11 @@ class JRSMRISliceDataset(Dataset):
         elif segmentation_labels.ndim == 3 and segmentation_labels_dim == 1:
             segmentation_labels = np.transpose(segmentation_labels, (0, 2, 1))
         elif segmentation_labels.ndim == 4 and segmentation_labels_dim == 0:
-            segmentation_labels = np.transpose(
-                segmentation_labels, (1, 2, 3, 0))
+            segmentation_labels = np.transpose(segmentation_labels, (1, 2, 3, 0))
         elif segmentation_labels.ndim == 4 and segmentation_labels_dim == 1:
-            segmentation_labels = np.transpose(
-                segmentation_labels, (0, 2, 3, 1))
+            segmentation_labels = np.transpose(segmentation_labels, (0, 2, 3, 1))
         elif segmentation_labels.ndim == 4 and segmentation_labels_dim == 2:
-            segmentation_labels = np.transpose(
-                segmentation_labels, (0, 1, 3, 2))
+            segmentation_labels = np.transpose(segmentation_labels, (0, 1, 3, 2))
 
         removed_classes = 0
 
@@ -281,22 +267,18 @@ class JRSMRISliceDataset(Dataset):
             segmentation_labels_to_keep = []
             for x in range(segmentation_labels.shape[-1]):
                 if x in self.segmentation_classes_to_combine:
-                    segmentation_labels_to_combine.append(
-                        segmentation_labels[..., x - removed_classes])
+                    segmentation_labels_to_combine.append(segmentation_labels[..., x - removed_classes])
                 else:
-                    segmentation_labels_to_keep.append(
-                        segmentation_labels[..., x - removed_classes])
+                    segmentation_labels_to_keep.append(segmentation_labels[..., x - removed_classes])
             segmentation_labels_to_combine = np.expand_dims(
                 np.sum(np.stack(segmentation_labels_to_combine, axis=-1), axis=-1), axis=-1
             )
-            segmentation_labels_to_keep = np.stack(
-                segmentation_labels_to_keep, axis=-1)
+            segmentation_labels_to_keep = np.stack(segmentation_labels_to_keep, axis=-1)
 
             if 0 in self.segmentation_classes_to_remove or "0" in self.segmentation_classes_to_remove:  # type: ignore
                 # if background is removed, we can stack the combined labels with the rest straight away
                 segmentation_labels = np.concatenate(
-                    [segmentation_labels_to_combine,
-                        segmentation_labels_to_keep], axis=-1
+                    [segmentation_labels_to_combine, segmentation_labels_to_keep], axis=-1
                 )
             else:
                 # if background is not removed, we need to add it back as new background channel
@@ -314,13 +296,11 @@ class JRSMRISliceDataset(Dataset):
         # check if we need to separate any classes, e.g. pathologies from White Matter and Gray Matter
         if self.segmentation_classes_to_separate is not None:
             for x in self.segmentation_classes_to_separate:
-                segmentation_class_to_separate = segmentation_labels[...,
-                                                                     x - removed_classes]
+                segmentation_class_to_separate = segmentation_labels[..., x - removed_classes]
                 for i in range(segmentation_labels.shape[-1]):
                     if i == x - removed_classes:
                         continue
-                    segmentation_labels[...,
-                                        i][segmentation_class_to_separate > 0] = 0
+                    segmentation_labels[..., i][segmentation_class_to_separate > 0] = 0
 
         segmentation_labels = (
             np.moveaxis(segmentation_labels, -1, 0)
@@ -338,11 +318,9 @@ class JRSMRISliceDataset(Dataset):
         with h5py.File(fname, "r") as hf:
             if self.complex_data:
                 if "kspace" in hf:
-                    kspace = self.get_consecutive_slices(
-                        hf, "kspace", dataslice).astype(np.complex64)
+                    kspace = self.get_consecutive_slices(hf, "kspace", dataslice).astype(np.complex64)
                 elif "ksp" in hf:
-                    kspace = self.get_consecutive_slices(
-                        hf, "ksp", dataslice).astype(np.complex64)
+                    kspace = self.get_consecutive_slices(hf, "ksp", dataslice).astype(np.complex64)
                 else:
                     raise ValueError(
                         "Complex data has been selected but no kspace data found in file. "
@@ -354,36 +332,30 @@ class JRSMRISliceDataset(Dataset):
                         np.complex64
                     )
                 elif "sense" in hf:
-                    sensitivity_map = self.get_consecutive_slices(
-                        hf, "sense", dataslice).astype(np.complex64)
+                    sensitivity_map = self.get_consecutive_slices(hf, "sense", dataslice).astype(np.complex64)
                 elif self.sense_root is not None and self.sense_root != "None":
                     with h5py.File(Path(self.sense_root) / Path(str(fname).split("/")[-2]) / fname.name, "r") as sf:
                         if "sensitivity_map" in sf or "sensitivity_map" in next(iter(sf.keys())):
-                            sensitivity_map = self.get_consecutive_slices(
-                                sf, "sensitivity_map", dataslice)
+                            sensitivity_map = self.get_consecutive_slices(sf, "sensitivity_map", dataslice)
                         else:
-                            sensitivity_map = self.get_consecutive_slices(
-                                sf, "sense", dataslice)
+                            sensitivity_map = self.get_consecutive_slices(sf, "sense", dataslice)
                         sensitivity_map = sensitivity_map.squeeze().astype(np.complex64)
                 else:
                     sensitivity_map = np.array([])
 
                 if "mask" in hf:
-                    mask = np.asarray(
-                        self.get_consecutive_slices(hf, "mask", dataslice))
+                    mask = np.asarray(self.get_consecutive_slices(hf, "mask", dataslice))
                     if mask.ndim == 3:
                         mask = mask[dataslice]
                 elif self.mask_root is not None and self.mask_root != "None":
                     with h5py.File(Path(self.mask_root) / fname.name, "r") as mf:
-                        mask = np.asarray(
-                            self.get_consecutive_slices(mf, "mask", dataslice))
+                        mask = np.asarray(self.get_consecutive_slices(mf, "mask", dataslice))
                 else:
                     mask = np.empty([])
                 imspace = np.empty([])
             elif not self.complex_data:
                 if "reconstruction" in hf:
-                    imspace = self.get_consecutive_slices(
-                        hf, "reconstruction", dataslice).astype(np.float32)
+                    imspace = self.get_consecutive_slices(hf, "reconstruction", dataslice).astype(np.float32)
                 else:
                     raise ValueError(
                         "Complex data has not been selected but no reconstruction data found in file. "
@@ -394,16 +366,12 @@ class JRSMRISliceDataset(Dataset):
                 mask = np.empty([])
 
             if "segmentation" in hf:
-                segmentation_labels = np.asarray(
-                    self.get_consecutive_slices(hf, "segmentation", dataslice))
-                segmentation_labels = self.process_segmentation_labels(
-                    segmentation_labels)
+                segmentation_labels = np.asarray(self.get_consecutive_slices(hf, "segmentation", dataslice))
+                segmentation_labels = self.process_segmentation_labels(segmentation_labels)
             elif self.segmentations_root is not None and self.segmentations_root != "None":
                 with h5py.File(Path(self.segmentations_root) / fname.name, "r") as sf:
-                    segmentation_labels = np.asarray(
-                        self.get_consecutive_slices(sf, "segmentation", dataslice))
-                    segmentation_labels = self.process_segmentation_labels(
-                        segmentation_labels)
+                    segmentation_labels = np.asarray(self.get_consecutive_slices(sf, "segmentation", dataslice))
+                    segmentation_labels = self.process_segmentation_labels(segmentation_labels)
             else:
                 segmentation_labels = np.empty([])
 

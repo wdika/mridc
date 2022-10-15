@@ -28,8 +28,7 @@ class TestSerialization:
     def test_self_class_instantiation(self):
         # Target class is V1 impl, calling class is V1 (same class)
         config = DictConfig({"target": get_class_path(MockSerializationImpl)})
-        obj = MockSerializationImpl.from_config_dict(
-            config=config)  # Serialization is base class
+        obj = MockSerializationImpl.from_config_dict(config=config)  # Serialization is base class
         new_config = obj.to_config_dict()
         assert config == new_config
         assert isinstance(obj, MockSerializationImpl)
@@ -39,8 +38,7 @@ class TestSerialization:
     def test_sub_class_instantiation(self):
         # Target class is V1 impl, calling class is V2 (sub class)
         config = DictConfig({"target": get_class_path(MockSerializationImpl)})
-        obj = MockSerializationImplV2.from_config_dict(
-            config=config)  # Serialization is base class
+        obj = MockSerializationImplV2.from_config_dict(config=config)  # Serialization is base class
         new_config = obj.to_config_dict()
         assert config == new_config
         assert isinstance(obj, MockSerializationImplV2)

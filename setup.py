@@ -12,8 +12,7 @@ import setuptools
 __author__ = "Dimitrios Karkalousos"
 
 
-spec = importlib.util.spec_from_file_location(
-    "package_info", "mridc/package_info.py")
+spec = importlib.util.spec_from_file_location("package_info", "mridc/package_info.py")
 package_info = importlib.util.module_from_spec(spec)  # type: ignore
 spec.loader.exec_module(package_info)  # type: ignore
 
@@ -82,8 +81,7 @@ class StyleCommand(distutils_cmd.Command):
         if check:
             command.extend(["--check", "--diff"])
 
-        self.announce(
-            msg=f'Running command: {" ".join(command)}', level=distutils_log.INFO)
+        self.announce(msg=f'Running command: {" ".join(command)}', level=distutils_log.INFO)
 
         return subprocess.call(command)
 
@@ -184,8 +182,7 @@ setuptools.setup(
     # Add in any packaged data.
     include_package_data=True,
     exclude=["tools", "tests"],
-    package_data={"": ["*.tsv", "*.txt",
-                       "*.far", "*.fst", "*.cpp", "Makefile"]},
+    package_data={"": ["*.tsv", "*.txt", "*.far", "*.fst", "*.cpp", "Makefile"]},
     zip_safe=False,
     # PyPI package information.
     keywords=__keywords__,
