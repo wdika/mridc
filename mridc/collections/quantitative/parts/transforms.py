@@ -951,12 +951,14 @@ class LeastSquares:
         super(LeastSquares, self).__init__()
         self.device = device
 
-    def lstq(self, A, Y, lamb=0.0):
+    @staticmethod
+    def lstq(A, Y, lamb=0.0):
         """Differentiable least square."""
         q, r = torch.qr(A)
         return torch.inverse(r) @ q.permute(0, 2, 1) @ Y
 
-    def lstq_pinv(self, A, Y, lamb=0.0):
+    @staticmethod
+    def lstq_pinv(A, Y, lamb=0.0):
         """Differentiable inverse least square."""
         if Y.dim() == 2:
             return torch.matmul(torch.pinverse(Y), A)

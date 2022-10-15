@@ -991,7 +991,8 @@ def check_slurm(trainer):
 class StatelessTimer(Timer):
     """Extension of PTL timers to be per run."""
 
-    def state_dict(self) -> Dict[str, Any]:  # type: ignore
+    @staticmethod
+    def state_dict() -> Dict[str, Any]:  # type: ignore
         """Saves the state of the timer."""
         return {}
 

@@ -99,11 +99,13 @@ class ExampleModel(ModelPT):
         pl.seed_everything(1234)
         self.l1 = torch.nn.modules.Linear(in_features=2, out_features=1)
 
-    def train_dataloader(self):
+    @staticmethod
+    def train_dataloader():
         dataset = OnesDataset(2)
         return torch.utils.data.DataLoader(dataset, batch_size=2, num_workers=8)
 
-    def val_dataloader(self):
+    @staticmethod
+    def val_dataloader():
         dataset = OnesDataset(10)
         return torch.utils.data.DataLoader(dataset, batch_size=2, num_workers=8)
 
