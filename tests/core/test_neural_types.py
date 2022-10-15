@@ -17,20 +17,16 @@ class TestNeuralTypeSystem:
         type1 = NeuralType(axes=("B", "T", "C"))
         type2 = NeuralType(axes=("T", "B", "C"))
 
-        assert type1.compare(
-            type2) == NeuralTypeComparisonResult.TRANSPOSE_SAME
-        assert type2.compare(
-            type1) == NeuralTypeComparisonResult.TRANSPOSE_SAME
+        assert type1.compare(type2) == NeuralTypeComparisonResult.TRANSPOSE_SAME
+        assert type2.compare(type1) == NeuralTypeComparisonResult.TRANSPOSE_SAME
 
     @pytest.mark.unit
     def test_singletone(self):
         loss_output1 = NeuralType(axes=None)
         loss_output2 = NeuralType(axes=None)
 
-        assert loss_output1.compare(
-            loss_output2) == NeuralTypeComparisonResult.SAME
-        assert loss_output2.compare(
-            loss_output1) == NeuralTypeComparisonResult.SAME
+        assert loss_output1.compare(loss_output2) == NeuralTypeComparisonResult.SAME
+        assert loss_output2.compare(loss_output1) == NeuralTypeComparisonResult.SAME
 
     @pytest.mark.unit
     def test_struct(self):

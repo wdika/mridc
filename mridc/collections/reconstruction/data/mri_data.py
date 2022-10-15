@@ -59,8 +59,7 @@ class MRISliceDataset(Dataset):
         use_dataset_cache: bool = False,
         sample_rate: Optional[float] = None,
         volume_sample_rate: Optional[float] = None,
-        dataset_cache_file: Union[str, Path,
-                                  os.PathLike] = "dataset_cache.yaml",
+        dataset_cache_file: Union[str, Path, os.PathLike] = "dataset_cache.yaml",
         num_cols: Optional[Tuple[int]] = None,
         mask_root: Union[str, Path, os.PathLike] = None,
         consecutive_slices: int = 1,
@@ -89,8 +88,7 @@ class MRISliceDataset(Dataset):
             the same time. Defaults to 1, loading single slices.
         """
         if challenge not in ("singlecoil", "multicoil", "segmentation"):
-            raise ValueError(
-                'challenge should be either "singlecoil" or "multicoil" or "segmentation"')
+            raise ValueError('challenge should be either "singlecoil" or "multicoil" or "segmentation"')
         self.challenge = challenge
 
         if sample_rate is not None and volume_sample_rate is not None:
@@ -128,18 +126,15 @@ class MRISliceDataset(Dataset):
                 metadata, num_slices = self._retrieve_metadata(fname)
                 if not utils.is_none(num_slices) and not utils.is_none(consecutive_slices):
                     num_slices = num_slices - (consecutive_slices - 1)
-                self.examples += [(fname, slice_ind, metadata)
-                                  for slice_ind in range(num_slices)]
+                self.examples += [(fname, slice_ind, metadata) for slice_ind in range(num_slices)]
 
             if dataset_cache.get(root) is None and use_dataset_cache:
                 dataset_cache[root] = self.examples
-                logging.info(
-                    f"Saving dataset cache to {self.dataset_cache_file}.")
+                logging.info(f"Saving dataset cache to {self.dataset_cache_file}.")
                 with open(self.dataset_cache_file, "wb") as f:  # type: ignore
                     yaml.dump(dataset_cache, f)  # type: ignore
         else:
-            logging.info(
-                f"Using dataset cache from {self.dataset_cache_file}.")
+            logging.info(f"Using dataset cache from {self.dataset_cache_file}.")
             self.examples = dataset_cache[root]
 
         # subsample if desired
@@ -152,18 +147,15 @@ class MRISliceDataset(Dataset):
             random.shuffle(vol_names)
             num_volumes = round(len(vol_names) * volume_sample_rate)
             sampled_vols = vol_names[:num_volumes]
-            self.examples = [
-                example for example in self.examples if example[0].stem in sampled_vols]
+            self.examples = [example for example in self.examples if example[0].stem in sampled_vols]
 
         if num_cols:
-            self.examples = [ex for ex in self.examples if ex[2]
-                             ["encoding_size"][1] in num_cols]  # type: ignore
+            self.examples = [ex for ex in self.examples if ex[2]["encoding_size"][1] in num_cols]  # type: ignore
 
         # Create random number generator used for consecutive slice selection and set consecutive slice amount
         self.consecutive_slices = consecutive_slices
         if self.consecutive_slices < 1:
-            raise ValueError(
-                "consecutive_slices value is out of range, must be > 0.")
+            raise ValueError("consecutive_slices value is out of range, must be > 0.")
 
     @staticmethod
     def _retrieve_metadata(fname):
@@ -195,14 +187,11 @@ class MRISliceDataset(Dataset):
                     int(et_query(et_root, rec + ["z"])),
                 )
 
-                params = ["encoding", "encodingLimits",
-                          "kspace_encoding_step_1"]
+                params = ["encoding", "encodingLimits", "kspace_encoding_step_1"]
                 enc_limits_center = int(et_query(et_root, params + ["center"]))
-                enc_limits_max = int(
-                    et_query(et_root, params + ["maximum"])) + 1
+                enc_limits_max = int(et_query(et_root, params + ["maximum"])) + 1
 
-                padding_left = torch.div(
-                    enc_size[1], 2, rounding_mode="trunc").item() - enc_limits_center
+                padding_left = torch.div(enc_size[1], 2, rounding_mode="trunc").item() - enc_limits_center
                 padding_right = padding_left + enc_limits_max
             else:
                 padding_left = 0
@@ -258,46 +247,38 @@ class MRISliceDataset(Dataset):
     def __getitem__(self, i: int):
         fname, dataslice, metadata = self.examples[i]
         with h5py.File(fname, "r") as hf:
-            kspace = self.get_consecutive_slices(
-                hf, "kspace", dataslice).astype(np.complex64)
+            kspace = self.get_consecutive_slices(hf, "kspace", dataslice).astype(np.complex64)
 
             if "sensitivity_map" in hf:
-                sensitivity_map = self.get_consecutive_slices(
-                    hf, "sensitivity_map", dataslice).astype(np.complex64)
+                sensitivity_map = self.get_consecutive_slices(hf, "sensitivity_map", dataslice).astype(np.complex64)
             elif self.sense_root is not None and self.sense_root != "None":
                 with h5py.File(Path(self.sense_root) / Path(str(fname).split("/")[-2]) / fname.name, "r") as sf:
                     if "sensitivity_map" in sf or "sensitivity_map" in next(iter(sf.keys())):
-                        sensitivity_map = self.get_consecutive_slices(
-                            sf, "sensitivity_map", dataslice)
+                        sensitivity_map = self.get_consecutive_slices(sf, "sensitivity_map", dataslice)
                     else:
-                        sensitivity_map = self.get_consecutive_slices(
-                            sf, "sense", dataslice)
+                        sensitivity_map = self.get_consecutive_slices(sf, "sense", dataslice)
                     sensitivity_map = sensitivity_map.squeeze().astype(np.complex64)
             else:
                 sensitivity_map = np.array([])
 
             if "mask" in hf:
-                mask = np.asarray(
-                    self.get_consecutive_slices(hf, "mask", dataslice))
+                mask = np.asarray(self.get_consecutive_slices(hf, "mask", dataslice))
                 if mask.ndim == 3:
                     mask = mask[dataslice]
             elif self.mask_root is not None and self.mask_root != "None":
                 with h5py.File(Path(self.mask_root) / fname.name, "r") as mf:
-                    mask = np.asarray(
-                        self.get_consecutive_slices(mf, "mask", dataslice))
+                    mask = np.asarray(self.get_consecutive_slices(mf, "mask", dataslice))
             else:
                 mask = None
 
             eta = (
-                self.get_consecutive_slices(hf, "eta", dataslice).astype(
-                    np.complex64) if "eta" in hf else np.array([])
+                self.get_consecutive_slices(hf, "eta", dataslice).astype(np.complex64) if "eta" in hf else np.array([])
             )
 
             if "reconstruction_sense" in hf:
                 self.recons_key = "reconstruction_sense"
 
-            target = self.get_consecutive_slices(
-                hf, self.recons_key, dataslice) if self.recons_key in hf else None
+            target = self.get_consecutive_slices(hf, self.recons_key, dataslice) if self.recons_key in hf else None
 
             attrs = dict(hf.attrs)
             attrs.update(metadata)

@@ -15,8 +15,7 @@ cuda_logger = pylogger.getLogger("numba.cuda.cudadrv.driver")
 cuda_logger.setLevel(pylogger.ERROR)  # only show error
 
 __NUMBA_DEFAULT_MINIMUM_VERSION__ = "0.53.0"
-__NUMBA_MINIMUM_VERSION__ = os.environ.get(
-    "MRIDC_NUMBA_MINVER", __NUMBA_DEFAULT_MINIMUM_VERSION__)
+__NUMBA_MINIMUM_VERSION__ = os.environ.get("MRIDC_NUMBA_MINVER", __NUMBA_DEFAULT_MINIMUM_VERSION__)
 
 NUMBA_INSTALLATION_MESSAGE = (
     "Could not import `numba`.\n"
@@ -86,8 +85,7 @@ def numba_cpu_is_supported(min_version: str) -> bool:
     -------
     bool, whether numba CPU supported with this current installation or not.
     """
-    module_available, _ = check_lib_version(
-        "numba", checked_version=min_version, operator=operator.ge)
+    module_available, _ = check_lib_version("numba", checked_version=min_version, operator=operator.ge)
 
     # If numba is not installed
     if module_available is None:
@@ -146,5 +144,4 @@ def skip_numba_cuda_test_if_unsupported(min_version: str):
     if not numba_cuda_support:
         import pytest
 
-        pytest.skip(
-            f"Numba cuda test is being skipped. Minimum version required : {min_version}")
+        pytest.skip(f"Numba cuda test is being skipped. Minimum version required : {min_version}")

@@ -71,8 +71,7 @@ class RecurrentInit(nn.Module):
         for (curr_channels, curr_dilations) in zip(channels, dilations):
             block = [
                 nn.ReplicationPad2d(curr_dilations),
-                nn.Conv2d(tch, curr_channels, 3, padding=0,
-                          dilation=curr_dilations),
+                nn.Conv2d(tch, curr_channels, 3, padding=0, dilation=curr_dilations),
             ]
             tch = curr_channels
             self.conv_blocks.append(nn.Sequential(*block))
@@ -99,7 +98,7 @@ class RecurrentInit(nn.Module):
             if self.multiscale_depth > 1:
                 features.append(x)
         if self.multiscale_depth > 1:
-            x = torch.cat(features[-self.multiscale_depth:], dim=1)
+            x = torch.cat(features[-self.multiscale_depth :], dim=1)
         output_list = []
         for block in self.out_blocks:
             y = F.relu(block(x), inplace=True)
@@ -156,12 +155,10 @@ class RecurrentVarNetBlock(nn.Module):
         super().__init__()
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
-        self.spatial_dims = spatial_dims if spatial_dims is not None else [
-            -2, -1]
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
         self.coil_dim = coil_dim
 
-        self.learning_rate = nn.Parameter(
-            torch.tensor([1.0]))  # :math:`\alpha_t`
+        self.learning_rate = nn.Parameter(torch.tensor([1.0]))  # :math:`\alpha_t`
         self.regularizer = conv2gru.Conv2dGRU(
             in_channels=in_channels,
             hidden_channels=hidden_channels,
@@ -202,8 +199,7 @@ class RecurrentVarNetBlock(nn.Module):
         """
         kspace_error = torch.where(
             sampling_mask == 0,
-            torch.tensor([0.0], dtype=masked_kspace.dtype).to(
-                masked_kspace.device),
+            torch.tensor([0.0], dtype=masked_kspace.dtype).to(masked_kspace.device),
             current_kspace - masked_kspace,
         )
 
@@ -223,15 +219,13 @@ class RecurrentVarNetBlock(nn.Module):
             dim=-1,
         ).permute(0, 3, 1, 2)
 
-        recurrent_term, hidden_state = self.regularizer(
-            recurrent_term, hidden_state)  # :math:`w_t`, :math:`h_{t+1}`
+        recurrent_term, hidden_state = self.regularizer(recurrent_term, hidden_state)  # :math:`w_t`, :math:`h_{t+1}`
         recurrent_term = recurrent_term.permute(0, 2, 3, 1)
 
         recurrent_term = torch.cat(
             [
                 fft.fft2(
-                    utils.complex_mul(image.unsqueeze(
-                        self.coil_dim), sensitivity_map),
+                    utils.complex_mul(image.unsqueeze(self.coil_dim), sensitivity_map),
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,

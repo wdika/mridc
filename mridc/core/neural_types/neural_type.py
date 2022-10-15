@@ -9,8 +9,7 @@ from mridc.core.neural_types.axes import AxisKind, AxisType
 from mridc.core.neural_types.comparison import NeuralTypeComparisonResult
 from mridc.core.neural_types.elements import ElementType, VoidType
 
-__all__ = ["NeuralType", "NeuralTypeError",
-           "NeuralPortNameMismatchError", "NeuralPortNmTensorMismatchError"]
+__all__ = ["NeuralType", "NeuralTypeError", "NeuralPortNameMismatchError", "NeuralPortNmTensorMismatchError"]
 
 
 class NeuralType:
@@ -51,8 +50,7 @@ class NeuralType:
                 elif isinstance(axis, AxisType):
                     axes_list.append(axis)
                 else:
-                    raise ValueError(
-                        "axis type must be either str or AxisType instance")
+                    raise ValueError("axis type must be either str or AxisType instance")
             self.axes = tuple(axes_list)  # type: ignore
         else:
             self.axes = None  # type: ignore
@@ -76,10 +74,8 @@ class NeuralType:
                 return self.elements_type.compare(second.elements_type)
             return NeuralTypeComparisonResult.INCOMPATIBLE
 
-        dimensions_pass = NeuralType.__compare_axes(
-            axes_a, axes_b)  # type: ignore
-        element_comparison_result = self.elements_type.compare(
-            second.elements_type)
+        dimensions_pass = NeuralType.__compare_axes(axes_a, axes_b)  # type: ignore
+        element_comparison_result = self.elements_type.compare(second.elements_type)
 
         # SAME DIMS
         if dimensions_pass == 0:
@@ -102,8 +98,7 @@ class NeuralType:
         type_compatibility = self.compare(second_object)
         if type_compatibility not in (NeuralTypeComparisonResult.SAME, NeuralTypeComparisonResult.GREATER):
             raise NeuralPortNmTensorMismatchError(
-                parent_type_name, port_name, str(self), str(
-                    second_object.ntype), type_compatibility
+                parent_type_name, port_name, str(self), str(second_object.ntype), type_compatibility
             )
 
     def __eq__(self, other):
@@ -212,5 +207,4 @@ class NeuralPortNmTensorMismatchError(NeuralTypeError):
             class_name, port_name
         ) + "of incompatible neural types:\n\n{} \n\n and \n\n{}".format(first_type, second_type)
 
-        self.message += "\n\nType comparison result: {}".format(
-            type_compatibility)
+        self.message += "\n\nType comparison result: {}".format(type_compatibility)
