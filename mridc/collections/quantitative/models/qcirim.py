@@ -441,9 +441,9 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
 
         if self.reconstruction_module_accumulate_estimates:
             echoes_loss = []
-            for echo_time in range(len(pred)):
+            for echo_time, item in enumerate(pred):
                 cascades_loss = []
-                for cascade_pred in pred[echo_time]:
+                for cascade_pred in item:
                     time_steps_loss = [
                         loss_fn(target[:, echo_time, :, :], time_step_pred).mean() for time_step_pred in cascade_pred
                     ]
