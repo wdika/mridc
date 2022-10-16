@@ -182,7 +182,10 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
                 )
             preds.append(tmp)
         pred_segmentation = self.seg_head(pred_reconstruction, False, pad_sizes)
-        pred_segmentation = torch.abs(pred_segmentation / torch.abs(torch.max(pred_segmentation)))
+
+        pred_segmentation = torch.abs(pred_segmentation)
+        pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
+
         if self.consecutive_slices > 1:
             # get batch size and number of slices from y, because if the reconstruction module is used they will not
             # be saved before

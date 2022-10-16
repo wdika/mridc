@@ -275,7 +275,9 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
 
         pred_segmentation = self.segmentation_module(_pred_reconstruction)
 
-        pred_segmentation = torch.abs(pred_segmentation / torch.abs(torch.max(pred_segmentation)))
+        pred_segmentation = torch.abs(pred_segmentation)
+        pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
+
         if self.consecutive_slices > 1:
             # get batch size and number of slices from y, because if the reconstruction module is used they will not
             # be saved before

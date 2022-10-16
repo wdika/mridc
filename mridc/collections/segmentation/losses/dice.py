@@ -11,6 +11,7 @@ from torch import Tensor
 from torch.nn.modules.loss import _Loss
 
 import mridc.collections.common.parts.utils as utils
+from mridc.collections.segmentation.losses.utils import do_metric_reduction
 
 
 class Dice(_Loss):
@@ -37,7 +38,6 @@ class Dice(_Loss):
         sigmoid: bool = True,
         softmax: bool = False,
         other_act: Optional[Callable] = None,
-        w_type: Optional[str] = None,
         squared_pred: bool = False,
         jaccard: bool = False,
         flatten: bool = False,
@@ -60,8 +60,6 @@ class Dice(_Loss):
         other_act: Callable
             Use this parameter if you want to apply another type of activation layer.
             Defaults to None.
-        w_type: str
-            Type of weight function to be used for calculating Dice loss. Defaults to "square".
         squared_pred: bool
             Whether to square the prediction before calculating Dice. Defaults to False.
         jaccard: bool
@@ -95,7 +93,6 @@ class Dice(_Loss):
         self.sigmoid = sigmoid
         self.softmax = softmax
         self.other_act = other_act
-        self.w_type = w_type
         self.squared_pred = squared_pred
         self.jaccard = jaccard
         self.flatten = flatten
@@ -103,14 +100,6 @@ class Dice(_Loss):
         self.smooth_nr = float(smooth_nr)
         self.smooth_dr = float(smooth_dr)
         self.batch = batch
-
-    def w_func(self, grnd):
-        """Weight function for Dice loss."""
-        if self.w_type == "simple":
-            return torch.reciprocal(grnd)
-        if self.w_type == "square":
-            return torch.reciprocal(grnd * grnd)
-        return torch.ones_like(grnd)
 
     def forward(self, target: torch.Tensor, input: torch.Tensor) -> Tuple[Union[Tensor, Any], Tensor]:
         """
@@ -175,38 +164,11 @@ class Dice(_Loss):
         if self.jaccard:
             denominator = 2.0 * (denominator - intersection)
 
-        w = self.w_func(ground_o.float())
-        infs = torch.isinf(w)
-        if self.batch:
-            w[infs] = 0.0
-            w = w + infs * torch.max(w)
-        else:
-            w[infs] = 0.0
-            max_values = torch.max(w, dim=1)[0].unsqueeze(dim=1)
-            w = w + infs * max_values
+        dice_score = (2.0 * intersection + self.smooth_nr) / (denominator + self.smooth_dr)
+        dice_score = torch.where(denominator > 0, dice_score, torch.tensor(1.0).to(pred_o.device))
+        dice_score, _ = do_metric_reduction(dice_score, reduction=self.reduction)
 
-        final_reduce_dim = 0 if self.batch else 1
-        numer = 2.0 * (intersection * w).sum(final_reduce_dim, keepdim=True) + self.smooth_nr
-        denom = (denominator * w).sum(final_reduce_dim, keepdim=True) + self.smooth_dr
-        dice_score = numer / denom
         f: torch.Tensor = 1.0 - dice_score
-
-        if self.reduction == "mean":
-            dice_score = torch.mean(dice_score)
-            f = torch.mean(f)  # the batch and channel average
-        elif self.reduction == "sum":
-            dice_score = torch.sum(dice_score)
-            f = torch.sum(f)  # sum over the batch and channel dims
-        elif self.reduction == "none":
-            # If we are not computing voxelwise loss components at least
-            # make sure a none reduction maintains a broadcastable shape
-            broadcast_shape = list(f.shape[0:2]) + [1] * (len(input.shape) - 2)
-            dice_score = dice_score.view(broadcast_shape)
-            f = f.view(broadcast_shape)
-        else:
-            raise ValueError(
-                f'Unsupported reduction: {self.reduction}, available options are ["mean", "sum", "none"].'
-            )
 
         return dice_score, f
 

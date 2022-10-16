@@ -108,6 +108,8 @@ class Segmentation3DUNet(base_segmentation_models.BaseMRIJointReconstructionSegm
             init_reconstruction_pred = init_reconstruction_pred.unsqueeze(1)
 
         pred_segmentation = self.segmentation_module(init_reconstruction_pred).permute(0, 2, 1, 3, 4)
-        pred_segmentation = torch.abs(pred_segmentation / torch.abs(torch.max(pred_segmentation)))
+
+        pred_segmentation = torch.abs(pred_segmentation)
+        pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
 
         return torch.empty([]), pred_segmentation

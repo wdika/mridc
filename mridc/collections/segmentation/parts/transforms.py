@@ -746,6 +746,8 @@ class JRSMRIDataTransforms:
             target_reconstruction = torch.empty([])
             acc = 1
 
+        segmentation_labels = torch.abs(segmentation_labels)
+
         return (
             kspace,
             masked_kspace,
@@ -753,7 +755,7 @@ class JRSMRIDataTransforms:
             mask,
             initial_prediction_reconstruction,
             target_reconstruction,
-            torch.abs(segmentation_labels),
+            segmentation_labels,
             fname,
             slice_idx,
             acc,

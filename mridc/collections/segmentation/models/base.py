@@ -73,7 +73,6 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
                 sigmoid=cfg_dict.get("dice_loss_sigmoid", True),
                 softmax=cfg_dict.get("dice_loss_softmax", False),
                 other_act=cfg_dict.get("dice_loss_other_act", None),
-                w_type=cfg_dict.get("dice_loss_w_type", None),
                 squared_pred=cfg_dict.get("dice_loss_squared_pred", False),
                 jaccard=cfg_dict.get("dice_loss_jaccard", False),
                 flatten=cfg_dict.get("dice_loss_flatten", False),
@@ -104,7 +103,6 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             sigmoid=cfg_dict.get("dice_metric_sigmoid", False),
             softmax=cfg_dict.get("dice_metric_softmax", True),
             other_act=cfg_dict.get("dice_metric_other_act", None),
-            w_type=cfg_dict.get("dice_loss_w_type", None),
             squared_pred=cfg_dict.get("dice_metric_squared_pred", False),
             jaccard=cfg_dict.get("dice_metric_jaccard", False),
             flatten=cfg_dict.get("dice_metric_flatten", False),
@@ -299,9 +297,6 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
                 batch_size * slices, *pred_segmentation.shape[2:]  # type: ignore
             )
 
-        target_segmentation = target_segmentation.type(torch.float32)  # type: ignore
-        pred_segmentation = pred_segmentation.type(torch.float32)
-
         segmentation_loss = self.process_segmentation_loss(target_segmentation, pred_segmentation)["segmentation_loss"]
 
         if self.use_reconstruction_module:
@@ -411,9 +406,6 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
         key = f"{fname[0]}_images_idx_{slice_idx}"  # type: ignore
         self.log_image(f"{key}/reconstruction/target", target_reconstruction)
 
-        target_segmentation = target_segmentation.type(torch.float32)  # type: ignore
-        pred_segmentation = pred_segmentation.type(torch.float32)
-
         segmentation_loss = self.process_segmentation_loss(target_segmentation, pred_segmentation)["segmentation_loss"]
 
         if self.use_reconstruction_module:
@@ -473,6 +465,7 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
         for class_idx in range(target_segmentation.shape[1]):  # type: ignore
             target_segmentation_class = target_segmentation[:, class_idx]  # type: ignore
             output_segmentation_class = pred_segmentation[:, class_idx]
+
             self.log_image(
                 f"{key}/segmentation_classes/target_class_{class_idx}",
                 target_segmentation_class,  # type: ignore
@@ -643,7 +636,7 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
         predictions = (
             (pred_segmentation.detach().cpu().numpy(), pred_reconstruction.detach().cpu().numpy())
             if self.use_reconstruction_module
-            else (pred_segmentation.detach().cpu().numpy(),)
+            else (pred_segmentation.detach().cpu().numpy(), pred_segmentation.detach().cpu().numpy())
         )
 
         return (str(fname[0]), slice_idx, predictions)  # type: ignore
@@ -833,20 +826,33 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             for metric, value in metrics_reconstruction.items():
                 self.log(f"{metric}_Reconstruction", value / tot_examples, sync_dist=True)
 
-        predictions = defaultdict(list)
+        segmentations = defaultdict(list)
         for fname, slice_num, output in outputs:
-            predictions[fname].append((slice_num, output))
+            segmentations_pred, _ = output
+            segmentations[fname].append((slice_num, segmentations_pred))
 
-        for fname in predictions:
-            predictions[fname] = np.stack([out for _, out in sorted(predictions[fname])])
+        for fname in segmentations:
+            segmentations[fname] = np.stack([out for _, out in sorted(segmentations[fname])])
+
+        if self.use_reconstruction_module:
+            reconstructions = defaultdict(list)
+            for fname, slice_num, output in outputs:
+                _, reconstructions_pred = output
+                reconstructions[fname].append((slice_num, reconstructions_pred))
+
+            for fname in reconstructions:
+                reconstructions[fname] = np.stack([out for _, out in sorted(reconstructions[fname])])
 
         out_dir = Path(os.path.join(self.logger.log_dir, "predictions"))
         out_dir.mkdir(exist_ok=True, parents=True)
-        for fname, preds in predictions.items():
+        for fname, preds in segmentations.items():
             with h5py.File(out_dir / fname, "w") as hf:
-                hf.create_dataset("segmentation", data=preds[0])
-                if self.use_reconstruction_module:
-                    hf.create_dataset("reconstruction", data=preds[1])
+                hf.create_dataset("segmentation", data=preds)
+
+        if self.use_reconstruction_module:
+            for fname, preds in reconstructions.items():
+                with h5py.File(out_dir / fname, "w") as hf:
+                    hf.create_dataset("reconstruction", data=preds)
 
     @staticmethod
     def _setup_dataloader_from_config(cfg: DictConfig) -> DataLoader:
