@@ -273,6 +273,9 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
         else:
             _pred_reconstruction = _pred_reconstruction.unsqueeze(1)
 
+        with torch.no_grad():
+            _pred_reconstruction = torch.nn.functional.group_norm(_pred_reconstruction, num_groups=1)
+
         pred_segmentation = self.segmentation_module(_pred_reconstruction)
 
         pred_segmentation = torch.abs(pred_segmentation)

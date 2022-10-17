@@ -181,6 +181,10 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
                     )
                 )
             preds.append(tmp)
+
+        with torch.no_grad():
+            pred_reconstruction = [torch.nn.functional.group_norm(x, num_groups=1) for x in pred_reconstruction]
+
         pred_segmentation = self.seg_head(pred_reconstruction, False, pad_sizes)
 
         pred_segmentation = torch.abs(pred_segmentation)
