@@ -1,8 +1,9 @@
 # coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
+import math
 from abc import ABC
-from typing import Any, Tuple
+from typing import Any, List, Tuple
 
 import torch
 from omegaconf import DictConfig, OmegaConf
@@ -47,6 +48,8 @@ class SegmentationVNet(base_segmentation_models.BaseMRIJointReconstructionSegmen
             drop_prob=cfg_dict.get("segmentation_module_dropout", 0.0),
             bias=cfg_dict.get("segmentation_module_bias", False),
         )
+
+        self.padding_size = cfg_dict.get("segmentation_module_padding_size", 11)
 
         self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
         self.magnitude_input = cfg_dict.get("magnitude_input", True)
@@ -109,7 +112,9 @@ class SegmentationVNet(base_segmentation_models.BaseMRIJointReconstructionSegmen
         with torch.no_grad():
             init_reconstruction_pred = torch.nn.functional.group_norm(init_reconstruction_pred, num_groups=1)
 
+        init_reconstruction_pred, pad_sizes = self.pad(init_reconstruction_pred)
         pred_segmentation = self.segmentation_module(init_reconstruction_pred)
+        pred_segmentation = self.unpad(pred_segmentation, *pad_sizes)
 
         pred_segmentation = torch.abs(pred_segmentation)
         pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
@@ -126,3 +131,18 @@ class SegmentationVNet(base_segmentation_models.BaseMRIJointReconstructionSegmen
             )
 
         return torch.empty([]), pred_segmentation
+
+    def pad(self, x: torch.Tensor) -> Tuple[torch.Tensor, Tuple[List[int], List[int], int, int]]:
+        """Pad the input with zeros to make it square."""
+        _, _, h, w = x.shape
+        w_mult = ((w - 1) | self.padding_size) + 1
+        h_mult = ((h - 1) | self.padding_size) + 1
+        w_pad = [math.floor((w_mult - w) / 2), math.ceil((w_mult - w) / 2)]
+        h_pad = [math.floor((h_mult - h) / 2), math.ceil((h_mult - h) / 2)]
+        x = torch.nn.functional.pad(x, w_pad + h_pad)
+        return x, (h_pad, w_pad, h_mult, w_mult)
+
+    @staticmethod
+    def unpad(x: torch.Tensor, h_pad: List[int], w_pad: List[int], h_mult: int, w_mult: int) -> torch.Tensor:
+        """Unpad the input."""
+        return x[..., h_pad[0] : h_mult - h_pad[1], w_pad[0] : w_mult - w_pad[1]]
