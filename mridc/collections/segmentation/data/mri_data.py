@@ -268,14 +268,16 @@ class JRSMRISliceDataset(Dataset):
             for x in range(segmentation_labels.shape[-1]):
                 if x in self.segmentation_classes_to_combine:
                     segmentation_labels_to_combine.append(segmentation_labels[..., x - removed_classes])
-                else:
+                elif x != 0:  # skip background here
                     segmentation_labels_to_keep.append(segmentation_labels[..., x - removed_classes])
             segmentation_labels_to_combine = np.expand_dims(
                 np.sum(np.stack(segmentation_labels_to_combine, axis=-1), axis=-1), axis=-1
             )
             segmentation_labels_to_keep = np.stack(segmentation_labels_to_keep, axis=-1)
 
-            if 0 in self.segmentation_classes_to_remove or "0" in self.segmentation_classes_to_remove:  # type: ignore
+            if self.segmentation_classes_to_remove is not None and (
+                0 in self.segmentation_classes_to_remove or "0" in self.segmentation_classes_to_remove
+            ):
                 # if background is removed, we can stack the combined labels with the rest straight away
                 segmentation_labels = np.concatenate(
                     [segmentation_labels_to_combine, segmentation_labels_to_keep], axis=-1
@@ -365,13 +367,13 @@ class JRSMRISliceDataset(Dataset):
                 sensitivity_map = np.array([])
                 mask = np.empty([])
 
-            if "segmentation" in hf:
-                segmentation_labels = np.asarray(self.get_consecutive_slices(hf, "segmentation", dataslice))
-                segmentation_labels = self.process_segmentation_labels(segmentation_labels)
-            elif self.segmentations_root is not None and self.segmentations_root != "None":
+            if self.segmentations_root is not None and self.segmentations_root != "None":
                 with h5py.File(Path(self.segmentations_root) / fname.name, "r") as sf:
                     segmentation_labels = np.asarray(self.get_consecutive_slices(sf, "segmentation", dataslice))
                     segmentation_labels = self.process_segmentation_labels(segmentation_labels)
+            elif "segmentation" in hf:
+                segmentation_labels = np.asarray(self.get_consecutive_slices(hf, "segmentation", dataslice))
+                segmentation_labels = self.process_segmentation_labels(segmentation_labels)
             else:
                 segmentation_labels = np.empty([])
 
