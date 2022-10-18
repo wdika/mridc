@@ -268,7 +268,7 @@ class JRSMRISliceDataset(Dataset):
             for x in range(segmentation_labels.shape[-1]):
                 if x in self.segmentation_classes_to_combine:
                     segmentation_labels_to_combine.append(segmentation_labels[..., x - removed_classes])
-                elif x != 0:  # skip background here
+                else:
                     segmentation_labels_to_keep.append(segmentation_labels[..., x - removed_classes])
             segmentation_labels_to_combine = np.expand_dims(
                 np.sum(np.stack(segmentation_labels_to_combine, axis=-1), axis=-1), axis=-1
