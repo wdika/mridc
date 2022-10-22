@@ -32,6 +32,7 @@ class JRSMRISliceDataset(Dataset):
         segmentation_classes_to_remove: Optional[Tuple[int]] = None,
         segmentation_classes_to_combine: Optional[Tuple[int]] = None,
         segmentation_classes_to_separate: Optional[Tuple[int]] = None,
+        segmentation_classes_thresholds: Optional[Tuple[float]] = None,
         complex_data: bool = True,
         data_saved_per_slice: bool = False,
         transform: Optional[Callable] = None,
@@ -69,6 +70,8 @@ class JRSMRISliceDataset(Dataset):
             Segmentation classes to combine.
         segmentation_classes_to_separate: tuple
             Segmentation classes to separate.
+        segmentation_classes_thresholds: tuple
+            Segmentation classes thresholds.
         complex_data: bool
             Use complex data.
         data_saved_per_slice: bool
@@ -143,6 +146,7 @@ class JRSMRISliceDataset(Dataset):
         self.segmentation_classes_to_remove = segmentation_classes_to_remove
         self.segmentation_classes_to_combine = segmentation_classes_to_combine
         self.segmentation_classes_to_separate = segmentation_classes_to_separate
+        self.segmentation_classes_thresholds = segmentation_classes_thresholds
         self.complex_data = complex_data
         self.transform = transform
 
@@ -309,6 +313,12 @@ class JRSMRISliceDataset(Dataset):
             if segmentation_labels.ndim == 3
             else np.moveaxis(segmentation_labels, -1, 1)
         )
+
+        # # threshold probability maps if any threshold is given
+        if self.segmentation_classes_thresholds is not None:
+            for i, voxel_thres in enumerate(self.segmentation_classes_thresholds):
+                if not is_none(voxel_thres):
+                    segmentation_labels[..., i] = segmentation_labels[..., i] > float(voxel_thres)
 
         return segmentation_labels
 
