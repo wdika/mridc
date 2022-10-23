@@ -74,6 +74,8 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
             "bias": cfg_dict.get("segmentation_module_bias", False),
         }
 
+        self.coil_dim = cfg_dict.get("coil_dim", 1)
+
         self.jrs_cascades = cfg_dict.get("joint_reconstruction_segmentation_module_cascades", 1)
         self.jrs_module = torch.nn.ModuleList(
             [
@@ -85,7 +87,7 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
                     fft_centered=cfg_dict.get("fft_centered", False),
                     fft_normalization=cfg_dict.get("fft_normalization", "ortho"),
                     spatial_dims=cfg_dict.get("spatial_dims", (-2, -1)),
-                    coil_dim=cfg_dict.get("coil_dim", 1),
+                    coil_dim=self.coil_dim,
                     dimensionality=cfg_dict.get("dimensionality", 2),
                     consecutive_slices=cfg_dict.get("consecutive_slices", 1),
                     coil_combination_method=cfg_dict.get("coil_combination_method", "SENSE"),
@@ -145,11 +147,12 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
             )
             pred_reconstructions.append(pred_reconstruction)
             init_reconstruction_pred = pred_reconstruction[-1][-1]
+
             hidden_states = [
                 torch.cat(
-                    [torch.abs(init_reconstruction_pred.unsqueeze(1) * pred_segmentation)]
+                    [torch.abs(init_reconstruction_pred.unsqueeze(self.coil_dim) * pred_segmentation)]
                     * (f // self.segmentation_module_output_channels),
-                    dim=1,
+                    dim=self.coil_dim,
                 )
                 for f in self.reconstruction_module_recurrent_filters
                 if f != 0

@@ -849,10 +849,21 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             for metric, value in metrics_reconstruction.items():
                 self.log(f"{metric}_Reconstruction", value / tot_examples, sync_dist=True)
 
+        if self.consecutive_slices > 1:
+            vols = defaultdict(list)
+            for fname, slice_num, _ in outputs:
+                vols[fname].append(slice_num)
+
         segmentations = defaultdict(list)
         for fname, slice_num, output in outputs:
             segmentations_pred, _ = output
-            print(f"Saving {fname} slice {slice_num}...")
+            if self.consecutive_slices > 1:
+                if slice_num <= self.consecutive_slices // 2:
+                    segmentations_pred = segmentations_pred[slice_num]
+                elif slice_num == len(vols[fname]) - 1:
+                    segmentations_pred = segmentations_pred[-1]
+                else:
+                    segmentations_pred = segmentations_pred[self.consecutive_slices // 2]
             segmentations[fname].append((slice_num, segmentations_pred))
 
         for fname in segmentations:
