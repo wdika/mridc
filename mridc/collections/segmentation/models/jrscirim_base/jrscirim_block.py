@@ -2,14 +2,9 @@
 __author__ = "Dimitrios Karkalousos"
 
 import math
-from abc import ABC
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
-import numpy as np
 import torch
-from omegaconf import DictConfig, OmegaConf
-from pytorch_lightning import Trainer
-from torch import Tensor
 
 import mridc.collections.common.parts.fft as fft
 import mridc.collections.common.parts.rnn_utils as rnn_utils
@@ -17,10 +12,8 @@ import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.models.rim.rim_block as rim_block
 import mridc.collections.reconstruction.models.unet_base.unet_block as unet_block
 import mridc.collections.segmentation.models.attention_unet_base.attention_unet_block as attention_unet_block
-import mridc.collections.segmentation.models.base as base_segmentation_models
 import mridc.collections.segmentation.models.lambda_unet_base.lambda_unet_block as lambda_unet_block
 import mridc.collections.segmentation.models.vnet_base.vnet_block as vnet_block
-import mridc.core.classes.common as common_classes
 
 __all__ = ["JRSCIRIMBlock"]
 
@@ -190,7 +183,7 @@ class JRSCIRIMBlock(torch.nn.Module):
         target_reconstruction: torch.Tensor,
         hx: torch.Tensor = None,
         sigma: float = 1.0,
-    ) -> Tuple[List[List[Any]] | List[torch.Tensor | List[Any]], Any, torch.Tensor | None | Any]:
+    ) -> Tuple[List[Any], Any, Optional[Any]]:
         """
         Forward pass of the network.
 

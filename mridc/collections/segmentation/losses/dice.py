@@ -4,7 +4,7 @@ __author__ = "Dimitrios Karkalousos"
 # Taken and adapted from: https://github.com/Project-MONAI/MONAI/blob/dev/monai/losses/dice.py
 
 import warnings
-from typing import Any, Callable, List, Optional, Tuple, Type, Union
+from typing import Any, Callable, List, Optional, Tuple, Union
 
 import torch
 from torch import Tensor

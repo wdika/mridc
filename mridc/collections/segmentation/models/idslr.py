@@ -1,7 +1,6 @@
 # coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
-import math
 from abc import ABC
 from typing import Any, Tuple
 

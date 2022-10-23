@@ -852,6 +852,7 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
         segmentations = defaultdict(list)
         for fname, slice_num, output in outputs:
             segmentations_pred, _ = output
+            print(f"Saving {fname} slice {slice_num}...")
             segmentations[fname].append((slice_num, segmentations_pred))
 
         for fname in segmentations:

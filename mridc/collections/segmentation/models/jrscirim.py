@@ -1,9 +1,8 @@
 # coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
-import math
 from abc import ABC
-from typing import Any, List, Tuple, Union
+from typing import List, Tuple, Union
 
 import numpy as np
 import torch
