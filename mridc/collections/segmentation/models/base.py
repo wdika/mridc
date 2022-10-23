@@ -420,6 +420,9 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
                 + self.total_reconstruction_loss_weight * reconstruction_loss
             )
 
+            # JRS Cascades
+            if isinstance(pred_reconstruction, list):
+                pred_reconstruction = pred_reconstruction[-1]
             # Cascades
             if isinstance(pred_reconstruction, list):
                 pred_reconstruction = pred_reconstruction[-1]
@@ -584,6 +587,9 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             if self.reconstruction_module_accumulate_estimates:
                 reconstruction_loss = sum(reconstruction_loss)
 
+            # JRS Cascades
+            if isinstance(pred_reconstruction, list):
+                pred_reconstruction = pred_reconstruction[-1]
             # Cascades
             if isinstance(pred_reconstruction, list):
                 pred_reconstruction = pred_reconstruction[-1]

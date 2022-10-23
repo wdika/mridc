@@ -136,7 +136,7 @@ class CIRIM(base_models.BaseMRIReconstructionModel, ABC):
         cascades_etas = []
         for i, cascade in enumerate(self.cirim):
             # Forward pass through the cascades
-            prediction, hx = cascade(
+            prediction, _ = cascade(
                 prediction,
                 y,
                 sensitivity_maps,

@@ -251,7 +251,7 @@ class RIMBlock(torch.nn.Module):
         eta = etas
 
         if self.no_dc:
-            return eta, None
+            return eta, hx
 
         soft_dc = torch.where(mask, pred - masked_kspace, self.zero.to(masked_kspace)) * self.dc_weight
         current_kspace = [
@@ -266,4 +266,4 @@ class RIMBlock(torch.nn.Module):
             for e in eta
         ]
 
-        return current_kspace, None
+        return current_kspace, hx
