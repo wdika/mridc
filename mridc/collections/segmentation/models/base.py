@@ -114,6 +114,8 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             batch=cfg_dict.get("dice_metric_batch", True),
         )
 
+        self.segmentation_classes_thresholds = cfg_dict.get("segmentation_classes_thresholds", None)
+
         self.CROSS_ENTROPY = base_reconstruction_models.DistributedMetricSum()
         self.cross_entropy_vals: Dict = defaultdict(dict)
 
@@ -296,10 +298,6 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             pred_segmentation = pred_segmentation.reshape(
                 batch_size * slices, *pred_segmentation.shape[2:]  # type: ignore
             )
-
-        target_segmentation = rescale_intensities(target_segmentation)
-        pred_segmentation = rescale_intensities(pred_segmentation)
-
         segmentation_loss = self.process_segmentation_loss(target_segmentation, pred_segmentation)["segmentation_loss"]
 
         if self.use_reconstruction_module:
@@ -439,7 +437,7 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             )
 
             self.log_image(f"{key}/reconstruction/prediction", output_reconstruction)
-            self.log_image(f"{key}/reconstruction/error", target_reconstruction - output_reconstruction)
+            self.log_image(f"{key}/reconstruction/error", torch.abs(target_reconstruction - output_reconstruction))
 
             target_reconstruction = target_reconstruction.numpy()  # type: ignore
             output_reconstruction = output_reconstruction.numpy()
@@ -466,17 +464,15 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
         else:
             val_loss = self.total_segmentation_loss_weight * segmentation_loss
 
-        target_segmentation = rescale_intensities(target_segmentation)
-        pred_segmentation = rescale_intensities(pred_segmentation)
-
-        pred_segmentation = torch.where(pred_segmentation > pred_segmentation.mean(), 1.0, 0.0)
+        if not utils.is_none(self.segmentation_classes_thresholds):
+            for class_idx, class_threshold in enumerate(self.segmentation_classes_thresholds):
+                if not utils.is_none(class_threshold):
+                    target_segmentation[:, class_idx] = target_segmentation[:, class_idx] > class_threshold  # type: ignore
+                    pred_segmentation[:, class_idx] = pred_segmentation[:, class_idx] > class_threshold
 
         for class_idx in range(target_segmentation.shape[1]):  # type: ignore
             target_image_segmentation_class = target_segmentation[:, class_idx]  # type: ignore
             output_image_segmentation_class = pred_segmentation[:, class_idx]
-
-            target_image_segmentation_class = (target_image_segmentation_class * 255).to(torch.uint8)
-            output_image_segmentation_class = (output_image_segmentation_class * 255).to(torch.uint8)
 
             self.log_image(
                 f"{key}/segmentation_classes/target_class_{class_idx}",
@@ -485,7 +481,7 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             self.log_image(f"{key}/segmentation_classes/prediction_class_{class_idx}", output_image_segmentation_class)
             self.log_image(
                 f"{key}/segmentation_classes/error_1_class_{class_idx}",
-                output_image_segmentation_class - target_image_segmentation_class,
+                torch.abs(target_image_segmentation_class - output_image_segmentation_class),
             )
 
         self.cross_entropy_vals[fname][slice_idx] = self.cross_entropy_metric.to(self.device)(
