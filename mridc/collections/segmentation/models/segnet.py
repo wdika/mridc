@@ -7,28 +7,32 @@ from typing import Any, Tuple
 import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
+from torch import nn
 
 import mridc.collections.common.parts.fft as fft
 import mridc.collections.common.parts.utils as utils
 import mridc.collections.segmentation.models.base as base_segmentation_models
 import mridc.collections.segmentation.models.idslr_base.idslr_block as idslr_block
 import mridc.core.classes.common as common_classes
+from mridc.collections.reconstruction.models.rim import conv_layers
 
-__all__ = ["IDSLR"]
+__all__ = ["SegNet"]
 
 
-class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel, ABC):
+class SegNet(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel, ABC):
     """
-    Implementation of the Image domain Deep Structured Low-Rank network, as described in, as presented in \
-    Aniket Pramanik, Xiaodong Wu, and Mathews Jacob.
+    Implementation of the Segmentation Network MRI, as described in, as presented in Sun, L., \
+    et al. (2019).
 
     References
     ----------
 
     ..
 
-        Aniket Pramanik, Xiaodong Wu, and Mathews Jacob. (2021) ‘Joint Calibrationless Reconstruction and \
-        Segmentation of Parallel MRI’. Available at: https://arxiv.org/abs/2105.09220
+        Sun, L., Fan, Z., Ding, X., Huang, Y., Paisley, J. (2019). Joint CS-MRI Reconstruction and Segmentation with \
+        a Unified Deep Network. In: Chung, A., Gee, J., Yushkevich, P., Bao, S. (eds) Information Processing in \
+         Medical Imaging. IPMI 2019. Lecture Notes in Computer Science(), vol 11492. Springer, Cham. \
+         https://doi.org/10.1007/978-3-030-20351-1_38
 
     """
 
@@ -60,34 +64,61 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
         drop_prob = cfg_dict.get("drop_prob", 0.0)
         normalize = cfg_dict.get("normalize", True)
         self.norm_groups = cfg_dict.get("norm_groups", 2)
-        self.num_iters = cfg_dict.get("num_iters", 5)
+        num_cascades = cfg_dict.get("num_cascades", 5)
 
-        self.reconstruction_encoder = idslr_block.UnetEncoder(
-            chans=chans,
-            num_pools=num_pools,
-            in_chans=self.input_channels,
-            drop_prob=drop_prob,
-            padding_size=padding_size,
-            normalize=normalize,
-            norm_groups=self.norm_groups,
+        self.reconstruction_encoder = nn.ModuleList(
+            [
+                idslr_block.UnetEncoder(
+                    chans=chans,
+                    num_pools=num_pools,
+                    in_chans=self.input_channels,
+                    drop_prob=drop_prob,
+                    padding_size=padding_size,
+                    normalize=normalize,
+                    norm_groups=self.norm_groups,
+                )
+                for _ in range(num_cascades)
+            ]
         )
-        self.reconstruction_decoder = idslr_block.UnetDecoder(
-            chans=chans,
-            num_pools=num_pools,
-            out_chans=reconstruction_out_chans,
-            drop_prob=drop_prob,
-            padding_size=padding_size,
-            normalize=normalize,
-            norm_groups=self.norm_groups,
+        self.reconstruction_decoder = nn.ModuleList(
+            [
+                idslr_block.UnetDecoder(
+                    chans=chans,
+                    num_pools=num_pools,
+                    out_chans=reconstruction_out_chans,
+                    drop_prob=drop_prob,
+                    padding_size=padding_size,
+                    normalize=normalize,
+                    norm_groups=self.norm_groups,
+                )
+                for _ in range(num_cascades)
+            ]
         )
-        self.segmentation_decoder = idslr_block.UnetDecoder(
-            chans=chans,
-            num_pools=num_pools,
-            out_chans=segmentation_out_chans,
-            drop_prob=drop_prob,
-            padding_size=padding_size,
-            normalize=normalize,
-            norm_groups=self.norm_groups,
+        self.segmentation_decoder = nn.ModuleList(
+            [
+                idslr_block.UnetDecoder(
+                    chans=chans,
+                    num_pools=num_pools,
+                    out_chans=segmentation_out_chans,
+                    drop_prob=drop_prob,
+                    padding_size=padding_size,
+                    normalize=normalize,
+                    norm_groups=self.norm_groups,
+                )
+                for _ in range(num_cascades)
+            ]
+        )
+
+        self.segmentation_final_layer = torch.nn.Sequential(
+            conv_layers.ConvNonlinear(
+                segmentation_out_chans * num_cascades,
+                segmentation_out_chans,
+                conv_dim=cfg_dict.get("segmentation_final_layer_conv_dim", 2),
+                kernel_size=cfg_dict.get("segmentation_final_layer_kernel_size", 3),
+                dilation=cfg_dict.get("segmentation_final_layer_dilation", 1),
+                bias=cfg_dict.get("segmentation_final_layer_bias", False),
+                nonlinear=cfg_dict.get("segmentation_final_layer_nonlinear", "relu"),
+            )
         )
 
         self.dc = idslr_block.DC()
@@ -147,31 +178,30 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
                 sensitivity_maps = torch.cat([sensitivity_maps, dummy_coil_data], dim=self.coil_dim)
 
         y_prediction = y.clone()
-        for _ in range(self.num_iters):
+        pred_segmentations = []
+        for re, rd, sd in zip(self.reconstruction_encoder, self.reconstruction_decoder, self.segmentation_decoder):
             image_space = fft.ifft2(y_prediction, self.fft_centered, self.fft_normalization, self.spatial_dims)
-            output = self.reconstruction_encoder(image_space)
+            output = re(image_space)
             pred_reconstruction, pad_sizes = output[0].copy(), output[2]
+
+            with torch.no_grad():
+                _pred_reconstruction = [
+                    torch.nn.functional.group_norm(x, num_groups=self.norm_groups) for x in pred_reconstruction
+                ]
+
+            pred_segmentations.append(sd(_pred_reconstruction, iscomplex=False, pad_sizes=pad_sizes))
+
             pred_kspace = fft.fft2(
-                image_space - self.reconstruction_decoder(*output),
-                self.fft_centered,
-                self.fft_normalization,
-                self.spatial_dims,
+                image_space - rd(*output), self.fft_centered, self.fft_normalization, self.spatial_dims
             )
             y_prediction = self.dc(pred_kspace, y, mask)
-
-        with torch.no_grad():
-            _pred_reconstruction = [
-                torch.nn.functional.group_norm(x, num_groups=self.norm_groups) for x in pred_reconstruction
-            ]
-
-        pred_segmentation = self.segmentation_decoder(_pred_reconstruction, iscomplex=False, pad_sizes=pad_sizes)
-
-        pred_segmentation = torch.abs(pred_segmentation)
-        pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
 
         pred_reconstruction = self.process_intermediate_pred(
             y_prediction, sensitivity_maps, target_reconstruction, do_coil_combination=True
         )
+
+        pred_segmentation = torch.abs(self.segmentation_final_layer(torch.cat(pred_segmentations, dim=1)))
+        pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
 
         if self.consecutive_slices > 1:
             # get batch size and number of slices from y, because if the reconstruction module is used they will not

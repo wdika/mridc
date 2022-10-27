@@ -111,8 +111,8 @@ class Dice(_Loss):
             the ground truth of shape [BNHW[D]].
         """
         if self.flatten:
-            target = target.view(target.shape[0], 1, -1)
-            input = input.view(input.shape[0], 1, -1)
+            target = target.reshape(target.shape[0], 1, -1)
+            input = input.reshape(input.shape[0], 1, -1)
 
         if self.sigmoid:
             input = torch.sigmoid(input)

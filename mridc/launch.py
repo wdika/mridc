@@ -26,6 +26,8 @@ from mridc.collections.segmentation.models.attention_unet import SegmentationAtt
 from mridc.collections.segmentation.models.idslr import IDSLR
 from mridc.collections.segmentation.models.jrscirim import JRSCIRIM
 from mridc.collections.segmentation.models.lambda_unet import SegmentationLambdaUNet
+from mridc.collections.segmentation.models.recseg_unet import RecSegUNet
+from mridc.collections.segmentation.models.segnet import SegNet
 from mridc.collections.segmentation.models.unet import SegmentationUNet
 from mridc.collections.segmentation.models.unet3d import Segmentation3DUNet
 from mridc.collections.segmentation.models.vnet import SegmentationVNet
@@ -79,6 +81,8 @@ def main(cfg: DictConfig) -> None:
         model = qCIRIM(cfg.model, trainer=trainer)
     elif model_name == "QVN":
         model = qVarNet(cfg.model, trainer=trainer)
+    elif model_name == "RECSEGNET":
+        model = RecSegUNet(cfg.model, trainer=trainer)
     elif model_name == "RVN":
         model = RecurrentVarNet(cfg.model, trainer=trainer)
     elif model_name == "SEGMENTATIONATTENTIONUNET":
@@ -91,6 +95,8 @@ def main(cfg: DictConfig) -> None:
         model = Segmentation3DUNet(cfg.model, trainer=trainer)
     elif model_name == "SEGMENTATIONVNET":
         model = SegmentationVNet(cfg.model, trainer=trainer)
+    elif model_name == "SEGNET":
+        model = SegNet(cfg.model, trainer=trainer)
     elif model_name == "UNET":
         model = UNet(cfg.model, trainer=trainer)
     elif model_name == "VSNET":
@@ -103,8 +109,8 @@ def main(cfg: DictConfig) -> None:
         raise NotImplementedError(
             f"{model_name} is not implemented in MRIDC. You can use one of the following methods: "
             "CASCADENET, CIRIM, CRNNET, DUNET, E2EVN, IDSLR, JOINTICNET, JRSCIRIM, KIKINET, LPDNET, MULTIDOMAINNET, "
-            "PICS, qCIRIM, qVN, RVN, SEGMENTATIONATTENTIONUNET, SEGMENTATIONLAMBDAUNET, SEGMENTATIONUNET, "
-            "SEGMENTATION3DUNET, SEGMENTATIONVNET, UNET, VSNET, XPDNET, or Zero-Filled. /n"
+            "PICS, qCIRIM, qVN, RECSEGNET, RVN, SEGMENTATIONATTENTIONUNET, SEGMENTATIONLAMBDAUNET, SEGMENTATIONUNET, "
+            "SEGMENTATION3DUNET, SEGMENTATIONVNET, SEGNET, UNET, VSNET, XPDNET, or Zero-Filled. /n"
             "If you implemented a new model, please consider adding it through a PR on GitHub."
         )
 

@@ -13,19 +13,16 @@ import mridc.collections.reconstruction.models.unet_base.unet_block as unet_bloc
 class DC(nn.Module):
     """Data consistency block."""
 
-    def __init__(self, soft_dc: bool = False) -> None:
+    def __init__(self):
         super().__init__()
-        self.soft_dc = soft_dc
-        if self.soft_dc:
-            self.dc_weight = nn.Parameter(torch.ones(1))
+        self.dc_weight = nn.Parameter(torch.ones(1))
 
     def forward(self, kspace, og_kspace, mask=None):
         """Forward pass."""
         if mask is not None:
             zero = torch.zeros_like(kspace, device=kspace.device)
             dc = torch.where(mask.bool(), kspace - og_kspace, zero)
-            if self.soft_dc:
-                dc *= self.dc_weight
+            dc *= self.dc_weight
             return kspace - dc
         return kspace
 

@@ -17,11 +17,11 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torchmetrics.metric import Metric
 
+import mridc.collections.common.metrics.reconstruction_metrics as reconstruction_metrics
 import mridc.collections.common.parts.fft as fft
 import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.data.mri_data as mri_data
 import mridc.collections.reconstruction.data.subsample as subsample
-import mridc.collections.reconstruction.metrics.evaluate as evaluation_metrics
 import mridc.collections.reconstruction.models.unet_base.unet_block as unet_block
 import mridc.collections.reconstruction.parts.transforms as transforms
 import mridc.core.classes.modelPT as modelPT
@@ -329,13 +329,13 @@ class BaseMRIReconstructionModel(modelPT.ModelPT, ABC):
 
         target = target.numpy()  # type: ignore
         output = output.numpy()  # type: ignore
-        self.mse_vals[fname][slice_num] = torch.tensor(evaluation_metrics.mse(target, output)).view(1)
-        self.nmse_vals[fname][slice_num] = torch.tensor(evaluation_metrics.nmse(target, output)).view(1)
+        self.mse_vals[fname][slice_num] = torch.tensor(reconstruction_metrics.mse(target, output)).view(1)
+        self.nmse_vals[fname][slice_num] = torch.tensor(reconstruction_metrics.nmse(target, output)).view(1)
         self.ssim_vals[fname][slice_num] = torch.tensor(
-            evaluation_metrics.ssim(target, output, maxval=output.max() - output.min())
+            reconstruction_metrics.ssim(target, output, maxval=output.max() - output.min())
         ).view(1)
         self.psnr_vals[fname][slice_num] = torch.tensor(
-            evaluation_metrics.psnr(target, output, maxval=output.max() - output.min())
+            reconstruction_metrics.psnr(target, output, maxval=output.max() - output.min())
         ).view(1)
 
         return {"val_loss": val_loss}
@@ -422,13 +422,13 @@ class BaseMRIReconstructionModel(modelPT.ModelPT, ABC):
 
         target = target.numpy()  # type: ignore
         output = output.numpy()  # type: ignore
-        self.mse_vals[fname][slice_num] = torch.tensor(evaluation_metrics.mse(target, output)).view(1)
-        self.nmse_vals[fname][slice_num] = torch.tensor(evaluation_metrics.nmse(target, output)).view(1)
+        self.mse_vals[fname][slice_num] = torch.tensor(reconstruction_metrics.mse(target, output)).view(1)
+        self.nmse_vals[fname][slice_num] = torch.tensor(reconstruction_metrics.nmse(target, output)).view(1)
         self.ssim_vals[fname][slice_num] = torch.tensor(
-            evaluation_metrics.ssim(target, output, maxval=output.max() - output.min())
+            reconstruction_metrics.ssim(target, output, maxval=output.max() - output.min())
         ).view(1)
         self.psnr_vals[fname][slice_num] = torch.tensor(
-            evaluation_metrics.psnr(target, output, maxval=output.max() - output.min())
+            reconstruction_metrics.psnr(target, output, maxval=output.max() - output.min())
         ).view(1)
 
         return name, slice_num, preds.detach().cpu().numpy()

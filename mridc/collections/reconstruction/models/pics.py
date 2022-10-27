@@ -8,9 +8,9 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
+import mridc.collections.common.metrics.reconstruction_metrics as reconstruction_metrics
 import mridc.collections.common.parts.fft as fft
 import mridc.collections.common.parts.utils as utils
-import mridc.collections.reconstruction.metrics.evaluate as metrics
 import mridc.collections.reconstruction.models.base as base_models
 import mridc.core.classes.common as common_classes
 
@@ -172,13 +172,13 @@ class PICS(base_models.BaseMRIReconstructionModel, ABC):
 
         target = target.numpy()  # type: ignore
         output = output.numpy()  # type: ignore
-        self.mse_vals[fname][slice_num] = torch.tensor(metrics.mse(target, output)).view(1)
-        self.nmse_vals[fname][slice_num] = torch.tensor(metrics.nmse(target, output)).view(1)
+        self.mse_vals[fname][slice_num] = torch.tensor(reconstruction_metrics.mse(target, output)).view(1)
+        self.nmse_vals[fname][slice_num] = torch.tensor(reconstruction_metrics.nmse(target, output)).view(1)
         self.ssim_vals[fname][slice_num] = torch.tensor(
-            metrics.ssim(target, output, maxval=output.max() - output.min())
+            reconstruction_metrics.ssim(target, output, maxval=output.max() - output.min())
         ).view(1)
         self.psnr_vals[fname][slice_num] = torch.tensor(
-            metrics.psnr(target, output, maxval=output.max() - output.min())
+            reconstruction_metrics.psnr(target, output, maxval=output.max() - output.min())
         ).view(1)
 
         return name, slice_num, prediction.detach().cpu().numpy()

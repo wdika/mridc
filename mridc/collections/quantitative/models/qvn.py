@@ -10,7 +10,6 @@ from pytorch_lightning import Trainer
 from torch import Tensor
 
 import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.rnn_utils as rnn_utils
 import mridc.collections.common.parts.utils as utils
 import mridc.collections.quantitative.models.base as base_quantitative_models
 import mridc.collections.quantitative.models.qrim.utils as qrim_utils

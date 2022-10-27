@@ -8,7 +8,7 @@ from omegaconf import OmegaConf
 
 from mridc.collections.common.parts import utils
 from mridc.collections.reconstruction.data.subsample import RandomMaskFunc
-from mridc.collections.segmentation.models.idslr import IDSLR
+from mridc.collections.segmentation.models.recseg_unet import RecSegUNet
 from tests.collections.reconstruction.fastmri.conftest import create_input
 
 
@@ -16,19 +16,18 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
     "shape, cfg, center_fractions, accelerations, dimensionality, segmentation_classes, trainer",
     [
         (
-            [1, 3, 32, 16, 2],
+            [1, 15, 32, 16, 2],
             {
                 "use_reconstruction_module": True,
-                "input_channels": 6,  # 2 * num_coils
-                "reconstruction_module_output_channels": 2,
+                "input_channels": 1,
+                "reconstruction_module_output_channels": 1,
+                "reconstruction_module_channels": 32,
+                "reconstruction_module_pooling_layers": 4,
+                "reconstruction_module_dropout": 0.0,
                 "segmentation_module_output_channels": 4,
-                "channels": 32,
-                "num_pools": 4,
-                "padding_size": 11,
-                "drop_prob": 0.0,
-                "normalize": True,
-                "norm_groups": 2,
-                "num_iters": 5,
+                "segmentation_module_channels": 32,
+                "segmentation_module_pooling_layers": 4,
+                "segmentation_module_dropout": 0.0,
                 "reconstruction_loss_fn": "l1",
                 "segmentation_loss_fn": "dice",
                 "dice_loss_include_background": False,
@@ -43,6 +42,7 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "dice_loss_smooth_dr": 1,
                 "dice_loss_batch": True,
                 "consecutive_slices": 1,
+                "magnitude_input": True,
                 "coil_combination_method": "SENSE",
                 "use_sens_net": False,
                 "fft_centered": False,
@@ -69,19 +69,18 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
             },
         ),
         (
-            [1, 4, 32, 16, 2],
+            [1, 32, 64, 48, 2],
             {
                 "use_reconstruction_module": True,
-                "input_channels": 8,  # 2 * num_coils
-                "reconstruction_module_output_channels": 2,
-                "segmentation_module_output_channels": 3,
-                "channels": 32,
-                "num_pools": 4,
-                "padding_size": 11,
-                "drop_prob": 0.0,
-                "normalize": True,
-                "norm_groups": 2,
-                "num_iters": 1,
+                "input_channels": 2,
+                "reconstruction_module_output_channels": 1,
+                "reconstruction_module_channels": 32,
+                "reconstruction_module_pooling_layers": 4,
+                "reconstruction_module_dropout": 0.0,
+                "segmentation_module_output_channels": 4,
+                "segmentation_module_channels": 32,
+                "segmentation_module_pooling_layers": 4,
+                "segmentation_module_dropout": 0.0,
                 "reconstruction_loss_fn": "l1",
                 "segmentation_loss_fn": "dice",
                 "dice_loss_include_background": False,
@@ -96,6 +95,7 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "dice_loss_smooth_dr": 1,
                 "dice_loss_batch": True,
                 "consecutive_slices": 1,
+                "magnitude_input": False,
                 "coil_combination_method": "SENSE",
                 "use_sens_net": False,
                 "fft_centered": False,
@@ -107,7 +107,7 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
             [0.08],
             [4],
             2,
-            3,
+            4,
             {
                 "strategy": "ddp",
                 "accelerator": "cpu",
@@ -125,16 +125,15 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
             [1, 3, 32, 16, 2],
             {
                 "use_reconstruction_module": True,
-                "input_channels": 6,  # 2 * num_coils
-                "reconstruction_module_output_channels": 2,
+                "input_channels": 1,
+                "reconstruction_module_output_channels": 1,
+                "reconstruction_module_channels": 32,
+                "reconstruction_module_pooling_layers": 4,
+                "reconstruction_module_dropout": 0.0,
                 "segmentation_module_output_channels": 4,
-                "channels": 32,
-                "num_pools": 4,
-                "padding_size": 11,
-                "drop_prob": 0.0,
-                "normalize": True,
-                "norm_groups": 2,
-                "num_iters": 5,
+                "segmentation_module_channels": 32,
+                "segmentation_module_pooling_layers": 4,
+                "segmentation_module_dropout": 0.0,
                 "reconstruction_loss_fn": "l1",
                 "segmentation_loss_fn": "dice",
                 "dice_loss_include_background": False,
@@ -149,12 +148,13 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "dice_loss_smooth_dr": 1,
                 "dice_loss_batch": True,
                 "consecutive_slices": 5,
+                "magnitude_input": True,
                 "coil_combination_method": "SENSE",
                 "use_sens_net": False,
                 "fft_centered": False,
                 "fft_normalization": "backward",
                 "spatial_dims": [-2, -1],
-                "coil_dim": 1,
+                "coil_dim": 2,
                 "dimensionality": 2,
             },
             [0.08],
@@ -176,10 +176,9 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
         ),
     ],
 )
-def test_idslr(shape, cfg, center_fractions, accelerations, dimensionality, segmentation_classes, trainer):
+def test_recseg_unet(shape, cfg, center_fractions, accelerations, dimensionality, segmentation_classes, trainer):
     """
-    Test Image domain Deep Structured Low-Rank network for Joint Reconstruction & Segmentation, with different
-    parameters.
+    Test the Reconstruction Segmentation method using UNets, with different parameters.
 
     Parameters
     ----------
@@ -223,10 +222,10 @@ def test_idslr(shape, cfg, center_fractions, accelerations, dimensionality, segm
     trainer = OmegaConf.create(OmegaConf.to_container(trainer, resolve=True))
     trainer = pl.Trainer(**trainer)
 
-    idslr = IDSLR(cfg, trainer=trainer)
+    recsegunet = RecSegUNet(cfg, trainer=trainer)
 
     with torch.no_grad():
-        pred_reconstruction, pred_segmentation = idslr.forward(
+        pred_reconstruction, pred_segmentation = recsegunet.forward(
             output,
             output,
             mask,
@@ -234,19 +233,14 @@ def test_idslr(shape, cfg, center_fractions, accelerations, dimensionality, segm
             output.sum(coil_dim),
         )
 
-    if isinstance(pred_reconstruction, list):
-        pred_reconstruction = pred_reconstruction[-1]
-
-    if isinstance(pred_reconstruction, list):
-        pred_reconstruction = pred_reconstruction[-1]
-
     if dimensionality == 3 or consecutive_slices > 1:
         x = x.reshape([x.shape[0] * x.shape[1], x.shape[2], x.shape[3], x.shape[4], x.shape[5]])
+
     if x.shape[-1] == 2:
         x = x[..., 0] + 1j * x[..., 1]
 
     if consecutive_slices > 1 or dimensionality == 3:
-        x = x.sum(coil_dim)  # sum over coils
+        x = x.sum(coil_dim - 1)  # sum over coils
         if pred_reconstruction.dim() == 4:
             pred_reconstruction = pred_reconstruction.reshape(
                 pred_reconstruction.shape[0] * pred_reconstruction.shape[1], *pred_reconstruction.shape[2:]
@@ -254,10 +248,8 @@ def test_idslr(shape, cfg, center_fractions, accelerations, dimensionality, segm
         if pred_reconstruction.shape != x.shape:
             raise AssertionError
         if output.dim() == 6:
-            output = output.reshape(
-                [output.shape[0] * output.shape[1], output.shape[2], output.shape[3], output.shape[4], output.shape[5]]
-            )
-        output = torch.view_as_complex(output).sum(coil_dim)
+            output = output.reshape([output.shape[0] * output.shape[1], *output.shape[2:]])
+        output = torch.view_as_complex(output).sum(coil_dim - 1)
         output = torch.stack([output for _ in range(segmentation_classes)], 1)
         if consecutive_slices > 1:
             pred_segmentation = pred_segmentation.reshape(

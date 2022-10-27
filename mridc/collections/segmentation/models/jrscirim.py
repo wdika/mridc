@@ -216,6 +216,6 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
                     ]
                     cascades_loss.append(sum(sum(_loss) / self.reconstruction_module_time_steps))
                 jrs_cascades_loss.append(sum(list(cascades_loss)) / self.reconstruction_module_num_cascades)
-            yield sum(list(jrs_cascades_loss)) / self.jrs_cascades
+            return sum(list(jrs_cascades_loss)) / self.jrs_cascades
         else:
             return loss_fn(target, pred)

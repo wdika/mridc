@@ -16,10 +16,10 @@ from torch.nn import L1Loss
 from torch.utils.data import DataLoader
 
 import mridc.collections.common.losses as reconstruction_losses
+import mridc.collections.common.metrics.reconstruction_metrics as reconstruction_metrics
 import mridc.collections.common.parts.fft as fft
 import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.data.subsample as subsample
-import mridc.collections.reconstruction.metrics.evaluate as evaluation_metrics
 import mridc.collections.reconstruction.models.base as base_reconstruction_models
 import mridc.collections.segmentation.data.mri_data as segmentation_mri_data
 import mridc.collections.segmentation.losses as segmentation_losses
@@ -27,6 +27,8 @@ import mridc.collections.segmentation.parts.transforms as transforms
 import mridc.utils.model_utils as model_utils
 
 __all__ = ["BaseMRIJointReconstructionSegmentationModel"]
+
+from mridc.collections.segmentation.parts.utils import rescale_intensities
 
 
 class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.BaseMRIReconstructionModel, ABC):
@@ -190,7 +192,7 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
                     for x in time_steps_loss
                 ]
                 cascades_loss.append(sum(sum(_loss) / self.reconstruction_module_time_steps))
-            yield sum(list(cascades_loss)) / len(self.reconstruction_module)
+            return sum(list(cascades_loss)) / len(self.reconstruction_module)
         else:
             return loss_fn(target, pred)
 
@@ -268,8 +270,6 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             acc,
         ) = batch
 
-        key = f"{fname[0]}_images_idx_{int(slice_idx)}"  # type: ignore
-
         y, mask, init_reconstruction_pred, r = self.process_inputs(y, mask, init_reconstruction_pred)
 
         target_reconstruction = target_reconstruction / torch.max(torch.abs(target_reconstruction))  # type: ignore
@@ -297,14 +297,15 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
                 batch_size * slices, *pred_segmentation.shape[2:]  # type: ignore
             )
 
+        target_segmentation = rescale_intensities(target_segmentation)
+        pred_segmentation = rescale_intensities(pred_segmentation)
+
         segmentation_loss = self.process_segmentation_loss(target_segmentation, pred_segmentation)["segmentation_loss"]
 
         if self.use_reconstruction_module:
             reconstruction_loss = self.process_reconstruction_loss(
                 target_reconstruction, pred_reconstruction, self.val_loss_fn
             )
-            if self.reconstruction_module_accumulate_estimates:
-                reconstruction_loss = sum(reconstruction_loss)
             train_loss = (
                 self.total_segmentation_loss_weight * segmentation_loss
                 + self.total_reconstruction_loss_weight * reconstruction_loss
@@ -372,7 +373,9 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
 
         y, mask, init_reconstruction_pred, r = self.process_inputs(y, mask, init_reconstruction_pred)
 
-        target_reconstruction = target_reconstruction / torch.max(torch.abs(target_reconstruction))  # type: ignore
+        target_reconstruction = (
+            torch.abs(target_reconstruction / torch.max(torch.abs(target_reconstruction))).detach().cpu()
+        )
 
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, mask)
@@ -400,8 +403,6 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
                 batch_size * slices, *target_reconstruction.shape[2:]  # type: ignore
             )
 
-        target_reconstruction = torch.abs(target_reconstruction).detach().cpu()
-
         slice_idx = int(slice_idx)
         key = f"{fname[0]}_images_idx_{slice_idx}"  # type: ignore
         self.log_image(f"{key}/reconstruction/target", target_reconstruction)
@@ -412,8 +413,6 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             reconstruction_loss = self.process_reconstruction_loss(
                 target_reconstruction, pred_reconstruction, self.val_loss_fn
             )
-            if self.reconstruction_module_accumulate_estimates:
-                reconstruction_loss = sum(reconstruction_loss)
 
             val_loss = (
                 self.total_segmentation_loss_weight * segmentation_loss
@@ -429,13 +428,15 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             # Time-steps
             if isinstance(pred_reconstruction, list):
                 pred_reconstruction = pred_reconstruction[-1]
+
             if self.consecutive_slices > 1:
                 pred_reconstruction = pred_reconstruction.reshape(
                     pred_reconstruction.shape[0] * pred_reconstruction.shape[1], *pred_reconstruction.shape[2:]
                 )
 
-            output_reconstruction = torch.abs(pred_reconstruction / torch.max(torch.abs(pred_reconstruction)))
-            output_reconstruction = torch.abs(output_reconstruction).detach().cpu()
+            output_reconstruction = (
+                torch.abs(pred_reconstruction / torch.max(torch.abs(pred_reconstruction))).detach().cpu()
+            )
 
             self.log_image(f"{key}/reconstruction/prediction", output_reconstruction)
             self.log_image(f"{key}/reconstruction/error", target_reconstruction - output_reconstruction)
@@ -443,20 +444,20 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             target_reconstruction = target_reconstruction.numpy()  # type: ignore
             output_reconstruction = output_reconstruction.numpy()
             self.mse_vals_reconstruction[fname][slice_idx] = torch.tensor(
-                evaluation_metrics.mse(target_reconstruction, output_reconstruction)
+                reconstruction_metrics.mse(target_reconstruction, output_reconstruction)
             ).view(1)
             self.nmse_vals_reconstruction[fname][slice_idx] = torch.tensor(
-                evaluation_metrics.nmse(target_reconstruction, output_reconstruction)
+                reconstruction_metrics.nmse(target_reconstruction, output_reconstruction)
             ).view(1)
             self.ssim_vals_reconstruction[fname][slice_idx] = torch.tensor(
-                evaluation_metrics.ssim(
+                reconstruction_metrics.ssim(
                     target_reconstruction,
                     output_reconstruction,
                     maxval=output_reconstruction.max() - output_reconstruction.min(),
                 )
             ).view(1)
             self.psnr_vals_reconstruction[fname][slice_idx] = torch.tensor(
-                evaluation_metrics.psnr(
+                reconstruction_metrics.psnr(
                     target_reconstruction,
                     output_reconstruction,
                     maxval=output_reconstruction.max() - output_reconstruction.min(),
@@ -465,23 +466,26 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
         else:
             val_loss = self.total_segmentation_loss_weight * segmentation_loss
 
-        for class_idx in range(target_segmentation.shape[1]):  # type: ignore
-            target_segmentation_class = target_segmentation[:, class_idx]  # type: ignore
-            output_segmentation_class = pred_segmentation[:, class_idx]
+        target_segmentation = rescale_intensities(target_segmentation)
+        pred_segmentation = rescale_intensities(pred_segmentation)
 
-            target_segmentation_class = target_segmentation_class / target_segmentation_class.max() * 255
-            target_segmentation_class = target_segmentation_class.type(torch.uint8)
-            output_segmentation_class = output_segmentation_class / output_segmentation_class.max() * 255
-            output_segmentation_class = output_segmentation_class.type(torch.uint8)
+        pred_segmentation = torch.where(pred_segmentation > pred_segmentation.mean(), 1.0, 0.0)
+
+        for class_idx in range(target_segmentation.shape[1]):  # type: ignore
+            target_image_segmentation_class = target_segmentation[:, class_idx]  # type: ignore
+            output_image_segmentation_class = pred_segmentation[:, class_idx]
+
+            target_image_segmentation_class = (target_image_segmentation_class * 255).to(torch.uint8)
+            output_image_segmentation_class = (output_image_segmentation_class * 255).to(torch.uint8)
 
             self.log_image(
                 f"{key}/segmentation_classes/target_class_{class_idx}",
-                target_segmentation_class,  # type: ignore
+                target_image_segmentation_class,  # type: ignore
             )
-            self.log_image(f"{key}/segmentation_classes/prediction_class_{class_idx}", output_segmentation_class)
+            self.log_image(f"{key}/segmentation_classes/prediction_class_{class_idx}", output_image_segmentation_class)
             self.log_image(
                 f"{key}/segmentation_classes/error_1_class_{class_idx}",
-                torch.abs(output_segmentation_class - target_segmentation_class),
+                output_image_segmentation_class - target_image_segmentation_class,
             )
 
         self.cross_entropy_vals[fname][slice_idx] = self.cross_entropy_metric.to(self.device)(
@@ -581,12 +585,6 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
         self.log_image(f"{key}/reconstruction/target", target_reconstruction)
 
         if self.use_reconstruction_module:
-            reconstruction_loss = self.process_reconstruction_loss(
-                target_reconstruction, pred_reconstruction, self.val_loss_fn
-            )
-            if self.reconstruction_module_accumulate_estimates:
-                reconstruction_loss = sum(reconstruction_loss)
-
             # JRS Cascades
             if isinstance(pred_reconstruction, list):
                 pred_reconstruction = pred_reconstruction[-1]
@@ -610,20 +608,20 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             target_reconstruction = target_reconstruction.numpy()  # type: ignore
             output_reconstruction = output_reconstruction.numpy()
             self.mse_vals_reconstruction[fname][slice_idx] = torch.tensor(
-                evaluation_metrics.mse(target_reconstruction, output_reconstruction)
+                reconstruction_metrics.mse(target_reconstruction, output_reconstruction)
             ).view(1)
             self.nmse_vals_reconstruction[fname][slice_idx] = torch.tensor(
-                evaluation_metrics.nmse(target_reconstruction, output_reconstruction)
+                reconstruction_metrics.nmse(target_reconstruction, output_reconstruction)
             ).view(1)
             self.ssim_vals_reconstruction[fname][slice_idx] = torch.tensor(
-                evaluation_metrics.ssim(
+                reconstruction_metrics.ssim(
                     target_reconstruction,
                     output_reconstruction,
                     maxval=output_reconstruction.max() - output_reconstruction.min(),
                 )
             ).view(1)
             self.psnr_vals_reconstruction[fname][slice_idx] = torch.tensor(
-                evaluation_metrics.psnr(
+                reconstruction_metrics.psnr(
                     target_reconstruction,
                     output_reconstruction,
                     maxval=output_reconstruction.max() - output_reconstruction.min(),
@@ -849,25 +847,25 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             for metric, value in metrics_reconstruction.items():
                 self.log(f"{metric}_Reconstruction", value / tot_examples, sync_dist=True)
 
-        if self.consecutive_slices > 1:
-            vols = defaultdict(list)
-            for fname, slice_num, _ in outputs:
-                vols[fname].append(slice_num)
-
         segmentations = defaultdict(list)
         for fname, slice_num, output in outputs:
             segmentations_pred, _ = output
-            if self.consecutive_slices > 1:
-                if slice_num <= self.consecutive_slices // 2:
-                    segmentations_pred = segmentations_pred[slice_num]
-                elif slice_num == len(vols[fname]) - 1:
-                    segmentations_pred = segmentations_pred[-1]
-                else:
-                    segmentations_pred = segmentations_pred[self.consecutive_slices // 2]
             segmentations[fname].append((slice_num, segmentations_pred))
 
         for fname in segmentations:
             segmentations[fname] = np.stack([out for _, out in sorted(segmentations[fname])])
+            if self.consecutive_slices > 1:
+                # If we have consecutive slices, we need to make sure that we will save all slices.
+                segmentations_slices = []
+                for i in range(segmentations[fname].shape[0]):
+                    if i == 0:
+                        segmentations_slices.append(segmentations[fname][i][0])
+                    elif i == segmentations[fname].shape[0] - 1:
+                        for j in range(self.consecutive_slices):
+                            segmentations_slices.append(segmentations[fname][i][j])
+                    else:
+                        segmentations_slices.append(segmentations[fname][i][self.consecutive_slices // 2])
+                segmentations[fname] = np.stack(segmentations_slices)
 
         if self.use_reconstruction_module:
             reconstructions = defaultdict(list)
@@ -877,17 +875,35 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
 
             for fname in reconstructions:
                 reconstructions[fname] = np.stack([out for _, out in sorted(reconstructions[fname])])
+                if self.consecutive_slices > 1:
+                    # If we have consecutive slices, we need to make sure that we will save all slices.
+                    reconstructions_slices = []
+                    for i in range(reconstructions[fname].shape[0]):
+                        if i == 0:
+                            reconstructions_slices.append(reconstructions[fname][i][0])
+                        elif i == segmentations[fname].shape[0] - 1:
+                            for j in range(self.consecutive_slices):
+                                reconstructions_slices.append(reconstructions[fname][i][j])
+                        else:
+                            reconstructions_slices.append(reconstructions[fname][i][self.consecutive_slices // 2])
+                    reconstructions[fname] = np.stack(reconstructions_slices)
+        else:
+            reconstructions = None
 
         out_dir = Path(os.path.join(self.logger.log_dir, "predictions"))
         out_dir.mkdir(exist_ok=True, parents=True)
-        for fname, preds in segmentations.items():
-            with h5py.File(out_dir / fname, "w") as hf:
-                hf.create_dataset("segmentation", data=preds)
 
-        if self.use_reconstruction_module:
-            for fname, preds in reconstructions.items():
+        if reconstructions is not None:
+            for (fname, segmentations_pred), (_, reconstructions_pred) in zip(
+                segmentations.items(), reconstructions.items()
+            ):
                 with h5py.File(out_dir / fname, "w") as hf:
-                    hf.create_dataset("reconstruction", data=preds)
+                    hf.create_dataset("segmentation", data=segmentations_pred)
+                    hf.create_dataset("reconstruction", data=reconstructions_pred)
+        else:
+            for fname, segmentations_pred in segmentations.items():
+                with h5py.File(out_dir / fname, "w") as hf:
+                    hf.create_dataset("segmentation", data=segmentations_pred)
 
     @staticmethod
     def _setup_dataloader_from_config(cfg: DictConfig) -> DataLoader:
