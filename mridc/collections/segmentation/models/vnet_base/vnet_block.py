@@ -267,6 +267,16 @@ class VNet(nn.Module):
 
         if act == "elu":
             act = nn.ELU
+        elif act == "relu":
+            act = nn.ReLU
+        elif act == "prelu":
+            act = nn.PReLU
+        elif act == "leakyrelu":
+            act = nn.LeakyReLU
+        else:
+            raise ValueError(
+                f"Activation function {act} not supported. Please choose between ReLU, PReLU, LeakyReLU, ELU."
+            )
 
         self.in_tr = InputTransition(in_chans, 16, act, bias=bias)
         self.down_tr32 = DownTransition(16, 1, act, bias=bias)

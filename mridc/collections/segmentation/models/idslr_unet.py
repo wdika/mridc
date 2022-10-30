@@ -2,37 +2,34 @@
 __author__ = "Dimitrios Karkalousos"
 
 from abc import ABC
-from typing import Any, Tuple
+from typing import List, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
-from torch import nn
 
 import mridc.collections.common.parts.fft as fft
 import mridc.collections.common.parts.utils as utils
 import mridc.collections.segmentation.models.base as base_segmentation_models
-import mridc.collections.segmentation.models.idslr_base.idslr_block as idslr_block
 import mridc.core.classes.common as common_classes
-from mridc.collections.reconstruction.models.rim import conv_layers
+from mridc.collections.reconstruction.models.unet_base import unet_block
+from mridc.collections.segmentation.models.idslr_base import idslr_block
 
-__all__ = ["SegNet"]
+__all__ = ["IDSLRUNET"]
 
 
-class SegNet(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel, ABC):
+class IDSLRUNET(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel, ABC):
     """
-    Implementation of the Segmentation Network MRI, as described in, as presented in Sun, L., \
-    et al. (2019).
+    Implementation of the Image domain Deep Structured Low-Rank network using a UNet (and not only the decoder part) \
+    as segmentation model. As presented in Aniket Pramanik, Xiaodong Wu, and Mathews Jacob.
 
     References
     ----------
 
     ..
 
-        Sun, L., Fan, Z., Ding, X., Huang, Y., Paisley, J. (2019). Joint CS-MRI Reconstruction and Segmentation with \
-        a Unified Deep Network. In: Chung, A., Gee, J., Yushkevich, P., Bao, S. (eds) Information Processing in \
-         Medical Imaging. IPMI 2019. Lecture Notes in Computer Science(), vol 11492. Springer, Cham. \
-         https://doi.org/10.1007/978-3-030-20351-1_38
+        Aniket Pramanik, Xiaodong Wu, and Mathews Jacob. (2021) ‘Joint Calibrationless Reconstruction and \
+        Segmentation of Parallel MRI’. Available at: https://arxiv.org/abs/2105.09220
 
     """
 
@@ -42,20 +39,15 @@ class SegNet(base_segmentation_models.BaseMRIJointReconstructionSegmentationMode
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
-        self.use_reconstruction_module = cfg_dict.get("use_reconstruction_module", True)
-
         self.fft_centered = cfg_dict.get("fft_centered")
         self.fft_normalization = cfg_dict.get("fft_normalization")
         self.spatial_dims = cfg_dict.get("spatial_dims")
         self.coil_dim = cfg_dict.get("coil_dim")
         self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
-        self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
-        self.dimensionality = cfg_dict.get("dimensionality", 2)
-        if self.dimensionality != 2:
-            raise NotImplementedError(f"Currently only 2D is supported for segmentation, got {self.dimensionality}D.")
-
         self.input_channels = cfg_dict.get("input_channels", 2)
+        if self.input_channels == 0:
+            raise ValueError("Segmentation module input channels cannot be 0.")
         reconstruction_out_chans = cfg_dict.get("reconstruction_module_output_channels", 2)
         segmentation_out_chans = cfg_dict.get("segmentation_module_output_channels", 1)
         chans = cfg_dict.get("channels", 32)
@@ -65,66 +57,38 @@ class SegNet(base_segmentation_models.BaseMRIJointReconstructionSegmentationMode
         padding = cfg_dict.get("padding", False)
         padding_size = cfg_dict.get("padding_size", 11)
         self.norm_groups = cfg_dict.get("norm_groups", 2)
-        num_cascades = cfg_dict.get("num_cascades", 5)
+        self.num_iters = cfg_dict.get("num_iters", 5)
 
-        self.reconstruction_encoder = nn.ModuleList(
-            [
-                idslr_block.UnetEncoder(
-                    chans=chans,
-                    num_pools=num_pools,
-                    in_chans=self.input_channels,
-                    drop_prob=drop_prob,
-                    normalize=normalize,
-                    padding=padding,
-                    padding_size=padding_size,
-                    norm_groups=self.norm_groups,
-                )
-                for _ in range(num_cascades)
-            ]
+        self.reconstruction_encoder = idslr_block.UnetEncoder(
+            chans=chans,
+            num_pools=num_pools,
+            in_chans=self.input_channels,
+            drop_prob=drop_prob,
+            normalize=normalize,
+            padding=padding,
+            padding_size=padding_size,
+            norm_groups=self.norm_groups,
         )
-        self.reconstruction_decoder = nn.ModuleList(
-            [
-                idslr_block.UnetDecoder(
-                    chans=chans,
-                    num_pools=num_pools,
-                    out_chans=reconstruction_out_chans,
-                    drop_prob=drop_prob,
-                    normalize=normalize,
-                    padding=padding,
-                    padding_size=padding_size,
-                    norm_groups=self.norm_groups,
-                )
-                for _ in range(num_cascades)
-            ]
-        )
-        self.segmentation_decoder = nn.ModuleList(
-            [
-                idslr_block.UnetDecoder(
-                    chans=chans,
-                    num_pools=num_pools,
-                    out_chans=segmentation_out_chans,
-                    drop_prob=drop_prob,
-                    normalize=normalize,
-                    padding=padding,
-                    padding_size=padding_size,
-                    norm_groups=self.norm_groups,
-                )
-                for _ in range(num_cascades)
-            ]
+        self.reconstruction_decoder = idslr_block.UnetDecoder(
+            chans=chans,
+            num_pools=num_pools,
+            out_chans=reconstruction_out_chans,
+            drop_prob=drop_prob,
+            normalize=normalize,
+            padding=padding,
+            padding_size=padding_size,
+            norm_groups=self.norm_groups,
         )
 
-        self.segmentation_final_layer = torch.nn.Sequential(
-            conv_layers.ConvNonlinear(
-                segmentation_out_chans * num_cascades,
-                segmentation_out_chans,
-                conv_dim=cfg_dict.get("segmentation_final_layer_conv_dim", 2),
-                kernel_size=cfg_dict.get("segmentation_final_layer_kernel_size", 3),
-                dilation=cfg_dict.get("segmentation_final_layer_dilation", 1),
-                bias=cfg_dict.get("segmentation_final_layer_bias", False),
-                nonlinear=cfg_dict.get("segmentation_final_layer_nonlinear", "relu"),
-            )
+        self.segmentation_module = unet_block.Unet(
+            in_chans=reconstruction_out_chans,
+            out_chans=segmentation_out_chans,
+            chans=chans,
+            num_pool_layers=num_pools,
+            drop_prob=drop_prob,
         )
 
+        self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
         self.magnitude_input = cfg_dict.get("magnitude_input", True)
 
         self.dc = idslr_block.DC()
@@ -139,13 +103,15 @@ class SegNet(base_segmentation_models.BaseMRIJointReconstructionSegmentationMode
         mask: torch.Tensor,
         init_reconstruction_pred: torch.Tensor,
         target_reconstruction: torch.Tensor,
-    ) -> Tuple[Any, Any]:
+        hx: torch.Tensor = None,
+        sigma: float = 1.0,
+    ) -> Tuple[Union[List, torch.Tensor], torch.Tensor]:
         """
         Forward pass of the network.
 
         Parameters
         ----------
-        y: Data.
+        y: Undersampled k-space data.
             torch.Tensor, shape [batch_size, n_echoes, n_coils, n_x, n_y, 2]
         sensitivity_maps: Coil sensitivity maps.
             torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
@@ -155,6 +121,10 @@ class SegNet(base_segmentation_models.BaseMRIJointReconstructionSegmentationMode
             torch.Tensor, shape [batch_size, 1, n_x, n_y, 2]
         target_reconstruction: Target reconstruction.
             torch.Tensor, shape [batch_size, 1, n_x, n_y, 2]
+        hx: Hidden state of the RNN.
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        sigma: Noise standard deviation.
+            float
 
         Returns
         -------
@@ -164,13 +134,11 @@ class SegNet(base_segmentation_models.BaseMRIJointReconstructionSegmentationMode
             torch.Tensor, shape [batch_size, nr_classes, n_x, n_y]
         """
         if self.consecutive_slices > 1:
-            batch, slices = y.shape[0], y.shape[1]
+            batch, slices = y.shape[:2]
             y = y.reshape(y.shape[0] * y.shape[1], *y.shape[2:])  # type: ignore
-            sensitivity_maps = sensitivity_maps.reshape(
-                # type: ignore
-                sensitivity_maps.shape[0] * sensitivity_maps.shape[1],
-                *sensitivity_maps.shape[2:],
-            )
+            sensitivity_maps = sensitivity_maps.reshape(  # type: ignore
+                sensitivity_maps.shape[0] * sensitivity_maps.shape[1], *sensitivity_maps.shape[2:]  # type: ignore
+            )  # type: ignore
             mask = mask.reshape(mask.shape[0] * mask.shape[1], *mask.shape[2:])  # type: ignore
 
         # In case of deviating number of coils, we need to pad up to maximum number of coils == number of input \
@@ -184,40 +152,50 @@ class SegNet(base_segmentation_models.BaseMRIJointReconstructionSegmentationMode
                 sensitivity_maps = torch.cat([sensitivity_maps, dummy_coil_data], dim=self.coil_dim)
 
         y_prediction = y.clone()
-        pred_segmentations = []
-        for re, rd, sd in zip(self.reconstruction_encoder, self.reconstruction_decoder, self.segmentation_decoder):
+        for _ in range(self.num_iters):
             init_reconstruction_pred = fft.ifft2(
                 y_prediction, self.fft_centered, self.fft_normalization, self.spatial_dims
             )
-            output = re(init_reconstruction_pred)
-            reconstruction_encoder_prediction, padding_size = output[0].copy(), output[2]
-            with torch.no_grad():
-                pred_segmentation_input = [
-                    torch.nn.functional.group_norm(x, num_groups=self.norm_groups)
-                    for x in reconstruction_encoder_prediction
-                ]
-                if self.magnitude_input:
-                    pred_segmentation_input = [torch.abs(x) for x in pred_segmentation_input]
-            pred_segmentations.append(sd(pred_segmentation_input, iscomplex=False, pad_sizes=padding_size))
-            reconstruction_decoder_prediction = rd(*output)
+            output = self.reconstruction_encoder(init_reconstruction_pred)
+            reconstruction_encoder_prediction, iscomplex, padding_size, _, _ = (
+                output[0].copy(),
+                output[1],
+                output[2],
+                output[3],
+                output[4],
+            )
+            reconstruction_decoder_prediction = self.reconstruction_decoder(*output)
+            reconstruction_decoder_prediction = reconstruction_decoder_prediction + init_reconstruction_pred
             reconstruction_decoder_prediction_kspace = fft.fft2(
-                reconstruction_decoder_prediction,
-                centered=self.fft_centered,
-                normalization=self.fft_normalization,
-                spatial_dims=self.spatial_dims,
+                reconstruction_decoder_prediction, self.fft_centered, self.fft_normalization, self.spatial_dims
             )
             y_prediction = self.dc(reconstruction_decoder_prediction_kspace, y, mask)
 
-        pred_reconstruction = self.process_intermediate_pred(
-            y_prediction, sensitivity_maps, target_reconstruction, do_coil_combination=True
-        )
+        pred_reconstruction = fft.ifft2(y_prediction, self.fft_centered, self.fft_normalization, self.spatial_dims)
 
-        pred_segmentation = self.segmentation_final_layer(torch.cat(pred_segmentations, dim=1))
+        b, c, h, w, two = pred_reconstruction.shape
+        pred_segmentation_input = pred_reconstruction.permute(0, 4, 1, 2, 3).reshape(b, 2 * c, h, w)
+
+        with torch.no_grad():
+            pred_segmentation_input = torch.nn.functional.group_norm(
+                pred_segmentation_input, num_groups=self.norm_groups
+            )
+            if self.magnitude_input:
+                pred_segmentation_input = torch.abs(pred_segmentation_input)
+
+        pred_segmentation = self.segmentation_module(pred_segmentation_input)
+
+        pred_segmentation = torch.abs(pred_segmentation)
         pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
 
+        pred_reconstruction = utils.coil_combination(
+            pred_reconstruction, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim
+        )
+        pred_reconstruction = self.process_intermediate_pred(
+            pred_reconstruction, sensitivity_maps, target_reconstruction, False
+        )
+
         if self.consecutive_slices > 1:
-            # get batch size and number of slices from y, because if the reconstruction module is used they will not
-            # be saved before
             pred_reconstruction = pred_reconstruction.view([batch, slices, *pred_reconstruction.shape[1:]])
             pred_segmentation = pred_segmentation.view([batch, slices, *pred_segmentation.shape[1:]])
 

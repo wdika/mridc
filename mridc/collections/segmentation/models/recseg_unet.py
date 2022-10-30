@@ -130,7 +130,8 @@ class RecSegUNet(base_segmentation_models.BaseMRIJointReconstructionSegmentation
             else:
                 raise ValueError("The input channels must be either 1 or 2. Found: {}".format(self.input_channels))
         else:
-            init_reconstruction_pred = init_reconstruction_pred.unsqueeze(1)
+            if init_reconstruction_pred.dim() == 3:
+                init_reconstruction_pred = init_reconstruction_pred.unsqueeze(1)
 
         pred_reconstruction = self.reconstruction_module(init_reconstruction_pred)
 

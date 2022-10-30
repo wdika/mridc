@@ -8,7 +8,7 @@ from omegaconf import OmegaConf
 
 from mridc.collections.common.parts import utils
 from mridc.collections.reconstruction.data.subsample import RandomMaskFunc
-from mridc.collections.segmentation.models.segnet import SegNet
+from mridc.collections.segmentation.models.idslr_unet import IDSLRUNET
 from tests.collections.reconstruction.fastmri.conftest import create_input
 
 
@@ -16,12 +16,12 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
     "shape, cfg, center_fractions, accelerations, dimensionality, segmentation_classes, trainer",
     [
         (
-            [1, 15, 32, 16, 2],
+            [1, 3, 32, 16, 2],
             {
                 "use_reconstruction_module": True,
-                "input_channels": 30,
-                "reconstruction_module_output_channels": 30,
-                "segmentation_module_output_channels": 3,
+                "input_channels": 6,
+                "reconstruction_module_output_channels": 6,
+                "segmentation_module_output_channels": 4,
                 "channels": 32,
                 "num_pools": 4,
                 "padding_size": 11,
@@ -29,12 +29,7 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "normalize": True,
                 "padding": True,
                 "norm_groups": 2,
-                "num_cascades": 7,
-                "segmentation_final_layer_conv_dim": 2,
-                "segmentation_final_layer_kernel_size": 3,
-                "segmentation_final_layer_dilation": 1,
-                "segmentation_final_layer_bias": False,
-                "segmentation_final_layer_nonlinear": "relu",
+                "num_iters": 5,
                 "reconstruction_loss_fn": "l1",
                 "segmentation_loss_fn": "dice",
                 "dice_loss_include_background": False,
@@ -60,7 +55,7 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
             [0.08],
             [4],
             2,
-            3,
+            4,
             {
                 "strategy": "ddp",
                 "accelerator": "cpu",
@@ -88,12 +83,7 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "normalize": True,
                 "padding": True,
                 "norm_groups": 2,
-                "num_cascades": 2,
-                "segmentation_final_layer_conv_dim": 2,
-                "segmentation_final_layer_kernel_size": 3,
-                "segmentation_final_layer_dilation": 1,
-                "segmentation_final_layer_bias": False,
-                "segmentation_final_layer_nonlinear": "relu",
+                "num_iters": 1,
                 "reconstruction_loss_fn": "l1",
                 "segmentation_loss_fn": "dice",
                 "dice_loss_include_background": False,
@@ -140,19 +130,13 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "input_channels": 6,
                 "reconstruction_module_output_channels": 6,
                 "segmentation_module_output_channels": 4,
-                "channels": 64,
-                "num_pools": 2,
+                "channels": 32,
+                "num_pools": 4,
                 "padding_size": 11,
-                "drop_prob": 0.0,
                 "normalize": True,
                 "padding": True,
                 "norm_groups": 2,
-                "num_cascades": 4,
-                "segmentation_final_layer_conv_dim": 2,
-                "segmentation_final_layer_kernel_size": 3,
-                "segmentation_final_layer_dilation": 1,
-                "segmentation_final_layer_bias": False,
-                "segmentation_final_layer_nonlinear": "relu",
+                "num_iters": 5,
                 "reconstruction_loss_fn": "l1",
                 "segmentation_loss_fn": "dice",
                 "dice_loss_include_background": False,
@@ -194,9 +178,10 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
         ),
     ],
 )
-def test_segnet(shape, cfg, center_fractions, accelerations, dimensionality, segmentation_classes, trainer):
+def test_idslrunet(shape, cfg, center_fractions, accelerations, dimensionality, segmentation_classes, trainer):
     """
-    Test the Segmentation Network MRI with different parameters.
+    Test Image domain Deep Structured Low-Rank network for Joint Reconstruction & Segmentation using a UNet \
+    (and not only the decoder part) as segmentation model, with different parameters.
 
     Parameters
     ----------
@@ -240,10 +225,10 @@ def test_segnet(shape, cfg, center_fractions, accelerations, dimensionality, seg
     trainer = OmegaConf.create(OmegaConf.to_container(trainer, resolve=True))
     trainer = pl.Trainer(**trainer)
 
-    segnet = SegNet(cfg, trainer=trainer)
+    idslrunet = IDSLRUNET(cfg, trainer=trainer)
 
     with torch.no_grad():
-        pred_reconstruction, pred_segmentation = segnet.forward(
+        pred_reconstruction, pred_segmentation = idslrunet.forward(
             output,
             output,
             mask,

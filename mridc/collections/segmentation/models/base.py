@@ -945,6 +945,7 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             sense_root=cfg.get("sense_path"),
             mask_root=cfg.get("mask_path"),
             segmentations_root=cfg.get("segmentations_path"),
+            initial_predictions_root=cfg.get("initial_predictions_path"),
             sample_rate=cfg.get("sample_rate", 1.0),
             volume_sample_rate=cfg.get("volume_sample_rate", None),
             use_dataset_cache=cfg.get("use_dataset_cache", None),

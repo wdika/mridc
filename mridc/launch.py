@@ -24,6 +24,7 @@ from mridc.collections.reconstruction.models.xpdnet import XPDNet
 from mridc.collections.reconstruction.models.zf import ZF
 from mridc.collections.segmentation.models.attention_unet import SegmentationAttentionUNet
 from mridc.collections.segmentation.models.idslr import IDSLR
+from mridc.collections.segmentation.models.idslr_unet import IDSLRUNET
 from mridc.collections.segmentation.models.jrscirim import JRSCIRIM
 from mridc.collections.segmentation.models.lambda_unet import SegmentationLambdaUNet
 from mridc.collections.segmentation.models.recseg_unet import RecSegUNet
@@ -65,6 +66,8 @@ def main(cfg: DictConfig) -> None:
         model = VarNet(cfg.model, trainer=trainer)
     elif model_name == "IDSLR":
         model = IDSLR(cfg.model, trainer=trainer)
+    elif model_name == "IDSLRUNET":
+        model = IDSLRUNET(cfg.model, trainer=trainer)
     elif model_name == "JOINTICNET":
         model = JointICNet(cfg.model, trainer=trainer)
     elif model_name == "JRSCIRIM":

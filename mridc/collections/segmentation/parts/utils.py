@@ -6,7 +6,6 @@ from typing import Optional, Union
 import numpy as np
 import torch
 
-
 # Taken and adjusted from:
 # https://github.com/Project-MONAI/MONAI/blob/f407fcce1c32c050f327b26a16b7f7bc8a01f593/monai/transforms/utils.py#L166
 

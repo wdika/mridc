@@ -2,7 +2,7 @@
 __author__ = "Dimitrios Karkalousos"
 
 from abc import ABC
-from typing import Any, Tuple
+from typing import List, Tuple, Union
 
 import torch
 from omegaconf import DictConfig, OmegaConf
@@ -11,16 +11,16 @@ from pytorch_lightning import Trainer
 import mridc.collections.common.parts.fft as fft
 import mridc.collections.common.parts.utils as utils
 import mridc.collections.segmentation.models.base as base_segmentation_models
-import mridc.collections.segmentation.models.idslr_base.idslr_block as idslr_block
 import mridc.core.classes.common as common_classes
+from mridc.collections.segmentation.models.idslr_base import idslr_block
 
 __all__ = ["IDSLR"]
 
 
 class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel, ABC):
     """
-    Implementation of the Image domain Deep Structured Low-Rank network, as described in, as presented in \
-    Aniket Pramanik, Xiaodong Wu, and Mathews Jacob.
+    Implementation of the Image domain Deep Structured Low-Rank network, as presented in Aniket Pramanik, \
+    Xiaodong Wu, and Mathews Jacob.
 
     References
     ----------
@@ -38,27 +38,23 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
-        self.use_reconstruction_module = cfg_dict.get("use_reconstruction_module", True)
-
         self.fft_centered = cfg_dict.get("fft_centered")
         self.fft_normalization = cfg_dict.get("fft_normalization")
         self.spatial_dims = cfg_dict.get("spatial_dims")
         self.coil_dim = cfg_dict.get("coil_dim")
         self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
-        self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
-        self.dimensionality = cfg_dict.get("dimensionality", 2)
-        if self.dimensionality != 2:
-            raise NotImplementedError(f"Currently only 2D is supported for segmentation, got {self.dimensionality}D.")
-
         self.input_channels = cfg_dict.get("input_channels", 2)
+        if self.input_channels == 0:
+            raise ValueError("Segmentation module input channels cannot be 0.")
         reconstruction_out_chans = cfg_dict.get("reconstruction_module_output_channels", 2)
-        segmentation_out_chans = cfg_dict.get("segmentation_module_output_channels", 1)
+        self.segmentation_out_chans = cfg_dict.get("segmentation_module_output_channels", 1)
         chans = cfg_dict.get("channels", 32)
         num_pools = cfg_dict.get("num_pools", 4)
-        padding_size = cfg_dict.get("padding_size", 11)
         drop_prob = cfg_dict.get("drop_prob", 0.0)
         normalize = cfg_dict.get("normalize", True)
+        padding = cfg_dict.get("padding", True)
+        padding_size = cfg_dict.get("padding_size", 11)
         self.norm_groups = cfg_dict.get("norm_groups", 2)
         self.num_iters = cfg_dict.get("num_iters", 5)
 
@@ -67,8 +63,9 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
             num_pools=num_pools,
             in_chans=self.input_channels,
             drop_prob=drop_prob,
-            padding_size=padding_size,
             normalize=normalize,
+            padding=padding,
+            padding_size=padding_size,
             norm_groups=self.norm_groups,
         )
         self.reconstruction_decoder = idslr_block.UnetDecoder(
@@ -76,19 +73,24 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
             num_pools=num_pools,
             out_chans=reconstruction_out_chans,
             drop_prob=drop_prob,
-            padding_size=padding_size,
             normalize=normalize,
+            padding=padding,
+            padding_size=padding_size,
             norm_groups=self.norm_groups,
         )
         self.segmentation_decoder = idslr_block.UnetDecoder(
             chans=chans,
             num_pools=num_pools,
-            out_chans=segmentation_out_chans,
+            out_chans=self.segmentation_out_chans,
             drop_prob=drop_prob,
-            padding_size=padding_size,
             normalize=normalize,
+            padding=padding,
+            padding_size=padding_size,
             norm_groups=self.norm_groups,
         )
+
+        self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
+        self.magnitude_input = cfg_dict.get("magnitude_input", True)
 
         self.dc = idslr_block.DC()
 
@@ -102,13 +104,15 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
         mask: torch.Tensor,
         init_reconstruction_pred: torch.Tensor,
         target_reconstruction: torch.Tensor,
-    ) -> Tuple[Any, Any]:
+        hx: torch.Tensor = None,
+        sigma: float = 1.0,
+    ) -> Tuple[Union[List, torch.Tensor], torch.Tensor]:
         """
         Forward pass of the network.
 
         Parameters
         ----------
-        y: Data.
+        y: Undersampled k-space data.
             torch.Tensor, shape [batch_size, n_echoes, n_coils, n_x, n_y, 2]
         sensitivity_maps: Coil sensitivity maps.
             torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
@@ -118,6 +122,10 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
             torch.Tensor, shape [batch_size, 1, n_x, n_y, 2]
         target_reconstruction: Target reconstruction.
             torch.Tensor, shape [batch_size, 1, n_x, n_y, 2]
+        hx: Hidden state of the RNN.
+            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        sigma: Noise standard deviation.
+            float
 
         Returns
         -------
@@ -127,13 +135,11 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
             torch.Tensor, shape [batch_size, nr_classes, n_x, n_y]
         """
         if self.consecutive_slices > 1:
-            batch, slices = y.shape[0], y.shape[1]
+            batch, slices = y.shape[:2]
             y = y.reshape(y.shape[0] * y.shape[1], *y.shape[2:])  # type: ignore
-            sensitivity_maps = sensitivity_maps.reshape(
-                # type: ignore
-                sensitivity_maps.shape[0] * sensitivity_maps.shape[1],
-                *sensitivity_maps.shape[2:],
-            )
+            sensitivity_maps = sensitivity_maps.reshape(  # type: ignore
+                sensitivity_maps.shape[0] * sensitivity_maps.shape[1], *sensitivity_maps.shape[2:]  # type: ignore
+            )  # type: ignore
             mask = mask.reshape(mask.shape[0] * mask.shape[1], *mask.shape[2:])  # type: ignore
 
         # In case of deviating number of coils, we need to pad up to maximum number of coils == number of input \
@@ -148,34 +154,40 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
 
         y_prediction = y.clone()
         for _ in range(self.num_iters):
-            image_space = fft.ifft2(y_prediction, self.fft_centered, self.fft_normalization, self.spatial_dims)
-            output = self.reconstruction_encoder(image_space)
-            pred_reconstruction, pad_sizes = output[0].copy(), output[2]
-            pred_kspace = fft.fft2(
-                image_space - self.reconstruction_decoder(*output),
-                self.fft_centered,
-                self.fft_normalization,
-                self.spatial_dims,
+            init_reconstruction_pred = fft.ifft2(
+                y_prediction, self.fft_centered, self.fft_normalization, self.spatial_dims
             )
-            y_prediction = self.dc(pred_kspace, y, mask)
-
-        with torch.no_grad():
-            _pred_reconstruction = [
-                torch.nn.functional.group_norm(x, num_groups=self.norm_groups) for x in pred_reconstruction
-            ]
-
-        pred_segmentation = self.segmentation_decoder(_pred_reconstruction, iscomplex=False, pad_sizes=pad_sizes)
-
-        pred_segmentation = torch.abs(pred_segmentation)
-        pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
+            output = self.reconstruction_encoder(init_reconstruction_pred)
+            reconstruction_encoder_prediction, iscomplex, padding_size, _, _ = (
+                output[0].copy(),
+                output[1],
+                output[2],
+                output[3],
+                output[4],
+            )
+            reconstruction_decoder_prediction = self.reconstruction_decoder(*output)
+            reconstruction_decoder_prediction = reconstruction_decoder_prediction + init_reconstruction_pred
+            reconstruction_decoder_prediction_kspace = fft.fft2(
+                reconstruction_decoder_prediction, self.fft_centered, self.fft_normalization, self.spatial_dims
+            )
+            y_prediction = self.dc(reconstruction_decoder_prediction_kspace, y, mask)
 
         pred_reconstruction = self.process_intermediate_pred(
-            y_prediction, sensitivity_maps, target_reconstruction, do_coil_combination=True
+            y_prediction, sensitivity_maps, target_reconstruction, True
         )
 
+        with torch.no_grad():
+            pred_segmentation_input = [
+                torch.nn.functional.group_norm(x, num_groups=self.norm_groups)
+                for x in reconstruction_encoder_prediction
+            ]
+            if self.magnitude_input:
+                pred_segmentation_input = [torch.abs(x) for x in pred_segmentation_input]
+
+        pred_segmentation = self.segmentation_decoder(pred_segmentation_input, iscomplex=False, pad_sizes=padding_size)
+        pred_segmentation = self.process_final_segmentation(pred_segmentation)
+
         if self.consecutive_slices > 1:
-            # get batch size and number of slices from y, because if the reconstruction module is used they will not
-            # be saved before
             pred_reconstruction = pred_reconstruction.view([batch, slices, *pred_reconstruction.shape[1:]])
             pred_segmentation = pred_segmentation.view([batch, slices, *pred_segmentation.shape[1:]])
 
@@ -213,4 +225,16 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
         if target.shape[-1] == 2:
             target = torch.view_as_complex(target)
         _, pred = utils.center_crop_to_smallest(target, pred)
+        return pred
+
+    def process_final_segmentation(self, pred):
+        """Process the final segmentation prediction."""
+        if pred.shape[-1] == 2:
+            pred = torch.view_as_complex(pred)
+        if pred.shape[1] != self.segmentation_out_chans and pred.shape[1] != 2 and pred.dim() == 5:
+            pred = pred.squeeze(1)
+        if pred.shape[1] != self.segmentation_out_chans:
+            pred = pred.permute(0, 3, 1, 2)
+        pred = torch.abs(pred)
+        pred = pred / torch.max(pred)
         return pred

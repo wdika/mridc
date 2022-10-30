@@ -194,6 +194,7 @@ class JRSMRIDataTransforms:
         imspace: np.ndarray,
         sensitivity_map: np.ndarray,
         mask: np.ndarray,
+        initial_prediction: np.ndarray,
         segmentation_labels: np.ndarray,
         attrs: Dict,
         fname: str,
@@ -219,6 +220,7 @@ class JRSMRIDataTransforms:
         imspace: The image space.
         sensitivity_map: The sensitivity map.
         mask: List, sampling mask if exists and brain mask and head mask.
+        initial_prediction: The initial prediction.
         segmentation_labels: The segmentation labels.
         attrs: The attributes.
         fname: The file name.
@@ -234,7 +236,7 @@ class JRSMRIDataTransforms:
             kspace = utils.to_tensor(kspace)
 
             # This condition is necessary in case of auto estimation of sense maps.
-            if sensitivity_map is not None and sensitivity_map.size != 0:
+            if sensitivity_map is not None and sensitivity_map.ndim != 0:
                 sensitivity_map = utils.to_tensor(sensitivity_map)
 
             if isinstance(mask, list):
@@ -242,8 +244,8 @@ class JRSMRIDataTransforms:
             elif mask.ndim != 0:
                 mask = torch.from_numpy(mask)
 
-        if segmentation_labels is not None and segmentation_labels.size != 0:
-            segmentation_labels = torch.from_numpy(segmentation_labels)
+        initial_prediction = torch.from_numpy(initial_prediction)
+        segmentation_labels = torch.from_numpy(segmentation_labels)
 
         if self.complex_data:
             if self.apply_prewhitening:
@@ -315,7 +317,7 @@ class JRSMRIDataTransforms:
                     dim=self.coil_dim,
                 )
             elif self.coil_combination_method.upper() == "SENSE":
-                if sensitivity_map is not None and sensitivity_map.size != 0:
+                if sensitivity_map is not None and sensitivity_map.dim() != 0:
                     target_reconstruction = utils.sense(
                         fft.ifft2(
                             kspace,
@@ -358,7 +360,7 @@ class JRSMRIDataTransforms:
 
             target_reconstruction = utils.center_crop(target_reconstruction, self.crop_size)
 
-            if self.complex_data and sensitivity_map is not None and sensitivity_map.size != 0:
+            if self.complex_data and sensitivity_map is not None and sensitivity_map.dim() != 0:
                 sensitivity_map = (
                     fft.ifft2(
                         utils.complex_center_crop(
@@ -376,6 +378,26 @@ class JRSMRIDataTransforms:
                     )
                     if self.kspace_crop
                     else utils.complex_center_crop(sensitivity_map, self.crop_size)
+                )
+
+            if initial_prediction is not None and initial_prediction.dim() != 0:
+                initial_prediction = (
+                    fft.ifft2(
+                        utils.complex_center_crop(
+                            fft.fft2(
+                                initial_prediction,
+                                centered=self.fft_centered,
+                                normalization=self.fft_normalization,
+                                spatial_dims=self.spatial_dims,
+                            ),
+                            self.crop_size,
+                        ),
+                        centered=self.fft_centered,
+                        normalization=self.fft_normalization,
+                        spatial_dims=self.spatial_dims,
+                    )
+                    if self.kspace_crop
+                    else utils.complex_center_crop(initial_prediction, self.crop_size)
                 )
 
             if segmentation_labels is not None:
@@ -675,7 +697,7 @@ class JRSMRIDataTransforms:
                     kspace = torch.view_as_real(torch.fft.fftn(imspace, dim=list(self.spatial_dims), norm=None))
 
                 if self.max_norm:
-                    if sensitivity_map.size != 0:
+                    if sensitivity_map.dim() != 0:
                         sensitivity_map = sensitivity_map / torch.max(torch.abs(sensitivity_map))
                     target_reconstruction = target_reconstruction / torch.max(torch.abs(target_reconstruction))
 
@@ -685,7 +707,7 @@ class JRSMRIDataTransforms:
                     if (
                         self.coil_combination_method.upper() == "SENSE"
                         and sensitivity_map is not None
-                        and sensitivity_map.size != 0
+                        and sensitivity_map.dim() != 0
                     ):
                         eta = utils.sense(
                             fft.ifft2(
@@ -713,7 +735,7 @@ class JRSMRIDataTransforms:
                 if (
                     self.coil_combination_method.upper() == "SENSE"
                     and sensitivity_map is not None
-                    and sensitivity_map.size != 0
+                    and sensitivity_map.dim() != 0
                 ):
                     initial_prediction_reconstruction = utils.sense(
                         fft.ifft2(
@@ -745,6 +767,9 @@ class JRSMRIDataTransforms:
             initial_prediction_reconstruction = torch.abs(imspace)
             target_reconstruction = torch.empty([])
             acc = 1
+
+        if initial_prediction is not None and initial_prediction.dim() != 0:
+            initial_prediction_reconstruction = torch.abs(initial_prediction)
 
         segmentation_labels = torch.abs(segmentation_labels)
 

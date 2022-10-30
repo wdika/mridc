@@ -2,10 +2,10 @@
 __author__ = "Dimitrios Karkalousos"
 
 import math
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 import torch
-from torch import nn
+from torch import Tensor, nn
 
 import mridc.collections.reconstruction.models.unet_base.unet_block as unet_block
 
@@ -14,17 +14,16 @@ class DC(nn.Module):
     """Data consistency block."""
 
     def __init__(self):
+        """Initialize the IDSLR data consistency block."""
         super().__init__()
         self.dc_weight = nn.Parameter(torch.ones(1))
 
-    def forward(self, kspace, og_kspace, mask=None):
+    def forward(self, prediction_kspace, reference_kspace, mask):
         """Forward pass."""
-        if mask is not None:
-            zero = torch.zeros_like(kspace, device=kspace.device)
-            dc = torch.where(mask.bool(), kspace - og_kspace, zero)
-            dc *= self.dc_weight
-            return kspace - dc
-        return kspace
+        return torch.div(
+            torch.view_as_complex(reference_kspace) + self.dc_weight * torch.view_as_complex(prediction_kspace),
+            mask.squeeze(-1) + torch.complex(self.dc_weight, torch.zeros_like(self.dc_weight)),
+        )
 
 
 class UnetEncoder(nn.Module):
@@ -36,8 +35,9 @@ class UnetEncoder(nn.Module):
         num_pools: int,
         in_chans: int = 2,
         drop_prob: float = 0.0,
-        padding_size: int = 15,
         normalize: bool = True,
+        padding: bool = True,
+        padding_size: int = 15,
         norm_groups: int = 2,
     ):
         """
@@ -51,10 +51,12 @@ class UnetEncoder(nn.Module):
             Number of input channels, by default 2
         drop_prob : float, optional
             Dropout probability, by default 0.0
-        padding_size : int, optional
-            Padding size, by default 15
         normalize : bool, optional
             Whether to normalize the input, by default True
+        padding : bool, optional
+            Whether to pad the input, by default True
+        padding_size : int, optional
+            Padding size, by default 15
         norm_groups : int, optional
             Number of groups for group normalization, by default 2
         """
@@ -64,8 +66,9 @@ class UnetEncoder(nn.Module):
         self.chans = chans
         self.num_pools = num_pools
         self.drop_prob = drop_prob
-        self.padding_size = padding_size
         self.normalize = normalize
+        self.padding = padding
+        self.padding_size = padding_size
         self.norm_groups = norm_groups
 
         self.down_sample_layers = torch.nn.ModuleList([unet_block.ConvBlock(in_chans, chans, drop_prob)])
@@ -109,7 +112,7 @@ class UnetEncoder(nn.Module):
         x = torch.nn.functional.pad(x, w_pad + h_pad)
         return x, (h_pad, w_pad, h_mult, w_mult)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor):
         """Forward pass of the network."""
         iscomplex = False
         if x.shape[-1] == 2:
@@ -121,8 +124,14 @@ class UnetEncoder(nn.Module):
 
         if self.normalize:
             x, mean, std = self.norm(x)
+        else:
+            mean = 1.0
+            std = 1.0
 
-        x, pad_sizes = self.pad(x)
+        if self.padding:
+            x, pad_sizes = self.pad(x)
+        else:
+            pad_sizes = None
 
         stack = []
         output = x
@@ -136,9 +145,7 @@ class UnetEncoder(nn.Module):
         output = self.conv(output)
         stack.append(output)
 
-        if self.normalize:
-            return stack, iscomplex, pad_sizes, mean, std
-        return stack, iscomplex, pad_sizes
+        return stack, iscomplex, pad_sizes, mean, std
 
 
 class UnetDecoder(nn.Module):
@@ -150,8 +157,9 @@ class UnetDecoder(nn.Module):
         num_pools: int,
         out_chans: int = 2,
         drop_prob: float = 0.0,
-        padding_size: int = 15,
         normalize: bool = True,
+        padding: bool = True,
+        padding_size: int = 15,
         norm_groups: int = 2,
     ):
         """
@@ -165,10 +173,12 @@ class UnetDecoder(nn.Module):
             Number of output channels, by default 2
         drop_prob : float, optional
             Dropout probability, by default 0.0
-        padding_size : int, optional
-            Padding size, by default 15
         normalize : bool, optional
             Whether to normalize the input, by default True
+        padding : bool, optional
+            Whether to pad the input, by default True
+        padding_size : int, optional
+            Padding size, by default 15
         norm_groups : int, optional
             Number of groups for group normalization, by default 2
         """
@@ -178,8 +188,9 @@ class UnetDecoder(nn.Module):
         self.chans = chans
         self.num_pools = num_pools
         self.drop_prob = drop_prob
-        self.padding_size = padding_size
         self.normalize = normalize
+        self.padding = padding
+        self.padding_size = padding_size
         self.norm_groups = norm_groups
 
         ch = chans * (2 ** (num_pools - 1))
@@ -238,7 +249,7 @@ class UnetDecoder(nn.Module):
             output = torch.cat([output, downsample_layer], dim=1)
             output = conv(output)
 
-        if pad_sizes is not None:
+        if self.padding:
             output = self.unpad(output, *pad_sizes)
         if self.normalize and mean is not None and std is not None:
             output = self.unnorm(output, mean, std)

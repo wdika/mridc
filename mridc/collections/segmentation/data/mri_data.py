@@ -22,6 +22,7 @@ class JRSMRISliceDataset(Dataset):
         sense_root: Union[str, Path, os.PathLike] = None,
         mask_root: Union[str, Path, os.PathLike] = None,
         segmentations_root: Union[str, Path, os.PathLike] = None,
+        initial_predictions_root: Union[str, Path, os.PathLike] = None,
         sample_rate: Optional[float] = None,
         volume_sample_rate: Optional[float] = None,
         use_dataset_cache: bool = False,
@@ -50,6 +51,8 @@ class JRSMRISliceDataset(Dataset):
             Path to the masks, if are stored separately.
         segmentations_root: str
             Path to the segmentations, if are stored separately.
+        initial_predictions_root: str
+            Path to the initial predictions, if there are any.
         sample_rate: float
             Sample rate of the dataset.
         volume_sample_rate: float
@@ -87,6 +90,7 @@ class JRSMRISliceDataset(Dataset):
         self.sense_root = sense_root
         self.mask_root = mask_root
         self.segmentations_root = segmentations_root
+        self.initial_predictions_root = initial_predictions_root
 
         # set default sampling mode if none given
         if is_none(sample_rate):
@@ -365,9 +369,10 @@ class JRSMRISliceDataset(Dataset):
                 else:
                     mask = np.empty([])
                 imspace = np.empty([])
+
             elif not self.complex_data:
                 if "reconstruction" in hf:
-                    imspace = self.get_consecutive_slices(hf, "reconstruction", dataslice).astype(np.float32)
+                    imspace = self.get_consecutive_slices(hf, "reconstruction", dataslice)
                 else:
                     raise ValueError(
                         "Complex data has not been selected but no reconstruction data found in file. "
@@ -387,6 +392,13 @@ class JRSMRISliceDataset(Dataset):
             else:
                 segmentation_labels = np.empty([])
 
+            if not is_none(self.initial_predictions_root):
+                with h5py.File(Path(self.initial_predictions_root) / fname.name, "r") as pf:  # type: ignore
+                    initial_prediction = self.get_consecutive_slices(pf, "reconstruction", dataslice)
+                    initial_prediction = initial_prediction.squeeze().astype(np.complex64)
+            else:
+                initial_prediction = np.empty([])
+
             attrs = dict(hf.attrs)
             attrs.update(metadata)
 
@@ -396,6 +408,7 @@ class JRSMRISliceDataset(Dataset):
                 imspace,
                 sensitivity_map,
                 mask,
+                initial_prediction,
                 segmentation_labels,
                 attrs,
                 fname.name,
@@ -407,6 +420,7 @@ class JRSMRISliceDataset(Dataset):
                 imspace,
                 sensitivity_map,
                 mask,
+                initial_prediction,
                 segmentation_labels,
                 attrs,
                 fname.name,

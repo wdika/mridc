@@ -104,7 +104,8 @@ class SegmentationAttentionUNet(base_segmentation_models.BaseMRIJointReconstruct
             else:
                 raise ValueError("The input channels must be either 1 or 2. Found: {}".format(self.input_channels))
         else:
-            init_reconstruction_pred = init_reconstruction_pred.unsqueeze(1)
+            if init_reconstruction_pred.dim() == 3:
+                init_reconstruction_pred = init_reconstruction_pred.unsqueeze(1)
 
         with torch.no_grad():
             init_reconstruction_pred = torch.nn.functional.group_norm(init_reconstruction_pred, num_groups=1)
