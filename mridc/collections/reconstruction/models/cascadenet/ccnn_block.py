@@ -129,6 +129,8 @@ class CascadeNetBlock(torch.nn.Module):
 
         eta = self.sens_reduce(pred, sens_maps)
         eta = self.model(eta.squeeze(self.coil_dim).permute(0, 3, 1, 2)).permute(0, 2, 3, 1)
+        if eta.dim() < sens_maps.dim():
+            eta = eta.unsqueeze(1)
         eta = self.sens_expand(eta, sens_maps)
 
         if not self.no_dc:

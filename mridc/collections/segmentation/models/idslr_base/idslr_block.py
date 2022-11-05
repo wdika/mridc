@@ -119,9 +119,6 @@ class UnetEncoder(nn.Module):
             x = self.complex_to_chan_dim(x)
             iscomplex = True
 
-        mean = 1.0
-        std = 1.0
-
         if self.normalize:
             x, mean, std = self.norm(x)
         else:

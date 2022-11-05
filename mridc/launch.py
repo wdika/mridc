@@ -23,14 +23,17 @@ from mridc.collections.reconstruction.models.vsnet import VSNet
 from mridc.collections.reconstruction.models.xpdnet import XPDNet
 from mridc.collections.reconstruction.models.zf import ZF
 from mridc.collections.segmentation.models.attention_unet import SegmentationAttentionUNet
+from mridc.collections.segmentation.models.dynunet import DYNUNet
 from mridc.collections.segmentation.models.idslr import IDSLR
 from mridc.collections.segmentation.models.idslr_unet import IDSLRUNET
 from mridc.collections.segmentation.models.jrscirim import JRSCIRIM
 from mridc.collections.segmentation.models.lambda_unet import SegmentationLambdaUNet
 from mridc.collections.segmentation.models.recseg_unet import RecSegUNet
 from mridc.collections.segmentation.models.segnet import SegNet
+from mridc.collections.segmentation.models.seranet import SERANet
 from mridc.collections.segmentation.models.unet import SegmentationUNet
 from mridc.collections.segmentation.models.unet3d import Segmentation3DUNet
+from mridc.collections.segmentation.models.unetr import SegmentationUNetR
 from mridc.collections.segmentation.models.vnet import SegmentationVNet
 from mridc.core.conf.hydra_runner import hydra_runner
 from mridc.utils import logging
@@ -62,6 +65,8 @@ def main(cfg: DictConfig) -> None:
         model = CRNNet(cfg.model, trainer=trainer)
     elif model_name == "DUNET":
         model = DUNet(cfg.model, trainer=trainer)
+    elif model_name == "DYNUNET":
+        model = DYNUNet(cfg.model, trainer=trainer)
     elif model_name in ("E2EVN", "VN"):
         model = VarNet(cfg.model, trainer=trainer)
     elif model_name == "IDSLR":
@@ -94,12 +99,16 @@ def main(cfg: DictConfig) -> None:
         model = SegmentationLambdaUNet(cfg.model, trainer=trainer)
     elif model_name == "SEGMENTATIONUNET":
         model = SegmentationUNet(cfg.model, trainer=trainer)
+    elif model_name == "SEGMENTATIONUNETR":
+        model = SegmentationUNetR(cfg.model, trainer=trainer)
     elif model_name == "SEGMENTATION3DUNET":
         model = Segmentation3DUNet(cfg.model, trainer=trainer)
     elif model_name == "SEGMENTATIONVNET":
         model = SegmentationVNet(cfg.model, trainer=trainer)
     elif model_name == "SEGNET":
         model = SegNet(cfg.model, trainer=trainer)
+    elif model_name == "SERANET":
+        model = SERANet(cfg.model, trainer=trainer)
     elif model_name == "UNET":
         model = UNet(cfg.model, trainer=trainer)
     elif model_name == "VSNET":
