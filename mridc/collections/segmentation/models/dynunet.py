@@ -8,9 +8,9 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-from mridc.collections.segmentation.models.dynunet_base.dynunet_block import DynUNet
 import mridc.collections.segmentation.models.base as base_segmentation_models
 import mridc.core.classes.common as common_classes
+from mridc.collections.segmentation.models.dynunet_base.dynunet_block import DynUNet
 
 __all__ = ["DYNUNet"]
 
