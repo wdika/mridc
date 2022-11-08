@@ -4,10 +4,15 @@ __author__ = "Dimitrios Karkalousos"
 from abc import ABC
 from typing import Any, Dict, Tuple, Union
 
-try:
-    import bart
-except:
-    pass
+import matplotlib
+matplotlib.use('WebAgg')
+import matplotlib.pyplot as plt
+import numpy as np
+import bart
+# try:
+#     import bart
+# except:
+#     pass
 
 import torch
 from omegaconf import DictConfig, OmegaConf
@@ -100,7 +105,20 @@ class PICS(BaseMRIReconstructionModel, ABC):
         if "cuda" in str(self._device):
             pred = bart.bart(1, f"pics -d0 -g -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
         else:
-            pred = bart.bart(1, f"pics -d0 -S -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
+            print('self.reg_wt = ',self.reg_wt)
+            print('self.num_iters = ', self.num_iters)
+            print('y.shape = ', y.shape)
+            print('sensitivity_maps.shape = ', sensitivity_maps.shape)
+            imspace = np.fft.ifftn(np.transpose(y, (0, 3, 1, 2)), axes=(-2, -1), norm="ortho")
+
+            plt.subplot(1, 2, 1)
+            plt.imshow(np.abs(imspace[0, 0, :, :]), cmap='gray')
+            plt.subplot(1, 2, 2)
+            plt.imshow(np.abs(np.transpose(sensitivity_maps, (0, 3, 1, 2))[0, 0, :, :]), cmap='gray')
+            plt.show()
+            print('it should print img')
+            pred = bart.bart(1, f"pics -R W:7:0:{self.reg_wt} -i {self.num_iters}", y, sensitivity_maps)[0]
+            # pred = bart.bart(1, f"pics -l1 -i {self.num_iters}", y, sensitivity_maps)[0]
         _, pred = center_crop_to_smallest(target, pred)
         return pred
 

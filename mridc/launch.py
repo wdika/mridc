@@ -89,7 +89,7 @@ def main(cfg: DictConfig) -> None:
     if cfg.get("pretrained", None):
         checkpoint = cfg.get("checkpoint", None)
         logging.info(f"Loading pretrained model from {checkpoint}")
-        model.load_state_dict(torch.load(checkpoint)["state_dict"])
+        model.load_state_dict(torch.load(checkpoint, map_location='cpu')["state_dict"])
 
     if cfg.get("mode", None) == "train":
         logging.info("Validating")

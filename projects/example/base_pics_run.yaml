@@ -1,0 +1,68 @@
+pretrained: false
+checkpoint: ???
+mode: test
+
+model:
+  model_name: PICS
+  reg_wt: 0.005
+  num_iters: 60
+  fft_centered: true
+  fft_normalization: ortho
+  spatial_dims:
+    - -2
+    - -1
+  coil_dim: 1
+  pics_centered: true
+  coil_combination_method: SENSE
+  device: cpu
+  use_sens_net: false
+
+  test_ds:
+    data_path: /home/iason/data/3D_FSE_PD_Knees/multicoil_val/
+    dataset_type: FastMRI
+    challenge: multicoil
+    fft_centered: true
+    fft_normalization: ortho
+    spatial_dims:
+      - -2
+      - -1
+    coil_dim: 1
+    mask_args:
+      type: gaussian2d
+      accelerations:
+        - 10
+      center_fractions:
+        - 0.7
+      shift_mask: false
+      scale: 0.02
+      use_seed: false
+    normalize_inputs: false
+    consecutive_slices: 1
+    coil_combination_method: SENSE
+    dimensionality: 2
+    crop_size: None
+    crop_before_masking: true
+    kspace_zero_filling_size: None
+    sample_rate: 0.05
+    batch_size: 1
+    shuffle: false
+    num_workers: 1
+    drop_last: false
+    pin_memory: false
+
+trainer:
+  strategy: ddp
+  gpus: 0
+  num_nodes: 1
+  max_epochs: 20
+  precision: 16
+  enable_checkpointing: false
+  logger: false
+  log_every_n_steps: 50
+  check_val_every_n_epoch: -1
+  max_steps: -1
+
+exp_manager:
+  name: projects/example/reconstructions/
+  create_tensorboard_logger: true
+  files_to_copy: [ ]
