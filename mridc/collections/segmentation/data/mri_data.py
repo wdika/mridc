@@ -258,23 +258,23 @@ class JRSMRISliceDataset(Dataset):
         removed_classes = 0
 
         # check if we need to remove any classes, e.g. background
-        if self.segmentation_classes_to_remove is not None:
+        if not is_none(self.segmentation_classes_to_remove):
             segmentation_labels = np.stack(
                 [
                     segmentation_labels[..., x]
                     for x in range(segmentation_labels.shape[-1])
-                    if x not in self.segmentation_classes_to_remove
+                    if x not in self.segmentation_classes_to_remove  # type: ignore
                 ],
                 axis=-1,
             )
-            removed_classes += len(self.segmentation_classes_to_remove)
+            removed_classes += len(self.segmentation_classes_to_remove)  # type: ignore
 
         # check if we need to combine any classes, e.g. White Matter and Gray Matter
-        if self.segmentation_classes_to_combine is not None:
+        if not is_none(self.segmentation_classes_to_combine):
             segmentation_labels_to_combine = []
             segmentation_labels_to_keep = []
             for x in range(segmentation_labels.shape[-1]):
-                if x in self.segmentation_classes_to_combine:
+                if x in self.segmentation_classes_to_combine:  # type: ignore
                     segmentation_labels_to_combine.append(segmentation_labels[..., x - removed_classes])
                 else:
                     segmentation_labels_to_keep.append(segmentation_labels[..., x - removed_classes])
@@ -301,11 +301,11 @@ class JRSMRISliceDataset(Dataset):
                     axis=-1,
                 )
 
-            removed_classes += len(self.segmentation_classes_to_combine) - 1
+            removed_classes += len(self.segmentation_classes_to_combine) - 1  # type: ignore
 
         # check if we need to separate any classes, e.g. pathologies from White Matter and Gray Matter
-        if self.segmentation_classes_to_separate is not None:
-            for x in self.segmentation_classes_to_separate:
+        if not is_none(self.segmentation_classes_to_separate):
+            for x in self.segmentation_classes_to_separate:  # type: ignore
                 segmentation_class_to_separate = segmentation_labels[..., x - removed_classes]
                 for i in range(segmentation_labels.shape[-1]):
                     if i == x - removed_classes:
@@ -319,10 +319,16 @@ class JRSMRISliceDataset(Dataset):
         )
 
         # # threshold probability maps if any threshold is given
-        if self.segmentation_classes_thresholds is not None:
-            for i, voxel_thres in enumerate(self.segmentation_classes_thresholds):
+        if not is_none(self.segmentation_classes_thresholds):
+            for i, voxel_thres in enumerate(self.segmentation_classes_thresholds):  # type: ignore
                 if not is_none(voxel_thres):
                     segmentation_labels[..., i] = segmentation_labels[..., i] > float(voxel_thres)
+
+        if self.consecutive_slices == 1:
+            if segmentation_labels.shape[1] == self.segmentation_classes:
+                segmentation_labels = np.moveaxis(segmentation_labels, 1, 0)
+            elif segmentation_labels.shape[2] == self.segmentation_classes:
+                segmentation_labels = np.moveaxis(segmentation_labels, 2, 0)
 
         return segmentation_labels
 

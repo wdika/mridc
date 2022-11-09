@@ -92,9 +92,7 @@ class SegmentationLambdaUNet(base_segmentation_models.BaseMRIJointReconstruction
             init_reconstruction_pred = init_reconstruction_pred.reshape(  # type: ignore
                 # type: ignore
                 init_reconstruction_pred.shape[0] * init_reconstruction_pred.shape[1],
-                init_reconstruction_pred.shape[2],  # type: ignore
-                init_reconstruction_pred.shape[3],  # type: ignore
-                init_reconstruction_pred.shape[4],  # type: ignore
+                *init_reconstruction_pred.shape[2:],  # type: ignore
             )
 
         if init_reconstruction_pred.shape[-1] == 2:  # type: ignore

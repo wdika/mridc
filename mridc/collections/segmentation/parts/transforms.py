@@ -468,6 +468,9 @@ class JRSMRIDataTransforms:
                 if isinstance(mask, np.ndarray):
                     mask = torch.from_numpy(mask).unsqueeze(0).unsqueeze(-1)
 
+                if mask.dim() == 2:
+                    mask = mask.unsqueeze(0).unsqueeze(-1)
+
                 if self.shift_mask:
                     mask = torch.fft.fftshift(mask, dim=(self.spatial_dims[0] - 1, self.spatial_dims[1] - 1))
 
@@ -765,7 +768,13 @@ class JRSMRIDataTransforms:
             sensitivity_map = torch.empty([])
             masked_kspace = torch.empty([])
             initial_prediction_reconstruction = torch.abs(imspace)
-            target_reconstruction = torch.empty([])
+
+            if target_reconstruction is None or target_reconstruction.dim() < 2:
+                target_reconstruction = torch.empty([])
+            else:
+                if self.max_norm:
+                    target_reconstruction = target_reconstruction / torch.max(torch.abs(target_reconstruction))
+
             acc = 1
 
         if initial_prediction is not None and initial_prediction.dim() != 0:

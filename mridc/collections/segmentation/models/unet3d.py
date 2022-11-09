@@ -107,9 +107,13 @@ class Segmentation3DUNet(base_segmentation_models.BaseMRIJointReconstructionSegm
         else:
             if init_reconstruction_pred.dim() == 3:
                 init_reconstruction_pred = init_reconstruction_pred.unsqueeze(1)
+            if init_reconstruction_pred.dim() == 4:
+                init_reconstruction_pred = init_reconstruction_pred.unsqueeze(1)
 
         with torch.no_grad():
-            init_reconstruction_pred = torch.nn.functional.group_norm(init_reconstruction_pred, num_groups=1)
+            init_reconstruction_pred = torch.nn.functional.group_norm(
+                init_reconstruction_pred, num_groups=self.input_channels
+            )
 
         pred_segmentation = self.segmentation_module(init_reconstruction_pred).permute(0, 2, 1, 3, 4)
 

@@ -7,9 +7,10 @@ from typing import Any, List, Union
 import numpy as np
 import torch
 from runstats import Statistics
+from scipy.ndimage import _ni_support
+from scipy.ndimage.morphology import binary_erosion, distance_transform_edt, generate_binary_structure
 from scipy.spatial.distance import directed_hausdorff
 from torch import Tensor
-from torchmetrics import F1Score
 from torchmetrics import functional as F
 
 from mridc.collections.segmentation.losses import Dice
@@ -237,6 +238,20 @@ def hausdorff_distance_metric(gt: torch.Tensor, pred: torch.Tensor, batched: boo
     )
 
 
+def hausdorff_distance_95_metric(gt: torch.Tensor, pred: torch.Tensor, batched: bool = True) -> float:
+    """Compute 95th percentile of the  Hausdorff Distance"""
+    if batched:
+        hd = []
+        for sl in range(gt.shape[0]):
+            hd1 = directed_hausdorff(gt[sl].argmax(0).numpy(), pred[sl].argmax(0).numpy())[0]
+            hd2 = directed_hausdorff(pred[sl].argmax(0).numpy(), gt[sl].argmax(0).numpy())[0]
+            hd.append(np.percentile(np.hstack((hd1, hd2)), 95))
+        return sum(hd) / len(hd)
+    hd1 = directed_hausdorff(gt.argmax(0).numpy(), pred.argmax(0).numpy())[0]
+    hd2 = directed_hausdorff(pred.argmax(0).numpy(), gt.argmax(0).numpy())[0]
+    return np.percentile(np.hstack((hd1, hd2)), 95)
+
+
 def iou_metric(
     gt: torch.Tensor,
     pred: torch.Tensor,
@@ -341,6 +356,53 @@ def recall_metric(
     )
     recall_score, _ = do_metric_reduction(recall_score, reduction=reduction)  # type: ignore
     return recall_score.item()
+
+
+def asd(reference, result, voxelspacing=None, connectivity=1):
+    """Compute Average Symmetric Surface Distance (ASD) between a binary object and its reference."""
+    sd1 = np.mean(__surface_distances(result, reference, voxelspacing, connectivity))
+    sd2 = np.mean(__surface_distances(reference, result, voxelspacing, connectivity))
+    return (sd1 + sd2) / 2.0
+
+
+def __surface_distances(result, reference, voxelspacing=None, connectivity=1):
+    """
+    The distances between the surface voxel of binary objects in result and their nearest partner surface voxel of a
+    binary object in reference.
+
+    Taken from: https://github.com/loli/medpy/blob/master/medpy/metric/binary.py#L458
+    """
+    result = result.numpy()
+    reference = reference.numpy()
+
+    result = np.atleast_1d(result.astype(np.bool))
+    reference = np.atleast_1d(reference.astype(np.bool))
+    if voxelspacing is not None:
+        voxelspacing = _ni_support._normalize_sequence(voxelspacing, result.ndim)
+        voxelspacing = np.asarray(voxelspacing, dtype=np.float64)
+        if not voxelspacing.flags.contiguous:
+            voxelspacing = voxelspacing.copy()
+
+    # binary structure
+    footprint = generate_binary_structure(result.ndim, connectivity)
+
+    # test for emptiness
+    if 0 == np.count_nonzero(result):
+        raise RuntimeError("The first supplied array does not contain any binary object.")
+    if 0 == np.count_nonzero(reference):
+        raise RuntimeError("The second supplied array does not contain any binary object.")
+
+    # extract only 1-pixel border line of objects
+    result_border = result ^ binary_erosion(result, structure=footprint, iterations=1)
+    reference_border = reference ^ binary_erosion(reference, structure=footprint, iterations=1)
+
+    # compute average surface distance
+    # Note: scipys distance transform is calculated only inside the borders of the foreground objects,
+    # therefore the input has to be reversed
+    dt = distance_transform_edt(~reference_border, sampling=voxelspacing)
+    sds = dt[result_border]
+
+    return sds
 
 
 class Metrics:

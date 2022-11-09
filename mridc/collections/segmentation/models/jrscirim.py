@@ -41,6 +41,7 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
         self.reconstruction_module_time_steps = cfg_dict.get("reconstruction_module_time_steps")
         self.reconstruction_module_num_cascades = cfg_dict.get("reconstruction_module_num_cascades")
         self.reconstruction_module_accumulate_estimates = cfg_dict.get("reconstruction_module_accumulate_estimates")
+        conv_dim = cfg_dict.get("reconstruction_module_conv_dim")
         reconstruction_module_params = {
             "num_cascades": self.reconstruction_module_num_cascades,
             "time_steps": self.reconstruction_module_time_steps,
@@ -57,7 +58,7 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
             "recurrent_dilations": cfg_dict.get("reconstruction_module_recurrent_dilations"),
             "recurrent_bias": cfg_dict.get("reconstruction_module_recurrent_bias"),
             "depth": cfg_dict.get("reconstruction_module_depth"),
-            "conv_dim": cfg_dict.get("reconstruction_module_conv_dim"),
+            "conv_dim": conv_dim,
             "pretrained": cfg_dict.get("pretrained"),
             "accumulate_estimates": self.reconstruction_module_accumulate_estimates,
         }
@@ -72,6 +73,7 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
             "temporal_kernel": cfg_dict.get("segmentation_module_temporal_kernel", 1),
             "activation": cfg_dict.get("segmentation_module_activation", "elu"),
             "bias": cfg_dict.get("segmentation_module_bias", False),
+            "conv_dim": conv_dim,
         }
 
         self.coil_dim = cfg_dict.get("coil_dim", 1)
@@ -95,6 +97,13 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
                 for _ in range(self.jrs_cascades)
             ]
         )
+
+        self.task_adaption_type = cfg_dict.get("task_adaption_type", "joint")
+        if self.task_adaption_type not in ("end-to-end", "joint"):
+            raise ValueError(
+                f"Task adaption type '{self.task_adaption_type}' not supported. "
+                "It must be either 'end-to-end' or 'joint'."
+            )
 
     @common_classes.typecheck()
     def forward(
@@ -148,16 +157,18 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
             pred_reconstructions.append(pred_reconstruction)
             init_reconstruction_pred = pred_reconstruction[-1][-1]
 
-            hidden_states = [
-                torch.cat(
-                    [torch.abs(init_reconstruction_pred.unsqueeze(self.coil_dim) * pred_segmentation)]
-                    * (f // self.segmentation_module_output_channels),
-                    dim=self.coil_dim,
-                )
-                for f in self.reconstruction_module_recurrent_filters
-                if f != 0
-            ]
-            hx = [hx[i] + hidden_states[i] for i in range(len(hx))]
+            if self.task_adaption_type == "joint":
+                hidden_states = [
+                    torch.cat(
+                        [torch.abs(init_reconstruction_pred.unsqueeze(self.coil_dim) * pred_segmentation)]
+                        * (f // self.segmentation_module_output_channels),
+                        dim=self.coil_dim,
+                    )
+                    for f in self.reconstruction_module_recurrent_filters
+                    if f != 0
+                ]
+                hx = [hx[i] + hidden_states[i] for i in range(len(hx))]
+
             init_reconstruction_pred = torch.view_as_real(init_reconstruction_pred)
 
         return pred_reconstructions, pred_segmentation

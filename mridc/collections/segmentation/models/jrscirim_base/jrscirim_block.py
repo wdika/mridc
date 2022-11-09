@@ -17,6 +17,8 @@ import mridc.collections.segmentation.models.vnet_base.vnet_block as vnet_block
 
 __all__ = ["JRSCIRIMBlock"]
 
+from mridc.collections.reconstruction.models.rim.conv_layers import ConvNonlinear
+
 
 class JRSCIRIMBlock(torch.nn.Module):
     """
@@ -169,6 +171,18 @@ class JRSCIRIMBlock(torch.nn.Module):
                 act=self.segmentation_module_params["activation"],
                 drop_prob=self.segmentation_module_params["dropout"],
                 bias=self.segmentation_module_params["bias"],
+            )
+        elif segmentation_module.lower() == "convlayer":
+            segmentation_module = torch.nn.Sequential(
+                ConvNonlinear(
+                    self.input_channels,
+                    self.segmentation_module_output_channels,
+                    conv_dim=self.segmentation_module_params["conv_dim"],
+                    kernel_size=3,
+                    dilation=1,
+                    bias=False,
+                    nonlinear=None,
+                )
             )
         else:
             raise ValueError(f"Segmentation module {segmentation_module} not implemented.")
