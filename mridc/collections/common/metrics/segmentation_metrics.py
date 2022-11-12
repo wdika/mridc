@@ -7,8 +7,7 @@ from typing import Any, List, Union
 import numpy as np
 import torch
 from runstats import Statistics
-from scipy.ndimage import _ni_support
-from scipy.ndimage.morphology import binary_erosion, distance_transform_edt, generate_binary_structure
+from scipy.ndimage import _ni_support, binary_erosion, distance_transform_edt, generate_binary_structure
 from scipy.spatial.distance import directed_hausdorff
 from torch import Tensor
 from torchmetrics import functional as F
@@ -177,7 +176,7 @@ def f1_per_class_metric(
     average: str = "none",
     mdmc_average: str = "samplewise",
     threshold: float = 0.0,
-) -> list[Any]:
+) -> List[Any]:
     """
     Compute F1 Score per Class
 
