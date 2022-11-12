@@ -115,8 +115,22 @@ class KIKINet(base_models.BaseMRIReconstructionModel, ABC):
         self.image_model_list = torch.nn.ModuleList([image_model] * self.num_iter)
         self.kspace_model_list = torch.nn.ModuleList([crossdomain.MultiCoil(kspace_model, coil_dim=1)] * self.num_iter)
 
-        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
+        if cfg_dict.get("train_loss_fn") == "ssim":
+            self.train_loss_fn = losses.SSIMLoss()
+        elif cfg_dict.get("train_loss_fn") == "l1":
+            self.train_loss_fn = L1Loss()
+        elif cfg_dict.get("train_loss_fn") == "mse":
+            self.train_loss_fn = torch.nn.MSELoss()
+        else:
+            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("train_loss_fn")))
+        if cfg_dict.get("eval_loss_fn") == "ssim":
+            self.eval_loss_fn = losses.SSIMLoss()
+        elif cfg_dict.get("eval_loss_fn") == "l1":
+            self.eval_loss_fn = L1Loss()
+        elif cfg_dict.get("eval_loss_fn") == "mse":
+            self.eval_loss_fn = torch.nn.MSELoss()
+        else:
+            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("eval_loss_fn")))
 
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
         self.accumulate_estimates = False

@@ -92,8 +92,22 @@ class CIRIM(base_models.BaseMRIReconstructionModel, ABC):
             std_init_range = 1 / self.recurrent_filters[0] ** 0.5
             self.cirim.apply(lambda module: rnn_utils.rnn_weights_init(module, std_init_range))
 
-        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
+        if cfg_dict.get("train_loss_fn") == "ssim":
+            self.train_loss_fn = losses.SSIMLoss()
+        elif cfg_dict.get("train_loss_fn") == "l1":
+            self.train_loss_fn = L1Loss()
+        elif cfg_dict.get("train_loss_fn") == "mse":
+            self.train_loss_fn = torch.nn.MSELoss()
+        else:
+            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("train_loss_fn")))
+        if cfg_dict.get("eval_loss_fn") == "ssim":
+            self.eval_loss_fn = losses.SSIMLoss()
+        elif cfg_dict.get("eval_loss_fn") == "l1":
+            self.eval_loss_fn = L1Loss()
+        elif cfg_dict.get("eval_loss_fn") == "mse":
+            self.eval_loss_fn = torch.nn.MSELoss()
+        else:
+            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("eval_loss_fn")))
 
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
         self.accumulate_estimates = True

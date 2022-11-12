@@ -213,15 +213,51 @@ class SegNet(base_segmentation_models.BaseMRIJointReconstructionSegmentationMode
         )
 
         pred_segmentation = self.segmentation_final_layer(torch.cat(pred_segmentations, dim=1))
-        pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
+        # pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
+        pred_segmentations.append(pred_segmentation)
+        pred_segmentations = [x / torch.max(x) for x in pred_segmentations]
 
         if self.consecutive_slices > 1:
             # get batch size and number of slices from y, because if the reconstruction module is used they will not
             # be saved before
             pred_reconstruction = pred_reconstruction.view([batch, slices, *pred_reconstruction.shape[1:]])
-            pred_segmentation = pred_segmentation.view([batch, slices, *pred_segmentation.shape[1:]])
+            # pred_segmentation = pred_segmentation.view([batch, slices, *pred_segmentation.shape[1:]])
+            pred_segmentations = [x.view([batch, slices, *x.shape[1:]]) for x in pred_segmentations]
 
-        return pred_reconstruction, pred_segmentation
+        return pred_reconstruction, pred_segmentations
+
+    def process_segmentation_loss(self, target, pred):
+        """
+        Processes the segmentation loss according to the paper.
+
+        Parameters
+        ----------
+        target: Target data.
+            torch.Tensor, shape [batch_size, nr_classes, n_x, n_y]
+        pred: Final prediction.
+            torch.Tensor, shape [batch_size, nr_classes, n_x, n_y]
+        """
+        loss_dict = {"cross_entropy_loss": 0.0, "dice_loss": 0.0}
+        cross_entropy_loss = []
+        dice_loss = []
+        for i in range(len(pred)):
+            if self.segmentation_loss_fn["cross_entropy"] is not None:
+                cross_entropy_loss.append(
+                    self.segmentation_loss_fn["cross_entropy"].cpu()(
+                        target.argmax(1).detach().cpu(), pred[i].detach().cpu()
+                    )
+                )
+            if self.segmentation_loss_fn["dice"] is not None:
+                _, loss_dice = self.segmentation_loss_fn["dice"](target, pred[i])
+                dice_loss.append(loss_dice)
+        if self.segmentation_loss_fn["cross_entropy"] is not None:
+            loss_dict["cross_entropy_loss"] = (
+                torch.stack(cross_entropy_loss).mean() * self.cross_entropy_loss_weighting_factor
+            )
+        if self.segmentation_loss_fn["dice"] is not None:
+            loss_dict["dice_loss"] = torch.stack(dice_loss).mean() * self.dice_loss_weighting_factor
+        loss_dict["segmentation_loss"] = loss_dict["cross_entropy_loss"] + loss_dict["dice_loss"]
+        return loss_dict
 
     def process_intermediate_pred(self, pred, sensitivity_maps, target, do_coil_combination=False):
         """

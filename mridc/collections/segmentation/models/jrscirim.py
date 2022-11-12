@@ -77,6 +77,7 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
         }
 
         self.coil_dim = cfg_dict.get("coil_dim", 1)
+        self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
 
         self.jrs_cascades = cfg_dict.get("joint_reconstruction_segmentation_module_cascades", 1)
         self.jrs_module = torch.nn.ModuleList(
@@ -91,7 +92,7 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
                     spatial_dims=cfg_dict.get("spatial_dims", (-2, -1)),
                     coil_dim=self.coil_dim,
                     dimensionality=cfg_dict.get("dimensionality", 2),
-                    consecutive_slices=cfg_dict.get("consecutive_slices", 1),
+                    consecutive_slices=self.consecutive_slices,
                     coil_combination_method=cfg_dict.get("coil_combination_method", "SENSE"),
                 )
                 for _ in range(self.jrs_cascades)
@@ -167,6 +168,20 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
                     for f in self.reconstruction_module_recurrent_filters
                     if f != 0
                 ]
+
+                if self.consecutive_slices > 1:
+                    hx = [x.unsqueeze(1) for x in hx]
+
+                # Check if the concatenated hidden states are the same size as the hidden state of the RNN
+                if hidden_states[0].shape[self.coil_dim] != hx[0].shape[self.coil_dim]:
+                    hidden_states = [
+                        torch.cat(
+                            [hs, torch.zeros_like(hx[0][:, 0, :, :]).unsqueeze(self.coil_dim)], dim=self.coil_dim
+                        )
+                        for hs in hidden_states
+                        for _ in range(hx[0].shape[1] - hidden_states[0].shape[1])
+                    ]
+
                 hx = [hx[i] + hidden_states[i] for i in range(len(hx))]
 
             init_reconstruction_pred = torch.view_as_real(init_reconstruction_pred)

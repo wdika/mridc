@@ -108,8 +108,22 @@ class RecurrentVarNet(base_models.BaseMRIReconstructionModel, ABC):
         if not cfg_dict.get("pretrained", False):
             self.block_list.apply(lambda module: rnn_utils.rnn_weights_init(module, std_init_range))
 
-        self.train_loss_fn = losses.SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = losses.SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
+        if cfg_dict.get("train_loss_fn") == "ssim":
+            self.train_loss_fn = losses.SSIMLoss()
+        elif cfg_dict.get("train_loss_fn") == "l1":
+            self.train_loss_fn = L1Loss()
+        elif cfg_dict.get("train_loss_fn") == "mse":
+            self.train_loss_fn = torch.nn.MSELoss()
+        else:
+            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("train_loss_fn")))
+        if cfg_dict.get("eval_loss_fn") == "ssim":
+            self.eval_loss_fn = losses.SSIMLoss()
+        elif cfg_dict.get("eval_loss_fn") == "l1":
+            self.eval_loss_fn = L1Loss()
+        elif cfg_dict.get("eval_loss_fn") == "mse":
+            self.eval_loss_fn = torch.nn.MSELoss()
+        else:
+            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("eval_loss_fn")))
 
         self.accumulate_estimates = False
 

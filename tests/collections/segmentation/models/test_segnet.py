@@ -257,6 +257,9 @@ def test_segnet(shape, cfg, center_fractions, accelerations, dimensionality, seg
     if isinstance(pred_reconstruction, list):
         pred_reconstruction = pred_reconstruction[-1]
 
+    if isinstance(pred_segmentation, list):
+        pred_segmentation = pred_segmentation[-1]
+
     if dimensionality == 3 or consecutive_slices > 1:
         x = x.reshape([x.shape[0] * x.shape[1], x.shape[2], x.shape[3], x.shape[4], x.shape[5]])
     if x.shape[-1] == 2:

@@ -12,7 +12,7 @@ import numpy as np
 import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
-from torch.nn import L1Loss
+from torch.nn import L1Loss, MSELoss
 from torch.utils.data import DataLoader
 
 import mridc.collections.common.losses as reconstruction_losses
@@ -27,8 +27,6 @@ import mridc.collections.segmentation.parts.transforms as transforms
 import mridc.utils.model_utils as model_utils
 
 __all__ = ["BaseMRIJointReconstructionSegmentationModel"]
-
-from mridc.collections.segmentation.parts.utils import rescale_intensities
 
 
 class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.BaseMRIReconstructionModel, ABC):
@@ -132,6 +130,9 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             elif reconstruction_loss_fn == "l1":
                 self.train_loss_fn = L1Loss()
                 self.val_loss_fn = L1Loss()
+            elif reconstruction_loss_fn == "mse":
+                self.train_loss_fn = MSELoss()
+                self.val_loss_fn = MSELoss()
             else:
                 raise ValueError(
                     f"Unrecognized reconstruction loss function: {reconstruction_loss_fn}. "
@@ -295,9 +296,9 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             target_segmentation = target_segmentation.reshape(  # type: ignore
                 batch_size * slices, *target_segmentation.shape[2:]  # type: ignore
             )
-            pred_segmentation = pred_segmentation.reshape(
-                batch_size * slices, *pred_segmentation.shape[2:]  # type: ignore
-            )
+            # pred_segmentation = pred_segmentation.reshape(
+            #     batch_size * slices, *pred_segmentation.shape[2:]  # type: ignore
+            # )
         segmentation_loss = self.process_segmentation_loss(target_segmentation, pred_segmentation)["segmentation_loss"]
 
         if self.use_reconstruction_module:
@@ -394,9 +395,9 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             target_segmentation = target_segmentation.reshape(  # type: ignore
                 batch_size * slices, *target_segmentation.shape[2:]  # type: ignore
             )
-            pred_segmentation = pred_segmentation.reshape(
-                batch_size * slices, *pred_segmentation.shape[2:]  # type: ignore
-            )
+            # pred_segmentation = pred_segmentation.reshape(
+            #     batch_size * slices, *pred_segmentation.shape[2:]  # type: ignore
+            # )
             target_reconstruction = target_reconstruction.reshape(  # type: ignore
                 batch_size * slices, *target_reconstruction.shape[2:]  # type: ignore
             )
@@ -407,11 +408,13 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
 
         segmentation_loss = self.process_segmentation_loss(target_segmentation, pred_segmentation)["segmentation_loss"]
 
+        if isinstance(pred_segmentation, list):
+            pred_segmentation = pred_segmentation[-1]
+
         if self.use_reconstruction_module:
             reconstruction_loss = self.process_reconstruction_loss(
                 target_reconstruction, pred_reconstruction, self.val_loss_fn
             )
-
             val_loss = (
                 self.total_segmentation_loss_weight * segmentation_loss
                 + self.total_reconstruction_loss_weight * reconstruction_loss
@@ -562,14 +565,17 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             y, sensitivity_maps, mask, init_reconstruction_pred, target_reconstruction
         )
 
+        if isinstance(pred_segmentation, list):
+            pred_segmentation = pred_segmentation[-1]
+
         if self.consecutive_slices > 1:
             batch_size, slices = target_segmentation.shape[:2]  # type: ignore
             target_segmentation = target_segmentation.reshape(  # type: ignore
                 batch_size * slices, *target_segmentation.shape[2:]  # type: ignore
             )
-            pred_segmentation = pred_segmentation.reshape(
-                batch_size * slices, *pred_segmentation.shape[2:]  # type: ignore
-            )
+            # pred_segmentation = pred_segmentation.reshape(
+            #     batch_size * slices, *pred_segmentation.shape[2:]  # type: ignore
+            # )
             target_reconstruction = target_reconstruction.reshape(  # type: ignore
                 batch_size * slices, *target_reconstruction.shape[2:]  # type: ignore
             )
