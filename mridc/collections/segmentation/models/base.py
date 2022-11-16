@@ -296,9 +296,6 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             target_segmentation = target_segmentation.reshape(  # type: ignore
                 batch_size * slices, *target_segmentation.shape[2:]  # type: ignore
             )
-            # pred_segmentation = pred_segmentation.reshape(
-            #     batch_size * slices, *pred_segmentation.shape[2:]  # type: ignore
-            # )
         segmentation_loss = self.process_segmentation_loss(target_segmentation, pred_segmentation)["segmentation_loss"]
 
         if self.use_reconstruction_module:
@@ -395,9 +392,6 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             target_segmentation = target_segmentation.reshape(  # type: ignore
                 batch_size * slices, *target_segmentation.shape[2:]  # type: ignore
             )
-            # pred_segmentation = pred_segmentation.reshape(
-            #     batch_size * slices, *pred_segmentation.shape[2:]  # type: ignore
-            # )
             target_reconstruction = target_reconstruction.reshape(  # type: ignore
                 batch_size * slices, *target_reconstruction.shape[2:]  # type: ignore
             )
@@ -467,6 +461,7 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
         else:
             val_loss = self.total_segmentation_loss_weight * segmentation_loss
 
+        # normalize for visualization
         if not utils.is_none(self.segmentation_classes_thresholds):
             for class_idx, class_threshold in enumerate(self.segmentation_classes_thresholds):
                 if not utils.is_none(class_threshold):

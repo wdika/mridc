@@ -144,8 +144,6 @@ class JRSMRISliceDataset(Dataset):
 
         # Create random number generator used for consecutive slice selection and set consecutive slice amount
         self.consecutive_slices = consecutive_slices
-        if self.consecutive_slices < 1:
-            raise ValueError("consecutive_slices value is out of range, must be > 0.")
         self.segmentation_classes = segmentation_classes
         self.segmentation_classes_to_remove = segmentation_classes_to_remove
         self.segmentation_classes_to_combine = segmentation_classes_to_combine
@@ -216,7 +214,7 @@ class JRSMRISliceDataset(Dataset):
             return data
 
         num_slices = data.shape[0]
-        if self.consecutive_slices > num_slices:
+        if self.consecutive_slices > num_slices or self.consecutive_slices == -1:
             return np.stack(data, axis=0)
 
         start_slice = dataslice
@@ -407,6 +405,16 @@ class JRSMRISliceDataset(Dataset):
 
             attrs = dict(hf.attrs)
             attrs.update(metadata)
+
+        if sensitivity_map.shape != kspace.shape:
+            if sensitivity_map.ndim == 3:
+                sensitivity_map = np.transpose(sensitivity_map, (2, 0, 1))
+            elif sensitivity_map.ndim == 4:
+                sensitivity_map = np.transpose(sensitivity_map, (0, 3, 1, 2))
+            else:
+                raise ValueError(
+                    f"Sensitivity map has invalid dimensions {sensitivity_map.shape} compared to kspace {kspace.shape}"
+                )
 
         return (
             (

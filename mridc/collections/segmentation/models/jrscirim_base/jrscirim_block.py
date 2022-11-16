@@ -47,6 +47,7 @@ class JRSCIRIMBlock(torch.nn.Module):
         dimensionality: int = 2,
         consecutive_slices: int = 1,
         coil_combination_method: str = "SENSE",
+        normalize_segmentation_output: bool = True,
     ):
         """
         Initialize the JRSCIRIMBlock.
@@ -75,6 +76,8 @@ class JRSCIRIMBlock(torch.nn.Module):
             int, default 1
         coil_combination_method: Coil combination method.
             str, default "SENSE"
+        normalize_segmentation_output: Whether to normalize the segmentation output.
+            bool, default True
         """
         super().__init__()
 
@@ -187,6 +190,8 @@ class JRSCIRIMBlock(torch.nn.Module):
         else:
             raise ValueError(f"Segmentation module {segmentation_module} not implemented.")
         self.segmentation_module = segmentation_module
+
+        self.normalize_segmentation_output = normalize_segmentation_output
 
     def forward(
         self,
@@ -326,7 +331,9 @@ class JRSCIRIMBlock(torch.nn.Module):
         pred_segmentation = self.segmentation_module(_pred_reconstruction)
 
         pred_segmentation = torch.abs(pred_segmentation)
-        pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
+
+        if self.normalize_segmentation_output:
+            pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
 
         if self.consecutive_slices > 1:
             # get batch size and number of slices from y, because if the reconstruction module is used they will

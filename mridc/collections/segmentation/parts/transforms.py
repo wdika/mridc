@@ -245,7 +245,11 @@ class JRSMRIDataTransforms:
                 mask = torch.from_numpy(mask)
 
         initial_prediction = torch.from_numpy(initial_prediction)
-        segmentation_labels = torch.from_numpy(segmentation_labels)
+
+        if segmentation_labels is not None and segmentation_labels.ndim > 1:
+            segmentation_labels = torch.from_numpy(segmentation_labels)
+        else:
+            segmentation_labels = torch.empty([])
 
         if self.complex_data:
             if self.apply_prewhitening:
@@ -344,11 +348,11 @@ class JRSMRIDataTransforms:
 
         # This should be outside the condition because it needs to be returned in the end, even if cropping is off.
         # crop_size = torch.tensor([attrs["recon_size"][0], attrs["recon_size"][1]])
-        crop_size = target_reconstruction.shape[1:]
+        crop_size = target_reconstruction.shape[1:] if target_reconstruction.dim() > 2 else target_reconstruction.shape
         if self.crop_size is not None and self.crop_size not in ("", "None"):
             # Check for smallest size against the target shape.
-            h = min(int(self.crop_size[0]), target_reconstruction.shape[1])
-            w = min(int(self.crop_size[1]), target_reconstruction.shape[2])
+            h = min(int(self.crop_size[0]), target_reconstruction.shape[-2])
+            w = min(int(self.crop_size[1]), target_reconstruction.shape[-1])
 
             # Check for smallest size against the stored recon shape in metadata.
             if crop_size[0] != 0:
@@ -400,7 +404,7 @@ class JRSMRIDataTransforms:
                     else utils.complex_center_crop(initial_prediction, self.crop_size)
                 )
 
-            if segmentation_labels is not None:
+            if segmentation_labels is not None and segmentation_labels.dim() > 1:
                 segmentation_labels = utils.center_crop(segmentation_labels, self.crop_size)
 
         if self.complex_data:

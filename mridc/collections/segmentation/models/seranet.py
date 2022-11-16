@@ -132,6 +132,7 @@ class SERANet(base_segmentation_models.BaseMRIJointReconstructionSegmentationMod
         )
 
         self.magnitude_input = cfg_dict.get("magnitude_input", True)
+        self.normalize_segmentation_output = cfg_dict.get("normalize_segmentation_output", True)
 
         self.reconstruction_module_accumulate_estimates = False
 
@@ -234,7 +235,9 @@ class SERANet(base_segmentation_models.BaseMRIJointReconstructionSegmentationMod
 
         pred_segmentation = self.recurrent_module(pred_reconstruction, segmentation, y, sensitivity_maps, mask)
         pred_segmentation = torch.abs(pred_segmentation)
-        pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
+
+        if self.normalize_segmentation_output:
+            pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
 
         pred_reconstruction = coil_combination(
             pred_reconstruction,

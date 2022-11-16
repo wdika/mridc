@@ -56,6 +56,8 @@ class SegmentationLambdaUNet(base_segmentation_models.BaseMRIJointReconstruction
             num_slices=self.consecutive_slices,
         )
 
+        self.normalize_segmentation_output = cfg_dict.get("normalize_segmentation_output", True)
+
     @common_classes.typecheck()
     def forward(
         self,
@@ -116,7 +118,9 @@ class SegmentationLambdaUNet(base_segmentation_models.BaseMRIJointReconstruction
         pred_segmentation = self.segmentation_module(init_reconstruction_pred)
 
         pred_segmentation = torch.abs(pred_segmentation)
-        pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
+
+        if self.normalize_segmentation_output:
+            pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
 
         if self.consecutive_slices > 1:
             pred_segmentation = pred_segmentation.view(

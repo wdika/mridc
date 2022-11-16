@@ -126,6 +126,7 @@ class SegNet(base_segmentation_models.BaseMRIJointReconstructionSegmentationMode
         )
 
         self.magnitude_input = cfg_dict.get("magnitude_input", True)
+        self.normalize_segmentation_output = cfg_dict.get("normalize_segmentation_output", True)
 
         self.dc = idslr_block.DC()
 
@@ -213,15 +214,15 @@ class SegNet(base_segmentation_models.BaseMRIJointReconstructionSegmentationMode
         )
 
         pred_segmentation = self.segmentation_final_layer(torch.cat(pred_segmentations, dim=1))
-        # pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
         pred_segmentations.append(pred_segmentation)
-        pred_segmentations = [x / torch.max(x) for x in pred_segmentations]
+
+        if self.normalize_segmentation_output:
+            pred_segmentations = [x / torch.max(x) for x in pred_segmentations]
 
         if self.consecutive_slices > 1:
             # get batch size and number of slices from y, because if the reconstruction module is used they will not
             # be saved before
             pred_reconstruction = pred_reconstruction.view([batch, slices, *pred_reconstruction.shape[1:]])
-            # pred_segmentation = pred_segmentation.view([batch, slices, *pred_segmentation.shape[1:]])
             pred_segmentations = [x.view([batch, slices, *x.shape[1:]]) for x in pred_segmentations]
 
         return pred_reconstruction, pred_segmentations

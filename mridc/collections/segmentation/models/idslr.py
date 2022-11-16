@@ -91,6 +91,7 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
 
         self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
         self.magnitude_input = cfg_dict.get("magnitude_input", True)
+        self.normalize_segmentation_output = cfg_dict.get("normalize_segmentation_output", True)
 
         self.dc = idslr_block.DC()
 
@@ -236,5 +237,6 @@ class IDSLR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel
         if pred.shape[1] != self.segmentation_out_chans:
             pred = pred.permute(0, 3, 1, 2)
         pred = torch.abs(pred)
-        pred = pred / torch.max(pred)
+        if self.normalize_segmentation_output:
+            pred = pred / torch.max(pred)
         return pred

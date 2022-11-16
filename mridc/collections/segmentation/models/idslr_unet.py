@@ -90,6 +90,7 @@ class IDSLRUNET(base_segmentation_models.BaseMRIJointReconstructionSegmentationM
 
         self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
         self.magnitude_input = cfg_dict.get("magnitude_input", True)
+        self.normalize_segmentation_output = cfg_dict.get("normalize_segmentation_output", True)
 
         self.dc = idslr_block.DC()
 
@@ -186,7 +187,9 @@ class IDSLRUNET(base_segmentation_models.BaseMRIJointReconstructionSegmentationM
         pred_segmentation = self.segmentation_module(pred_segmentation_input)
 
         pred_segmentation = torch.abs(pred_segmentation)
-        pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
+
+        if self.normalize_segmentation_output:
+            pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
 
         pred_reconstruction = utils.coil_combination(
             pred_reconstruction, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim

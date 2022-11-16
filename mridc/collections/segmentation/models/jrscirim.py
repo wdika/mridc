@@ -94,6 +94,7 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
                     dimensionality=cfg_dict.get("dimensionality", 2),
                     consecutive_slices=self.consecutive_slices,
                     coil_combination_method=cfg_dict.get("coil_combination_method", "SENSE"),
+                    normalize_segmentation_output=cfg_dict.get("normalize_segmentation_output", True),
                 )
                 for _ in range(self.jrs_cascades)
             ]

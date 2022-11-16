@@ -28,15 +28,14 @@ class SERANetDC(nn.Module):
 
     def forward(self, prediction, prev_prediction, reference_kspace, mask):
         """Forward pass."""
-        prediction = fft.fft2(prediction, self.fft_centered, self.fft_normalization, self.spatial_dims)
+        prediction = fft.fft2(prediction.float(), self.fft_centered, self.fft_normalization, self.spatial_dims).to(
+            prediction
+        )
         if prediction.dim() < reference_kspace.dim():
             prediction = prediction.unsqueeze(1)
-        # prediction = ((1 - mask) * prediction + mask * reference_kspace) * self.dc_weight
-
         zero = torch.zeros(1, 1, 1, 1, 1).to(prediction)
         soft_dc = torch.where(mask.bool(), prediction - reference_kspace, zero) * self.dc_weight
         prediction = prev_prediction - soft_dc - prediction
-
         return fft.ifft2(prediction, self.fft_centered, self.fft_normalization, self.spatial_dims)
 
 
@@ -147,7 +146,9 @@ class SERANetReconstructionBlock(torch.nn.Module):
         """
         if self.model_name == "unet":
             reconstruction = block(pred).permute(0, 2, 3, 1)
-            reconstruction = torch.view_as_real(reconstruction[..., 0] + 1j * reconstruction[..., 1])
+            reconstruction = torch.view_as_real(
+                reconstruction[..., 0].float() + 1j * reconstruction[..., 1].float()
+            ).to(reconstruction)
         elif "cascadenet" in self.model_name:
             reconstruction = ref_kspace.clone()
             for cascade in block:

@@ -4,6 +4,8 @@ __author__ = "Dimitrios Karkalousos"
 import torch
 from torch import nn as nn
 
+from mridc.collections.common.parts import is_none
+
 
 class MC_CrossEntropyLoss(nn.Module):
     """Monte Carlo Cross Entropy Loss"""

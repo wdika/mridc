@@ -50,6 +50,7 @@ class SegmentationAttentionUNet(base_segmentation_models.BaseMRIJointReconstruct
 
         self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
         self.magnitude_input = cfg_dict.get("magnitude_input", True)
+        self.normalize_segmentation_output = cfg_dict.get("normalize_segmentation_output", True)
 
     @common_classes.typecheck()
     def forward(
@@ -113,7 +114,9 @@ class SegmentationAttentionUNet(base_segmentation_models.BaseMRIJointReconstruct
         pred_segmentation = self.segmentation_module(init_reconstruction_pred)
 
         pred_segmentation = torch.abs(pred_segmentation)
-        pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
+
+        if self.normalize_segmentation_output:
+            pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
 
         if self.consecutive_slices > 1:
             pred_segmentation = pred_segmentation.view(

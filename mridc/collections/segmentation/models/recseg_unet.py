@@ -70,6 +70,7 @@ class RecSegUNet(base_segmentation_models.BaseMRIJointReconstructionSegmentation
 
         self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
         self.magnitude_input = cfg_dict.get("magnitude_input", True)
+        self.normalize_segmentation_output = cfg_dict.get("normalize_segmentation_output", True)
 
         self.reconstruction_module_accumulate_estimates = False
 
@@ -141,7 +142,9 @@ class RecSegUNet(base_segmentation_models.BaseMRIJointReconstructionSegmentation
         pred_segmentation = self.segmentation_module(_pred_reconstruction)
 
         pred_segmentation = torch.abs(pred_segmentation)
-        pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
+
+        if self.normalize_segmentation_output:
+            pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
 
         pred_reconstruction = pred_reconstruction.squeeze(1)
 
