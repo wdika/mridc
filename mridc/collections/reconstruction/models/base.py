@@ -105,6 +105,8 @@ class BaseMRIReconstructionModel(modelPT.ModelPT, ABC):
         self.ssim_vals: Dict = defaultdict(dict)
         self.psnr_vals: Dict = defaultdict(dict)
 
+        self.log_images = cfg_dict.get("log_images", True)
+
     def process_loss(self, target, pred, _loss_fn, mask=None):
         """
         Processes the loss.
@@ -322,10 +324,12 @@ class BaseMRIReconstructionModel(modelPT.ModelPT, ABC):
         target = torch.abs(target).detach().cpu()
         output = output / output.max()  # type: ignore
         target = target / target.max()  # type: ignore
-        error = torch.abs(target - output)
-        self.log_image(f"{key}/target", target)
-        self.log_image(f"{key}/reconstruction", output)
-        self.log_image(f"{key}/error", error)
+
+        if self.log_images:
+            error = torch.abs(target - output)
+            self.log_image(f"{key}/target", target)
+            self.log_image(f"{key}/reconstruction", output)
+            self.log_image(f"{key}/error", error)
 
         target = target.numpy()  # type: ignore
         output = output.numpy()  # type: ignore
@@ -414,11 +418,11 @@ class BaseMRIReconstructionModel(modelPT.ModelPT, ABC):
         target = torch.abs(target).detach().cpu()
         target = target / target.max()  # type: ignore
 
-        error = torch.abs(target - output)
-
-        self.log_image(f"{key}/target", target)
-        self.log_image(f"{key}/reconstruction", output)
-        self.log_image(f"{key}/error", error)
+        if self.log_images:
+            error = torch.abs(target - output)
+            self.log_image(f"{key}/target", target)
+            self.log_image(f"{key}/reconstruction", output)
+            self.log_image(f"{key}/error", error)
 
         target = target.numpy()  # type: ignore
         output = output.numpy()  # type: ignore

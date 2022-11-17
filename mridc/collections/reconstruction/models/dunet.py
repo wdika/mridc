@@ -30,7 +30,7 @@ class DUNet(base_models.BaseMRIReconstructionModel, ABC):
 
     ..
 
-        Hammernik, K, Schlemper, J, Qin, C, et al. Systematic evaluation of iterative deep neural networks for fast \
+        Hammernik, K, Schlemper, J, Qin, C, et al. Systematic valuation of iterative deep neural networks for fast \
         parallel MRI reconstruction with sensitivity-weighted coil combination. Magn Reson Med. 2021; 86: 1859– 1872. \
          https://doi.org/10.1002/mrm.28827
 
@@ -115,14 +115,14 @@ class DUNet(base_models.BaseMRIReconstructionModel, ABC):
             self.train_loss_fn = torch.nn.MSELoss()
         else:
             raise ValueError("Unknown loss function: {}".format(cfg_dict.get("train_loss_fn")))
-        if cfg_dict.get("eval_loss_fn") == "ssim":
-            self.eval_loss_fn = losses.SSIMLoss()
-        elif cfg_dict.get("eval_loss_fn") == "l1":
-            self.eval_loss_fn = L1Loss()
-        elif cfg_dict.get("eval_loss_fn") == "mse":
-            self.eval_loss_fn = torch.nn.MSELoss()
+        if cfg_dict.get("val_loss_fn") == "ssim":
+            self.val_loss_fn = losses.SSIMLoss()
+        elif cfg_dict.get("val_loss_fn") == "l1":
+            self.val_loss_fn = L1Loss()
+        elif cfg_dict.get("val_loss_fn") == "mse":
+            self.val_loss_fn = torch.nn.MSELoss()
         else:
-            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("eval_loss_fn")))
+            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("val_loss_fn")))
 
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
         self.accumulate_estimates = False

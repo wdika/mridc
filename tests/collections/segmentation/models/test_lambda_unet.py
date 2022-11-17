@@ -292,9 +292,6 @@ def test_lambda_unet(shape, cfg, center_fractions, accelerations, dimensionality
             ).sum(coil_dim - 1)
         )
         output = torch.stack([output for _ in range(segmentation_classes)], 1)
-        pred_segmentation = pred_segmentation.reshape(
-            pred_segmentation.shape[0] * pred_segmentation.shape[1], *pred_segmentation.shape[2:]
-        )
         if pred_segmentation.shape != output.shape:
             raise AssertionError
     else:

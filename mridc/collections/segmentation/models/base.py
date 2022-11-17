@@ -396,9 +396,10 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
                 batch_size * slices, *target_reconstruction.shape[2:]  # type: ignore
             )
 
-        slice_idx = int(slice_idx)
-        key = f"{fname[0]}_images_idx_{slice_idx}"  # type: ignore
-        self.log_image(f"{key}/reconstruction/target", target_reconstruction)
+        if self.log_images:
+            slice_idx = int(slice_idx)
+            key = f"{fname[0]}_images_idx_{slice_idx}"  # type: ignore
+            self.log_image(f"{key}/reconstruction/target", target_reconstruction)
 
         segmentation_loss = self.process_segmentation_loss(target_segmentation, pred_segmentation)["segmentation_loss"]
 
@@ -433,8 +434,9 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
                 torch.abs(pred_reconstruction / torch.max(torch.abs(pred_reconstruction))).detach().cpu()
             )
 
-            self.log_image(f"{key}/reconstruction/prediction", output_reconstruction)
-            self.log_image(f"{key}/reconstruction/error", torch.abs(target_reconstruction - output_reconstruction))
+            if self.log_images:
+                self.log_image(f"{key}/reconstruction/prediction", output_reconstruction)
+                self.log_image(f"{key}/reconstruction/error", torch.abs(target_reconstruction - output_reconstruction))
 
             target_reconstruction = target_reconstruction.numpy()  # type: ignore
             output_reconstruction = output_reconstruction.numpy()
@@ -468,19 +470,22 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
                     target_segmentation[:, class_idx] = target_segmentation[:, class_idx] > class_threshold  # type: ignore
                     pred_segmentation[:, class_idx] = pred_segmentation[:, class_idx] > class_threshold
 
-        for class_idx in range(target_segmentation.shape[1]):  # type: ignore
-            target_image_segmentation_class = target_segmentation[:, class_idx]  # type: ignore
-            output_image_segmentation_class = pred_segmentation[:, class_idx]
+        if self.log_images:
+            for class_idx in range(target_segmentation.shape[1]):  # type: ignore
+                target_image_segmentation_class = target_segmentation[:, class_idx]  # type: ignore
+                output_image_segmentation_class = pred_segmentation[:, class_idx]
 
-            self.log_image(
-                f"{key}/segmentation_classes/target_class_{class_idx}",
-                target_image_segmentation_class,  # type: ignore
-            )
-            self.log_image(f"{key}/segmentation_classes/prediction_class_{class_idx}", output_image_segmentation_class)
-            self.log_image(
-                f"{key}/segmentation_classes/error_1_class_{class_idx}",
-                torch.abs(target_image_segmentation_class - output_image_segmentation_class),
-            )
+                self.log_image(
+                    f"{key}/segmentation_classes/target_class_{class_idx}",
+                    target_image_segmentation_class,  # type: ignore
+                )
+                self.log_image(
+                    f"{key}/segmentation_classes/prediction_class_{class_idx}", output_image_segmentation_class
+                )
+                self.log_image(
+                    f"{key}/segmentation_classes/error_1_class_{class_idx}",
+                    torch.abs(target_image_segmentation_class - output_image_segmentation_class),
+                )
 
         self.cross_entropy_vals[fname][slice_idx] = self.cross_entropy_metric.to(self.device)(
             target_segmentation.argmax(1), pred_segmentation  # type: ignore
@@ -568,19 +573,17 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             target_segmentation = target_segmentation.reshape(  # type: ignore
                 batch_size * slices, *target_segmentation.shape[2:]  # type: ignore
             )
-            # pred_segmentation = pred_segmentation.reshape(
-            #     batch_size * slices, *pred_segmentation.shape[2:]  # type: ignore
-            # )
             target_reconstruction = target_reconstruction.reshape(  # type: ignore
                 batch_size * slices, *target_reconstruction.shape[2:]  # type: ignore
             )
 
         target_reconstruction = torch.abs(target_reconstruction).detach().cpu()
 
-        slice_idx = int(slice_idx)
-        key = f"{fname[0]}_images_idx_{slice_idx}"  # type: ignore
-        if target_reconstruction.dim() > 2:  # type: ignore
-            self.log_image(f"{key}/reconstruction/target", target_reconstruction)
+        if self.log_images:
+            slice_idx = int(slice_idx)
+            key = f"{fname[0]}_images_idx_{slice_idx}"  # type: ignore
+            if target_reconstruction.dim() > 2:  # type: ignore
+                self.log_image(f"{key}/reconstruction/target", target_reconstruction)
 
         if self.use_reconstruction_module:
             # JRS Cascades
@@ -602,8 +605,9 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
                 torch.abs(pred_reconstruction / torch.max(torch.abs(pred_reconstruction))).detach().cpu()
             )
 
-            self.log_image(f"{key}/reconstruction/prediction", output_reconstruction)
-            self.log_image(f"{key}/reconstruction/error", torch.abs(target_reconstruction - output_reconstruction))
+            if self.log_images:
+                self.log_image(f"{key}/reconstruction/prediction", output_reconstruction)
+                self.log_image(f"{key}/reconstruction/error", torch.abs(target_reconstruction - output_reconstruction))
 
             target_reconstruction = target_reconstruction.numpy()  # type: ignore
             output_reconstruction = output_reconstruction.numpy()
@@ -635,22 +639,25 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
                         target_segmentation[:, class_idx] = target_segmentation[:, class_idx] > class_threshold  # type: ignore
                     pred_segmentation[:, class_idx] = pred_segmentation[:, class_idx] > class_threshold
 
-        for class_idx in range(pred_segmentation.shape[1]):  # type: ignore
-            if target_segmentation.dim() != 1:  # type: ignore
-                target_image_segmentation_class = target_segmentation[:, class_idx]  # type: ignore
-            output_image_segmentation_class = pred_segmentation[:, class_idx]
+        if self.log_images:
+            for class_idx in range(pred_segmentation.shape[1]):  # type: ignore
+                if target_segmentation.dim() != 1:  # type: ignore
+                    target_image_segmentation_class = target_segmentation[:, class_idx]  # type: ignore
+                output_image_segmentation_class = pred_segmentation[:, class_idx]
 
-            if target_segmentation.dim() != 1:  # type: ignore
+                if target_segmentation.dim() != 1:  # type: ignore
+                    self.log_image(
+                        f"{key}/segmentation_classes/target_class_{class_idx}",
+                        target_image_segmentation_class,  # type: ignore
+                    )
                 self.log_image(
-                    f"{key}/segmentation_classes/target_class_{class_idx}",
-                    target_image_segmentation_class,  # type: ignore
+                    f"{key}/segmentation_classes/prediction_class_{class_idx}", output_image_segmentation_class
                 )
-            self.log_image(f"{key}/segmentation_classes/prediction_class_{class_idx}", output_image_segmentation_class)
-            if target_segmentation.dim() != 1:  # type: ignore
-                self.log_image(
-                    f"{key}/segmentation_classes/error_1_class_{class_idx}",
-                    torch.abs(target_image_segmentation_class - output_image_segmentation_class),
-                )
+                if target_segmentation.dim() != 1:  # type: ignore
+                    self.log_image(
+                        f"{key}/segmentation_classes/error_1_class_{class_idx}",
+                        torch.abs(target_image_segmentation_class - output_image_segmentation_class),
+                    )
 
         if target_segmentation.dim() != 1:  # type: ignore
             self.cross_entropy_vals[fname][slice_idx] = self.cross_entropy_metric.to(self.device)(

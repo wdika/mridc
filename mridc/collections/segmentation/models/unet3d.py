@@ -94,6 +94,14 @@ class Segmentation3DUNet(base_segmentation_models.BaseMRIJointReconstructionSegm
         pred_segmentation: Predicted segmentation.
             torch.Tensor, shape [batch_size, nr_classes, n_x, n_y]
         """
+        if self.consecutive_slices > 1:
+            batch, slices = init_reconstruction_pred.shape[:2]
+            init_reconstruction_pred = init_reconstruction_pred.reshape(  # type: ignore
+                # type: ignore
+                init_reconstruction_pred.shape[0] * init_reconstruction_pred.shape[1],
+                *init_reconstruction_pred.shape[2:],  # type: ignore
+            )
+
         if init_reconstruction_pred.shape[-1] == 2:  # type: ignore
             if self.input_channels == 1:
                 init_reconstruction_pred = torch.view_as_complex(init_reconstruction_pred).unsqueeze(1)
@@ -116,11 +124,14 @@ class Segmentation3DUNet(base_segmentation_models.BaseMRIJointReconstructionSegm
                 init_reconstruction_pred, num_groups=self.input_channels
             )
 
-        pred_segmentation = self.segmentation_module(init_reconstruction_pred).permute(0, 2, 1, 3, 4)
+        pred_segmentation = self.segmentation_module(init_reconstruction_pred).permute(0, 2, 1, 3, 4).squeeze(1)
 
         pred_segmentation = torch.abs(pred_segmentation)
 
         if self.normalize_segmentation_output:
             pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
+
+        if self.consecutive_slices > 1:
+            pred_segmentation = pred_segmentation.reshape(batch * slices, *pred_segmentation.shape[1:])
 
         return torch.empty([]), pred_segmentation

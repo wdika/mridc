@@ -79,14 +79,14 @@ class VarNet(base_models.BaseMRIReconstructionModel, ABC):
             self.train_loss_fn = torch.nn.MSELoss()
         else:
             raise ValueError("Unknown loss function: {}".format(cfg_dict.get("train_loss_fn")))
-        if cfg_dict.get("eval_loss_fn") == "ssim":
-            self.eval_loss_fn = losses.SSIMLoss()
-        elif cfg_dict.get("eval_loss_fn") == "l1":
-            self.eval_loss_fn = L1Loss()
-        elif cfg_dict.get("eval_loss_fn") == "mse":
-            self.eval_loss_fn = torch.nn.MSELoss()
+        if cfg_dict.get("val_loss_fn") == "ssim":
+            self.val_loss_fn = losses.SSIMLoss()
+        elif cfg_dict.get("val_loss_fn") == "l1":
+            self.val_loss_fn = L1Loss()
+        elif cfg_dict.get("val_loss_fn") == "mse":
+            self.val_loss_fn = torch.nn.MSELoss()
         else:
-            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("eval_loss_fn")))
+            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("val_loss_fn")))
 
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
         self.accumulate_estimates = False

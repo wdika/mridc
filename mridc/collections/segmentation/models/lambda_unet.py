@@ -123,14 +123,6 @@ class SegmentationLambdaUNet(base_segmentation_models.BaseMRIJointReconstruction
             pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
 
         if self.consecutive_slices > 1:
-            pred_segmentation = pred_segmentation.view(
-                [
-                    batch,
-                    slices,
-                    pred_segmentation.shape[1],
-                    pred_segmentation.shape[2],
-                    pred_segmentation.shape[3],
-                ]
-            )
+            pred_segmentation = pred_segmentation.reshape(batch * slices, *pred_segmentation.shape[1:])
 
         return torch.empty([]), pred_segmentation

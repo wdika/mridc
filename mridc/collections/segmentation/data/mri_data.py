@@ -210,12 +210,17 @@ class JRSMRISliceDataset(Dataset):
             if data.shape[0] == 1:
                 return data[0]
             if data.ndim != 2:
+                if dataslice > data.shape[0] - 1:
+                    dataslice = np.random.randint(0, data.shape[0] - 1)
                 return data[dataslice]
             return data
 
         num_slices = data.shape[0]
         if self.consecutive_slices > num_slices or self.consecutive_slices == -1:
             return np.stack(data, axis=0)
+
+        if dataslice > data.shape[0] - 1:
+            dataslice = np.random.randint(0, data.shape[0] - 1)
 
         start_slice = dataslice
         if dataslice + self.consecutive_slices <= num_slices:
