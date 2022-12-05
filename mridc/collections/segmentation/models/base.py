@@ -471,7 +471,7 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
                     pred_segmentation[:, class_idx] = pred_segmentation[:, class_idx] > class_threshold
 
         if self.log_images:
-            for class_idx in range(target_segmentation.shape[1]):  # type: ignore
+            for class_idx in range(pred_segmentation.shape[1]):  # type: ignore
                 target_image_segmentation_class = target_segmentation[:, class_idx]  # type: ignore
                 output_image_segmentation_class = pred_segmentation[:, class_idx]
 
@@ -549,7 +549,9 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
 
         y, mask, init_reconstruction_pred, r = self.process_inputs(y, mask, init_reconstruction_pred)
 
-        target_reconstruction = target_reconstruction / torch.max(torch.abs(target_reconstruction))  # type: ignore
+        target_reconstruction = (
+            torch.abs(target_reconstruction / torch.max(torch.abs(target_reconstruction))).detach().cpu()
+        )
 
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, mask)
@@ -565,9 +567,6 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
             y, sensitivity_maps, mask, init_reconstruction_pred, target_reconstruction
         )
 
-        if isinstance(pred_segmentation, list):
-            pred_segmentation = pred_segmentation[-1]
-
         if self.consecutive_slices > 1:
             batch_size, slices = target_segmentation.shape[:2]  # type: ignore
             target_segmentation = target_segmentation.reshape(  # type: ignore
@@ -577,13 +576,14 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
                 batch_size * slices, *target_reconstruction.shape[2:]  # type: ignore
             )
 
-        target_reconstruction = torch.abs(target_reconstruction).detach().cpu()
-
         if self.log_images:
             slice_idx = int(slice_idx)
             key = f"{fname[0]}_images_idx_{slice_idx}"  # type: ignore
             if target_reconstruction.dim() > 2:  # type: ignore
                 self.log_image(f"{key}/reconstruction/target", target_reconstruction)
+
+        if isinstance(pred_segmentation, list):
+            pred_segmentation = pred_segmentation[-1]
 
         if self.use_reconstruction_module:
             # JRS Cascades
@@ -632,6 +632,7 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
                 )
             ).view(1)
 
+        # normalize for visualization
         if not utils.is_none(self.segmentation_classes_thresholds):
             for class_idx, class_threshold in enumerate(self.segmentation_classes_thresholds):
                 if not utils.is_none(class_threshold):
@@ -641,19 +642,18 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
 
         if self.log_images:
             for class_idx in range(pred_segmentation.shape[1]):  # type: ignore
-                if target_segmentation.dim() != 1:  # type: ignore
-                    target_image_segmentation_class = target_segmentation[:, class_idx]  # type: ignore
                 output_image_segmentation_class = pred_segmentation[:, class_idx]
+                self.log_image(
+                    f"{key}/segmentation_classes/prediction_class_{class_idx}", output_image_segmentation_class
+                )
 
                 if target_segmentation.dim() != 1:  # type: ignore
+                    target_image_segmentation_class = target_segmentation[:, class_idx]  # type: ignore
                     self.log_image(
                         f"{key}/segmentation_classes/target_class_{class_idx}",
                         target_image_segmentation_class,  # type: ignore
                     )
-                self.log_image(
-                    f"{key}/segmentation_classes/prediction_class_{class_idx}", output_image_segmentation_class
-                )
-                if target_segmentation.dim() != 1:  # type: ignore
+
                     self.log_image(
                         f"{key}/segmentation_classes/error_1_class_{class_idx}",
                         torch.abs(target_image_segmentation_class - output_image_segmentation_class),

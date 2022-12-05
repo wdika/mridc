@@ -120,7 +120,7 @@ def generalized_dice_metric(
 
     # Ignore background, if needed
     if not include_background:
-        if pred == 1:
+        if pred.shape[1] == 1:
             warnings.warn("single channel prediction, `include_background=False` ignored.")
         else:
             # if skipping background, removing first channel

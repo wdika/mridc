@@ -97,14 +97,13 @@ class Segmentation3DUNet(base_segmentation_models.BaseMRIJointReconstructionSegm
         if self.consecutive_slices > 1:
             batch, slices = init_reconstruction_pred.shape[:2]
             init_reconstruction_pred = init_reconstruction_pred.reshape(  # type: ignore
-                # type: ignore
                 init_reconstruction_pred.shape[0] * init_reconstruction_pred.shape[1],
                 *init_reconstruction_pred.shape[2:],  # type: ignore
             )
 
         if init_reconstruction_pred.shape[-1] == 2:  # type: ignore
             if self.input_channels == 1:
-                init_reconstruction_pred = torch.view_as_complex(init_reconstruction_pred).unsqueeze(1)
+                init_reconstruction_pred = torch.view_as_complex(init_reconstruction_pred)  # .unsqueeze(1)
                 if self.magnitude_input:
                     init_reconstruction_pred = torch.abs(init_reconstruction_pred)
             elif self.input_channels == 2:
@@ -113,18 +112,19 @@ class Segmentation3DUNet(base_segmentation_models.BaseMRIJointReconstructionSegm
                 init_reconstruction_pred = init_reconstruction_pred.permute(0, 3, 1, 2)  # type: ignore
             else:
                 raise ValueError("The input channels must be either 1 or 2. Found: {}".format(self.input_channels))
-        else:
-            if init_reconstruction_pred.dim() == 3:
-                init_reconstruction_pred = init_reconstruction_pred.unsqueeze(1)
-            if init_reconstruction_pred.dim() == 4:
-                init_reconstruction_pred = init_reconstruction_pred.unsqueeze(1)
+
+        if init_reconstruction_pred.dim() == 3:
+            init_reconstruction_pred = init_reconstruction_pred.unsqueeze(0)
+
+        if init_reconstruction_pred.dim() == 4:
+            init_reconstruction_pred = init_reconstruction_pred.unsqueeze(0)
 
         with torch.no_grad():
             init_reconstruction_pred = torch.nn.functional.group_norm(
                 init_reconstruction_pred, num_groups=self.input_channels
             )
 
-        pred_segmentation = self.segmentation_module(init_reconstruction_pred).permute(0, 2, 1, 3, 4).squeeze(1)
+        pred_segmentation = self.segmentation_module(init_reconstruction_pred).permute(0, 2, 1, 3, 4).squeeze(0)
 
         pred_segmentation = torch.abs(pred_segmentation)
 

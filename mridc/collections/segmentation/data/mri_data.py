@@ -411,7 +411,7 @@ class JRSMRISliceDataset(Dataset):
             attrs = dict(hf.attrs)
             attrs.update(metadata)
 
-        if sensitivity_map.shape != kspace.shape:
+        if sensitivity_map.shape != kspace.shape and sensitivity_map.ndim > 1:
             if sensitivity_map.ndim == 3:
                 sensitivity_map = np.transpose(sensitivity_map, (2, 0, 1))
             elif sensitivity_map.ndim == 4:
