@@ -167,7 +167,6 @@ setuptools.setup(
         # Pick your license as you wish (should match "license" above)
         "License :: OSI Approved :: Apache Software License",
         # Supported python versions
-        "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
