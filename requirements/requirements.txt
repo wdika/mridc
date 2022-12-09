@@ -4,7 +4,7 @@ hydra-core==1.1.0
 myst-parser>=0.17.2
 numba>=0.54.1
 numpy>=1.20.3
-omegaconf==2.1.2
+omegaconf==2.3.0
 onnx>=1.11.0
 onnxruntime>=1.11.1
 packaging>=21.3
