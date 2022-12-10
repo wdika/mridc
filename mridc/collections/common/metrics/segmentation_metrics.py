@@ -210,12 +210,15 @@ def f1_per_class_metric(
     f1_per_class = F.fbeta_score(
         pred.to(torch.uint8),
         gt.to(torch.uint8),
+        task="binary",
         beta=beta,
         average=average,
-        mdmc_average=mdmc_average,
+        multidim_average=mdmc_average,
         num_classes=gt.shape[1],
         threshold=threshold,
     )
+    if f1_per_class.dim() == 0:
+        f1_per_class = torch.stack([f1_per_class] * gt.shape[1])
     return [f1_per_class[i].item() for i in range(gt.shape[1])]
 
 
@@ -315,8 +318,9 @@ def precision_metric(
     precision_score = F.precision(
         pred,
         gt,
+        task="binary",
         average=average,
-        mdmc_average=mdmc_average,
+        multidim_average=mdmc_average,
         num_classes=pred.shape[1],
     )
     precision_score, _ = do_metric_reduction(precision_score, reduction=reduction)  # type: ignore
@@ -349,8 +353,9 @@ def recall_metric(
     recall_score = F.recall(
         pred,
         gt,
+        task="binary",
         average=average,
-        mdmc_average=mdmc_average,
+        multidim_average=mdmc_average,
         num_classes=pred.shape[1],
     )
     recall_score, _ = do_metric_reduction(recall_score, reduction=reduction)  # type: ignore

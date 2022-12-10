@@ -100,12 +100,7 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
             ]
         )
 
-        self.task_adaption_type = cfg_dict.get("task_adaption_type", "joint")
-        if self.task_adaption_type not in ("end-to-end", "joint"):
-            raise ValueError(
-                f"Task adaption type '{self.task_adaption_type}' not supported. "
-                "It must be either 'end-to-end' or 'joint'."
-            )
+        self.task_adaption_type = cfg_dict.get("task_adaption_type", "multi_task_learning")
 
     @common_classes.typecheck()
     def forward(
@@ -159,7 +154,7 @@ class JRSCIRIM(base_segmentation_models.BaseMRIJointReconstructionSegmentationMo
             pred_reconstructions.append(pred_reconstruction)
             init_reconstruction_pred = pred_reconstruction[-1][-1]
 
-            if self.task_adaption_type == "joint":
+            if self.task_adaption_type == "multi_task_learning":
                 hidden_states = [
                     torch.cat(
                         [torch.abs(init_reconstruction_pred.unsqueeze(self.coil_dim) * pred_segmentation)]

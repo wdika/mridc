@@ -19,6 +19,7 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
             [1, 3, 32, 16, 2],
             {
                 "use_reconstruction_module": True,
+                "task_adaption_type": "multi_task_learning",
                 "joint_reconstruction_segmentation_module_cascades": 5,
                 "reconstruction_module_recurrent_layer": "IndRNN",
                 "reconstruction_module_conv_filters": [64, 64, 2],
@@ -87,6 +88,7 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
             [1, 3, 32, 16, 2],
             {
                 "use_reconstruction_module": True,
+                "task_adaption_type": "multi_task_learning",
                 "joint_reconstruction_segmentation_module_cascades": 5,
                 "reconstruction_module_recurrent_layer": "IndRNN",
                 "reconstruction_module_conv_filters": [64, 64, 2],
@@ -155,6 +157,7 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
             [1, 3, 32, 16, 2],
             {
                 "use_reconstruction_module": True,
+                "task_adaption_type": "multi_task_learning",
                 "joint_reconstruction_segmentation_module_cascades": 5,
                 "reconstruction_module_recurrent_layer": "IndRNN",
                 "reconstruction_module_conv_filters": [64, 64, 2],
@@ -221,9 +224,9 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
         ),
     ],
 )
-def test_sacirim(shape, cfg, center_fractions, accelerations, dimensionality, segmentation_classes, trainer):
+def test_mtlmrirs(shape, cfg, center_fractions, accelerations, dimensionality, segmentation_classes, trainer):
     """
-    Test SACIRIM with different parameters.
+    Test MultiTask Learning for accelerated-MRI Reconstruction & Segmentation with different parameters.
 
     Parameters
     ----------
