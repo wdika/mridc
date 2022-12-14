@@ -13,6 +13,7 @@ from torch import Tensor
 from torchmetrics import functional as F
 
 from mridc.collections.segmentation.losses import Dice
+from mridc.collections.segmentation.losses.dice import one_hot
 from mridc.collections.segmentation.losses.utils import do_metric_reduction
 
 
@@ -263,7 +264,7 @@ def iou_metric(
 ) -> Tensor:
     """Compute Intersection over Union"""
     if not include_background:
-        if pred == 1:
+        if pred.dim() == 1:
             warnings.warn("single channel prediction, `include_background=False` ignored.")
         else:
             # if skipping background, removing first channel
@@ -302,7 +303,7 @@ def precision_metric(
 ) -> Tensor:
     """Compute Surface Distance"""
     if not include_background:
-        if pred == 1:
+        if pred.dim() == 1:
             warnings.warn("single channel prediction, `include_background=False` ignored.")
         else:
             # if skipping background, removing first channel
@@ -315,16 +316,20 @@ def precision_metric(
     if gt.shape != pred.shape:
         raise ValueError(f"Prediction and ground truth should have same shapes, got {pred.shape} and {gt.shape}.")
 
-    precision_score = F.precision(
-        pred,
-        gt,
-        task="binary",
-        average=average,
-        multidim_average=mdmc_average,
-        num_classes=pred.shape[1],
-    )
-    precision_score, _ = do_metric_reduction(precision_score, reduction=reduction)  # type: ignore
-    return precision_score.item()
+    # to one hot per class
+    pr = []
+    for i in range(pred.shape[1]):
+        precision_score = F.precision(
+            one_hot(pred[:, i].unsqueeze(1), num_classes=2),
+            one_hot(gt[:, i].unsqueeze(1), num_classes=2),
+            task="binary",
+            average=average,
+            multidim_average=mdmc_average,
+            num_classes=pred.shape[1],
+        )
+        precision_score, _ = do_metric_reduction(precision_score, reduction=reduction)  # type: ignore
+        pr.append(precision_score.item())
+    return torch.mean(torch.tensor(pr)).item()
 
 
 def recall_metric(
@@ -337,7 +342,7 @@ def recall_metric(
 ) -> Tensor:
     """Compute Surface Distance"""
     if not include_background:
-        if pred == 1:
+        if pred.dim() == 1:
             warnings.warn("single channel prediction, `include_background=False` ignored.")
         else:
             # if skipping background, removing first channel
@@ -350,16 +355,20 @@ def recall_metric(
     if gt.shape != pred.shape:
         raise ValueError(f"Prediction and ground truth should have same shapes, got {pred.shape} and {gt.shape}.")
 
-    recall_score = F.recall(
-        pred,
-        gt,
-        task="binary",
-        average=average,
-        multidim_average=mdmc_average,
-        num_classes=pred.shape[1],
-    )
-    recall_score, _ = do_metric_reduction(recall_score, reduction=reduction)  # type: ignore
-    return recall_score.item()
+    # to one hot per class
+    rec = []
+    for i in range(pred.shape[1]):
+        recall_score = F.recall(
+            one_hot(pred[:, i].unsqueeze(1), num_classes=2),
+            one_hot(gt[:, i].unsqueeze(1), num_classes=2),
+            task="binary",
+            average=average,
+            multidim_average=mdmc_average,
+            num_classes=pred.shape[1],
+        )
+        recall_score, _ = do_metric_reduction(recall_score, reduction=reduction)  # type: ignore
+        rec.append(recall_score.item())
+    return torch.mean(torch.tensor(rec)).item()
 
 
 def asd(reference, result, voxelspacing=None, connectivity=1):
