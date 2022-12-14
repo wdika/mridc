@@ -1,12 +1,17 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 import numpy as np
 import pytest
 import torch
 
-from mridc.collections.common.parts.utils import tensor_to_complex_np, to_tensor
-from mridc.collections.reconstruction.parts.utils import center_crop, center_crop_to_smallest, complex_center_crop
+from mridc.collections.common.parts.utils import (
+    center_crop,
+    center_crop_to_smallest,
+    complex_center_crop,
+    tensor_to_complex_np,
+    to_tensor,
+)
 
 
 @pytest.mark.parametrize("x", [(np.zeros([1, 320, 320]).astype(np.complex64))])

@@ -7,9 +7,9 @@ import os
 import sys
 from pathlib import Path
 
-import SimpleITK as sitk
 import h5py
 import numpy as np
+import SimpleITK as sitk
 import torch
 from skimage.restoration import unwrap_phase
 from tqdm import tqdm
@@ -70,7 +70,8 @@ def _dataloder(subjectID: str, datapath: str):
             # load brain mask
             brain_mask = sitk.ReadImage(os.path.join(folders[0], "nii", "mask_inv2_te2_m_corr.nii"))
             brain_mask = sitk.GetArrayFromImage(brain_mask)
-            brain_mask = np.flip(np.transpose(brain_mask, (0, 2, 1)), 1)  # need to flip! in the second axis!
+            # need to flip! in the second axis!
+            brain_mask = np.flip(np.transpose(brain_mask, (0, 2, 1)), 1)
 
     return coilimgs, sense_complex, brain_mask
 
@@ -171,7 +172,7 @@ def main(args):
     savepath = args.savepath
     for subjectID in tqdm(range(1, 119)):
         coilimgs, sense, brain_mask = _dataloder(subjectID, datapath)
-        if coilimgs != False:
+        if coilimgs is not False:
             coilimgs = np.stack(coilimgs, axis=0)
             if applymask:
                 coilimgs = coilimgs * np.repeat(brain_mask[..., np.newaxis], coilimgs.shape[-1], axis=3)

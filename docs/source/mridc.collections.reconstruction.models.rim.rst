@@ -20,18 +20,18 @@ mridc.collections.reconstruction.models.rim.rim\_block module
    :undoc-members:
    :show-inheritance:
 
-mridc.collections.reconstruction.models.rim.rnn\_cells module
+mridc.collections.reconstruction.models.rim.rim\_utils module
 -------------------------------------------------------------
 
-.. automodule:: mridc.collections.reconstruction.models.rim.rnn_cells
+.. automodule:: mridc.collections.reconstruction.models.rim.rim_utils
    :members:
    :undoc-members:
    :show-inheritance:
 
-mridc.collections.reconstruction.models.rim.utils module
---------------------------------------------------------
+mridc.collections.reconstruction.models.rim.rnn\_cells module
+-------------------------------------------------------------
 
-.. automodule:: mridc.collections.reconstruction.models.rim.utils
+.. automodule:: mridc.collections.reconstruction.models.rim.rnn_cells
    :members:
    :undoc-members:
    :show-inheritance:

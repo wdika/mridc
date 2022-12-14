@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/classes/exportable.py
@@ -102,7 +102,7 @@ class Exportable(ABC):
         do_constant_folding=True,
         onnx_opset_version=None,
         training=TrainingMode.EVAL,
-        check_trace: bool = False,
+        check_trace: Union[bool, List[torch.Tensor]] = False,
         dynamic_axes=None,
         check_tolerance=0.01,
         export_modules_as_functions: bool = False,
@@ -165,6 +165,11 @@ class Exportable(ABC):
                 output_example = tuple(self.forward(*input_list, **input_dict))  # type: ignore
 
                 if format == ExportFormat.TORCHSCRIPT:
+                    if check_trace:
+                        if isinstance(check_trace, bool):
+                            check_trace_input = {"forward": tuple(input_list) + tuple(input_dict.values())}
+                        else:
+                            check_trace_input = check_trace  # type: ignore
                     jitted_model = torch.jit.trace_module(
                         self,
                         {"forward": tuple(input_list) + tuple(input_dict.values())},
@@ -177,7 +182,8 @@ class Exportable(ABC):
                     if verbose:
                         logging.info(f"JIT code:\n{jitted_model.code}")
                     jitted_model.save(output)
-                    assert exists(output)
+                    if not exists(output):
+                        raise AssertionError
                 elif format == ExportFormat.ONNX:
                     # dynamic axis is a mapping from input/output_name => list of "dynamic" indices
                     if dynamic_axes is None:
@@ -198,7 +204,9 @@ class Exportable(ABC):
                     )
 
                     if check_trace:
-                        check_trace_input = [input_example] if isinstance(check_trace, bool) else check_trace
+                        check_trace_input = (
+                            [input_example] if isinstance(check_trace, bool) else check_trace  # type: ignore
+                        )
                         verify_runtime(self, output, check_trace_input, input_names)
 
                 else:
@@ -234,9 +242,7 @@ class Exportable(ABC):
             replace_for_export(self)
 
     def _export_teardown(self):
-        """
-        Override this method for any teardown code after export.
-        """
+        """Override this method for any teardown code after export."""
 
     @property
     def input_names(self):
@@ -252,7 +258,8 @@ class Exportable(ABC):
         """Returns Exportable subnet model/module to export"""
         return self if subnet is None or subnet == "self" else getattr(self, subnet)
 
-    def list_export_subnets(self):
+    @staticmethod
+    def list_export_subnets():
         """
         Returns default set of subnet names exported for this model.
         First goes the one receiving input (input_example).

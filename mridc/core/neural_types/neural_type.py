@@ -1,15 +1,15 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/neural_types/neural_type.py
 
 from typing import Optional, Tuple
 
-__all__ = ["NeuralType", "NeuralTypeError", "NeuralPortNameMismatchError", "NeuralPortNmTensorMismatchError"]
-
 from mridc.core.neural_types.axes import AxisKind, AxisType
 from mridc.core.neural_types.comparison import NeuralTypeComparisonResult
 from mridc.core.neural_types.elements import ElementType, VoidType
+
+__all__ = ["NeuralType", "NeuralTypeError", "NeuralPortNameMismatchError", "NeuralPortNmTensorMismatchError"]
 
 
 class NeuralType:

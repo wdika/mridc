@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Interfaces common to all Neural Modules and Models.
@@ -21,7 +21,6 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
 import mridc.utils
-from mridc.core.conf.trainer import TrainerConfig
 from mridc.core.connectors.save_restore_connector import SaveRestoreConnector
 from mridc.core.neural_types.comparison import NeuralTypeComparisonResult
 from mridc.core.neural_types.neural_type import NeuralType
@@ -415,7 +414,8 @@ class Serialization(ABC):
 
             # Attempt class path resolution from config `target` class (if it exists)
             if "target" in config:
-                target_cls = config["target"]  # No guarantee that this is a omegaconf class
+                # No guarantee that this is a omegaconf class
+                target_cls = config["target"]
                 imported_cls = None
                 try:
                     # try to import the target class
@@ -765,11 +765,9 @@ class typecheck:
 
     @wrapt.decorator(enabled=is_typecheck_enabled)
     def __call__(self, wrapped, instance: Typing, args, kwargs):
-        """
-        Wrapper method that can be used on any function of a class that implements :class:`~mridc.core.Typing`. By \
+        """Wrapper method that can be used on any function of a class that implements :class:`~mridc.core.Typing`. By \
         default, it will utilize the `input_types` and `output_types` properties of the class inheriting Typing. \
-        Local function level overrides can be provided by supplying dictionaries as arguments to the decorator.
-        """
+        Local function level overrides can be provided by supplying dictionaries as arguments to the decorator."""
         if instance is None:
             raise RuntimeError("Only classes which inherit mridc.core.Typing can use this decorator !")
 

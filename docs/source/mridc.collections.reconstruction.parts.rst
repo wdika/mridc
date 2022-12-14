@@ -12,14 +12,6 @@ mridc.collections.reconstruction.parts.transforms module
    :undoc-members:
    :show-inheritance:
 
-mridc.collections.reconstruction.parts.utils module
----------------------------------------------------
-
-.. automodule:: mridc.collections.reconstruction.parts.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Module contents
 ---------------
 

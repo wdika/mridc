@@ -1,10 +1,12 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/neural_types/elements.py
 
 from abc import ABC, ABCMeta
 from typing import Dict, Optional, Tuple
+
+from mridc.core.neural_types.comparison import NeuralTypeComparisonResult
 
 __all__ = [
     "ElementType",
@@ -39,8 +41,6 @@ __all__ = [
     "SequenceToSequenceAlignmentType",
 ]
 
-from mridc.core.neural_types.comparison import NeuralTypeComparisonResult
-
 
 class ElementType(ABC):
     """Abstract class defining semantics of the tensor elements. We are relying on Python for inheritance checking"""
@@ -65,12 +65,10 @@ class ElementType(ABC):
 
     @property
     def fields(self) -> Optional[Tuple]:
-        """
-        This should be used to logically represent tuples/structures. For example, if you want to represent a \
+        """This should be used to logically represent tuples/structures. For example, if you want to represent a \
         bounding box (x, y, width, height) you can put a tuple with names ('x', y', 'w', 'h') in here. Under the \
         hood this should be converted to the last tensor dimension of fixed size = len(fields). When two types are \
-        compared their fields must match.
-        """
+        compared their fields must match."""
         return None
 
     def compare(self, second) -> NeuralTypeComparisonResult:

@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Parts of the code have been taken from: https://github.com/facebookresearch/fastMRI
@@ -8,9 +8,9 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import OmegaConf
 
+from mridc.collections.common.parts import utils
 from mridc.collections.reconstruction.data.subsample import RandomMaskFunc
 from mridc.collections.reconstruction.models.vsnet import VSNet
-from mridc.collections.reconstruction.parts import transforms
 from tests.collections.reconstruction.fastmri.conftest import create_input
 
 
@@ -31,6 +31,8 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "fft_normalization": "ortho",
                 "spatial_dims": [-2, -1],
                 "coil_dim": 1,
+                "train_loss_fn": "l1",
+                "val_loss_fn": "l1",
             },
             [0.08],
             [4],
@@ -62,6 +64,8 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "fft_normalization": "ortho",
                 "spatial_dims": [-2, -1],
                 "coil_dim": 1,
+                "train_loss_fn": "mse",
+                "val_loss_fn": "mse",
             },
             [0.08],
             [4],
@@ -93,6 +97,8 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "fft_normalization": "ortho",
                 "spatial_dims": [-2, -1],
                 "coil_dim": 1,
+                "train_loss_fn": "ssim",
+                "val_loss_fn": "ssim",
             },
             [0.08],
             [4],
@@ -124,6 +130,8 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "fft_normalization": "ortho",
                 "spatial_dims": [-2, -1],
                 "coil_dim": 1,
+                "train_loss_fn": "l1",
+                "val_loss_fn": "l1",
             },
             [0.08],
             [4],
@@ -163,7 +171,7 @@ def test_vsnet(shape, cfg, center_fractions, accelerations, dimensionality, trai
 
     outputs, masks = [], []
     for i in range(x.shape[0]):
-        output, mask, _ = transforms.apply_mask(x[i : i + 1], mask_func, seed=123)
+        output, mask, _ = utils.apply_mask(x[i : i + 1], mask_func, seed=123)
         outputs.append(output)
         masks.append(mask)
 

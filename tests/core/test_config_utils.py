@@ -1,7 +1,7 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
-# Taken and adapted from: https://github.com/wdika/NeMo/blob/main/tests/core/test_config_utils.py
+# Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/tests/core/test_config_utils.py
 from abc import ABC
 from dataclasses import dataclass
 from typing import Any
@@ -19,7 +19,7 @@ def cls():
         """Dummy class."""
 
         def __init__(self, a, b=5, c: int = 0, d: "ABC" = None):
-            pass
+            raise NotImplementedError()
 
     return DummyClass
 

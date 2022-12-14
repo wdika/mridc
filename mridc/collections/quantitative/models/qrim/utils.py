@@ -5,11 +5,11 @@ from typing import List, Sequence, Union
 
 import torch
 
-from mridc.collections.common.parts.fft import fft2, ifft2
-from mridc.collections.common.parts.utils import coil_combination, complex_mul
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
 
 
-class RescaleByMax(object):
+class RescaleByMax:
     def __init__(self, slack=1e-6):
         self.slack = slack
 
@@ -25,7 +25,7 @@ class RescaleByMax(object):
         return torch.stack([data[i] * gamma[i] for i in range(data.shape[0])], 0)
 
 
-class SignalForwardModel(object):
+class SignalForwardModel:
     """Defines a signal forward model"""
 
     def __init__(self, sequence: Union[str, None] = None):
@@ -61,13 +61,12 @@ class SignalForwardModel(object):
             TEs = torch.Tensor([3.0, 11.5, 20.0, 28.5])
         if self.sequence == "megre":
             return self.MEGRESignalModel(R2star_map, S0_map, B0_map, phi_map, TEs)
-        elif self.sequence == "megre_no_phase":
+        if self.sequence == "megre_no_phase":
             return self.MEGRENoPhaseSignalModel(R2star_map, S0_map, TEs)
-        else:
-            raise ValueError(
-                "Only MEGRE and MEGRE no phase are supported are signal forward model at the moment. "
-                f"Found {self.sequence}"
-            )
+        raise ValueError(
+            "Only MEGRE and MEGRE no phase are supported are signal forward model at the moment. "
+            f"Found {self.sequence}"
+        )
 
     def MEGRESignalModel(
         self,
@@ -96,9 +95,14 @@ class SignalForwardModel(object):
         S0_map_real = S0_map
         S0_map_imag = phi_map
 
-        first_term = lambda i: torch.exp(-TEs[i] * self.scaling * R2star_map)
-        second_term = lambda i: torch.cos(B0_map * self.scaling * -TEs[i])
-        third_term = lambda i: torch.sin(B0_map * self.scaling * -TEs[i])
+        def first_term(i):
+            return torch.exp(-TEs[i] * self.scaling * R2star_map)
+
+        def second_term(i):
+            return torch.cos(B0_map * self.scaling * -TEs[i])
+
+        def third_term(i):
+            return torch.sin(B0_map * self.scaling * -TEs[i])
 
         pred = torch.stack(
             [
@@ -153,7 +157,7 @@ class SignalForwardModel(object):
 
 def expand_op(x, sensitivity_maps):
     """Expand a coil-combined image to multicoil."""
-    x = complex_mul(x, sensitivity_maps)
+    x = utils.complex_mul(x, sensitivity_maps)
     if torch.isnan(x).any():
         x[x != x] = 0
     return x
@@ -216,7 +220,6 @@ def analytical_log_likelihood_gradient(
     -------
     Analytical gradient of the log-likelihood function.
     """
-
     nr_TEs = len(TEs)
 
     R2star_map = R2star_map.unsqueeze(0)
@@ -229,7 +232,7 @@ def analytical_log_likelihood_gradient(
     S0_map_real = S0_map
     S0_map_imag = phi_map
 
-    pred_kspace = fft2(
+    pred_kspace = fft.fft2(
         expand_op(pred.unsqueeze(coil_dim), sensitivity_maps.unsqueeze(0).unsqueeze(coil_dim - 1)),
         fft_centered,
         fft_normalization,
@@ -237,16 +240,21 @@ def analytical_log_likelihood_gradient(
     )
 
     diff_data = (pred_kspace - masked_kspace) * sampling_mask
-    diff_data_inverse = coil_combination(
-        ifft2(diff_data, fft_centered, fft_normalization, spatial_dims),
+    diff_data_inverse = utils.coil_combination(
+        fft.ifft2(diff_data, fft_centered, fft_normalization, spatial_dims),
         sensitivity_maps.unsqueeze(0).unsqueeze(coil_dim - 1),
         method=coil_combination_method,
         dim=coil_dim,
     )
 
-    first_term = lambda i: torch.exp(-TEs[i] * scaling * R2star_map)
-    second_term = lambda i: torch.cos(B0_map * scaling * -TEs[i])
-    third_term = lambda i: torch.sin(B0_map * scaling * -TEs[i])
+    def first_term(i):
+        return torch.exp(-TEs[i] * scaling * R2star_map)
+
+    def second_term(i):
+        return torch.cos(B0_map * scaling * -TEs[i])
+
+    def third_term(i):
+        return torch.sin(B0_map * scaling * -TEs[i])
 
     S0_part_der = torch.stack(
         [torch.stack((first_term(i) * second_term(i), -first_term(i) * third_term(i)), -1) for i in range(nr_TEs)], 1

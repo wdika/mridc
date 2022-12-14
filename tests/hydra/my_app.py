@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/tests/hydra/my_app.py
@@ -13,10 +13,8 @@ from mridc.core.config import hydra_runner
 
 @dataclass
 class DefaultConfig:
-    """
-    This is structured config for this application. It provides the schema used for validation of user-written \
-    spec file as well as default values of the selected parameters.
-    """
+    """This is structured config for this application. It provides the schema used for validation of user-written \
+    spec file as well as default values of the selected parameters."""
 
     dataset_name: str = MISSING
 

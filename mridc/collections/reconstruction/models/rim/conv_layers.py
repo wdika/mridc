@@ -79,7 +79,7 @@ class ConvNonlinear(nn.Module):
             in_channels=input_size,
             out_channels=features,
             kernel_size=kernel_size,
-            padding=0,
+            padding=0,  # TODO: check if this is correct
             dilation=dilation,
             bias=bias,
         )

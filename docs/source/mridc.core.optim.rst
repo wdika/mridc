@@ -44,6 +44,14 @@ mridc.core.optim.optimizers module
    :undoc-members:
    :show-inheritance:
 
+mridc.core.optim.radam module
+-----------------------------
+
+.. automodule:: mridc.core.optim.radam
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

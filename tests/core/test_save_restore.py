@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/tests/core/test_save_restore.py
@@ -37,7 +37,7 @@ def get_dir_size(path="."):
 def get_size(path="."):
     if os.path.isfile(path):
         return os.path.getsize(path)
-    elif os.path.isdir(path):
+    if os.path.isdir(path):
         return get_dir_size(path)
 
 
@@ -90,7 +90,8 @@ class MockModel(ModelPT):
     def setup_test_data(self, test_data_config: Union[DictConfig, Dict]):
         self._test_dl = None
 
-    def list_available_models(self):
+    @staticmethod
+    def list_available_models():
         return []
 
 
@@ -102,8 +103,8 @@ def _mock_model_config():
 
 
 class TestSaveRestore:
+    @staticmethod
     def __test_restore_elsewhere(
-        self,
         model: ModelPT,
         attr_for_eq_check: Set[str] = None,
         override_config_path: Optional[Union[str, DictConfig]] = None,
@@ -263,7 +264,7 @@ class TestSaveRestore:
             assert isinstance(model._save_restore_connector, save_restore_connector.SaveRestoreConnector)
             assert isinstance(model_with_custom_connector._save_restore_connector, MySaveRestoreConnector)
 
-            assert type(MockModel._save_restore_connector) == save_restore_connector.SaveRestoreConnector
+            assert type(MockModel._save_restore_connector) is save_restore_connector.SaveRestoreConnector
 
     @pytest.mark.unit
     def test_restore_from_save_restore_connector(self):
@@ -290,8 +291,8 @@ class TestSaveRestore:
             restored_model = MockModelV2.restore_from(
                 save_path.replace(".mridc", "_XYZ.mridc"), save_restore_connector=MySaveRestoreConnector()
             )
-            assert type(restored_model) == MockModelV2
-            assert type(restored_model._save_restore_connector) == MySaveRestoreConnector
+            assert type(restored_model) is MockModelV2
+            assert type(restored_model._save_restore_connector) is MySaveRestoreConnector
 
     @pytest.mark.unit
     def test_mock_model_model_collision(self):
@@ -350,8 +351,8 @@ class TestSaveRestore:
             # note, we pass in the "old" mridc_filepath, stored somewhere other than the extracted directory
             # this mridc_filepath is no longer valid, and has been deleted.
             restored_model = MockModelV2.restore_from(mridc_filepath, save_restore_connector=connector)
-        assert type(restored_model) == MockModelV2
-        assert type(restored_model._save_restore_connector) == MySaveRestoreConnector
+        assert type(restored_model) is MockModelV2
+        assert type(restored_model._save_restore_connector) is MySaveRestoreConnector
 
         # assert models have correct restoration information and paths
         appstate = AppState()

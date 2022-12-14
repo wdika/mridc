@@ -8,8 +8,8 @@ from typing import Optional, Tuple, Union
 import torch
 import torch.nn as nn
 
-from mridc.collections.common.parts.fft import fft2, ifft2
-from mridc.collections.common.parts.utils import complex_conj, complex_mul
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
 
 
 class CrossDomainNetwork(nn.Module):
@@ -119,8 +119,8 @@ class CrossDomainNetwork(nn.Module):
         return torch.where(
             sampling_mask == 0,
             torch.tensor([0.0], dtype=image.dtype).to(image.device),
-            fft2(
-                complex_mul(image.unsqueeze(self.coil_dim), sensitivity_map),
+            fft.fft2(
+                utils.complex_mul(image.unsqueeze(self.coil_dim), sensitivity_map),
                 centered=self.fft_centered,
                 normalization=self.fft_normalization,
                 spatial_dims=self.spatial_dims,
@@ -131,14 +131,14 @@ class CrossDomainNetwork(nn.Module):
         """Backward operator."""
         kspace = torch.where(sampling_mask == 0, torch.tensor([0.0], dtype=kspace.dtype).to(kspace.device), kspace)
         return (
-            complex_mul(
-                ifft2(
+            utils.complex_mul(
+                fft.ifft2(
                     kspace.float(),
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,
                 ),
-                complex_conj(sensitivity_map),
+                utils.complex_conj(sensitivity_map),
             )
             .sum(self.coil_dim)
             .type(kspace.type())

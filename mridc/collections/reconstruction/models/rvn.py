@@ -10,19 +10,18 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
-from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import fft2, ifft2
-from mridc.collections.common.parts.rnn_utils import rnn_weights_init
-from mridc.collections.common.parts.utils import coil_combination, complex_conj, complex_mul
-from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel
-from mridc.collections.reconstruction.models.recurrentvarnet.recurentvarnet import RecurrentInit, RecurrentVarNetBlock
-from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
-from mridc.core.classes.common import typecheck
+import mridc.collections.common.losses.ssim as losses
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.rnn_utils as rnn_utils
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.reconstruction.models.base as base_models
+import mridc.collections.reconstruction.models.recurrentvarnet.recurrentvarnet as recurrentvarnet
+import mridc.core.classes.common as common_classes
 
 __all__ = ["RecurrentVarNet"]
 
 
-class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
+class RecurrentVarNet(base_models.BaseMRIReconstructionModel, ABC):
     """
     Implementation of the Recurrent Variational Network implementation, as presented in Yiasemis, George, et al.
 
@@ -72,7 +71,7 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
                     "Unknown initializer_initialization. Expected `sense`, `'input_image` or `zero_filled`."
                     f"Got {self.initializer_initialization}."
                 )
-            self.initializer = RecurrentInit(
+            self.initializer = recurrentvarnet.RecurrentInit(
                 self.in_channels,
                 self.recurrent_hidden_channels,
                 channels=self.initializer_channels,
@@ -92,7 +91,7 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
         self.block_list: torch.nn.Module = torch.nn.ModuleList()
         for _ in range(self.num_steps if self.no_parameter_sharing else 1):
             self.block_list.append(
-                RecurrentVarNetBlock(
+                recurrentvarnet.RecurrentVarNetBlock(
                     in_channels=self.in_channels,
                     hidden_channels=self.recurrent_hidden_channels,
                     num_layers=self.recurrent_num_layers,
@@ -107,14 +106,28 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
 
         # initialize weights if not using pretrained cirim
         if not cfg_dict.get("pretrained", False):
-            self.block_list.apply(lambda module: rnn_weights_init(module, std_init_range))
+            self.block_list.apply(lambda module: rnn_utils.rnn_weights_init(module, std_init_range))
 
-        self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
+        if cfg_dict.get("train_loss_fn") == "ssim":
+            self.train_loss_fn = losses.SSIMLoss()
+        elif cfg_dict.get("train_loss_fn") == "l1":
+            self.train_loss_fn = L1Loss()
+        elif cfg_dict.get("train_loss_fn") == "mse":
+            self.train_loss_fn = torch.nn.MSELoss()
+        else:
+            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("train_loss_fn")))
+        if cfg_dict.get("val_loss_fn") == "ssim":
+            self.val_loss_fn = losses.SSIMLoss()
+        elif cfg_dict.get("val_loss_fn") == "l1":
+            self.val_loss_fn = L1Loss()
+        elif cfg_dict.get("val_loss_fn") == "mse":
+            self.val_loss_fn = torch.nn.MSELoss()
+        else:
+            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("val_loss_fn")))
 
         self.accumulate_estimates = False
 
-    @typecheck()
+    @common_classes.typecheck()
     def forward(
         self,
         y: torch.Tensor,
@@ -151,14 +164,14 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
         if self.initializer is not None:
             if self.initializer_initialization == "sense":
                 initializer_input_image = (
-                    complex_mul(
-                        ifft2(
+                    utils.complex_mul(
+                        fft.ifft2(
                             y,
                             centered=self.fft_centered,
                             normalization=self.fft_normalization,
                             spatial_dims=self.spatial_dims,
                         ),
-                        complex_conj(sensitivity_maps),
+                        utils.complex_conj(sensitivity_maps),
                     )
                     .sum(self.coil_dim)
                     .unsqueeze(self.coil_dim)
@@ -171,7 +184,7 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
                     )
                 initializer_input_image = kwargs["initial_image"].unsqueeze(self.coil_dim)
             elif self.initializer_initialization == "zero_filled":
-                initializer_input_image = ifft2(
+                initializer_input_image = fft.ifft2(
                     y,
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
@@ -179,7 +192,7 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
                 )
 
             previous_state = self.initializer(
-                fft2(
+                fft.fft2(
                     initializer_input_image,
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
@@ -201,13 +214,13 @@ class RecurrentVarNet(BaseMRIReconstructionModel, ABC):
                 previous_state,
             )
 
-        eta = ifft2(
+        eta = fft.ifft2(
             kspace_prediction,
             centered=self.fft_centered,
             normalization=self.fft_normalization,
             spatial_dims=self.spatial_dims,
         )
-        eta = coil_combination(eta, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim)
+        eta = utils.coil_combination(eta, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim)
         eta = torch.view_as_complex(eta)
-        _, eta = center_crop_to_smallest(target, eta)
+        _, eta = utils.center_crop_to_smallest(target, eta)
         return eta

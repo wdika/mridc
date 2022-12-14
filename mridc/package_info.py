@@ -1,7 +1,7 @@
-# encoding: utf-8
+# coding=utf-8
 
 MAJOR = 0
-MINOR = 2
+MINOR = 3
 PATCH = 0
 PRE_RELEASE = ""
 
@@ -20,8 +20,8 @@ __download_url__ = "https://github.com/wdika/mridc/releases"
 __description__ = "Data Consistency for Magnetic Resonance Imaging"
 __license__ = "Apache-2.0 License"
 __keywords__ = (
-    "machine-learning, deep-learning, compressed-sensing, pytorch, mri, medical-imaging, "
+    "machine-learning, deep-learning, compressed-sensing, pytorch, mri, medical-imaging, quantitative-imaging, "
     "convolutional-neural-networks, unet, medical-image-processing, medical-image-analysis, "
     "data-consistency, mri-reconstruction, fastmri, recurrent-inference-machines, variational-network, "
-    "cirim"
+    "cirim, quantitative-mri"
 )

@@ -12,10 +12,10 @@ mridc.collections.reconstruction.models.recurrentvarnet.conv2gru module
    :undoc-members:
    :show-inheritance:
 
-mridc.collections.reconstruction.models.recurrentvarnet.recurentvarnet module
------------------------------------------------------------------------------
+mridc.collections.reconstruction.models.recurrentvarnet.recurrentvarnet module
+------------------------------------------------------------------------------
 
-.. automodule:: mridc.collections.reconstruction.models.recurrentvarnet.recurentvarnet
+.. automodule:: mridc.collections.reconstruction.models.recurrentvarnet.recurrentvarnet
    :members:
    :undoc-members:
    :show-inheritance:

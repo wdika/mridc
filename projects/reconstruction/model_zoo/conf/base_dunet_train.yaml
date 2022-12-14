@@ -18,7 +18,7 @@ model:
   sens_pools: 4
   sens_mask_type: 2D
   train_loss_fn: l1
-  eval_loss_fn: l1
+  val_loss_fn: l1
   fft_centered: True
   fft_normalization: ortho
   spatial_dims:

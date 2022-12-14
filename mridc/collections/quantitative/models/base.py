@@ -10,26 +10,24 @@ from typing import Dict, Tuple
 import h5py
 import numpy as np
 import torch
-
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
+from torch.nn import L1Loss, MSELoss
 from torch.utils.data import DataLoader
 
-from torch.nn import L1Loss, MSELoss
-
-from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.utils import is_none
-from mridc.collections.quantitative.data.qmri_data import qMRISliceDataset
-from mridc.collections.quantitative.parts.transforms import qMRIDataTransforms
-from mridc.collections.reconstruction.data.subsample import create_mask_for_mask_type
-from mridc.collections.reconstruction.metrics.evaluate import mse, nmse, psnr, ssim
-from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, DistributedMetricSum
-from mridc.utils.model_utils import convert_model_config_to_dict_config, maybe_update_config_version
+import mridc.collections.common.losses as reconstruction_losses
+import mridc.collections.common.metrics.reconstruction_metrics as reconstruction_metrics
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.quantitative.data.qmri_data as qmri_data
+import mridc.collections.quantitative.parts.transforms as quantitative_transforms
+import mridc.collections.reconstruction.data.subsample as subsample
+import mridc.collections.reconstruction.models.base as base_reconstruction_models
+import mridc.utils.model_utils as model_utils
 
 __all__ = ["BaseqMRIReconstructionModel"]
 
 
-class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
+class BaseqMRIReconstructionModel(base_reconstruction_models.BaseMRIReconstructionModel, ABC):
     """Base class of all quantitative MRIReconstruction models."""
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
@@ -41,8 +39,8 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         if trainer is not None:
             self.world_size = trainer.num_nodes * trainer.num_devices
 
-        cfg = convert_model_config_to_dict_config(cfg)
-        cfg = maybe_update_config_version(cfg)
+        cfg = model_utils.convert_model_config_to_dict_config(cfg)
+        cfg = model_utils.maybe_update_config_version(cfg)
 
         # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
@@ -50,14 +48,14 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
         if cfg_dict.get("loss_fn") == "ssim":
-            self.train_loss_fn = SSIMLoss()
-            self.eval_loss_fn = SSIMLoss()
+            self.train_loss_fn = reconstruction_losses.ssim.SSIMLoss()
+            self.val_loss_fn = reconstruction_losses.ssim.SSIMLoss()
         elif cfg_dict.get("loss_fn") == "mse":
             self.train_loss_fn = MSELoss(reduction="none")
-            self.eval_loss_fn = MSELoss(reduction="none")
+            self.val_loss_fn = MSELoss(reduction="none")
         elif cfg_dict.get("loss_fn") == "l1":
             self.train_loss_fn = L1Loss(reduction="none")
-            self.eval_loss_fn = L1Loss(reduction="none")
+            self.val_loss_fn = L1Loss(reduction="none")
 
         loss_regularization_factors = cfg_dict.get("loss_regularization_factors")
         self.loss_regularization_factors = {
@@ -67,11 +65,11 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
             "phi": loss_regularization_factors[3]["phi"],
         }
 
-        self.MSE = DistributedMetricSum()
-        self.NMSE = DistributedMetricSum()
-        self.SSIM = DistributedMetricSum()
-        self.PSNR = DistributedMetricSum()
-        self.TotExamples = DistributedMetricSum()
+        self.MSE = base_reconstruction_models.DistributedMetricSum()
+        self.NMSE = base_reconstruction_models.DistributedMetricSum()
+        self.SSIM = base_reconstruction_models.DistributedMetricSum()
+        self.PSNR = base_reconstruction_models.DistributedMetricSum()
+        self.TotExamples = base_reconstruction_models.DistributedMetricSum()
 
         # Set evaluation metrics dictionaries
         self.mse_vals_reconstruction: Dict = defaultdict(dict)
@@ -239,7 +237,6 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         r: Random index.
             int
         """
-
         if isinstance(y, list):
             r = np.random.randint(len(y))
             R2star_map_init = R2star_map_init[r]
@@ -262,9 +259,7 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
 
     @staticmethod
     def _check_if_isinstance_pred(x):
-        """
-        Checks if x is a list of predictions.
-        """
+        """Checks if x is a list of predictions."""
         # Cascades
         if isinstance(x, list):
             x = x[-1]
@@ -444,7 +439,8 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         self.acc = r if r != 0 else acc
         tensorboard_logs = {
             f"train_loss_{self.acc}x": train_loss.item(),  # type: ignore
-            f"loss_reconstruction_{self.acc}x": lossrecon.item(),  # type: ignore
+            # type: ignore
+            f"loss_reconstruction_{self.acc}x": lossrecon.item(),
             f"loss_R2star_{self.acc}x": lossR2star.item(),  # type: ignore
             f"loss_S0_{self.acc}x": lossS0.item(),  # type: ignore
             f"loss_B0_{self.acc}x": lossB0.item(),  # type: ignore
@@ -570,23 +566,23 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
             )
 
             if self.use_reconstruction_module:
-                lossrecon = sum(self.process_reconstruction_loss(target, recon_pred, self.eval_loss_fn))
+                lossrecon = sum(self.process_reconstruction_loss(target, recon_pred, self.val_loss_fn))
             else:
                 lossrecon = torch.tensor([0.0])
 
             lossR2star = sum(
                 self.process_quantitative_loss(
-                    R2star_map_target, R2star_map_pred, mask_brain, "R2star", self.eval_loss_fn
+                    R2star_map_target, R2star_map_pred, mask_brain, "R2star", self.val_loss_fn
                 )
             )
             lossS0 = sum(
-                self.process_quantitative_loss(S0_map_target, S0_map_pred, mask_brain, "S0", self.eval_loss_fn)
+                self.process_quantitative_loss(S0_map_target, S0_map_pred, mask_brain, "S0", self.val_loss_fn)
             )
             lossB0 = sum(
-                self.process_quantitative_loss(B0_map_target, B0_map_pred, mask_brain, "B0", self.eval_loss_fn)
+                self.process_quantitative_loss(B0_map_target, B0_map_pred, mask_brain, "B0", self.val_loss_fn)
             )
             lossPhi = sum(
-                self.process_quantitative_loss(phi_map_target, phi_map_pred, mask_brain, "phi", self.eval_loss_fn)
+                self.process_quantitative_loss(phi_map_target, phi_map_pred, mask_brain, "phi", self.val_loss_fn)
             )
         else:
             recon_pred, R2star_map_pred, S0_map_pred, B0_map_pred, phi_map_pred = (
@@ -598,21 +594,21 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
             )
 
             if self.use_reconstruction_module:
-                lossrecon = self.process_reconstruction_loss(target, recon_pred, self.eval_loss_fn).mean()
+                lossrecon = self.process_reconstruction_loss(target, recon_pred, self.val_loss_fn).mean()
             else:
                 lossrecon = torch.tensor([0.0])
 
             lossR2star = self.process_quantitative_loss(
-                R2star_map_target, R2star_map_pred, mask_brain, "R2star", self.eval_loss_fn
+                R2star_map_target, R2star_map_pred, mask_brain, "R2star", self.val_loss_fn
             ).sum()
             lossS0 = self.process_quantitative_loss(
-                S0_map_target, S0_map_pred, mask_brain, "S0", self.eval_loss_fn
+                S0_map_target, S0_map_pred, mask_brain, "S0", self.val_loss_fn
             ).sum()
             lossB0 = self.process_quantitative_loss(
-                B0_map_target, B0_map_pred, mask_brain, "B0", self.eval_loss_fn
+                B0_map_target, B0_map_pred, mask_brain, "B0", self.val_loss_fn
             ).sum()
             lossPhi = self.process_quantitative_loss(
-                phi_map_target, phi_map_pred, mask_brain, "phi", self.eval_loss_fn
+                phi_map_target, phi_map_pred, mask_brain, "phi", self.val_loss_fn
             ).sum()
 
         val_loss = sum([lossR2star, lossS0, lossB0, lossPhi]) / 4
@@ -662,32 +658,36 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         phi_map_target = phi_map_target.detach().cpu()  # type: ignore
         phi_map_target = torch.abs(phi_map_target / torch.max(torch.abs(phi_map_target)))
 
-        if self.use_reconstruction_module:
-            for echo_time in range(target.shape[1]):  # type: ignore
-                self.log_image(
-                    f"{key}/reconstruction_echo_{echo_time}/target", target[:, echo_time, :, :]  # type: ignore
-                )  # type: ignore
-                self.log_image(f"{key}/reconstruction_echo_{echo_time}/reconstruction", recon_pred[:, echo_time, :, :])
-                self.log_image(
-                    f"{key}/reconstruction_echo_{echo_time}/error",
-                    torch.abs(target[:, echo_time, :, :] - recon_pred[:, echo_time, :, :]),  # type: ignore
-                )
+        if self.log_images:
+            if self.use_reconstruction_module:
+                for echo_time in range(target.shape[1]):  # type: ignore
+                    self.log_image(
+                        f"{key}/reconstruction_echo_{echo_time}/target",
+                        target[:, echo_time, :, :],  # type: ignore
+                    )  # type: ignore
+                    self.log_image(
+                        f"{key}/reconstruction_echo_{echo_time}/reconstruction", recon_pred[:, echo_time, :, :]
+                    )
+                    self.log_image(
+                        f"{key}/reconstruction_echo_{echo_time}/error",
+                        torch.abs(target[:, echo_time, :, :] - recon_pred[:, echo_time, :, :]),  # type: ignore
+                    )
 
-        self.log_image(f"{key}/R2star/target", R2star_map_target)
-        self.log_image(f"{key}/R2star/reconstruction", R2star_map_output)
-        self.log_image(f"{key}/R2star/error", torch.abs(R2star_map_target - R2star_map_output))
+            self.log_image(f"{key}/R2star/target", R2star_map_target)
+            self.log_image(f"{key}/R2star/reconstruction", R2star_map_output)
+            self.log_image(f"{key}/R2star/error", torch.abs(R2star_map_target - R2star_map_output))
 
-        self.log_image(f"{key}/S0/target", S0_map_target)
-        self.log_image(f"{key}/S0/reconstruction", S0_map_output)
-        self.log_image(f"{key}/S0/error", S0_map_target - S0_map_output)
+            self.log_image(f"{key}/S0/target", S0_map_target)
+            self.log_image(f"{key}/S0/reconstruction", S0_map_output)
+            self.log_image(f"{key}/S0/error", S0_map_target - S0_map_output)
 
-        self.log_image(f"{key}/B0/target", B0_map_target)
-        self.log_image(f"{key}/B0/reconstruction", B0_map_output)
-        self.log_image(f"{key}/B0/error", torch.abs(B0_map_target - B0_map_output))
+            self.log_image(f"{key}/B0/target", B0_map_target)
+            self.log_image(f"{key}/B0/reconstruction", B0_map_output)
+            self.log_image(f"{key}/B0/error", torch.abs(B0_map_target - B0_map_output))
 
-        self.log_image(f"{key}/phi/target", phi_map_target)
-        self.log_image(f"{key}/phi/reconstruction", phi_map_output)
-        self.log_image(f"{key}/phi/error", phi_map_target - phi_map_output)
+            self.log_image(f"{key}/phi/target", phi_map_target)
+            self.log_image(f"{key}/phi/reconstruction", phi_map_output)
+            self.log_image(f"{key}/phi/error", phi_map_target - phi_map_output)
 
         if self.use_reconstruction_module:
             recon_pred = recon_pred.numpy()  # type: ignore
@@ -699,14 +699,22 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
             psnrs = []
             for echo_time in range(target.shape[1]):  # type: ignore
                 mses.append(
-                    torch.tensor(mse(target[:, echo_time, ...], recon_pred[:, echo_time, ...])).view(1)  # type: ignore
-                )  # type: ignore
+                    torch.tensor(
+                        reconstruction_metrics.mse(
+                            target[:, echo_time, ...], recon_pred[:, echo_time, ...]  # type: ignore
+                        )
+                    ).view(1)
+                )
                 nmses.append(
-                    torch.tensor(nmse(target[:, echo_time, ...], recon_pred[:, echo_time, ...])).view(1)  # type: ignore
-                )  # type: ignore
+                    torch.tensor(
+                        reconstruction_metrics.nmse(
+                            target[:, echo_time, ...], recon_pred[:, echo_time, ...]  # type: ignore
+                        )
+                    ).view(1)
+                )
                 ssims.append(
                     torch.tensor(
-                        ssim(
+                        reconstruction_metrics.ssim(
                             target[:, echo_time, ...],  # type: ignore
                             recon_pred[:, echo_time, ...],
                             maxval=recon_pred[:, echo_time, ...].max() - recon_pred[:, echo_time, ...].min(),
@@ -715,7 +723,7 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
                 )
                 psnrs.append(
                     torch.tensor(
-                        psnr(
+                        reconstruction_metrics.psnr(
                             target[:, echo_time, ...],  # type: ignore
                             recon_pred[:, echo_time, ...],
                             maxval=recon_pred[:, echo_time, ...].max() - recon_pred[:, echo_time, ...].min(),
@@ -743,40 +751,64 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         B0_map_target = B0_map_target.numpy()  # type: ignore
         phi_map_target = phi_map_target.numpy()  # type: ignore
 
-        self.mse_vals_R2star[fname][slice_num] = torch.tensor(mse(R2star_map_target, R2star_map_output)).view(1)
-        self.nmse_vals_R2star[fname][slice_num] = torch.tensor(nmse(R2star_map_target, R2star_map_output)).view(1)
+        self.mse_vals_R2star[fname][slice_num] = torch.tensor(
+            reconstruction_metrics.mse(R2star_map_target, R2star_map_output)
+        ).view(1)
+        self.nmse_vals_R2star[fname][slice_num] = torch.tensor(
+            reconstruction_metrics.nmse(R2star_map_target, R2star_map_output)
+        ).view(1)
         self.ssim_vals_R2star[fname][slice_num] = torch.tensor(
-            ssim(R2star_map_target, R2star_map_output, maxval=R2star_map_output.max() - R2star_map_output.min())
+            reconstruction_metrics.ssim(
+                R2star_map_target, R2star_map_output, maxval=R2star_map_output.max() - R2star_map_output.min()
+            )
         ).view(1)
         self.psnr_vals_R2star[fname][slice_num] = torch.tensor(
-            psnr(R2star_map_target, R2star_map_output, maxval=R2star_map_output.max() - R2star_map_output.min())
+            reconstruction_metrics.psnr(
+                R2star_map_target, R2star_map_output, maxval=R2star_map_output.max() - R2star_map_output.min()
+            )
         ).view(1)
 
-        self.mse_vals_S0[fname][slice_num] = torch.tensor(mse(S0_map_target, S0_map_output)).view(1)
-        self.nmse_vals_S0[fname][slice_num] = torch.tensor(nmse(S0_map_target, S0_map_output)).view(1)
+        self.mse_vals_S0[fname][slice_num] = torch.tensor(
+            reconstruction_metrics.mse(S0_map_target, S0_map_output)
+        ).view(1)
+        self.nmse_vals_S0[fname][slice_num] = torch.tensor(
+            reconstruction_metrics.nmse(S0_map_target, S0_map_output)
+        ).view(1)
         self.ssim_vals_S0[fname][slice_num] = torch.tensor(
-            ssim(S0_map_target, S0_map_output, maxval=S0_map_output.max() - S0_map_output.min())
+            reconstruction_metrics.ssim(S0_map_target, S0_map_output, maxval=S0_map_output.max() - S0_map_output.min())
         ).view(1)
         self.psnr_vals_S0[fname][slice_num] = torch.tensor(
-            psnr(S0_map_target, S0_map_output, maxval=S0_map_output.max() - S0_map_output.min())
+            reconstruction_metrics.psnr(S0_map_target, S0_map_output, maxval=S0_map_output.max() - S0_map_output.min())
         ).view(1)
 
-        self.mse_vals_B0[fname][slice_num] = torch.tensor(mse(B0_map_target, B0_map_output)).view(1)
-        self.nmse_vals_B0[fname][slice_num] = torch.tensor(nmse(B0_map_target, B0_map_output)).view(1)
+        self.mse_vals_B0[fname][slice_num] = torch.tensor(
+            reconstruction_metrics.mse(B0_map_target, B0_map_output)
+        ).view(1)
+        self.nmse_vals_B0[fname][slice_num] = torch.tensor(
+            reconstruction_metrics.nmse(B0_map_target, B0_map_output)
+        ).view(1)
         self.ssim_vals_B0[fname][slice_num] = torch.tensor(
-            ssim(B0_map_target, B0_map_output, maxval=B0_map_output.max() - B0_map_output.min())
+            reconstruction_metrics.ssim(B0_map_target, B0_map_output, maxval=B0_map_output.max() - B0_map_output.min())
         ).view(1)
         self.psnr_vals_B0[fname][slice_num] = torch.tensor(
-            psnr(B0_map_target, B0_map_output, maxval=B0_map_output.max() - B0_map_output.min())
+            reconstruction_metrics.psnr(B0_map_target, B0_map_output, maxval=B0_map_output.max() - B0_map_output.min())
         ).view(1)
 
-        self.mse_vals_phi[fname][slice_num] = torch.tensor(mse(phi_map_target, phi_map_output)).view(1)
-        self.nmse_vals_phi[fname][slice_num] = torch.tensor(nmse(phi_map_target, phi_map_output)).view(1)
+        self.mse_vals_phi[fname][slice_num] = torch.tensor(
+            reconstruction_metrics.mse(phi_map_target, phi_map_output)
+        ).view(1)
+        self.nmse_vals_phi[fname][slice_num] = torch.tensor(
+            reconstruction_metrics.nmse(phi_map_target, phi_map_output)
+        ).view(1)
         self.ssim_vals_phi[fname][slice_num] = torch.tensor(
-            ssim(phi_map_target, phi_map_output, maxval=phi_map_output.max() - phi_map_output.min())
+            reconstruction_metrics.ssim(
+                phi_map_target, phi_map_output, maxval=phi_map_output.max() - phi_map_output.min()
+            )
         ).view(1)
         self.psnr_vals_phi[fname][slice_num] = torch.tensor(
-            psnr(phi_map_target, phi_map_output, maxval=phi_map_output.max() - phi_map_output.min())
+            reconstruction_metrics.psnr(
+                phi_map_target, phi_map_output, maxval=phi_map_output.max() - phi_map_output.min()
+            )
         ).view(1)
 
         return {"val_loss": val_loss}
@@ -940,32 +972,36 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         phi_map_target = phi_map_target.detach().cpu()  # type: ignore
         phi_map_target = torch.abs(phi_map_target / torch.max(torch.abs(phi_map_target)))
 
-        if self.use_reconstruction_module:
-            for echo_time in range(target.shape[1]):  # type: ignore
-                self.log_image(
-                    f"{key}/reconstruction_echo_{echo_time}/target", target[:, echo_time, :, :]  # type: ignore
-                )  # type: ignore
-                self.log_image(f"{key}/reconstruction_echo_{echo_time}/reconstruction", recon_pred[:, echo_time, :, :])
-                self.log_image(
-                    f"{key}/reconstruction_echo_{echo_time}/error",
-                    torch.abs(target[:, echo_time, :, :] - recon_pred[:, echo_time, :, :]),  # type: ignore
-                )
+        if self.log_images:
+            if self.use_reconstruction_module:
+                for echo_time in range(target.shape[1]):  # type: ignore
+                    self.log_image(
+                        f"{key}/reconstruction_echo_{echo_time}/target",
+                        target[:, echo_time, :, :],  # type: ignore
+                    )  # type: ignore
+                    self.log_image(
+                        f"{key}/reconstruction_echo_{echo_time}/reconstruction", recon_pred[:, echo_time, :, :]
+                    )
+                    self.log_image(
+                        f"{key}/reconstruction_echo_{echo_time}/error",
+                        torch.abs(target[:, echo_time, :, :] - recon_pred[:, echo_time, :, :]),  # type: ignore
+                    )
 
-        self.log_image(f"{key}/R2star/target", R2star_map_target)
-        self.log_image(f"{key}/R2star/reconstruction", R2star_map_output)
-        self.log_image(f"{key}/R2star/error", torch.abs(R2star_map_target - R2star_map_output))
+            self.log_image(f"{key}/R2star/target", R2star_map_target)
+            self.log_image(f"{key}/R2star/reconstruction", R2star_map_output)
+            self.log_image(f"{key}/R2star/error", torch.abs(R2star_map_target - R2star_map_output))
 
-        self.log_image(f"{key}/S0/target", S0_map_target)
-        self.log_image(f"{key}/S0/reconstruction", S0_map_output)
-        self.log_image(f"{key}/S0/error", torch.abs(S0_map_target - S0_map_output))
+            self.log_image(f"{key}/S0/target", S0_map_target)
+            self.log_image(f"{key}/S0/reconstruction", S0_map_output)
+            self.log_image(f"{key}/S0/error", torch.abs(S0_map_target - S0_map_output))
 
-        self.log_image(f"{key}/B0/target", B0_map_target)
-        self.log_image(f"{key}/B0/reconstruction", B0_map_output)
-        self.log_image(f"{key}/B0/error", torch.abs(B0_map_target - B0_map_output))
+            self.log_image(f"{key}/B0/target", B0_map_target)
+            self.log_image(f"{key}/B0/reconstruction", B0_map_output)
+            self.log_image(f"{key}/B0/error", torch.abs(B0_map_target - B0_map_output))
 
-        self.log_image(f"{key}/phi/target", phi_map_target)
-        self.log_image(f"{key}/phi/reconstruction", phi_map_output)
-        self.log_image(f"{key}/phi/error", torch.abs(phi_map_target - phi_map_output))
+            self.log_image(f"{key}/phi/target", phi_map_target)
+            self.log_image(f"{key}/phi/reconstruction", phi_map_output)
+            self.log_image(f"{key}/phi/error", torch.abs(phi_map_target - phi_map_output))
 
         if self.use_reconstruction_module:
             recon_pred = recon_pred.numpy()  # type: ignore
@@ -977,14 +1013,22 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
             psnrs = []
             for echo_time in range(target.shape[1]):  # type: ignore
                 mses.append(
-                    torch.tensor(mse(target[:, echo_time, ...], recon_pred[:, echo_time, ...])).view(1)  # type: ignore
-                )  # type: ignore
+                    torch.tensor(
+                        reconstruction_metrics.mse(
+                            target[:, echo_time, ...], recon_pred[:, echo_time, ...]  # type: ignore
+                        )
+                    ).view(1)
+                )
                 nmses.append(
-                    torch.tensor(nmse(target[:, echo_time, ...], recon_pred[:, echo_time, ...])).view(1)  # type: ignore
+                    torch.tensor(
+                        reconstruction_metrics.nmse(
+                            target[:, echo_time, ...], recon_pred[:, echo_time, ...]  # type: ignore
+                        )
+                    ).view(1)
                 )  # type: ignore
                 ssims.append(
                     torch.tensor(
-                        ssim(
+                        reconstruction_metrics.ssim(
                             target[:, echo_time, ...],  # type: ignore
                             recon_pred[:, echo_time, ...],
                             maxval=recon_pred[:, echo_time, ...].max() - recon_pred[:, echo_time, ...].min(),
@@ -993,7 +1037,7 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
                 )
                 psnrs.append(
                     torch.tensor(
-                        psnr(
+                        reconstruction_metrics.psnr(
                             target[:, echo_time, ...],  # type: ignore
                             recon_pred[:, echo_time, ...],
                             maxval=recon_pred[:, echo_time, ...].max() - recon_pred[:, echo_time, ...].min(),
@@ -1021,40 +1065,64 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         B0_map_target = B0_map_target.numpy()  # type: ignore
         phi_map_target = phi_map_target.numpy()  # type: ignore
 
-        self.mse_vals_R2star[fname][slice_num] = torch.tensor(mse(R2star_map_target, R2star_map_output)).view(1)
-        self.nmse_vals_R2star[fname][slice_num] = torch.tensor(nmse(R2star_map_target, R2star_map_output)).view(1)
+        self.mse_vals_R2star[fname][slice_num] = torch.tensor(
+            reconstruction_metrics.mse(R2star_map_target, R2star_map_output)
+        ).view(1)
+        self.nmse_vals_R2star[fname][slice_num] = torch.tensor(
+            reconstruction_metrics.nmse(R2star_map_target, R2star_map_output)
+        ).view(1)
         self.ssim_vals_R2star[fname][slice_num] = torch.tensor(
-            ssim(R2star_map_target, R2star_map_output, maxval=R2star_map_output.max() - R2star_map_output.min())
+            reconstruction_metrics.ssim(
+                R2star_map_target, R2star_map_output, maxval=R2star_map_output.max() - R2star_map_output.min()
+            )
         ).view(1)
         self.psnr_vals_R2star[fname][slice_num] = torch.tensor(
-            psnr(R2star_map_target, R2star_map_output, maxval=R2star_map_output.max() - R2star_map_output.min())
+            reconstruction_metrics.psnr(
+                R2star_map_target, R2star_map_output, maxval=R2star_map_output.max() - R2star_map_output.min()
+            )
         ).view(1)
 
-        self.mse_vals_S0[fname][slice_num] = torch.tensor(mse(S0_map_target, S0_map_output)).view(1)
-        self.nmse_vals_S0[fname][slice_num] = torch.tensor(nmse(S0_map_target, S0_map_output)).view(1)
+        self.mse_vals_S0[fname][slice_num] = torch.tensor(
+            reconstruction_metrics.mse(S0_map_target, S0_map_output)
+        ).view(1)
+        self.nmse_vals_S0[fname][slice_num] = torch.tensor(
+            reconstruction_metrics.nmse(S0_map_target, S0_map_output)
+        ).view(1)
         self.ssim_vals_S0[fname][slice_num] = torch.tensor(
-            ssim(S0_map_target, S0_map_output, maxval=S0_map_output.max() - S0_map_output.min())
+            reconstruction_metrics.ssim(S0_map_target, S0_map_output, maxval=S0_map_output.max() - S0_map_output.min())
         ).view(1)
         self.psnr_vals_S0[fname][slice_num] = torch.tensor(
-            psnr(S0_map_target, S0_map_output, maxval=S0_map_output.max() - S0_map_output.min())
+            reconstruction_metrics.psnr(S0_map_target, S0_map_output, maxval=S0_map_output.max() - S0_map_output.min())
         ).view(1)
 
-        self.mse_vals_B0[fname][slice_num] = torch.tensor(mse(B0_map_target, B0_map_output)).view(1)
-        self.nmse_vals_B0[fname][slice_num] = torch.tensor(nmse(B0_map_target, B0_map_output)).view(1)
+        self.mse_vals_B0[fname][slice_num] = torch.tensor(
+            reconstruction_metrics.mse(B0_map_target, B0_map_output)
+        ).view(1)
+        self.nmse_vals_B0[fname][slice_num] = torch.tensor(
+            reconstruction_metrics.nmse(B0_map_target, B0_map_output)
+        ).view(1)
         self.ssim_vals_B0[fname][slice_num] = torch.tensor(
-            ssim(B0_map_target, B0_map_output, maxval=B0_map_output.max() - B0_map_output.min())
+            reconstruction_metrics.ssim(B0_map_target, B0_map_output, maxval=B0_map_output.max() - B0_map_output.min())
         ).view(1)
         self.psnr_vals_B0[fname][slice_num] = torch.tensor(
-            psnr(B0_map_target, B0_map_output, maxval=B0_map_output.max() - B0_map_output.min())
+            reconstruction_metrics.psnr(B0_map_target, B0_map_output, maxval=B0_map_output.max() - B0_map_output.min())
         ).view(1)
 
-        self.mse_vals_phi[fname][slice_num] = torch.tensor(mse(phi_map_target, phi_map_output)).view(1)
-        self.nmse_vals_phi[fname][slice_num] = torch.tensor(nmse(phi_map_target, phi_map_output)).view(1)
+        self.mse_vals_phi[fname][slice_num] = torch.tensor(
+            reconstruction_metrics.mse(phi_map_target, phi_map_output)
+        ).view(1)
+        self.nmse_vals_phi[fname][slice_num] = torch.tensor(
+            reconstruction_metrics.nmse(phi_map_target, phi_map_output)
+        ).view(1)
         self.ssim_vals_phi[fname][slice_num] = torch.tensor(
-            ssim(phi_map_target, phi_map_output, maxval=phi_map_output.max() - phi_map_output.min())
+            reconstruction_metrics.ssim(
+                phi_map_target, phi_map_output, maxval=phi_map_output.max() - phi_map_output.min()
+            )
         ).view(1)
         self.psnr_vals_phi[fname][slice_num] = torch.tensor(
-            psnr(phi_map_target, phi_map_output, maxval=phi_map_output.max() - phi_map_output.min())
+            reconstruction_metrics.psnr(
+                phi_map_target, phi_map_output, maxval=phi_map_output.max() - phi_map_output.min()
+            )
         ).view(1)
 
         return (
@@ -1313,7 +1381,6 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         -------
         Saves the reconstructed images to .h5 files.
         """
-
         # Log metrics.
         # Taken from: https://github.com/facebookresearch/fastMRI/blob/main/fastmri/pl_modules/mri_module.py
         mse_vals_reconstruction = defaultdict(dict)
@@ -1555,26 +1622,26 @@ class BaseqMRIReconstructionModel(BaseMRIReconstructionModel, ABC):
         mask_func = None  # type: ignore
         mask_center_scale = 0.02
 
-        if is_none(mask_root) and not is_none(mask_type):
+        if utils.is_none(mask_root) and not utils.is_none(mask_type):
             accelerations = mask_args.get("accelerations")
             center_fractions = mask_args.get("center_fractions")
             mask_center_scale = mask_args.get("scale")
 
             mask_func = (
                 [
-                    create_mask_for_mask_type(mask_type, [cf] * 2, [acc] * 2)
+                    subsample.create_mask_for_mask_type(mask_type, [cf] * 2, [acc] * 2)
                     for acc, cf in zip(accelerations, center_fractions)
                 ]
                 if len(accelerations) >= 2
-                else [create_mask_for_mask_type(mask_type, center_fractions, accelerations)]
+                else [subsample.create_mask_for_mask_type(mask_type, center_fractions, accelerations)]
             )
 
-        dataset = qMRISliceDataset(
+        dataset = qmri_data.qMRISliceDataset(
             root=cfg.get("data_path"),
             sense_root=cfg.get("sense_path"),
             mask_root=cfg.get("mask_path"),
             sequence=cfg.get("sequence"),
-            transform=qMRIDataTransforms(
+            transform=quantitative_transforms.qMRIDataTransforms(
                 TEs=cfg.get("TEs"),
                 precompute_quantitative_maps=cfg.get("precompute_quantitative_maps"),
                 coil_combination_method=cfg.get("coil_combination_method"),

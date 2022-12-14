@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/optim/optimizer_with_master_params.py
@@ -10,10 +10,10 @@ import torch
 from mridc.utils import logging
 
 try:
-    from apex.multi_tensor_apply import multi_tensor_applier
-    from apex.transformer.parallel_state import get_data_parallel_world_size, get_data_parallel_group
-    from apex.transformer.tensor_parallel import copy_tensor_model_parallel_attributes
     import amp_C
+    from apex.multi_tensor_apply import multi_tensor_applier
+    from apex.transformer.parallel_state import get_data_parallel_group, get_data_parallel_world_size
+    from apex.transformer.tensor_parallel import copy_tensor_model_parallel_attributes
 
     HAVE_APEX = True
 

@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/classes/modelPT.py
@@ -18,17 +18,16 @@ from omegaconf import DictConfig, OmegaConf, open_dict
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.utilities import model_summary, rank_zero_only
 
-from mridc.core.classes.common import Model
-
-__all__ = ["ModelPT"]
-
 import mridc.core.optim
+import mridc.utils
 from mridc import package_info
+from mridc.core.classes.common import Model
 from mridc.core.connectors.save_restore_connector import SaveRestoreConnector
 from mridc.utils import logging
 from mridc.utils.app_state import AppState
 from mridc.utils.get_rank import is_global_rank_zero
-import mridc.utils
+
+__all__ = ["ModelPT"]
 
 
 class ModelPT(LightningModule, Model):
@@ -127,20 +126,23 @@ class ModelPT(LightningModule, Model):
                 logging.warning(
                     "If you intend to do training or fine-tuning, please call the ModelPT.setup_training_data() "
                     "method and provide a valid configuration file to setup the train data loader.\n"
-                    f"Train config : \n{OmegaConf.to_yaml(self._cfg.train_ds)}"  # type: ignore
+                    # type: ignore
+                    f"Train config : \n{OmegaConf.to_yaml(self._cfg.train_ds)}"
                 )
             if "validation_ds" in self._cfg and self._cfg.validation_ds is not None:  # type: ignore
                 logging.warning(
                     "If you intend to do validation, please call the ModelPT.setup_validation_data() or "
                     "ModelPT.setup_multiple_validation_data() method and provide a valid configuration file to "
                     "setup the validation data loader(s). \n"
-                    f"Validation config : \n{OmegaConf.to_yaml(self._cfg.validation_ds)}"  # type: ignore
+                    # type: ignore
+                    f"Validation config : \n{OmegaConf.to_yaml(self._cfg.validation_ds)}"
                 )
             if "test_ds" in self._cfg and self._cfg.test_ds is not None:  # type: ignore
                 logging.warning(
                     "Please call the ModelPT.setup_test_data() or ModelPT.setup_multiple_test_data() method "
                     "and provide a valid configuration file to setup the test data loader(s).\n"
-                    f"Test config : \n{OmegaConf.to_yaml(self._cfg.test_ds)}"  # type: ignore
+                    # type: ignore
+                    f"Test config : \n{OmegaConf.to_yaml(self._cfg.test_ds)}"
                 )
 
         # ModelPT wrappers over subclass implementations
@@ -225,10 +227,12 @@ class ModelPT(LightningModule, Model):
             if app_state.data_parallel_rank == 0:
                 maybe_make_save_dir(Path(save_path))
             # connector checks for ranks properly, no need to check here
-            self._save_restore_connector.save_to(self, str(save_path))  # downstream tasks expect str, not Path
+            # downstream tasks expect str, not Path
+            self._save_restore_connector.save_to(self, str(save_path))
         elif is_global_rank_zero():
             maybe_make_save_dir(Path(save_path))
-            self._save_restore_connector.save_to(self, str(save_path))  # downstream tasks expect str, not Path
+            # downstream tasks expect str, not Path
+            self._save_restore_connector.save_to(self, str(save_path))
 
     @classmethod
     def restore_from(  # type: ignore
@@ -747,7 +751,7 @@ class ModelPT(LightningModule, Model):
                 "test_loss" in dataloader_logs
                 and "test_loss" not in output_dict  # type: ignore
                 and dataloader_idx == self._test_dl_idx
-            ):  # type: ignore
+            ):
                 output_dict["test_loss"] = dataloader_logs["test_loss"]  # type: ignore
 
             # For every item in the result dictionary
@@ -846,7 +850,7 @@ class ModelPT(LightningModule, Model):
         """Get the name of one or more data loaders, which will be prepended to all logs."""
         return self.test_names[dataloader_idx]  # type: ignore
 
-    def load_part_of_state_dict(self, state_dict, include, exclude, load_from_string):
+    def load_part_of_state_dict(self, state_dict, include, exclude, load_from_string=None):
         """Load part of the state dict."""
         excluded_param_names = []
         # create dict
@@ -864,13 +868,19 @@ class ModelPT(LightningModule, Model):
 
         # Restore checkpoint part into current model
         self.load_state_dict(dict_to_load, strict=False)  # type: ignore
-        logging.info(f"Model checkpoint partially restored from {load_from_string}")
-
-        if excluded_param_names:
-            logging.info(
-                f"The following parameters were excluded from loading from {load_from_string} : {excluded_param_names}"
-            )
-            logging.info("Make sure that this is what you wanted!")
+        if load_from_string is not None:
+            logging.info(f"Model checkpoint partially restored from {load_from_string}")
+            if len(excluded_param_names) > 0:
+                logging.info(
+                    f"The following parameters were excluded when loading from {load_from_string} : "
+                    f"{excluded_param_names}"
+                )
+                logging.info("Make sure that this is what you wanted!")
+        else:
+            if len(excluded_param_names) > 0:
+                logging.info(
+                    f"The following parameters were excluded when loading checkpoint : {excluded_param_names}"
+                )
 
     @rank_zero_only
     def maybe_init_from_pretrained_checkpoint(self, cfg: OmegaConf, map_location: str = "cpu"):
@@ -1010,7 +1020,7 @@ class ModelPT(LightningModule, Model):
                         exclude = model_load_cfg.pop("exclude", [])
 
                         self.load_part_of_state_dict(
-                            ckpt["state_dict"], include, exclude, f"nemo file with path `{model_path}`"
+                            ckpt["state_dict"], include, exclude, f"mridc file with path `{ckpt_path}`"
                         )
                 else:
                     raise TypeError("Invalid type: init_from_ptl_ckpt is not a string or a dict!")

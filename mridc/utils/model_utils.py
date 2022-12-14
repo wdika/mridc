@@ -1,13 +1,9 @@
-# encoding: utf-8
-import sys
-
-__author__ = "Dimitrios Karkalousos"
-
+# coding=utf-8
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/utils/model_utils.py
 import copy
 import os
+import sys
 from dataclasses import dataclass, is_dataclass
-from packaging.version import Version
 from enum import Enum
 from pathlib import Path
 from typing import Any, List, Optional, Set, Tuple, Union
@@ -15,6 +11,7 @@ from typing import Any, List, Optional, Set, Tuple, Union
 import wrapt
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from omegaconf.errors import OmegaConfBaseException
+from packaging.version import Version
 from pytorch_lightning import LightningModule
 
 import mridc
@@ -22,8 +19,11 @@ from mridc.constants import MRIDC_ENV_CACHE_DIR
 from mridc.core.classes.common import PretrainedModelInfo
 from mridc.core.classes.modelPT import ModelPT
 from mridc.core.conf.modelPT import MRIDCConfig
-from mridc.utils.app_state import AppState
 from mridc.utils import logging
+from mridc.utils.app_state import AppState
+
+__author__ = "Dimitrios Karkalousos"
+
 
 _HAS_HYDRA = True
 
@@ -215,7 +215,8 @@ def unique_names_check(name_list: Optional[List[str]]):
                 f"Resolved name : {name}"
             )
         else:
-            names.add(name)  # we need just hash key check, value is just a placeholder
+            # we need just hash key check, value is just a placeholder
+            names.add(name)
 
 
 def resolve_validation_dataloaders(model: ModelPT):
@@ -537,7 +538,7 @@ def resolve_subclass_pretrained_model_info(base_class) -> Union[List[PretrainedM
 def check_lib_version(lib_name: str, checked_version: str, operator) -> Tuple[Optional[bool], str]:
     """
     Checks if a library is installed, and if it is, checks the operator(lib.__version__, checked_version) as a result.
-    This bool result along with a string analysis of result is returned.
+    This bool result along with a string backend of result is returned.
     If the library is not installed at all, then returns None instead, along with a string explaining
     that the library is not installed
 

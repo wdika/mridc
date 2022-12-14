@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/connectors/save_restore_connector.py
@@ -116,7 +116,7 @@ class SaveRestoreConnector:
                     # Override `tmpdir` above with the pre-extracted `model_extracted_dir`
                     tmpdir = self.model_extracted_dir
                 else:
-                    # Extract the nemo file into the temporary directory
+                    # Extract the mridc file into the temporary directory
                     self._unpack_mridc_file(path2file=restore_path, out_folder=tmpdir)
 
                 # Change current working directory to the temporary directory

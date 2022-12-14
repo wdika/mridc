@@ -5,11 +5,11 @@ from typing import Any, Optional, Tuple, Union
 
 import torch
 
-from mridc.collections.common.parts.fft import fft2, ifft2
-from mridc.collections.common.parts.utils import complex_conj, complex_mul
-from mridc.collections.reconstruction.models.rim.conv_layers import ConvNonlinear, ConvRNNStack
-from mridc.collections.reconstruction.models.rim.rnn_cells import ConvGRUCell, ConvMGUCell, IndRNNCell
-from mridc.collections.reconstruction.models.rim.utils import log_likelihood_gradient
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.reconstruction.models.rim.conv_layers as conv_layers
+import mridc.collections.reconstruction.models.rim.rim_utils as rim_utils
+import mridc.collections.reconstruction.models.rim.rnn_cells as rnn_cells
 
 
 class RIMBlock(torch.nn.Module):
@@ -35,6 +35,7 @@ class RIMBlock(torch.nn.Module):
         spatial_dims: Optional[Tuple[int, int]] = None,
         coil_dim: int = 1,
         dimensionality: int = 2,
+        consecutive_slices: int = 1,
     ):
         """
         Initialize the RIMBlock.
@@ -59,6 +60,7 @@ class RIMBlock(torch.nn.Module):
         spatial_dims: Spatial dimensions of the input.
         coil_dim: Coils dimension of the input.
         dimensionality: Dimensionality of the input.
+        consecutive_slices: Number of consecutive slices in the input.
         """
         super(RIMBlock, self).__init__()
 
@@ -82,7 +84,7 @@ class RIMBlock(torch.nn.Module):
             conv_layer = None
 
             if conv_features != 0:
-                conv_layer = ConvNonlinear(
+                conv_layer = conv_layers.ConvNonlinear(
                     self.input_size,
                     conv_features,
                     conv_dim=conv_dim,
@@ -95,11 +97,11 @@ class RIMBlock(torch.nn.Module):
 
             if rnn_features != 0 and rnn_type is not None:
                 if rnn_type.upper() == "GRU":
-                    rnn_type = ConvGRUCell
+                    rnn_type = rnn_cells.ConvGRUCell
                 elif rnn_type.upper() == "MGU":
-                    rnn_type = ConvMGUCell
+                    rnn_type = rnn_cells.ConvMGUCell
                 elif rnn_type.upper() == "INDRNN":
-                    rnn_type = IndRNNCell
+                    rnn_type = rnn_cells.IndRNNCell
                 else:
                     raise ValueError("Please specify a proper recurrent layer type.")
 
@@ -114,7 +116,7 @@ class RIMBlock(torch.nn.Module):
 
                 self.input_size = rnn_features
 
-                self.layers.append(ConvRNNStack(conv_layer, rnn_layer))
+                self.layers.append(conv_layers.ConvRNNStack(conv_layer, rnn_layer))
 
         self.final_layer = torch.nn.Sequential(conv_layer)
 
@@ -132,6 +134,7 @@ class RIMBlock(torch.nn.Module):
             self.zero = torch.zeros(1, 1, 1, 1, 1)
 
         self.dimensionality = dimensionality
+        self.consecutive_slices = consecutive_slices
 
     def forward(
         self,
@@ -162,36 +165,22 @@ class RIMBlock(torch.nn.Module):
         -------
         Reconstructed image and hidden states.
         """
-        if self.dimensionality == 3:
+        if self.dimensionality == 3 or self.consecutive_slices > 1:
             # 2D pred.shape = [batch, coils, height, width, 2]
             # 3D pred.shape = [batch, slices, coils, height, width, 2] -> [batch * slices, coils, height, width, 2]
             batch, slices = masked_kspace.shape[0], masked_kspace.shape[1]
-
             if isinstance(pred, (tuple, list)):
                 pred = pred[-1].detach()
             else:
-                pred = pred.reshape(
-                    [pred.shape[0] * pred.shape[1], pred.shape[2], pred.shape[3], pred.shape[4], pred.shape[5]]
-                )
-
+                pred = pred.reshape([pred.shape[0] * pred.shape[1], *pred.shape[2:]])
             masked_kspace = masked_kspace.reshape(
-                [
-                    masked_kspace.shape[0] * masked_kspace.shape[1],
-                    masked_kspace.shape[2],
-                    masked_kspace.shape[3],
-                    masked_kspace.shape[4],
-                    masked_kspace.shape[5],
-                ]
+                [masked_kspace.shape[0] * masked_kspace.shape[1], *masked_kspace.shape[2:]]
             )
-            mask = mask.reshape(
-                [mask.shape[0] * mask.shape[1], mask.shape[2], mask.shape[3], mask.shape[4], mask.shape[5]]
-            )
-            sense = sense.reshape(
-                [sense.shape[0] * sense.shape[1], sense.shape[2], sense.shape[3], sense.shape[4], sense.shape[5]]
-            )
+            mask = mask.reshape([mask.shape[0] * mask.shape[1], *mask.shape[2:]])
+            sense = sense.reshape([sense.shape[0] * sense.shape[1], *sense.shape[2:]])
         else:
             batch = masked_kspace.shape[0]
-            slices = masked_kspace.shape[1]
+            slices = 1
 
             if isinstance(pred, list):
                 pred = pred[-1].detach()
@@ -208,22 +197,25 @@ class RIMBlock(torch.nn.Module):
                 pred
                 if keep_eta
                 else torch.sum(
-                    complex_mul(
-                        ifft2(
+                    utils.complex_mul(
+                        fft.ifft2(
                             pred,
                             centered=self.fft_centered,
                             normalization=self.fft_normalization,
                             spatial_dims=self.spatial_dims,
                         ),
-                        complex_conj(sense),
+                        utils.complex_conj(sense),
                     ),
                     self.coil_dim,
                 )
             )
 
+        if (self.consecutive_slices > 1 or self.dimensionality == 3) and eta.dim() == 5:
+            eta = eta.reshape([eta.shape[0] * eta.shape[1], *eta.shape[2:]])
+
         etas = []
         for _ in range(self.time_steps):
-            grad_eta = log_likelihood_gradient(
+            grad_eta = rim_utils.log_likelihood_gradient(
                 eta,
                 masked_kspace,
                 sense,
@@ -235,12 +227,12 @@ class RIMBlock(torch.nn.Module):
                 coil_dim=self.coil_dim,
             ).contiguous()
 
-            if self.dimensionality == 3:
-                grad_eta = grad_eta.view([slices * batch, 4, grad_eta.shape[2], grad_eta.shape[3]]).permute(1, 0, 2, 3)
+            if self.consecutive_slices > 1 or self.dimensionality == 3:
+                grad_eta = grad_eta.view([batch * slices, 4, grad_eta.shape[2], grad_eta.shape[3]]).permute(1, 0, 2, 3)
 
             for h, convrnn in enumerate(self.layers):
                 hx[h] = convrnn(grad_eta, hx[h])
-                if self.dimensionality == 3:
+                if self.consecutive_slices > 1 or self.dimensionality == 3:
                     hx[h] = hx[h].squeeze(0)
                 grad_eta = hx[h]
 
@@ -259,14 +251,14 @@ class RIMBlock(torch.nn.Module):
         eta = etas
 
         if self.no_dc:
-            return eta, None
+            return eta, hx
 
         soft_dc = torch.where(mask, pred - masked_kspace, self.zero.to(masked_kspace)) * self.dc_weight
         current_kspace = [
             masked_kspace
             - soft_dc
-            - fft2(
-                complex_mul(e.unsqueeze(self.coil_dim), sense),
+            - fft.fft2(
+                utils.complex_mul(e.unsqueeze(self.coil_dim), sense),
                 centered=self.fft_centered,
                 normalization=self.fft_normalization,
                 spatial_dims=self.spatial_dims,
@@ -274,4 +266,4 @@ class RIMBlock(torch.nn.Module):
             for e in eta
         ]
 
-        return current_kspace, None
+        return current_kspace, hx

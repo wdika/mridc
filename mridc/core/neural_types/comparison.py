@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/neural_types/comparison.py
@@ -15,8 +15,10 @@ class NeuralTypeComparisonResult(Enum):
     LESS = 1  # A is B
     GREATER = 2  # B is A
     DIM_INCOMPATIBLE = 3  # Resize connector might fix incompatibility
-    TRANSPOSE_SAME = 4  # A transpose and/or converting between lists and tensors will make them same
+    # A transpose and/or converting between lists and tensors will make them same
+    TRANSPOSE_SAME = 4
     CONTAINER_SIZE_MISMATCH = 5  # A and B contain different number of elements
     INCOMPATIBLE = 6  # A and B are incompatible
-    SAME_TYPE_INCOMPATIBLE_PARAMS = 7  # A and B are of the same type but parametrized differently
+    # A and B are of the same type but parametrized differently
+    SAME_TYPE_INCOMPATIBLE_PARAMS = 7
     UNCHECKED = 8  # type comparison wasn't done

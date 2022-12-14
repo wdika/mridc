@@ -8,18 +8,17 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
-from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import fft2, ifft2
-from mridc.collections.common.parts.utils import complex_conj, complex_mul
-from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel, BaseSensitivityModel
-from mridc.collections.reconstruction.models.unet_base.unet_block import NormUnet
-from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
-from mridc.core.classes.common import typecheck
+import mridc.collections.common.losses.ssim as losses
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.reconstruction.models.base as base_models
+import mridc.collections.reconstruction.models.unet_base.unet_block as unet_block
+import mridc.core.classes.common as common_classes
 
 __all__ = ["JointICNet"]
 
 
-class JointICNet(BaseMRIReconstructionModel, ABC):
+class JointICNet(base_models.BaseMRIReconstructionModel, ABC):
     """
     Implementation of the Joint Deep Model-Based MR Image and Coil Sensitivity Reconstruction Network (Joint-ICNet), \
     as presented in Jun, Yohan, et al.
@@ -47,7 +46,7 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
         self.spatial_dims = cfg_dict.get("spatial_dims")
         self.coil_dim = cfg_dict.get("coil_dim")
 
-        self.kspace_model = NormUnet(
+        self.kspace_model = unet_block.NormUnet(
             cfg_dict.get("kspace_unet_num_filters"),
             cfg_dict.get("kspace_unet_num_pool_layers"),
             in_chans=2,
@@ -57,7 +56,7 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
             normalize=cfg_dict.get("kspace_unet_normalize"),
         )
 
-        self.image_model = NormUnet(
+        self.image_model = unet_block.NormUnet(
             cfg_dict.get("imspace_unet_num_filters"),
             cfg_dict.get("imspace_unet_num_pool_layers"),
             in_chans=2,
@@ -67,7 +66,7 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
             normalize=cfg_dict.get("imspace_unet_normalize"),
         )
 
-        self.sens_net = BaseSensitivityModel(
+        self.sens_net = base_models.BaseSensitivityModel(
             cfg_dict.get("sens_unet_num_filters"),
             cfg_dict.get("sens_unet_num_pool_layers"),
             mask_center=cfg_dict.get("sens_unet_mask_center"),
@@ -92,8 +91,22 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
 
         self.coil_combination_method = cfg_dict.get("coil_combination_method")
 
-        self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
+        if cfg_dict.get("train_loss_fn") == "ssim":
+            self.train_loss_fn = losses.SSIMLoss()
+        elif cfg_dict.get("train_loss_fn") == "l1":
+            self.train_loss_fn = L1Loss()
+        elif cfg_dict.get("train_loss_fn") == "mse":
+            self.train_loss_fn = torch.nn.MSELoss()
+        else:
+            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("train_loss_fn")))
+        if cfg_dict.get("val_loss_fn") == "ssim":
+            self.val_loss_fn = losses.SSIMLoss()
+        elif cfg_dict.get("val_loss_fn") == "l1":
+            self.val_loss_fn = L1Loss()
+        elif cfg_dict.get("val_loss_fn") == "mse":
+            self.val_loss_fn = torch.nn.MSELoss()
+        else:
+            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("val_loss_fn")))
 
         self.accumulate_estimates = False
 
@@ -102,9 +115,9 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
         Update the coil sensitivity maps.
 
         .. math::
-            C = (1 - 2 * \lambda_{k}^{C} * ni_{k}) * C_{k}
+            C = (1 - 2 * '\'lambda_{k}^{C} * ni_{k}) * C_{k}
 
-            C = 2 * \lambda_{k}^{C} * ni_{k} * D_{C}(F^-1(b))
+            C = 2 * '\'lambda_{k}^{C} * ni_{k} * D_{C}(F^-1(b))
 
             A(x_{k}) = M * F * (C * x_{k})
 
@@ -135,8 +148,8 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
         # 2 * lambda_{k}^{C} * ni_{k} * D_{C}(F^-1(b))
         sense_term_2 = 2 * self.reg_param_C[idx] * self.lr_sens[idx] * DC_sens
         # A(x_{k}) = M * F * (C * x_{k})
-        sense_term_3_A = fft2(
-            complex_mul(image.unsqueeze(self.coil_dim), sensitivity_maps),
+        sense_term_3_A = fft.fft2(
+            utils.complex_mul(image.unsqueeze(self.coil_dim), sensitivity_maps),
             centered=self.fft_centered,
             normalization=self.fft_normalization,
             spatial_dims=self.spatial_dims,
@@ -149,13 +162,15 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
             sense_term_3_A - y,
         )
 
-        sense_term_3_backward = ifft2(
+        sense_term_3_backward = fft.ifft2(
             sense_term_3_mask,
             centered=self.fft_centered,
             normalization=self.fft_normalization,
             spatial_dims=self.spatial_dims,
         )
-        sense_term_3 = 2 * self.lr_sens[idx] * sense_term_3_backward * complex_conj(image).unsqueeze(self.coil_dim)
+        sense_term_3 = (
+            2 * self.lr_sens[idx] * sense_term_3_backward * utils.complex_conj(image).unsqueeze(self.coil_dim)
+        )
         sensitivity_maps = sense_term_1 + sense_term_2 - sense_term_3
         return sensitivity_maps
 
@@ -164,9 +179,9 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
         Update the image.
 
         .. math::
-            x_{k} = (1 - 2 * \lamdba_{{k}_{I}} * mi_{k} - 2 * \lamdba_{{k}_{F}} * mi_{k}) * x_{k}
+            x_{k} = (1 - 2 * '\'lamdba_{{k}_{I}} * mi_{k} - 2 * '\'lamdba_{{k}_{F}} * mi_{k}) * x_{k}
 
-            x_{k} = 2 * mi_{k} * (\lambda_{{k}_{I}} * D_I(x_{k}) + \lambda_{{k}_{F}} * F^-1(D_F(f)))
+            x_{k} = 2 * mi_{k} * ('\'lambda_{{k}_{I}} * D_I(x_{k}) + '\'lambda_{{k}_{F}} * F^-1(D_F(f)))
 
             A(x{k} - b) = M * F * (C * x{k}) - b
 
@@ -196,9 +211,9 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
         ) * image
         # D_I(x_{k})
         image_term_2_DI = self.image_model(image.unsqueeze(self.coil_dim)).squeeze(self.coil_dim).contiguous()
-        image_term_2_DF = ifft2(
+        image_term_2_DF = fft.ifft2(
             self.kspace_model(
-                fft2(
+                fft.fft2(
                     image,
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
@@ -218,28 +233,28 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
             * (self.reg_param_I[idx] * image_term_2_DI + self.reg_param_F[idx] * image_term_2_DF)
         )
         # A(x{k}) - b) = M * F * (C * x{k}) - b
-        image_term_3_A = fft2(
-            complex_mul(image.unsqueeze(self.coil_dim), sensitivity_maps),
+        image_term_3_A = fft.fft2(
+            utils.complex_mul(image.unsqueeze(self.coil_dim), sensitivity_maps),
             centered=self.fft_centered,
             normalization=self.fft_normalization,
             spatial_dims=self.spatial_dims,
         )
         image_term_3_A = torch.where(mask == 0, torch.tensor([0.0], dtype=y.dtype).to(y.device), image_term_3_A) - y
         # 2 * mi_{k} * A^* * (A(x{k}) - b))
-        image_term_3_Aconj = complex_mul(
-            ifft2(
+        image_term_3_Aconj = utils.complex_mul(
+            fft.ifft2(
                 image_term_3_A,
                 centered=self.fft_centered,
                 normalization=self.fft_normalization,
                 spatial_dims=self.spatial_dims,
             ),
-            complex_conj(sensitivity_maps),
+            utils.complex_conj(sensitivity_maps),
         ).sum(self.coil_dim)
         image_term_3 = 2 * self.lr_image[idx] * image_term_3_Aconj
         image = image_term_1 + image_term_2 - image_term_3
         return image
 
-    @typecheck()
+    @common_classes.typecheck()
     def forward(
         self,
         y: torch.Tensor,
@@ -272,13 +287,15 @@ class JointICNet(BaseMRIReconstructionModel, ABC):
         """
         DC_sens = self.sens_net(y, mask)
         sensitivity_maps = DC_sens.clone()
-        image = complex_mul(
-            ifft2(y, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims),
-            complex_conj(sensitivity_maps),
+        image = utils.complex_mul(
+            fft.ifft2(
+                y, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
+            ),
+            utils.complex_conj(sensitivity_maps),
         ).sum(self.coil_dim)
         for idx in range(self.num_iter):
             sensitivity_maps = self.update_C(idx, DC_sens, sensitivity_maps, image, y, mask)
             image = self.update_X(idx, image, sensitivity_maps, y, mask)
         image = torch.view_as_complex(image)
-        _, image = center_crop_to_smallest(target, image)
+        _, image = utils.center_crop_to_smallest(target, image)
         return image

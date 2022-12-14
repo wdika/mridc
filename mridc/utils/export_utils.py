@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/utils/export_utils.py
@@ -9,6 +9,7 @@ from typing import Callable, Dict, Optional, Type
 import onnx
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from mridc.utils import logging
 

@@ -1,3 +1,4 @@
+# coding=utf-8
 # Configuration file for the Sphinx documentation builder.
 #
 # This file only contains a selection of the most common options. For a full
@@ -12,7 +13,6 @@
 #
 import os
 import sys
-
 from typing import List
 
 sys.path.insert(0, os.path.abspath("."))
@@ -26,7 +26,7 @@ copyright = "2022, Dimitrios Karkalousos"
 author = "Dimitrios Karkalousos"
 
 # The full version, including alpha/beta/rc tags
-release = "v.0.1.1"
+release = "v.0.3.0"
 
 
 # -- General configuration ---------------------------------------------------

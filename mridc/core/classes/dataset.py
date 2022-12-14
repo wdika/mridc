@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/classes/dataset.py
@@ -8,9 +8,9 @@ from typing import Optional
 
 from torch.utils import data
 
-__all__ = ["Dataset", "DatasetConfig", "IterableDataset"]
-
 from mridc.core.classes.common import Serialization, Typing, typecheck
+
+__all__ = ["Dataset", "DatasetConfig", "IterableDataset"]
 
 
 class Dataset(data.Dataset, Typing, Serialization, ABC):

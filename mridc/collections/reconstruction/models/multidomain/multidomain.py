@@ -10,8 +10,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from mridc.collections.common.parts.fft import fft2, ifft2
-from mridc.collections.common.parts.utils import complex_conj, complex_mul
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
 
 
 class MultiDomainConv2d(nn.Module):
@@ -40,14 +40,16 @@ class MultiDomainConv2d(nn.Module):
     def forward(self, image):
         """Forward method for the MultiDomainConv2d class."""
         kspace = [
-            fft2(im, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims)
+            fft.fft2(
+                im, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
+            )
             for im in torch.split(image.permute(0, 2, 3, 1).contiguous(), 2, -1)
         ]
         kspace = torch.cat(kspace, -1).permute(0, 3, 1, 2)
         kspace = self.kspace_conv(kspace)
 
         backward = [
-            ifft2(
+            fft.ifft2(
                 ks.float(),
                 centered=self.fft_centered,
                 normalization=self.fft_normalization,
@@ -87,14 +89,16 @@ class MultiDomainConvTranspose2d(nn.Module):
     def forward(self, image):
         """Forward method for the MultiDomainConvTranspose2d class."""
         kspace = [
-            fft2(im, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims)
+            fft.fft2(
+                im, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
+            )
             for im in torch.split(image.permute(0, 2, 3, 1).contiguous(), 2, -1)
         ]
         kspace = torch.cat(kspace, -1).permute(0, 3, 1, 2)
         kspace = self.kspace_conv(kspace)
 
         backward = [
-            ifft2(
+            fft.ifft2(
                 ks.float(),
                 centered=self.fft_centered,
                 normalization=self.fft_normalization,
@@ -243,7 +247,8 @@ class TransposeMultiDomainConvBlock(nn.Module):
 class StandardizationLayer(nn.Module):
     """
     Multi-channel data standardization method. Inspired by AIRS model submission to the Fast MRI 2020 challenge.
-    Given individual coil images :math:`\{x_i\}_{i=1}^{N_c}` and sensitivity coil maps :math:`\{S_i\}_{i=1}^{N_c}` \
+    Given individual coil images :math:`'\'{x_i'\'}_{i=1}^{N_c}` and sensitivity coil maps \
+    :math:`'\'{S_i'\'}_{i=1}^{N_c}`
     it returns
 
     .. math::
@@ -254,7 +259,7 @@ class StandardizationLayer(nn.Module):
 
     :math:`{x_{res}}_i = xi - S_i X x_{sense}` and
 
-    :math:`x_{sense} = \sum_{i=1}^{N_c} {S_i}^{*} X x_i`.
+    :math:`x_{sense} = '\'sum_{i=1}^{N_c} {S_i}^{*} X x_i`.
     """
 
     def __init__(self, coil_dim=1, channel_dim=-1):
@@ -264,8 +269,8 @@ class StandardizationLayer(nn.Module):
 
     def forward(self, coil_images: torch.Tensor, sensitivity_map: torch.Tensor) -> torch.Tensor:
         """Forward pass."""
-        combined_image = complex_mul(coil_images, complex_conj(sensitivity_map)).sum(self.coil_dim)
-        residual_image = combined_image.unsqueeze(self.coil_dim) - complex_mul(
+        combined_image = utils.complex_mul(coil_images, utils.complex_conj(sensitivity_map)).sum(self.coil_dim)
+        residual_image = combined_image.unsqueeze(self.coil_dim) - utils.complex_mul(
             combined_image.unsqueeze(self.coil_dim), sensitivity_map
         )
         return torch.cat(

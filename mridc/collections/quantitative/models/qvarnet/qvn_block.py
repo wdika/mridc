@@ -4,11 +4,10 @@ __author__ = "Dimitrios Karkalousos, Chaoping Zhang"
 from typing import List, Optional, Tuple
 
 import torch
-from matplotlib import pyplot as plt
 
-from mridc.collections.common.parts.fft import fft2, ifft2
-from mridc.collections.common.parts.utils import coil_combination, complex_conj, complex_mul
-from mridc.collections.quantitative.models.qrim.utils import SignalForwardModel
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.quantitative.models.qrim.utils as qrim_utils
 
 
 class qVarNetBlock(torch.nn.Module):
@@ -50,7 +49,7 @@ class qVarNetBlock(torch.nn.Module):
         super().__init__()
 
         self.linear_forward_model = (
-            SignalForwardModel(sequence="MEGRE") if linear_forward_model is None else linear_forward_model
+            qrim_utils.SignalForwardModel(sequence="MEGRE") if linear_forward_model is None else linear_forward_model
         )
 
         self.model = model
@@ -74,8 +73,8 @@ class qVarNetBlock(torch.nn.Module):
         -------
         SENSE reconstruction expanded to the same size as the input sens_maps.
         """
-        return fft2(
-            complex_mul(x, sens_maps),
+        return fft.fft2(
+            utils.complex_mul(x, sens_maps),
             centered=self.fft_centered,
             normalization=self.fft_normalization,
             spatial_dims=self.spatial_dims,
@@ -94,8 +93,10 @@ class qVarNetBlock(torch.nn.Module):
         -------
         SENSE coil-combined reconstruction.
         """
-        x = ifft2(x, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims)
-        return complex_mul(x, complex_conj(sens_maps)).sum(dim=self.coil_dim)
+        x = fft.ifft2(
+            x, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
+        )
+        return utils.complex_mul(x, utils.complex_conj(sens_maps)).sum(dim=self.coil_dim)
 
     def forward(
         self,

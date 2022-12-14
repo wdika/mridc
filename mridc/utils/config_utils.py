@@ -1,12 +1,7 @@
-# encoding: utf-8
-import sys
-
-__author__ = "Dimitrios Karkalousos"
-
-# Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/utils/config_utils.py
-
+# coding=utf-8
 import copy
 import inspect
+import sys
 from dataclasses import is_dataclass
 from typing import Dict, List, Optional, Set
 
@@ -14,6 +9,11 @@ from omegaconf import DictConfig, OmegaConf, open_dict
 
 from mridc.core.conf.modelPT import MRIDCConfig
 from mridc.utils import logging
+
+__author__ = "Dimitrios Karkalousos"
+
+# Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/utils/config_utils.py
+
 
 _HAS_HYDRA = True
 

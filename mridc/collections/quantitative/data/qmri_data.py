@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos, Chaoping Zhang"
 
 import logging
@@ -12,7 +12,7 @@ import numpy as np
 import yaml  # type: ignore
 from torch.utils.data import Dataset
 
-from mridc.collections.common.parts.utils import is_none
+import mridc.collections.common.parts.utils as utils
 
 
 class qMRISliceDataset(Dataset):
@@ -105,7 +105,7 @@ class qMRISliceDataset(Dataset):
             files = list(Path(root).iterdir())
             for fname in sorted(files):
                 metadata, num_slices = self._retrieve_metadata(fname, data_saved_per_slice=self.data_saved_per_slice)
-                if not is_none(num_slices) and not is_none(consecutive_slices):
+                if not utils.is_none(num_slices) and not utils.is_none(consecutive_slices):
                     num_slices = num_slices - (consecutive_slices - 1)
                 self.examples += [(fname, slice_ind, metadata) for slice_ind in range(num_slices)]
 
@@ -195,7 +195,7 @@ class qMRISliceDataset(Dataset):
         if self.consecutive_slices == 1:
             if data.shape[0] == 1:
                 return data[0]
-            elif data.ndim != 2:
+            if data.ndim != 2:
                 return data[dataslice]
             return data
 
@@ -256,7 +256,8 @@ class qMRISliceDataset(Dataset):
                 raise ValueError("No kspace data found in file. Only 'kspace' or 'ksp' keys are supported.")
 
             if self.init_coil_dim in [3, 4, -1]:
-                kspace = np.transpose(kspace, (0, 3, 1, 2))  # [nr_TEs, nr_channels, nr_rows, nr_cols]
+                # [nr_TEs, nr_channels, nr_rows, nr_cols]
+                kspace = np.transpose(kspace, (0, 3, 1, 2))
 
             kspace = kspace / self.kspace_scaling_factor
 
@@ -275,7 +276,8 @@ class qMRISliceDataset(Dataset):
                 sensitivity_map = np.array([])
 
             if self.init_coil_dim in [3, 4, -1]:
-                sensitivity_map = np.transpose(sensitivity_map, (2, 0, 1))  # [nr_channels, nr_rows, nr_cols]
+                # [nr_channels, nr_rows, nr_cols]
+                sensitivity_map = np.transpose(sensitivity_map, (2, 0, 1))
 
             if "mask" in hf:
                 mask = np.asarray(self.get_consecutive_slices(hf, "mask", dataslice))
@@ -353,7 +355,9 @@ class qMRISliceDataset(Dataset):
 
         if self.data_saved_per_slice:
             # arbitrary slice number for logging purposes
-            fname = fname.name  # type: ignore
+            fname = str(fname.name)  # type: ignore
+            if "h5" in fname:  # type: ignore
+                fname = fname.split(".h5")[0]  # type: ignore
             dataslice = int(fname.split("_")[-1])  # type: ignore
             fname = "_".join(fname.split("_")[:-1])  # type: ignore
 

@@ -1,8 +1,7 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
-# Taken and adapted from:
-# https://github.com/wdika/NeMo/blob/9d095ff261319301e4711edf7530a6bb7cf6c8b6/nemo/core/optim/adafactor.py
+# Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/optim/adafactor.py
 
 import math
 
@@ -128,7 +127,7 @@ class Adafactor(Optimizer):
                 state = self.state[p]
                 grad_shape = grad.shape
 
-                factored, use_first_moment = _get_options(group, grad_shape)
+                factored, use_first_moment = self._get_options(group, grad_shape)
                 # State Initialization
                 if len(state) == 0:
                     state["step"] = 0
@@ -157,7 +156,7 @@ class Adafactor(Optimizer):
                     p_data_fp32 = p_data_fp32.float()
 
                 state["step"] += 1
-                state["RMS"] = _rms(p_data_fp32)
+                state["RMS"] = self._rms(p_data_fp32)
                 group["lr"] = self._get_lr(group, state)
 
                 beta2t = 1.0 - math.pow(state["step"], group["decay_rate"])
@@ -170,7 +169,7 @@ class Adafactor(Optimizer):
                     exp_avg_sq_col.mul_(beta2t).add_(update.mean(dim=-2), alpha=1.0 - beta2t)
 
                     # Approximation of exponential moving average of square of gradient
-                    update = _approx_sq_grad(exp_avg_sq_row, exp_avg_sq_col)
+                    update = self._approx_sq_grad(exp_avg_sq_row, exp_avg_sq_col)
                     update.mul_(grad)
                 else:
                     exp_avg_sq = state["exp_avg_sq"]
@@ -178,7 +177,7 @@ class Adafactor(Optimizer):
                     exp_avg_sq.mul_(beta2t).add_(update, alpha=1.0 - beta2t)
                     update = exp_avg_sq.rsqrt().mul_(grad)
 
-                update.div_((_rms(update) / group["clip_threshold"]).clamp_(min=1.0))
+                update.div_((self._rms(update) / group["clip_threshold"]).clamp_(min=1.0))
                 update.mul_(group["lr"])
 
                 if use_first_moment:

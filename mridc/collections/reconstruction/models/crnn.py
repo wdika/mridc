@@ -10,19 +10,18 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch.nn import L1Loss
 
-from mridc.collections.common.losses.ssim import SSIMLoss
-from mridc.collections.common.parts.fft import ifft2
-from mridc.collections.common.parts.utils import coil_combination
-from mridc.collections.reconstruction.models.base import BaseMRIReconstructionModel
-from mridc.collections.reconstruction.models.conv.gruconv2d import GRUConv2d
-from mridc.collections.reconstruction.models.convrecnet.crnn_block import RecurrentConvolutionalNetBlock
-from mridc.collections.reconstruction.parts.utils import center_crop_to_smallest
-from mridc.core.classes.common import typecheck
+import mridc.collections.common.losses.ssim as losses
+import mridc.collections.common.parts.fft as fft
+import mridc.collections.common.parts.utils as utils
+import mridc.collections.reconstruction.models.base as base_models
+import mridc.collections.reconstruction.models.conv.gruconv2d as gruconv2d
+import mridc.collections.reconstruction.models.convrecnet.crnn_block as crnn_block
+import mridc.core.classes.common as common_classes
 
 __all__ = ["CRNNet"]
 
 
-class CRNNet(BaseMRIReconstructionModel, ABC):
+class CRNNet(base_models.BaseMRIReconstructionModel, ABC):
     """
     Implementation of the Convolutional Recurrent Neural Network, inspired by C. Qin, J. Schlemper, J. Caballero, \
     A. N. Price, J. V. Hajnal and D. Rueckert.
@@ -51,8 +50,8 @@ class CRNNet(BaseMRIReconstructionModel, ABC):
         self.coil_dim = cfg_dict.get("coil_dim")
         self.num_iterations = cfg_dict.get("num_iterations")
 
-        self.crnn = RecurrentConvolutionalNetBlock(
-            GRUConv2d(
+        self.crnn = crnn_block.RecurrentConvolutionalNetBlock(
+            gruconv2d.GRUConv2d(
                 in_channels=2,
                 out_channels=2,
                 hidden_channels=cfg_dict.get("hidden_channels"),
@@ -72,12 +71,25 @@ class CRNNet(BaseMRIReconstructionModel, ABC):
         # initialize weights if not using pretrained ccnn
         # TODO if not ccnn_cfg_dict.get("pretrained", False)
 
-        self.train_loss_fn = SSIMLoss() if cfg_dict.get("train_loss_fn") == "ssim" else L1Loss()
-        self.eval_loss_fn = SSIMLoss() if cfg_dict.get("eval_loss_fn") == "ssim" else L1Loss()
-
+        if cfg_dict.get("train_loss_fn") == "ssim":
+            self.train_loss_fn = losses.SSIMLoss()
+        elif cfg_dict.get("train_loss_fn") == "l1":
+            self.train_loss_fn = L1Loss()
+        elif cfg_dict.get("train_loss_fn") == "mse":
+            self.train_loss_fn = torch.nn.MSELoss()
+        else:
+            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("train_loss_fn")))
+        if cfg_dict.get("val_loss_fn") == "ssim":
+            self.val_loss_fn = losses.SSIMLoss()
+        elif cfg_dict.get("val_loss_fn") == "l1":
+            self.val_loss_fn = L1Loss()
+        elif cfg_dict.get("val_loss_fn") == "mse":
+            self.val_loss_fn = torch.nn.MSELoss()
+        else:
+            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("val_loss_fn")))
         self.accumulate_estimates = True
 
-    @typecheck()
+    @common_classes.typecheck()
     def forward(
         self,
         y: torch.Tensor,
@@ -129,12 +141,12 @@ class CRNNet(BaseMRIReconstructionModel, ABC):
         pred: torch.Tensor, shape [batch_size, n_x, n_y, 2]
             Processed prediction.
         """
-        pred = ifft2(
+        pred = fft.ifft2(
             pred, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
         )
-        pred = coil_combination(pred, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim)
+        pred = utils.coil_combination(pred, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim)
         pred = torch.view_as_complex(pred)
-        _, pred = center_crop_to_smallest(target, pred)
+        _, pred = utils.center_crop_to_smallest(target, pred)
         return pred
 
     def process_loss(self, target, pred, _loss_fn):

@@ -1,4 +1,4 @@
-# encoding: utf-8
+# coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/collections/common/losses/aggregator.py
@@ -7,12 +7,12 @@ from typing import List
 
 import torch
 
-__all__ = ["AggregatorLoss"]
-
 from mridc.core.classes.common import typecheck
 from mridc.core.classes.loss import Loss
 from mridc.core.neural_types.elements import LossType
 from mridc.core.neural_types.neural_type import NeuralType
+
+__all__ = ["AggregatorLoss"]
 
 
 class AggregatorLoss(Loss):
