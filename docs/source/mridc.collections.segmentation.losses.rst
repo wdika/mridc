@@ -20,6 +20,14 @@ mridc.collections.segmentation.losses.dice module
    :undoc-members:
    :show-inheritance:
 
+mridc.collections.segmentation.losses.utils module
+--------------------------------------------------
+
+.. automodule:: mridc.collections.segmentation.losses.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

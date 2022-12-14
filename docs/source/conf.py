@@ -26,7 +26,7 @@ copyright = "2022, Dimitrios Karkalousos"
 author = "Dimitrios Karkalousos"
 
 # The full version, including alpha/beta/rc tags
-release = "v.0.1.1"
+release = "v.0.3.0"
 
 
 # -- General configuration ---------------------------------------------------

@@ -9,7 +9,6 @@ Subpackages
 
    mridc.collections.segmentation.data
    mridc.collections.segmentation.losses
-   mridc.collections.segmentation.metrics
    mridc.collections.segmentation.models
    mridc.collections.segmentation.parts
 

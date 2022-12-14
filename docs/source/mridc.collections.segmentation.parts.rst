@@ -12,6 +12,14 @@ mridc.collections.segmentation.parts.transforms module
    :undoc-members:
    :show-inheritance:
 
+mridc.collections.segmentation.parts.utils module
+-------------------------------------------------
+
+.. automodule:: mridc.collections.segmentation.parts.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 
