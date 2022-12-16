@@ -4,7 +4,7 @@ coverage:
   status:
     patch: true
 
-  range: 70..100     # First number represents red, and second represents green
+  range: 60..100     # First number represents red, and second represents green
   # (default is 70..100)
   round: nearest       # up, down, or nearest
   precision: 2      # Number of decimal places, between 0 and 5

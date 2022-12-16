@@ -307,9 +307,9 @@ class BaseMRIReconstructionModel(modelPT.ModelPT, ABC):
                 preds = next(preds)
             except StopIteration:
                 pass
-            val_loss = sum(self.process_loss(target, preds, _loss_fn=self.eval_loss_fn, mask=None))
+            val_loss = sum(self.process_loss(target, preds, _loss_fn=self.val_loss_fn, mask=None))
         else:
-            val_loss = self.process_loss(target, preds, _loss_fn=self.eval_loss_fn, mask=None)
+            val_loss = self.process_loss(target, preds, _loss_fn=self.val_loss_fn, mask=None)
 
         # Cascades
         if isinstance(preds, list):

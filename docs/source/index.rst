@@ -9,7 +9,7 @@ Welcome to mridc's documentation!
    :parser: myst_parser.sphinx_
 
 .. toctree::
-    :maxdepth: 4
+    :maxdepth: 6
     :caption: API Documentation:
 
     modules.rst

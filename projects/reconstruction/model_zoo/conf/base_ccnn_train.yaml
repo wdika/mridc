@@ -8,46 +8,69 @@ model:
   hidden_channels: 64
   n_convs: 5
   batchnorm: false
-  no_dc: false
+  dimensionality: 2
+  no_dc: true
+  accumulate_estimates: true
+  train_loss_fn: l1
+  val_loss_fn: l1
+  consecutive_slices: 1
   coil_combination_method: SENSE
   use_sens_net: false
   sens_chans: 8
   sens_pools: 4
   sens_mask_type: 2D
-  train_loss_fn: l1
-  val_loss_fn: l1
-  fft_centered: True
-  fft_normalization: ortho
+  fft_centered: false
+  fft_normalization: backward
   spatial_dims:
     - -2
     - -1
   coil_dim: 1
+  complex_data: true
+  log_images: true
 
   train_ds:
     data_path: ???
+    sense_path: None
+    mask_path: None
+    initial_predictions_path: None
     challenge: multicoil
+    batch_size: 1
+    sample_rate: 1
+    volume_sample_rate: None
+    use_dataset_cache: false
+    dataset_cache_file: None
+    num_cols: None
+    consecutive_slices: 1
+    data_saved_per_slice: false
+    complex_data: true
+    apply_prewhitening: false
+    apply_gcc: false
     coil_combination_method: SENSE
-    fft_centered: True
-    fft_normalization: ortho
-    spatial_dims:
-      - -2
-      - -1
-    coil_dim: 1
+    dimensionality: 2
     mask_args:
-      type: gaussian2d
+      type: poisson2d
       accelerations:
         - 10
       center_fractions:
         - 0.7
       scale: 0.02
-      shift_mask: false
+      shift_mask: true
       use_seed: true
-    normalize_inputs: true
+    half_scan_percentage: 0.0
+    remask: false
     crop_size: None
+    kspace_crop: false
     crop_before_masking: true
     kspace_zero_filling_size: None
-    sample_rate: 1
-    batch_size: 1
+    normalize_inputs: true
+    max_norm: true
+    fft_centered: false
+    fft_normalization: backward
+    spatial_dims:
+      - -2
+      - -1
+    coil_dim: 1
+    use_seed: true
     shuffle: true
     num_workers: 8
     drop_last: false
@@ -55,29 +78,47 @@ model:
 
   validation_ds:
     data_path: ???
+    sense_path: None
+    mask_path: None
+    initial_predictions_path: None
     challenge: multicoil
+    batch_size: 1
+    sample_rate: 1
+    volume_sample_rate: None
+    use_dataset_cache: false
+    dataset_cache_file: None
+    num_cols: None
+    consecutive_slices: 1
+    data_saved_per_slice: false
+    complex_data: true
+    apply_prewhitening: false
+    apply_gcc: false
     coil_combination_method: SENSE
-    fft_centered: True
-    fft_normalization: ortho
-    spatial_dims:
-      - -2
-      - -1
-    coil_dim: 1
+    dimensionality: 2
     mask_args:
-      type: gaussian2d
+      type: poisson2d
       accelerations:
         - 10
       center_fractions:
         - 0.7
       scale: 0.02
-      shift_mask: false
-      use_seed: false
-    normalize_inputs: true
+      shift_mask: true
+      use_seed: true
+    half_scan_percentage: 0.0
+    remask: false
     crop_size: None
+    kspace_crop: false
     crop_before_masking: true
     kspace_zero_filling_size: None
-    sample_rate: 1
-    batch_size: 1
+    normalize_inputs: true
+    max_norm: true
+    fft_centered: false
+    fft_normalization: backward
+    spatial_dims:
+      - -2
+      - -1
+    coil_dim: 1
+    use_seed: true
     shuffle: false
     num_workers: 8
     drop_last: false
@@ -98,9 +139,10 @@ model:
 
 trainer:
   strategy: ddp
-  gpus: 1
+  accelerator: gpu
+  devices: 1
   num_nodes: 1
-  max_epochs: 20
+  max_epochs: 200
   precision: 16
   enable_checkpointing: false
   logger: false
@@ -109,6 +151,9 @@ trainer:
   max_steps: -1
 
 exp_manager:
-  name: ???
+  exp_dir: ???
   create_tensorboard_logger: true
+  create_wandb_logger: false
+  wandb_logger_kwargs:
+    project: ???
   files_to_copy: [ ]

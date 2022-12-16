@@ -291,7 +291,7 @@ class ConjugateGradient(torch.autograd.Function):
                         x * mask,
                         centered=ctx.fft_centered,
                         normalization=ctx.fft_normalization,
-                        spatial_dims=ctx.spatial_dimso,
+                        spatial_dims=ctx.spatial_dims,
                     ),
                     utils.complex_conj(smaps),
                 ),

@@ -38,7 +38,8 @@ def log_likelihood_gradient(
     -------
     Gradient of the log-likelihood function.
     """
-    coil_dim = 1
+    if coil_dim == 0:
+        coil_dim += 1
 
     eta_real, eta_imag = map(lambda x: torch.unsqueeze(x, coil_dim), eta.chunk(2, -1))
     sense_real, sense_imag = sense.chunk(2, -1)

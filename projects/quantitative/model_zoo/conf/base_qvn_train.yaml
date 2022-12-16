@@ -43,6 +43,9 @@ model:
 #    - S0: 500.0
 #    - B0: 20000.0
 #    - phi: 500.0
+  shift_B0_input: false
+  dimensionality: 2
+  consecutive_slices: 1
   coil_combination_method: SENSE
   use_sens_net: false
   sens_chans: 8
@@ -54,64 +57,29 @@ model:
     - -2
     - -1
   coil_dim: 2
-  shift_B0_input: false
+  complex_data: true
+  log_images: true
 
   train_ds:
     data_path: ???
-    sequence: MEGRE
-    data_saved_per_slice: true
-    coil_combination_method: SENSE
-    dimensionality: 2
-    consecutive_slices: 1
-    init_coil_dim: -1
-    kspace_scaling_factor: 10000
-    fft_centered: false
-    fft_normalization: backward
-    spatial_dims:
-      - -2
-      - -1
-    coil_dim: 2
-    precompute_quantitative_maps: false
-    shift_B0_input: false
-    TEs:
-      - 3.0
-      - 11.5
-      - 20.0
-      - 28.5
-    mask_args:
-      type: gaussian2d
-      accelerations:
-        - 3
-        - 6
-        - 9
-        - 12
-      center_fractions:
-        - 0.7
-        - 0.7
-        - 0.7
-        - 0.7
-      scale: 0.02
-      shift_mask: false
-      use_seed: true
-    normalize_inputs: true
-    max_norm: true
-    crop_size: None
-    crop_before_masking: true
-    kspace_zero_filling_size: None
-    sample_rate: 1
+    sense_path: None
+    mask_path: None
+    initial_predictions_path: None
+    challenge: multicoil
     batch_size: 1
-    shuffle: true
-    num_workers: 8
-    drop_last: false
-    pin_memory: false
-
-  validation_ds:
-    data_path: ???
-    sequence: MEGRE
-    data_saved_per_slice: true
+    sample_rate: 1
+    volume_sample_rate: None
+    use_dataset_cache: false
+    dataset_cache_file: None
+    num_cols: None
+    consecutive_slices: 1
+    data_saved_per_slice: false
+    complex_data: true
+    apply_prewhitening: false
+    apply_gcc: false
     coil_combination_method: SENSE
     dimensionality: 2
-    consecutive_slices: 1
+    sequence: MEGRE
     init_coil_dim: -1
     kspace_scaling_factor: 10000
     fft_centered: false
@@ -147,8 +115,66 @@ model:
     crop_size: None
     crop_before_masking: true
     kspace_zero_filling_size: None
-    sample_rate: 1
+    shuffle: true
+    num_workers: 8
+    drop_last: false
+    pin_memory: false
+
+  validation_ds:
+    data_path: ???
+    sense_path: None
+    mask_path: None
+    initial_predictions_path: None
+    challenge: multicoil
     batch_size: 1
+    sample_rate: 1
+    volume_sample_rate: None
+    use_dataset_cache: false
+    dataset_cache_file: None
+    num_cols: None
+    consecutive_slices: 1
+    data_saved_per_slice: false
+    complex_data: true
+    apply_prewhitening: false
+    apply_gcc: false
+    coil_combination_method: SENSE
+    dimensionality: 2
+    sequence: MEGRE
+    init_coil_dim: -1
+    kspace_scaling_factor: 10000
+    fft_centered: false
+    fft_normalization: backward
+    spatial_dims:
+      - -2
+      - -1
+    coil_dim: 2
+    precompute_quantitative_maps: false
+    shift_B0_input: false
+    TEs:
+      - 3.0
+      - 11.5
+      - 20.0
+      - 28.5
+    mask_args:
+      type: gaussian2d
+      accelerations:
+        - 3
+        - 6
+        - 9
+        - 12
+      center_fractions:
+        - 0.7
+        - 0.7
+        - 0.7
+        - 0.7
+      scale: 0.02
+      shift_mask: false
+      use_seed: false
+    normalize_inputs: true
+    max_norm: true
+    crop_size: None
+    crop_before_masking: true
+    kspace_zero_filling_size: None
     shuffle: false
     num_workers: 8
     drop_last: false
@@ -169,7 +195,8 @@ model:
 
 trainer:
   strategy: ddp
-  gpus: 1
+  accelerator: gpu
+  devices: 1
   num_nodes: 1
   max_epochs: 200
   precision: 16

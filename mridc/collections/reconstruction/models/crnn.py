@@ -149,7 +149,7 @@ class CRNNet(base_models.BaseMRIReconstructionModel, ABC):
         _, pred = utils.center_crop_to_smallest(target, pred)
         return pred
 
-    def process_loss(self, target, pred, _loss_fn):
+    def process_loss(self, target, pred, _loss_fn=None, mask=None):
         """
         Process the loss.
 

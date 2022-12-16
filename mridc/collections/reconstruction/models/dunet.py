@@ -83,6 +83,7 @@ class DUNet(base_models.BaseMRIReconstructionModel, ABC):
         elif data_consistency_term == "PROX":
             dc_layer = dc_layers.DataProxCGLayer(
                 lambda_init=cfg_dict.get("data_consistency_lambda_init"),
+                iter=cfg_dict.get("data_consistency_iterations"),
                 fft_centered=self.fft_centered,
                 fft_normalization=self.fft_normalization,
                 spatial_dims=self.spatial_dims,
