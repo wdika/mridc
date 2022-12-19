@@ -5,6 +5,7 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import DictConfig, OmegaConf
 
+from mridc.collections.multitask.models import MTLMRIRS
 from mridc.collections.quantitative.models.qcirim import qCIRIM
 from mridc.collections.quantitative.models.qvn import qVarNet
 from mridc.collections.reconstruction.models.ccnn import CascadeNet
@@ -81,6 +82,8 @@ def main(cfg: DictConfig) -> None:
         model = KIKINet(cfg.model, trainer=trainer)
     elif model_name == "LPDNET":
         model = LPDNet(cfg.model, trainer=trainer)
+    elif model_name == "MTLMRIRS":
+        model = MTLMRIRS(cfg.model, trainer=trainer)
     elif model_name == "MULTIDOMAINNET":
         model = MultiDomainNet(cfg.model, trainer=trainer)
     elif model_name == "PICS":
@@ -120,9 +123,9 @@ def main(cfg: DictConfig) -> None:
     else:
         raise NotImplementedError(
             f"{model_name} is not implemented in MRIDC. You can use one of the following methods: "
-            "CASCADENET, CIRIM, CRNNET, DUNET, E2EVN, IDSLR, JOINTICNET, JRSCIRIM, KIKINET, LPDNET, MULTIDOMAINNET, "
-            "PICS, qCIRIM, qVN, RECSEGNET, RVN, SEGMENTATIONATTENTIONUNET, SEGMENTATIONLAMBDAUNET, SEGMENTATIONUNET, "
-            "SEGMENTATION3DUNET, SEGMENTATIONVNET, SEGNET, UNET, VSNET, XPDNET, or Zero-Filled. /n"
+            "CASCADENET, CIRIM, CRNNET, DUNET, E2EVN, IDSLR, JOINTICNET, JRSCIRIM, KIKINET, LPDNET, MTLMRIRS, "
+            "MULTIDOMAINNET, PICS, qCIRIM, qVN, RECSEGNET, RVN, SEGMENTATIONATTENTIONUNET, SEGMENTATIONLAMBDAUNET, "
+            "SEGMENTATIONUNET, SEGMENTATION3DUNET, SEGMENTATIONVNET, SEGNET, UNET, VSNET, XPDNET, or Zero-Filled. /n"
             "If you implemented a new model, please consider adding it through a PR on GitHub."
         )
 
