@@ -4,11 +4,11 @@ mode: train
 
 model:
   model_name: qCIRIM
-  use_reconstruction_module: false
+  use_reconstruction_module: true
   reconstruction_module_recurrent_layer: IndRNN
   reconstruction_module_conv_filters:
-    - 128
-    - 128
+    - 64
+    - 64
     - 2
   reconstruction_module_conv_kernels:
     - 5
@@ -23,8 +23,8 @@ model:
     - true
     - false
   reconstruction_module_recurrent_filters:
-    - 128
-    - 128
+    - 64
+    - 64
     - 0
   reconstruction_module_recurrent_kernels:
     - 1
@@ -44,12 +44,12 @@ model:
   reconstruction_module_num_cascades: 1
   reconstruction_module_dimensionality: 2
   reconstruction_module_no_dc: true
-  reconstruction_module_keep_eta: true
-  reconstruction_module_accumulate_estimates: true
+  reconstruction_module_keep_prediction: true
+  reconstruction_module_accumulate_predictions: true
   quantitative_module_recurrent_layer: IndRNN
   quantitative_module_conv_filters:
-    - 128
-    - 128
+    - 64
+    - 64
     - 4
   quantitative_module_conv_kernels:
     - 5
@@ -64,8 +64,8 @@ model:
     - true
     - false
   quantitative_module_recurrent_filters:
-    - 128
-    - 128
+    - 64
+    - 64
     - 0
   quantitative_module_recurrent_kernels:
     - 1
@@ -84,8 +84,8 @@ model:
   quantitative_module_conv_dim: 2
   quantitative_module_num_cascades: 1
   quantitative_module_no_dc: true
-  quantitative_module_keep_eta: true
-  quantitative_module_accumulate_estimates: true
+  quantitative_module_keep_prediction: true
+  quantitative_module_accumulate_predictions: true
   quantitative_module_signal_forward_model_sequence: MEGRE
   quantitative_module_dimensionality: 2
   quantitative_module_gamma_regularization_factors:
@@ -106,119 +106,130 @@ model:
 #    - B0: 20000.0
 #    - phi: 500.0
   shift_B0_input: false
-  dimensionality: 2
-  consecutive_slices: 1
-  coil_combination_method: SENSE
-  use_sens_net: false
-  sens_chans: 8
-  sens_pools: 4
-  sens_mask_type: 2D
   fft_centered: false
   fft_normalization: backward
   spatial_dims:
     - -2
     - -1
   coil_dim: 2
-  complex_data: true
+  coil_combination_method: SENSE
+  use_sens_net: false
+  consecutive_slices: 1
   log_images: true
 
   train_ds:
-    data_path: ???
-    sequence: MEGRE
-    data_saved_per_slice: true
-    coil_combination_method: SENSE
-    dimensionality: 2
+    data_path: /data/projects/recon/data/public/ahead_preprocessing3
+    coil_sensitivity_maps_path: None
+    mask_path: None
+    sample_rate: .1
+    volume_sample_rate: None
+    use_dataset_cache: false
+    dataset_cache_file: None
+    num_cols: None
     consecutive_slices: 1
-    init_coil_dim: -1
-    kspace_scaling_factor: 10000
-    fft_centered: false
-    fft_normalization: backward
-    spatial_dims:
-      - -2
-      - -1
-    coil_dim: 2
-    precompute_quantitative_maps: false
-    shift_B0_input: false
+    data_saved_per_slice: false
     TEs:
       - 3.0
       - 11.5
       - 20.0
       - 28.5
+    precompute_quantitative_maps: true
+    qmaps_scaling_factor: 1e-3
+    shift_B0_input: true
+    apply_prewhitening: false
+    apply_gcc: false
+    coil_combination_method: SENSE
+    dimensionality: 2
     mask_args:
       type: gaussian2d
       accelerations:
-        - 3
-        - 6
-        - 9
         - 12
       center_fractions:
-        - 0.7
-        - 0.7
-        - 0.7
         - 0.7
       scale: 0.02
       shift_mask: false
       use_seed: true
-    normalize_inputs: true
-    max_norm: true
+    half_scan_percentage: 0.0
+    remask: false
     crop_size: None
+    kspace_crop: false
     crop_before_masking: true
     kspace_zero_filling_size: None
-    sample_rate: 1
-    batch_size: 1
-    shuffle: true
-    num_workers: 8
-    drop_last: false
-    pin_memory: false
-
-  validation_ds:
-    data_path: ???
-    sequence: MEGRE
-    data_saved_per_slice: true
-    coil_combination_method: SENSE
-    dimensionality: 2
-    consecutive_slices: 1
-    init_coil_dim: -1
-    kspace_scaling_factor: 10000
+    normalize_inputs: true
+    normalization_type: max
     fft_centered: false
     fft_normalization: backward
     spatial_dims:
       - -2
       - -1
     coil_dim: 2
-    precompute_quantitative_maps: false
-    shift_B0_input: false
+    use_seed: true
+    sequence: MEGRE
+    init_coil_dim: -1
+    fixed_precomputed_acceleration: None
+    kspace_scaling_factor: 10000
+    batch_size: 1
+    shuffle: true
+    num_workers: 8
+    pin_memory: false
+    drop_last: false
+
+  validation_ds:
+    data_path: /data/projects/recon/data/public/ahead_preprocessing3
+    coil_sensitivity_maps_path: None
+    mask_path: None
+    sample_rate: .1
+    volume_sample_rate: None
+    use_dataset_cache: false
+    dataset_cache_file: None
+    num_cols: None
+    consecutive_slices: 1
+    data_saved_per_slice: false
     TEs:
       - 3.0
       - 11.5
       - 20.0
       - 28.5
+    precompute_quantitative_maps: true
+    qmaps_scaling_factor: 1e-3
+    shift_B0_input: true
+    apply_prewhitening: false
+    apply_gcc: false
+    coil_combination_method: SENSE
+    dimensionality: 2
     mask_args:
       type: gaussian2d
       accelerations:
-        - 3
-        - 6
-        - 9
         - 12
       center_fractions:
-        - 0.7
-        - 0.7
-        - 0.7
         - 0.7
       scale: 0.02
       shift_mask: false
       use_seed: false
-    normalize_inputs: true
-    max_norm: true
+    half_scan_percentage: 0.0
+    remask: false
     crop_size: None
+    kspace_crop: false
     crop_before_masking: true
     kspace_zero_filling_size: None
-    sample_rate: 1
+    normalize_inputs: true
+    normalization_type: max
+    fft_centered: false
+    fft_normalization: backward
+    spatial_dims:
+      - -2
+      - -1
+    coil_dim: 2
+    use_seed: false
+    sequence: MEGRE
+    init_coil_dim: -1
+    fixed_precomputed_acceleration: None
+    kspace_scaling_factor: 10000
     batch_size: 1
     shuffle: false
     num_workers: 8
-    drop_last: false
     pin_memory: false
+    drop_last: false
 
   optim:
     name: adam
@@ -247,7 +258,7 @@ trainer:
   max_steps: -1
 
 exp_manager:
-  exp_dir: ???
+  exp_dir: /data/projects/recon/other/dkarkalousos/mridc/ahead
   create_tensorboard_logger: true
   create_wandb_logger: false
   wandb_logger_kwargs:

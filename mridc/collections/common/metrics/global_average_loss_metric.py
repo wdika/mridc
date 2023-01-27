@@ -23,14 +23,30 @@ class GlobalAverageLossMetric(Metric):
 
     Parameters
     ----------
-    compute_on_step: The method :meth:`forward` only calls ``update()`` and returns ``None`` if this is set to \
-    ``False``. Default: ``True``
-    dist_sync_on_step: Synchronize metric state across processes at each method :meth:`forward` call before \
-    returning the value at the step
-    process_group: Specify the process group on which synchronization is called. default: ``None`` (which selects \
-    the entire world)
-    take_avg_loss: If ``True`` values of :meth:`update` method ``loss`` argument has to be a mean loss. If ``False`` \
-    values of :meth:`update` method ``loss`` argument has to be a sum of losses. default: ``True``
+    compute_on_step : bool
+        The method :meth:`forward` only calls ``update()`` and returns ``None`` if this is set to ``False``.
+        Default: ``True``.
+    dist_sync_on_step : bool
+        Synchronize metric state across processes at each method :meth:`forward` call before returning the value at the
+         step. Default: ``False``.
+    process_group : Any, optional
+        Specify the process group on which synchronization is called. default: ``None`` (which selects the entire
+        world). Default: ``None``.
+    take_avg_loss : bool
+        If ``True`` values of :meth:`update` method ``loss`` argument has to be a mean loss. If ``False`` values of
+        :meth:`update` method ``loss`` argument has to be a sum of losses. Default: ``True``.
+
+    Examples
+    --------
+    >>> from mridc.collections.common.metrics.global_average_loss_metric import GlobalAverageLossMetric
+    >>> metric = GlobalAverageLossMetric()
+    >>> metric.update(torch.tensor(1.0), torch.tensor(1))
+    >>> metric.update(torch.tensor(2.0), torch.tensor(1))
+    >>> metric.compute()
+    tensor(1.5000)
+    >>> metric.update(torch.tensor(3.0), torch.tensor(1))
+    >>> metric.compute()
+    tensor(2.0000)
     """
 
     full_state_update: bool = True
@@ -49,10 +65,12 @@ class GlobalAverageLossMetric(Metric):
 
         Parameters
         ----------
-        loss: A float zero dimensional ``torch.Tensor`` which is either sum or average of losses for processed \
-        examples. See ``take_avg_loss`` parameter of :meth:`__init__`.
-        num_measurements: An integer zero dimensional ``torch.Tensor`` which contains a number of loss measurements. \
-        The sum or mean of the results of these measurements are in the ``loss`` parameter.
+        loss : torch.Tensor
+            A float zero dimensional ``torch.Tensor`` which is either sum or average of losses for processed examples.
+            See ``take_avg_loss`` parameter of :meth:`__init__`.
+        num_measurements : torch.Tensor
+            An integer zero dimensional ``torch.Tensor`` which contains a number of loss measurements. The sum or mean
+            of the results of these measurements are in the ``loss`` parameter.
         """
         if self.take_avg_loss:
             self.loss_sum += loss.detach() * num_measurements

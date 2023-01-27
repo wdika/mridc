@@ -15,6 +15,7 @@ import pytest
 import pytorch_lightning as pl
 import torch
 import torch.optim
+from pytorch_lightning.utilities import rank_zero_only
 
 from mridc.core import optim
 from mridc.core.conf import optimizers
@@ -109,12 +110,12 @@ class Callback(pl.callbacks.Callback):
             logging.debug(f"max_epochs: {trainer.max_epochs}")
             logging.debug(f"accumulate_grad_batches: {trainer.accumulate_grad_batches}")
             logging.debug(f"limit_train_batches: {trainer.limit_train_batches}")
-            logging.debug(f"num_processes: {trainer.num_processes}")
+            logging.debug(f"num_devices: {trainer.num_devices}")
             logging.debug(f"batch_size: {module.batch_size}")
             logging.debug(f"dataset_len: {module.dataset_len}")
             logging.debug(f"drop_last: {module.drop_last}")
             logging.debug(f"{len(trainer.train_dataloader)}")
-            logging.debug(f"{trainer.num_training_batches}")
+            logging.debug(f"{trainer.num_training_batches }")
 
         self.assert_counts(trainer, module, count)
 
@@ -135,7 +136,7 @@ class SchedulerNoOpCallback(Callback):
         """On each training batch end"""
         # pl_module.max_steps is "original" max steps without trainer extra steps.
         if (trainer.global_step + 1) % 3 == 0 and (trainer.global_step + 1) < pl_module.max_steps:
-            schedulers = trainer.lr_schedulers
+            schedulers = trainer.lr_scheduler_configs
 
             for scheduler in schedulers:
                 # Decrement the counter by 2, then perform a scheduler.step() to perform a no-up
@@ -354,6 +355,51 @@ class TestOptimizersSchedulers:
         scheduler_setup = optim.lr_scheduler.prepare_lr_scheduler(opt, dict_config)
         if not isinstance(scheduler_setup["scheduler"], optim.lr_scheduler.CosineAnnealing):
             raise AssertionError
+
+    @pytest.mark.unit
+    def test_sched_config_parse_reduce_on_plateau(self):
+        model = TempModel()
+        opt_cls = get_optimizer("novograd")
+        opt = opt_cls(model.parameters(), lr=self.INITIAL_LR)
+        reduce_on_plateau_parameters = {
+            "mode": "min",
+            "factor": 0.5,
+            "patience": 1,
+            "threshold": 1e-4,
+            "threshold_mode": "rel",
+            "min_lr": 1e-6,
+            "eps": 1e-7,
+            "verbose": True,
+            "cooldown": 1,
+        }
+        basic_sched_config = {
+            "name": "ReduceLROnPlateau",
+            "monitor": "val_loss",
+            "reduce_on_plateau": True,
+            "max_steps": self.MAX_STEPS,
+        }
+        basic_sched_config.update(reduce_on_plateau_parameters)
+        scheduler_setup = optim.lr_scheduler.prepare_lr_scheduler(opt, basic_sched_config)
+        assert isinstance(scheduler_setup["scheduler"], torch.optim.lr_scheduler.ReduceLROnPlateau)
+        for k, v in reduce_on_plateau_parameters.items():
+            if k == "min_lr":
+                k += "s"
+                v = [v]
+            found_v = getattr(scheduler_setup["scheduler"], k)
+            assert (
+                found_v == v
+            ), f"Wrong value `{repr(found_v)}` for `ReduceLROnPlateau` parameter `{k}`. Expected `{repr(v)}`."
+        dict_config = omegaconf.OmegaConf.create(basic_sched_config)
+        scheduler_setup = optim.lr_scheduler.prepare_lr_scheduler(opt, dict_config)
+        assert isinstance(scheduler_setup["scheduler"], torch.optim.lr_scheduler.ReduceLROnPlateau)
+        for k, v in reduce_on_plateau_parameters.items():
+            if k == "min_lr":
+                k += "s"
+                v = [v]
+            found_v = getattr(scheduler_setup["scheduler"], k)
+            assert (
+                found_v == v
+            ), f"Wrong value `{repr(found_v)}` for `ReduceLROnPlateau` parameter `{k}`. Expected `{repr(v)}`."
 
     @pytest.mark.unit
     def test_WarmupPolicy(self):

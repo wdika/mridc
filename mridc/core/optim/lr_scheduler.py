@@ -5,6 +5,7 @@ __author__ = "Dimitrios Karkalousos"
 
 import copy
 import dataclasses
+import inspect
 import math
 import warnings
 from functools import partial
@@ -74,10 +75,10 @@ class WarmupPolicy(_LRScheduler):
 
         step = self.last_epoch
 
-        if 0 < self.warmup_steps >= step:
+        if step <= self.warmup_steps and self.warmup_steps > 0:
             return self._get_warmup_lr(step)
 
-        if step > self.max_steps:
+        if (self.max_steps is not None) and (step > self.max_steps):
             return [self.min_lr for _ in self.base_lrs]
 
         return self._get_lr(step)
@@ -769,7 +770,11 @@ def get_scheduler(name: str, **kwargs: Optional[Dict[str, Any]]) -> _LRScheduler
         )
 
     scheduler_cls = AVAILABLE_SCHEDULERS[name]
-    return partial(scheduler_cls, **kwargs)
+    # Pop 'max_steps' if it's not required by the scheduler
+    if "max_steps" in kwargs and "max_steps" not in inspect.signature(scheduler_cls).parameters:
+        kwargs.pop("max_steps")
+    scheduler = partial(scheduler_cls, **kwargs)
+    return scheduler
 
 
 def prepare_lr_scheduler(
@@ -854,7 +859,6 @@ def prepare_lr_scheduler(
         scheduler_config = OmegaConf.to_container(scheduler_config, resolve=True)
 
     # Test to see if config follows above schema
-    add_max_args_flag = True
     interval = "step"
     if scheduler_config is not None:
         if "args" in scheduler_config:
@@ -864,10 +868,6 @@ def prepare_lr_scheduler(
 
             # Remove extra parameters from scheduler_args nest
             # Assume all other parameters are to be passed into scheduler constructor
-            if "name" in scheduler_args and scheduler_args["name"] == "ReduceLROnPlateau":
-                add_max_args_flag = False
-                interval = "epoch"
-
             scheduler_args.pop("name", None)
             scheduler_args.pop("t_max_epochs", None)
             scheduler_args.pop("t_accumulate_grad_batches", None)
@@ -875,6 +875,9 @@ def prepare_lr_scheduler(
             scheduler_args.pop("t_num_workers", None)
             scheduler_args.pop("monitor", None)
             scheduler_args.pop("reduce_on_plateau", None)
+
+        if "name" in scheduler_config and scheduler_config["name"] in EPOCH_SCHEDULERS:
+            interval = "epoch"
     else:
         # Return gracefully in case `sched` was not supplied; inform user
         logging.info("Scheduler not initialized as no `sched` config supplied to setup_optimizer()")
@@ -998,14 +1001,14 @@ def prepare_lr_scheduler(
         return None
 
     # Inject max_steps (effective or provided) into the scheduler config
-    if add_max_args_flag and scheduler_config.get("name", "") != "ExponentialLR":
-        scheduler_args["max_steps"] = max_steps
-
-    if scheduler_config.get("name", "") == "CyclicLR":
-        del scheduler_args["max_steps"]
+    scheduler_args["max_steps"] = max_steps
 
     # Get the scheduler class from the config
     scheduler_cls = get_scheduler(scheduler_name, **scheduler_args)
+
+    # Pop 'max_steps' if it's not required by the scheduler
+    if "max_steps" not in inspect.signature(scheduler_cls).parameters:
+        scheduler_args.pop("max_steps")
 
     # Instantiate the LR schedule
     schedule = scheduler_cls(optimizer, **scheduler_args)
@@ -1019,15 +1022,19 @@ def prepare_lr_scheduler(
 
     # Wrap the schedule in PTL arguments to perform stepwise computation
     # Rather than epoch level computation
-    reduce_lr_on_plateau = isinstance(schedule, optim.lr_scheduler.ReduceLROnPlateau)
+    if isinstance(schedule, optim.lr_scheduler.ReduceLROnPlateau):
+        reduce_lr_on_plateau = True
+    else:
+        reduce_lr_on_plateau = False
 
-    return {
+    schedule_dict = {
         "scheduler": schedule,
         "interval": interval,
         "frequency": 1,
         "monitor": monitor,
         "reduce_on_plateau": reduce_lr_on_plateau,
     }
+    return schedule_dict
 
 
 def compute_max_steps(
@@ -1071,4 +1078,8 @@ AVAILABLE_SCHEDULERS = {
     "ExponentialLR": pt_scheduler.ExponentialLR,
     "ReduceLROnPlateau": pt_scheduler.ReduceLROnPlateau,
     "CyclicLR": pt_scheduler.CyclicLR,
+}
+
+EPOCH_SCHEDULERS = {
+    "ReduceLROnPlateau": pt_scheduler.ReduceLROnPlateau,
 }

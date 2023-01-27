@@ -13,7 +13,55 @@ import mridc.collections.reconstruction.models.rim.rnn_cells as rnn_cells
 
 
 class RIMBlock(torch.nn.Module):
-    """RIMBlock is a block of Recurrent Inference Machines (RIMs)."""
+    """
+    RIMBlock is a block of Recurrent Inference Machines (RIMs). As presented in [1].
+
+    References
+    ----------
+    .. [1] Lønning K, Putzky P, Sonke JJ, Reneman L, Caan MW, Welling M. Recurrent inference machines for
+        reconstructing heterogeneous MRI data. Medical image analysis. 2019 Apr 1;53:64-78.
+
+    Parameters
+    ----------
+    recurrent_layer : torch.nn.Module
+        Type of the recurrent layer. It can be ``GRU``, ``MGU``, ``IndRNN``. Check ``rnn_cells`` for more dpredictionils.
+    conv_filters : list of int
+        Number of filters in the convolutional layers.
+    conv_kernels : list of int
+        Kernel size of the convolutional layers.
+    conv_dilations : list of int
+        Dilation of the convolutional layers.
+    conv_bias : list of bool
+        Bias of the convolutional layers.
+    recurrent_filters : list of int
+        Number of filters in the recurrent layers.
+    recurrent_kernels : list of int
+        Kernel size of the recurrent layers.
+    recurrent_dilations : list of int
+        Dilation of the recurrent layers.
+    recurrent_bias : list of bool
+        Bias of the recurrent layers.
+    depth : int
+        Number of sequence of convolutional and recurrent layers. Default is ``2``.
+    time_steps : int
+        Number of reccurent time steps. Default is ``8``.
+    conv_dim : int
+        Dimension of the convolutional layers. Default is ``2``.
+    no_dc : bool
+        If ``True`` the DC component is not used. Default is ``True``.
+    fft_centered : bool
+        If ``True`` the FFT is centered. Default is ``False``.
+    fft_normalization : str
+        Normalization of the FFT. Default is ``"backward"``.
+    spatial_dims : tuple of int
+        Spatial dimensions of the input. Default is ``None``.
+    coil_dim : int
+        Coil dimension of the input. Default is ``1``.
+    dimensionality : int
+        Dimensionality of the input. Default is ``2``.
+    consecutive_slices : int
+        Number of consecutive slices. Default is ``1``.
+    """
 
     def __init__(
         self,
@@ -29,39 +77,14 @@ class RIMBlock(torch.nn.Module):
         depth: int = 2,
         time_steps: int = 8,
         conv_dim: int = 2,
-        no_dc: bool = False,
-        fft_centered: bool = True,
-        fft_normalization: str = "ortho",
+        no_dc: bool = True,
+        fft_centered: bool = False,
+        fft_normalization: str = "backward",
         spatial_dims: Optional[Tuple[int, int]] = None,
         coil_dim: int = 1,
         dimensionality: int = 2,
         consecutive_slices: int = 1,
     ):
-        """
-        Initialize the RIMBlock.
-
-        Parameters
-        ----------
-        recurrent_layer: Type of recurrent layer.
-        conv_filters: Number of filters in the convolutional layers.
-        conv_kernels: Kernel size of the convolutional layers.
-        conv_dilations: Dilation of the convolutional layers.
-        conv_bias: Bias of the convolutional layers.
-        recurrent_filters: Number of filters in the recurrent layers.
-        recurrent_kernels: Kernel size of the recurrent layers.
-        recurrent_dilations: Dilation of the recurrent layers.
-        recurrent_bias: Bias of the recurrent layers.
-        depth: Number of layers in the block.
-        time_steps: Number of time steps in the block.
-        conv_dim: Dimension of the convolutional layers.
-        no_dc: If True, the DC component is removed from the input.
-        fft_centered: If True, the FFT is centered.
-        fft_normalization: Normalization of the FFT.
-        spatial_dims: Spatial dimensions of the input.
-        coil_dim: Coils dimension of the input.
-        dimensionality: Dimensionality of the input.
-        consecutive_slices: Number of consecutive slices in the input.
-        """
         super(RIMBlock, self).__init__()
 
         self.input_size = depth * 2
@@ -91,7 +114,7 @@ class RIMBlock(torch.nn.Module):
                     kernel_size=conv_k_size,
                     dilation=conv_dilation,
                     bias=l_conv_bias,
-                    nonlinear=nonlinear,
+                    nonlinear=nonlinear,  # type: ignore
                 )
                 self.input_size = conv_features
 
@@ -140,30 +163,39 @@ class RIMBlock(torch.nn.Module):
         self,
         pred: torch.Tensor,
         masked_kspace: torch.Tensor,
-        sense: torch.Tensor,
+        sensitivity_maps: torch.Tensor,
         mask: torch.Tensor,
-        eta: torch.Tensor = None,
+        prediction: torch.Tensor = None,
         hx: torch.Tensor = None,
         sigma: float = 1.0,
-        keep_eta: bool = False,
+        keep_prediction: bool = False,
     ) -> Tuple[Any, Union[list, torch.Tensor, None]]:
         """
         Forward pass of the RIMBlock.
 
         Parameters
         ----------
-        pred: Predicted k-space.
-        masked_kspace: Subsampled k-space.
-        sense: Coil sensitivity maps.
-        mask: Sample mask.
-        eta: Initial guess for the eta.
-        hx: Initial guess for the hidden state.
-        sigma: Noise level.
-        keep_eta: Whether to keep the eta.
+        pred : torch.Tensor
+            Predicted k-space. Shape: ``[batch, coils, height, width, 2]``.
+        masked_kspace : torch.Tensor
+            Subsampled k-space. Shape: ``[batch, coils, height, width, 2]``.
+        sensitivity_maps : torch.Tensor
+            Coil sensitivity maps. Shape: ``[batch, coils, height, width, 2]``.
+        mask : torch.Tensor
+            Subsampling mask. Shape: ``[batch, coils, height, width, 2]``.
+        prediction : torch.Tensor, optional
+            Initial (zero-filled) prediction. Shape: ``[batch, coils, height, width, 2]``.
+        hx : torch.Tensor, optional
+            Initial prediction for the hidden state. Shape: ``[batch, coils, height, width, 2]``.
+        sigma : float, optional
+            Noise level. Default is ``1.0``.
+        keep_prediction : bool, optional
+            Whether to keep the prediction. Default is ``False``.
 
         Returns
         -------
-        Reconstructed image and hidden states.
+        Tuple[Any, Union[list, torch.Tensor, None]]
+            Reconstructed image and hidden states.
         """
         if self.dimensionality == 3 or self.consecutive_slices > 1:
             # 2D pred.shape = [batch, coils, height, width, 2]
@@ -177,7 +209,9 @@ class RIMBlock(torch.nn.Module):
                 [masked_kspace.shape[0] * masked_kspace.shape[1], *masked_kspace.shape[2:]]
             )
             mask = mask.reshape([mask.shape[0] * mask.shape[1], *mask.shape[2:]])
-            sense = sense.reshape([sense.shape[0] * sense.shape[1], *sense.shape[2:]])
+            sensitivity_maps = sensitivity_maps.reshape(
+                [sensitivity_maps.shape[0] * sensitivity_maps.shape[1], *sensitivity_maps.shape[2:]]
+            )
         else:
             batch = masked_kspace.shape[0]
             slices = 1
@@ -192,10 +226,10 @@ class RIMBlock(torch.nn.Module):
                 if f != 0
             ]
 
-        if eta is None or eta.ndim < 3:
-            eta = (
+        if prediction is None or prediction.ndim < 3:
+            prediction = (
                 pred
-                if keep_eta
+                if keep_prediction
                 else torch.sum(
                     utils.complex_mul(
                         fft.ifft2(
@@ -204,21 +238,21 @@ class RIMBlock(torch.nn.Module):
                             normalization=self.fft_normalization,
                             spatial_dims=self.spatial_dims,
                         ),
-                        utils.complex_conj(sense),
+                        utils.complex_conj(sensitivity_maps),
                     ),
                     self.coil_dim,
                 )
             )
 
-        if (self.consecutive_slices > 1 or self.dimensionality == 3) and eta.dim() == 5:
-            eta = eta.reshape([eta.shape[0] * eta.shape[1], *eta.shape[2:]])
+        if (self.consecutive_slices > 1 or self.dimensionality == 3) and prediction.dim() == 5:
+            prediction = prediction.reshape([prediction.shape[0] * prediction.shape[1], *prediction.shape[2:]])
 
-        etas = []
+        predictions = []
         for _ in range(self.time_steps):
-            grad_eta = rim_utils.log_likelihood_gradient(
-                eta,
+            grad_prediction = rim_utils.log_likelihood_gradient(
+                prediction,
                 masked_kspace,
-                sense,
+                sensitivity_maps,
                 mask,
                 sigma=sigma,
                 fft_centered=self.fft_centered,
@@ -228,42 +262,44 @@ class RIMBlock(torch.nn.Module):
             ).contiguous()
 
             if self.consecutive_slices > 1 or self.dimensionality == 3:
-                grad_eta = grad_eta.view([batch * slices, 4, grad_eta.shape[2], grad_eta.shape[3]]).permute(1, 0, 2, 3)
+                grad_prediction = grad_prediction.view(
+                    [batch * slices, 4, grad_prediction.shape[2], grad_prediction.shape[3]]
+                ).permute(1, 0, 2, 3)
 
             for h, convrnn in enumerate(self.layers):
-                hx[h] = convrnn(grad_eta, hx[h])
+                hx[h] = convrnn(grad_prediction, hx[h])
                 if self.consecutive_slices > 1 or self.dimensionality == 3:
                     hx[h] = hx[h].squeeze(0)
-                grad_eta = hx[h]
+                grad_prediction = hx[h]
 
-            grad_eta = self.final_layer(grad_eta)
+            grad_prediction = self.final_layer(grad_prediction)
 
             if self.dimensionality == 2:
-                grad_eta = grad_eta.permute(0, 2, 3, 1)
+                grad_prediction = grad_prediction.permute(0, 2, 3, 1)
             elif self.dimensionality == 3:
-                grad_eta = grad_eta.permute(1, 2, 3, 0)
+                grad_prediction = grad_prediction.permute(1, 2, 3, 0)
                 for h in range(len(hx)):
                     hx[h] = hx[h].permute(1, 0, 2, 3)
 
-            eta = eta + grad_eta
-            etas.append(eta)
+            prediction = prediction + grad_prediction
+            predictions.append(prediction)
 
-        eta = etas
+        prediction = predictions
 
         if self.no_dc:
-            return eta, hx
+            return prediction, hx
 
         soft_dc = torch.where(mask, pred - masked_kspace, self.zero.to(masked_kspace)) * self.dc_weight
         current_kspace = [
             masked_kspace
             - soft_dc
             - fft.fft2(
-                utils.complex_mul(e.unsqueeze(self.coil_dim), sense),
+                utils.complex_mul(e.unsqueeze(self.coil_dim), sensitivity_maps),
                 centered=self.fft_centered,
                 normalization=self.fft_normalization,
                 spatial_dims=self.spatial_dims,
             )
-            for e in eta
+            for e in prediction
         ]
 
         return current_kspace, hx

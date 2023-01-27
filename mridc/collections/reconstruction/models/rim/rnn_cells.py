@@ -7,11 +7,33 @@ import torch.nn as nn
 
 class ConvGRUCellBase(nn.Module):
     """
-    Base class for Conv Gated Recurrent Unit (GRU) cells.
-    # TODO: add paper reference
+    Base class for Convolutional Gated Recurrent Unit (GRU) cells.
+
+    Parameters
+    ----------
+    input_size : int
+        Number of input channels.
+    hidden_size : int
+        Number of hidden channels.
+    conv_dim : int
+        Number of dimensions of the convolutional layer.
+    kernel_size : int
+        Size of the convolutional kernel.
+    dilation : int
+        Dilation of the convolutional kernel.
+    bias : bool
+        Whether to use bias. Default is ``True``.
     """
 
-    def __init__(self, input_size, hidden_size, conv_dim, kernel_size, dilation, bias):
+    def __init__(
+        self,
+        input_size: int,
+        hidden_size: int,
+        conv_dim: int,
+        kernel_size: int,
+        dilation: int,
+        bias: bool = True,
+    ):
         super(ConvGRUCellBase, self).__init__()
 
         self.input_size = input_size
@@ -48,12 +70,12 @@ class ConvGRUCellBase(nn.Module):
             nn.init.zeros_(self.ih.bias)
 
     @staticmethod
-    def orthotogonalize_weights(weights, chunks=1):
+    def orthotogonalize_weights(weights: torch.Tensor, chunks: int = 1) -> torch.Tensor:
         """Orthogonalize the weights of a convolutional layer."""
         return torch.cat([nn.init.orthogonal_(w) for w in weights.chunk(chunks, 0)], 0)
 
     @staticmethod
-    def determine_conv_class(n_dim):
+    def determine_conv_class(n_dim: int) -> nn.Module:
         """Determine the convolutional class to use."""
         if n_dim == 1:
             return nn.Conv1d
@@ -72,12 +94,12 @@ class ConvGRUCellBase(nn.Module):
             s += ", nonlinearity={nonlinearity}"
         return s.format(**self.__dict__)
 
-    def check_forward_input(self, _input):
+    def check_forward_input(self, _input: torch.Tensor):
         """Check forward input."""
         if _input.size(1) != self.input_size:
             raise RuntimeError(f"input has inconsistent input_size: got {_input.size(1)}, expected {self.input_size}")
 
-    def check_forward_hidden(self, _input, hx, hidden_label=""):
+    def check_forward_hidden(self, _input: torch.Tensor, hx: torch.Tensor, hidden_label: str = ""):
         """Check forward hidden."""
         if _input.size(0) != hx.size(0):
             raise RuntimeError(
@@ -91,25 +113,38 @@ class ConvGRUCellBase(nn.Module):
 
 
 class ConvGRUCell(ConvGRUCellBase):
-    """A Convolutional GRU cell."""
+    """
+    A Convolutional GRU cell.
 
-    def __init__(self, input_size, hidden_size, conv_dim, kernel_size, dilation=1, bias=True):
-        """
-        Initialize the ConvGRUCell.
+    Parameters
+    ----------
+    input_size : int
+        Number of input channels.
+    hidden_size : int
+        Number of hidden channels.
+    conv_dim : int
+        Number of dimensions of the convolutional layer.
+    kernel_size : int
+        Size of the convolutional kernel.
+    dilation : int
+        Dilation of the convolutional kernel.
+    bias : bool
+        Whether to use bias. Default is ``True``.
+    """
 
-        Parameters
-        ----------
-        input_size: The number of channels in the input.
-        hidden_size: The number of channels in the hidden state.
-        conv_dim: The number of dimensions of the convolutional layer.
-        kernel_size: The size of the convolutional kernel.
-        dilation: The dilation of the convolutional kernel.
-        bias: Whether to add a bias.
-        """
+    def __init__(
+        self,
+        input_size: int,
+        hidden_size: int,
+        conv_dim: int,
+        kernel_size: int,
+        dilation: int,
+        bias: bool = True,
+    ):
         super(ConvGRUCell, self).__init__(input_size, hidden_size, conv_dim, kernel_size, dilation, bias)
         self.conv_dim = conv_dim
 
-    def forward(self, _input, hx):
+    def forward(self, _input: torch.Tensor, hx: torch.Tensor) -> torch.Tensor:
         """Forward pass of the ConvGRUCell."""
         if self.conv_dim == 3:
             _input = _input.unsqueeze(0)
@@ -129,23 +164,38 @@ class ConvGRUCell(ConvGRUCellBase):
 
 class ConvMGUCellBase(nn.Module):
     """
-    A base class for a Convolutional Minimal Gated Unit cell.
-    # TODO: add paper reference
+    A base class for a Convolutional Minimal Gated Unit cell [1].
+
+    References
+    ----------
+    .. [1] Zhou GB, Wu J, Zhang CL, Zhou ZH. Minimal gated unit for recurrent neural networks. International Journal
+        of Automation and Computing. 2016 Jun;13(3):226-34.
+
+    Parameters
+    ----------
+    input_size : int
+        Number of input channels.
+    hidden_size : int
+        Number of hidden channels.
+    conv_dim : int
+        Number of dimensions of the convolutional layer.
+    kernel_size : int
+        Size of the convolutional kernel.
+    dilation : int
+        Dilation of the convolutional kernel.
+    bias : bool
+        Whether to use bias. Default is ``True``.
     """
 
-    def __init__(self, input_size, hidden_size, conv_dim, kernel_size, dilation, bias):
-        """
-        Initialize the ConvMGUCellBase.
-
-        Parameters
-        ----------
-        input_size: The number of channels in the input.
-        hidden_size: The number of channels in the hidden state.
-        conv_dim: The number of dimensions of the convolutional layer.
-        kernel_size: The size of the convolutional kernel.
-        dilation: The dilation of the convolutional kernel.
-        bias: Whether to add a bias.
-        """
+    def __init__(
+        self,
+        input_size: int,
+        hidden_size: int,
+        conv_dim: int,
+        kernel_size: int,
+        dilation: int,
+        bias: bool = True,
+    ):
         super(ConvMGUCellBase, self).__init__()
 
         self.input_size = input_size
@@ -185,12 +235,12 @@ class ConvMGUCellBase(nn.Module):
             nn.init.zeros_(self.ih.bias)
 
     @staticmethod
-    def orthotogonalize_weights(weights, chunks=1):
+    def orthotogonalize_weights(weights: torch.Tensor, chunks: int = 1) -> torch.Tensor:
         """Orthogonalize the weights."""
         return torch.cat([nn.init.orthogonal_(w) for w in weights.chunk(chunks, 0)], 0)
 
     @staticmethod
-    def determine_conv_class(n_dim):
+    def determine_conv_class(n_dim: int) -> nn.Module:
         """Determine the convolutional class."""
         if n_dim == 1:
             return nn.Conv1d
@@ -209,12 +259,12 @@ class ConvMGUCellBase(nn.Module):
             s += ", nonlinearity={nonlinearity}"
         return s.format(**self.__dict__)
 
-    def check_forward_input(self, _input):
+    def check_forward_input(self, _input: torch.Tensor):
         """Check the forward input."""
         if _input.size(1) != self.input_size:
             raise RuntimeError(f"input has inconsistent input_size: got {_input.size(1)}, expected {self.input_size}")
 
-    def check_forward_hidden(self, _input, hx, hidden_label=""):
+    def check_forward_hidden(self, _input: torch.Tensor, hx: torch.Tensor, hidden_label: str = ""):
         """Check the forward hidden."""
         if _input.size(0) != hx.size(0):
             raise RuntimeError(
@@ -228,25 +278,43 @@ class ConvMGUCellBase(nn.Module):
 
 
 class ConvMGUCell(ConvMGUCellBase):
-    """Convolutional Minimal Gated Unit cell."""
+    """
+    A base class for a Convolutional Minimal Gated Unit cell [1].
 
-    def __init__(self, input_size, hidden_size, conv_dim, kernel_size, dilation=1, bias=True):
-        """
-        Initialize the ConvMGUCell.
+    References
+    ----------
+    .. [1] Zhou GB, Wu J, Zhang CL, Zhou ZH. Minimal gated unit for recurrent neural networks. International Journal
+        of Automation and Computing. 2016 Jun;13(3):226-34.
 
-        Parameters
-        ----------
-        input_size: The input size.
-        hidden_size: The hidden size.
-        conv_dim: The convolutional dimension.
-        kernel_size: The kernel size.
-        dilation: The dilation.
-        bias: Whether to use a bias.
-        """
+    Parameters
+    ----------
+    input_size : int
+        Number of input channels.
+    hidden_size : int
+        Number of hidden channels.
+    conv_dim : int
+        Number of dimensions of the convolutional layer.
+    kernel_size : int
+        Size of the convolutional kernel.
+    dilation : int
+        Dilation of the convolutional kernel.
+    bias : bool
+        Whether to use bias. Default is ``True``.
+    """
+
+    def __init__(
+        self,
+        input_size: int,
+        hidden_size: int,
+        conv_dim: int,
+        kernel_size: int,
+        dilation: int,
+        bias: bool = True,
+    ):
         super(ConvMGUCell, self).__init__(input_size, hidden_size, conv_dim, kernel_size, dilation, bias)
         self.conv_dim = conv_dim
 
-    def forward(self, _input, hx):
+    def forward(self, _input: torch.Tensor, hx: torch.Tensor) -> torch.Tensor:
         """Forward the ConvMGUCell."""
         if self.conv_dim == 3:
             _input = _input.unsqueeze(0)
@@ -263,26 +331,39 @@ class ConvMGUCell(ConvMGUCellBase):
 
 class IndRNNCellBase(nn.Module):
     """
-    Base class for Independently RNN cells as presented in [1]_.
+    Base class for Independently RNN cells as presented in [1].
 
     References
     ----------
-    .. [1] Li, S. et al. (2018) ‘Independently Recurrent Neural Network (IndRNN): Building A Longer and Deeper RNN’, Proceedings of the IEEE Computer Society Conference on Computer Vision and Pattern Recognition, (1), pp. 5457–5466. doi: 10.1109/CVPR.2018.00572.
+    .. [1] Li, S. et al. (2018) ‘Independently Recurrent Neural Network (IndRNN): Building A Longer and Deeper RNN’,
+        Proceedings of the IEEE Computer Society Conference on Computer Vision and Pattern Recognition, (1), pp.
+        5457–5466. doi: 10.1109/CVPR.2018.00572.
+
+    Parameters
+    ----------
+    input_size : int
+        Number of input channels.
+    hidden_size : int
+        Number of hidden channels.
+    conv_dim : int
+        Number of dimensions of the convolutional layer.
+    kernel_size : int
+        Size of the convolutional kernel.
+    dilation : int
+        Dilation of the convolutional kernel.
+    bias : bool
+        Whether to use bias. Default is ``True``.
     """
 
-    def __init__(self, input_size, hidden_size, conv_dim, kernel_size, dilation, bias):
-        """
-        Initialize the IndRNNCellBase.
-
-        Parameters
-        ----------
-        input_size: The input size.
-        hidden_size: The hidden size.
-        conv_dim: The convolutional dimension.
-        kernel_size: The kernel size.
-        dilation: The dilation.
-        bias: Whether to use a bias.
-        """
+    def __init__(
+        self,
+        input_size: int,
+        hidden_size: int,
+        conv_dim: int,
+        kernel_size: int,
+        dilation: int,
+        bias: bool = True,
+    ):
         super(IndRNNCellBase, self).__init__()
 
         self.input_size = input_size
@@ -322,12 +403,12 @@ class IndRNNCellBase(nn.Module):
             nn.init.zeros_(self.ih.bias)
 
     @staticmethod
-    def orthotogonalize_weights(weights, chunks=1):
+    def orthotogonalize_weights(weights: torch.Tensor, chunks: int = 1) -> torch.Tensor:
         """Orthogonalize the weights."""
         return torch.cat([nn.init.orthogonal_(w) for w in weights.chunk(chunks, 0)], 0)
 
     @staticmethod
-    def determine_conv_class(n_dim):
+    def determine_conv_class(n_dim: int) -> nn.Module:
         """Determine the convolutional class."""
         if n_dim == 1:
             return nn.Conv1d
@@ -346,7 +427,7 @@ class IndRNNCellBase(nn.Module):
             s += ", nonlinearity={nonlinearity}"
         return s.format(**self.__dict__)
 
-    def check_forward_input(self, _input):
+    def check_forward_input(self, _input: torch.Tensor):
         """Check forward input."""
         if _input.size(1) != self.input_size:
             raise RuntimeError(f"input has inconsistent input_size: got {_input.size(1)}, expected {self.input_size}")
@@ -365,23 +446,44 @@ class IndRNNCellBase(nn.Module):
 
 
 class IndRNNCell(IndRNNCellBase):
-    """Independently Recurrent Neural Network cell."""
+    """
+    Base class for Independently RNN cells as presented in [1].
 
-    def __init__(self, input_size, hidden_size, conv_dim, kernel_size, dilation=1, bias=True):
-        """
-        Parameters
-        ----------
-        input_size: The number of expected features in the input.
-        hidden_size: The number of features in the hidden state.
-        conv_dim: The dimension of the convolutional layer.
-        kernel_size: The size of the convolved kernel.
-        dilation: The spacing between the kernel points.
-        bias: If ``False``, then the layer does not use bias weights `b_ih` and `b_hh`.
-        """
+    References
+    ----------
+    .. [1] Li, S. et al. (2018) ‘Independently Recurrent Neural Network (IndRNN): Building A Longer and Deeper RNN’,
+        Proceedings of the IEEE Computer Society Conference on Computer Vision and Pattern Recognition, (1), pp.
+        5457–5466. doi: 10.1109/CVPR.2018.00572.
+
+    Parameters
+    ----------
+    input_size : int
+        Number of input channels.
+    hidden_size : int
+        Number of hidden channels.
+    conv_dim : int
+        Number of dimensions of the convolutional layer.
+    kernel_size : int
+        Size of the convolutional kernel.
+    dilation : int
+        Dilation of the convolutional kernel.
+    bias : bool
+        Whether to use bias. Default is ``True``.
+    """
+
+    def __init__(
+        self,
+        input_size: int,
+        hidden_size: int,
+        conv_dim: int,
+        kernel_size: int,
+        dilation: int,
+        bias: bool = True,
+    ):
         super(IndRNNCell, self).__init__(input_size, hidden_size, conv_dim, kernel_size, dilation, bias)
         self.conv_dim = conv_dim
 
-    def forward(self, _input, hx):
+    def forward(self, _input: torch.Tensor, hx: torch.Tensor) -> torch.Tensor:
         """Forward propagate the RNN cell."""
         if self.conv_dim == 3:
             # TODO: Check if this is correct

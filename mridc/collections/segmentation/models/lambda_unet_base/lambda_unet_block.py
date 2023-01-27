@@ -9,7 +9,33 @@ import mridc.collections.reconstruction.models.unet_base.unet_block as unet_bloc
 
 
 class LambdaLayer(nn.Module):
-    """Lambda Layer implementation from the Lambda Unet network."""
+    """
+    Implementation of a Lambda Layer of the Lambda UNet for MRI segmentation, as presented in [1].
+
+    References
+    ----------
+    .. [1] Yanglan Ou, Ye Yuan, Xiaolei Huang, Kelvin Wong, John Volpi, James Z. Wang, Stephen T.C. Wong. LambdaUNet:
+        2.5D Stroke Lesion Segmentation of Diffusion-weighted MR Images. 2021. https://arxiv.org/abs/2104.13917
+
+    Parameters
+    ----------
+    in_channels : int
+        Number of input channels.
+    out_channels : int
+        Number of output channels.
+    query_depth : int, optional
+        Number of channels for the keys. Default is ``16``.
+    intra_depth : int, optional
+        Number of neighboring slices. Default is ``1``.
+    receptive_kernel : int, optional
+        Local context kernel size. Default is ``3``.
+    temporal_kernel : int, optional
+        Temporal kernel. Default is ``1``.
+    heads : int, optional
+        Number of query heads. Default is ``4``.
+    num_slices : int, optional
+        Number of slices. Default is ``1``.
+    """
 
     def __init__(
         self,
@@ -22,26 +48,6 @@ class LambdaLayer(nn.Module):
         heads: int = 4,
         num_slices: int = 1,
     ):
-        """
-        Parameters
-        ----------
-        in_channels : int
-            Number of input channels.
-        out_channels : int
-            Number of output channels.
-        query_depth : int, optional
-            Number of channels for the keys, by default 16
-        intra_depth : int, optional
-            Number of neighboring slices, by default 1
-        receptive_kernel : int, optional
-            Local context kernel size, by default 3
-        temporal_kernel : int, optional
-            Temporal kernel, by default 1
-        heads : int, optional
-            Number of query heads, by default 4
-        num_slices : int, optional
-            Number of slices, by default 1
-        """
         super().__init__()
         self.dim_in = in_channels
         self.dim_out = out_channels
@@ -92,7 +98,7 @@ class LambdaLayer(nn.Module):
                 padding=(0, temporal_kernel // 2),
             )
 
-    def forward(self, input):
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
         """Forward pass of the Lambda Layer."""
         batch, channel, height, width = (*input.shape,)  # type: ignore
 
@@ -109,34 +115,49 @@ class LambdaLayer(nn.Module):
         λc = einsum("b u k m, b u v m -> b k v", k, v)
         Yc = einsum("b h k n, b k v -> b h v n", q, λc)
 
-        v_p = rearrange(v, "b u v (hh ww) -> b u v hh ww", hh=height, ww=width)
+        v_p = rearrange(v, "b u v (hh ww) -> b u v hh ww", hh=height, ww=width)  # type: ignore
         λp = self.pos_conv(v_p)
         Yp = einsum("b h k n, b k v n -> b h v n", q, λp.flatten(3))
 
         if self.temporal_kernel >= 3:
             v_t = rearrange(v, "(g t) u v p -> (g p) u v t", t=self.num_slices)
             λt = self.temp_conv(v_t)
-            λt = rearrange(λt, "(g p) k v t -> (g t) k v p", p=height * width)
+            λt = rearrange(λt, "(g p) k v t -> (g t) k v p", p=height * width)  # type: ignore
             Yt = einsum("b h k n, b k v n -> b h v n", q, λt)
             Y = Yc + Yp + Yt
         else:
             Y = Yc + Yp
 
-        return rearrange(Y, "b h v (hh ww) -> b (h v) hh ww", hh=height, ww=width)
+        return rearrange(Y, "b h v (hh ww) -> b (h v) hh ww", hh=height, ww=width)  # type: ignore
 
 
 class LambdaBlock(nn.Module):
     """
-    Implementation of the Lambda Block, as presented in Yanglan Ou et al.
+    Implementation of a Lambda Black of the Lambda UNet for MRI segmentation, as presented in [1].
 
     References
     ----------
-    ..
+    .. [1] Yanglan Ou, Ye Yuan, Xiaolei Huang, Kelvin Wong, John Volpi, James Z. Wang, Stephen T.C. Wong. LambdaUNet:
+        2.5D Stroke Lesion Segmentation of Diffusion-weighted MR Images. 2021. https://arxiv.org/abs/2104.13917
 
-        Yanglan Ou, Ye Yuan, Xiaolei Huang, Kelvin Wong, John Volpi, James Z. Wang, Stephen T.C. Wong. \
-        LambdaUNet: 2.5D Stroke Lesion Segmentation of Diffusion-weighted MR Images. 2021. \
-        https://arxiv.org/abs/2104.13917
-
+    Parameters
+    ----------
+    in_chans : int
+        Number of input channels.
+    out_chans : int
+        Number of output channels.
+    drop_prob : float
+        Dropout probability.
+    query_depth : int, optional
+        Number of channels for the keys. Default is ``16``.
+    intra_depth : int, optional
+        Number of neighboring slices. Default is ``4``.
+    receptive_kernel : int, optional
+        Local context kernel size. Default is ``3``.
+    temporal_kernel : int, optional
+        Temporal kernel. Default is ``1``.
+    num_slices : int, optional
+        Number of slices. Default is ``1``.
     """
 
     def __init__(
@@ -150,26 +171,6 @@ class LambdaBlock(nn.Module):
         temporal_kernel: int = 1,
         num_slices: int = 1,
     ):
-        """
-        Parameters
-        ----------
-        in_chans : int
-            Number of input channels.
-        out_chans : int
-            Number of output channels.
-        drop_prob : float
-            Dropout probability.
-        query_depth : int, optional
-            Number of channels for the keys, by default 16
-        intra_depth : int, optional
-            Number of neighboring slices, by default 1
-        receptive_kernel : int, optional
-            Local context kernel size, by default 3
-        temporal_kernel : int, optional
-            Temporal kernel, by default 1
-        num_slices : int, optional
-            Number of slices, by default 1
-        """
         super().__init__()
 
         self.in_chans = in_chans
@@ -211,7 +212,37 @@ class LambdaBlock(nn.Module):
 
 
 class LambdaUNet(unet_block.Unet):
-    """Extended Unet with Lambda Blocks."""
+    """
+    Implementation of an extended UNet with Lambda blocks, as presented in [1].
+
+    References
+    ----------
+    .. [1] Yanglan Ou, Ye Yuan, Xiaolei Huang, Kelvin Wong, John Volpi, James Z. Wang, Stephen T.C. Wong. LambdaUNet:
+        2.5D Stroke Lesion Segmentation of Diffusion-weighted MR Images. 2021. https://arxiv.org/abs/2104.13917
+
+    Parameters
+    ----------
+    in_chans : int
+        Number of input channels.
+    out_chans : int
+        Number of output channels.
+    chans : int, optional
+        Number of channels. Default is ``32``.
+    num_pool_layers : int, optional
+        Number of pooling layers. Default is ``4``.
+    drop_prob : float
+        Dropout probability. Default is ``0.0``.
+    query_depth : int, optional
+        Number of channels for the keys. Default is ``16``.
+    intra_depth : int, optional
+        Number of neighboring slices. Default is ``4``.
+    receptive_kernel : int, optional
+        Local context kernel size. Default is ``3``.
+    temporal_kernel : int, optional
+        Temporal kernel. Default is ``1``.
+    num_slices : int, optional
+        Number of slices. Default is ``1``.
+    """
 
     def __init__(
         self,
@@ -226,30 +257,6 @@ class LambdaUNet(unet_block.Unet):
         temporal_kernel: int = 1,
         num_slices: int = 1,
     ):
-        """
-        Parameters
-        ----------
-        in_chans : int
-            Number of input channels.
-        out_chans : int
-            Number of output channels.
-        chans : int, optional
-            Number of channels, by default 32
-        num_pool_layers : int, optional
-            Number of pooling layers, by default 4
-        drop_prob : float, optional
-            Dropout probability, by default 0.0
-        query_depth : int, optional
-            Number of channels for the keys, by default 16
-        intra_depth : int, optional
-            Number of neighboring slices, by default 1
-        receptive_kernel : int, optional
-            Local context kernel size, by default 3
-        temporal_kernel : int, optional
-            Temporal kernel, by default 1
-        num_slices : int, optional
-            Number of slices, by default 1
-        """
         super().__init__(
             in_chans=in_chans, out_chans=out_chans, chans=chans, num_pool_layers=num_pool_layers, drop_prob=drop_prob
         )

@@ -6,8 +6,8 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import OmegaConf
 
+from mridc.collections.common.data.subsample import RandomMaskFunc
 from mridc.collections.common.parts import utils
-from mridc.collections.reconstruction.data.subsample import RandomMaskFunc
 from mridc.collections.reconstruction.models.xpdnet import XPDNet
 
 
@@ -31,6 +31,8 @@ def create_input(shape):
                 "dual_conv_num_dubs": 2,
                 "dual_conv_batchnorm": False,
                 "image_model_architecture": "MWCNN",
+                "imspace_in_channels": 2,
+                "imspace_out_channels": 2,
                 "mwcnn_hidden_channels": 16,
                 "mwcnn_num_scales": 2,
                 "mwcnn_bias": True,
@@ -73,6 +75,8 @@ def create_input(shape):
                 "dual_conv_num_dubs": 2,
                 "dual_conv_batchnorm": False,
                 "image_model_architecture": "MWCNN",
+                "imspace_in_channels": 2,
+                "imspace_out_channels": 2,
                 "mwcnn_hidden_channels": 16,
                 "mwcnn_num_scales": 2,
                 "mwcnn_bias": True,

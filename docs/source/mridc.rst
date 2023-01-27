@@ -7,6 +7,8 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   mridc.app
+   mridc.cli
    mridc.collections
    mridc.core
    mridc.utils
@@ -18,14 +20,6 @@ mridc.constants module
 ----------------------
 
 .. automodule:: mridc.constants
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-mridc.launch module
--------------------
-
-.. automodule:: mridc.launch
    :members:
    :undoc-members:
    :show-inheritance:

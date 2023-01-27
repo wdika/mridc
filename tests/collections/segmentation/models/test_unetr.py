@@ -6,10 +6,8 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import OmegaConf
 
+from mridc.collections.common.data.subsample import RandomMaskFunc
 from mridc.collections.common.parts import utils
-from mridc.collections.reconstruction.data.subsample import RandomMaskFunc
-from mridc.collections.segmentation.models.dynunet import DYNUNet
-from mridc.collections.segmentation.models.unet import SegmentationUNet
 from mridc.collections.segmentation.models.unetr import SegmentationUNetR
 from tests.collections.reconstruction.fastmri.conftest import create_input
 
@@ -242,7 +240,7 @@ def test_unetr(shape, cfg, center_fractions, accelerations, dimensionality, segm
     unetr = SegmentationUNetR(cfg, trainer=trainer)
 
     with torch.no_grad():
-        _, pred_segmentation = unetr.forward(
+        pred_segmentation = unetr.forward(
             output,
             output,
             mask,

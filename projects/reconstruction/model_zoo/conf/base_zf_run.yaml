@@ -5,7 +5,6 @@ mode: test
 model:
   model_name: ZF
   dimensionality: 2
-  consecutive_slices: 1
   coil_combination_method: SENSE
   fft_centered: false
   fft_normalization: backward
@@ -13,16 +12,14 @@ model:
     - -2
     - -1
   coil_dim: 1
-  complex_data: true
+  use_sens_net: false
+  consecutive_slices: 1
   log_images: true
 
   test_ds:
     data_path: ???
-    sense_path: None
+    coil_sensitivity_maps_path: None
     mask_path: None
-    initial_predictions_path: None
-    challenge: multicoil
-    batch_size: 1
     sample_rate: 1
     volume_sample_rate: None
     use_dataset_cache: false
@@ -30,7 +27,6 @@ model:
     num_cols: None
     consecutive_slices: 1
     data_saved_per_slice: false
-    complex_data: true
     apply_prewhitening: false
     apply_gcc: false
     coil_combination_method: SENSE
@@ -42,8 +38,8 @@ model:
       center_fractions:
         - 0.7
       scale: 0.02
-      shift_mask: true
-      use_seed: true
+      shift_mask: false
+      use_seed: false
     half_scan_percentage: 0.0
     remask: false
     crop_size: None
@@ -51,18 +47,32 @@ model:
     crop_before_masking: true
     kspace_zero_filling_size: None
     normalize_inputs: true
-    max_norm: true
+    normalization_type: max
     fft_centered: false
     fft_normalization: backward
     spatial_dims:
       - -2
       - -1
     coil_dim: 1
-    use_seed: true
-    shuffle: false
+    use_seed: false
+    batch_size: 1
+    shuffle: true
     num_workers: 8
-    drop_last: false
     pin_memory: false
+    drop_last: false
+
+  optim:
+    name: adam
+    lr: 0.001
+    betas:
+      - 0.9
+      - 0.98
+    weight_decay: 0.0
+    sched:
+      name: InverseSquareRootAnnealing
+      min_lr: 0.0
+      last_epoch: -1
+      warmup_ratio: 0.1
 
 trainer:
   strategy: ddp

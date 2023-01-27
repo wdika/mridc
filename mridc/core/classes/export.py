@@ -4,10 +4,10 @@ __author__ = "Dimitrios Karkalousos"
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/classes/exportable.py
 
 from abc import ABC
-from os.path import exists
 from typing import List, Union
 
 import torch
+from pytorch_lightning.core.module import _jit_is_scripting
 from torch.onnx import TrainingMode
 
 from mridc.core.classes.common import typecheck
@@ -20,6 +20,7 @@ from mridc.utils.export_utils import (
     parse_input_example,
     replace_for_export,
     verify_runtime,
+    verify_torchscript,
     wrap_forward_method,
 )
 
@@ -47,11 +48,11 @@ class Exportable(ABC):
         verbose=False,
         do_constant_folding=True,
         onnx_opset_version=None,
-        training=TrainingMode.EVAL,
         check_trace: Union[bool, List[torch.Tensor]] = False,
         dynamic_axes=None,
         check_tolerance=0.01,
         export_modules_as_functions: bool = False,
+        keep_initializers_as_inputs=None,
     ):
         """
         Export the module to a file.
@@ -68,6 +69,7 @@ class Exportable(ABC):
         dynamic_axes: A dictionary of input names and dynamic axes.
         check_tolerance: The tolerance for the check_trace.
         export_modules_as_functions: If True, export modules as functions.
+        keep_initializers_as_inputs: If True, keep initializers as inputs.
         """
         all_out = []
         all_descr = []
@@ -80,11 +82,11 @@ class Exportable(ABC):
                 verbose=verbose,
                 do_constant_folding=do_constant_folding,
                 onnx_opset_version=onnx_opset_version,
-                training=training,
                 check_trace=check_trace,
                 dynamic_axes=dynamic_axes,
                 check_tolerance=check_tolerance,
                 export_modules_as_functions=export_modules_as_functions,
+                keep_initializers_as_inputs=keep_initializers_as_inputs,
             )
             # Propagate input example (default scenario, may need to be overriden)
             if input_example is not None:
@@ -92,7 +94,7 @@ class Exportable(ABC):
             all_out.append(out)
             all_descr.append(descr)
             logging.info(f"Successfully exported {model.__class__.__name__} to {out_name}")
-        return (all_out, all_descr)
+        return all_out, all_descr
 
     def _export(
         self,
@@ -106,6 +108,7 @@ class Exportable(ABC):
         dynamic_axes=None,
         check_tolerance=0.01,
         export_modules_as_functions: bool = False,
+        keep_initializers_as_inputs=None,
     ):
         """
         Helper to export the module to a file.
@@ -122,18 +125,23 @@ class Exportable(ABC):
         dynamic_axes: A dictionary of input names and dynamic axes.
         check_tolerance: The tolerance for the check_trace.
         export_modules_as_functions: If True, export modules as functions.
+        keep_initializers_as_inputs: If True, keep initializers as inputs.
         """
         my_args = locals().copy()
         my_args.pop("self")
+
+        self.eval()  # type: ignore
+        for param in self.parameters():  # type: ignore
+            param.requires_grad = False
 
         exportables = [m for m in self.modules() if isinstance(m, Exportable)]  # type: ignore
         qual_name = f"{self.__module__}.{self.__class__.__qualname__}"
         format = get_export_format(output)
         output_descr = f"{qual_name} exported to {format}"
 
-        # Pytorch's default for None is too low, can't pass None through
+        # Pytorch's default opset version is too low, using reasonable latest one
         if onnx_opset_version is None:
-            onnx_opset_version = 13
+            onnx_opset_version = 16
 
         try:
             # Disable typechecks
@@ -142,11 +150,7 @@ class Exportable(ABC):
             # Allow user to completely override forward method to export
             forward_method, old_forward_method = wrap_forward_method(self)
 
-            # Set module mode
-            with torch.onnx.select_model_mode_for_export(
-                self, training
-            ), torch.inference_mode(), torch.jit.optimized_execution(True):
-
+            with torch.inference_mode(), torch.no_grad(), torch.jit.optimized_execution(True), _jit_is_scripting():
                 if input_example is None:
                     input_example = self.input_module.input_example()
 
@@ -164,12 +168,13 @@ class Exportable(ABC):
                 output_names = self.output_names
                 output_example = tuple(self.forward(*input_list, **input_dict))  # type: ignore
 
+                if check_trace:
+                    if isinstance(check_trace, bool):
+                        check_trace_input = [input_example]
+                    else:
+                        check_trace_input = check_trace
+                jitted_model = self
                 if format == ExportFormat.TORCHSCRIPT:
-                    if check_trace:
-                        if isinstance(check_trace, bool):
-                            check_trace_input = {"forward": tuple(input_list) + tuple(input_dict.values())}
-                        else:
-                            check_trace_input = check_trace  # type: ignore
                     jitted_model = torch.jit.trace_module(
                         self,
                         {"forward": tuple(input_list) + tuple(input_dict.values())},
@@ -177,13 +182,14 @@ class Exportable(ABC):
                         check_trace=check_trace,
                         check_tolerance=check_tolerance,
                     )
-                    if not self.training:  # type: ignore
-                        jitted_model = torch.jit.optimize_for_inference(torch.jit.freeze(jitted_model))
+                    jitted_model = torch.jit.optimize_for_inference(torch.jit.freeze(jitted_model))
                     if verbose:
-                        logging.info(f"JIT code:\n{jitted_model.code}")
-                    jitted_model.save(output)
-                    if not exists(output):
-                        raise AssertionError
+                        logging.info(f"JIT code:\n{jitted_model.code}")  # type: ignore
+                    jitted_model.save(output)  # type: ignore
+                    jitted_model = torch.jit.load(output)
+
+                    if check_trace:
+                        verify_torchscript(jitted_model, output, check_trace_input, check_tolerance)
                 elif format == ExportFormat.ONNX:
                     # dynamic axis is a mapping from input/output_name => list of "dynamic" indices
                     if dynamic_axes is None:
@@ -191,7 +197,7 @@ class Exportable(ABC):
                         dynamic_axes.update(get_dynamic_axes(self.output_module.output_types, output_names))
 
                     torch.onnx.export(
-                        self,
+                        jitted_model,
                         input_example,
                         output,
                         input_names=input_names,
@@ -200,15 +206,12 @@ class Exportable(ABC):
                         do_constant_folding=do_constant_folding,
                         dynamic_axes=dynamic_axes,
                         opset_version=onnx_opset_version,
+                        keep_initializers_as_inputs=keep_initializers_as_inputs,
                         export_modules_as_functions=export_modules_as_functions,
                     )
 
                     if check_trace:
-                        check_trace_input = (
-                            [input_example] if isinstance(check_trace, bool) else check_trace  # type: ignore
-                        )
                         verify_runtime(self, output, check_trace_input, input_names)
-
                 else:
                     raise ValueError(f"Encountered unknown export format {format}.")
         finally:

@@ -12,11 +12,13 @@ from typing import Dict, Optional, Set, Union
 import pytest
 import pytorch_lightning as pl
 import torch
+from huggingface_hub.hf_api import ModelFilter
 from omegaconf import DictConfig, OmegaConf, open_dict
 
 from mridc.core.classes.modelPT import ModelPT
 from mridc.core.connectors import save_restore_connector
 from mridc.utils.app_state import AppState
+from mridc.utils.exceptions import MRIDCBaseException
 
 
 def classpath(cls):
@@ -70,12 +72,24 @@ class MockModel(ModelPT):
         self.w = torch.nn.Linear(10, 1)
         # mock temp file
         if "temp_file" in self.cfg and self.cfg.temp_file is not None:
-            self.temp_file = self.register_artifact("temp_file", self.cfg.temp_file)
-            with open(self.temp_file, "r", encoding="utf-8") as f:
-                self.temp_data = f.readlines()
+            self.setup_data_from_file(self.cfg.temp_file)
         else:
             self.temp_file = None
             self.temp_data = None
+
+    def setup_data_from_file(self, temp_file):
+        """Load data from temp_file to `self.temp_data`. Allows to test changing resource after instantiation."""
+        with open_dict(self.cfg):
+            self.cfg.temp_file = temp_file
+        self.temp_file = self.register_artifact("temp_file", self.cfg.temp_file)
+        with open(self.temp_file, "r", encoding="utf-8") as f:
+            self.temp_data = f.readlines()
+
+    def change_stub_number(self, new_number: int):
+        """
+        Change stub number in config, useful for testing nested models, since child can mutate config independently.
+        """
+        self.cfg.stub_number = new_number
 
     def forward(self, x):
         y = self.w(x)
@@ -90,8 +104,8 @@ class MockModel(ModelPT):
     def setup_test_data(self, test_data_config: Union[DictConfig, Dict]):
         self._test_dl = None
 
-    @staticmethod
-    def list_available_models():
+    @classmethod
+    def list_available_models(cls):
         return []
 
 

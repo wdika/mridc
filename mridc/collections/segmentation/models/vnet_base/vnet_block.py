@@ -8,19 +8,24 @@ from torch import nn
 
 
 class LUConv(nn.Module):
-    """LU Convolutional Block."""
+    """
+    LU Convolutional Block.
+
+    Parameters
+    ----------
+    channels : int
+        Number of channels.
+    act : nn.Module
+        Activation function.
+    bias : bool
+        Whether to use bias.
+
+    .. note::
+        This is a wrapper for Vnet implementation.
+        See: https://github.com/black0017/MedicalZooPytorch/blob/master/lib/medzoo/Vnet.py
+    """
 
     def __init__(self, channels: int, act: nn.Module = nn.ELU, bias: bool = False):
-        """
-        Parameters
-        ----------
-        channels : int
-            Number of channels.
-        act : nn.Module
-            Activation function.
-        bias : bool
-            Whether to use bias.
-        """
         super().__init__()
 
         self.layers = nn.Sequential(
@@ -29,7 +34,7 @@ class LUConv(nn.Module):
             act(inplace=True),
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass of the network."""
         return self.layers(x)
 
@@ -53,13 +58,34 @@ def _make_nconv(channels: int, depth: int, act: nn.Module = nn.ELU, bias: bool =
     -------
     layers : nn.Sequential
         Stack of LUConv layers.
+
+    .. note::
+        This is a wrapper for Vnet implementation.
+        See: https://github.com/black0017/MedicalZooPytorch/blob/master/lib/medzoo/Vnet.py
     """
     layers = [LUConv(channels=channels, act=act, bias=bias) for _ in range(depth)]
     return nn.Sequential(*layers)
 
 
 class InputTransition(nn.Module):
-    """Input Transition Block."""
+    """
+    Input Transition Block.
+
+    Parameters
+    ----------
+    in_channels : int
+        Number of input channels.
+    out_channels : int
+        Number of output channels.
+    act : nn.Module
+        Activation function.
+    bias : bool
+        Whether to use bias.
+
+    .. note::
+        This is a wrapper for Vnet implementation.
+        See: https://github.com/black0017/MedicalZooPytorch/blob/master/lib/medzoo/Vnet.py
+    """
 
     def __init__(
         self,
@@ -68,18 +94,6 @@ class InputTransition(nn.Module):
         act: nn.Module = nn.ELU,
         bias: bool = False,
     ):
-        """
-        Parameters
-        ----------
-        in_channels : int
-            Number of input channels.
-        out_channels : int
-            Number of output channels.
-        act : nn.Module
-            Activation function.
-        bias : bool
-            Whether to use bias.
-        """
         super().__init__()
 
         if out_channels % in_channels != 0:
@@ -92,7 +106,7 @@ class InputTransition(nn.Module):
             nn.BatchNorm2d(out_channels),
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass of the network."""
         out = self.conv_block(x)
         x16 = x.repeat(1, 16 // self.in_channels, 1, 1)
@@ -101,7 +115,26 @@ class InputTransition(nn.Module):
 
 
 class DownTransition(nn.Module):
-    """Down Transition Block."""
+    """
+    Down Transition Block.
+
+    Parameters
+    ----------
+    in_channels : int
+        Number of input channels.
+    convs : int
+        Number of LUConv layers.
+    act : nn.Module
+        Activation function.
+    dropout_prob : float
+        Dropout probability.
+    bias : bool
+        Whether to use bias.
+
+    .. note::
+        This is a wrapper for Vnet implementation.
+        See: https://github.com/black0017/MedicalZooPytorch/blob/master/lib/medzoo/Vnet.py
+    """
 
     def __init__(
         self,
@@ -111,20 +144,6 @@ class DownTransition(nn.Module):
         dropout_prob: float = 0.0,
         bias: bool = False,
     ):
-        """
-        Parameters
-        ----------
-        in_channels : int
-            Number of input channels.
-        convs : int
-            Number of LUConv layers.
-        act : nn.Module
-            Activation function.
-        dropout_prob : float
-            Dropout probability.
-        bias : bool
-            Whether to use bias.
-        """
         super().__init__()
 
         out_channels = 2 * in_channels
@@ -135,7 +154,7 @@ class DownTransition(nn.Module):
         self.ops = _make_nconv(out_channels, convs, act, bias)
         self.dropout = nn.Dropout2d(dropout_prob) if dropout_prob > 0.0 else None
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass of the network."""
         down = self.act_function1(self.bn1(self.down_conv(x)))
         out = self.dropout(down) if self.dropout is not None else down
@@ -145,7 +164,26 @@ class DownTransition(nn.Module):
 
 
 class UpTransition(nn.Module):
-    """Up Transition Block."""
+    """
+    Up Transition Block.
+
+    Parameters
+    ----------
+    in_channels : int
+        Number of input channels.
+    out_channels : int
+        Number of output channels.
+    convs : int
+        Number of LUConv layers.
+    act : nn.Module
+        Activation function.
+    dropout_prob : float
+        Dropout probability.
+
+    .. note::
+        This is a wrapper for Vnet implementation.
+        See: https://github.com/black0017/MedicalZooPytorch/blob/master/lib/medzoo/Vnet.py
+    """
 
     def __init__(
         self,
@@ -155,20 +193,6 @@ class UpTransition(nn.Module):
         act: nn.Module = nn.ELU,
         dropout_prob: float = 0.0,
     ):
-        """
-        Parameters
-        ----------
-        in_channels : int
-            Number of input channels.
-        out_channels : int
-            Number of output channels.
-        convs : int
-            Number of LUConv layers.
-        act : nn.Module
-            Activation function.
-        dropout_prob : float
-            Dropout probability.
-        """
         super().__init__()
         self.up_conv = nn.ConvTranspose2d(in_channels, out_channels // 2, kernel_size=2, stride=2)
         self.bn1 = nn.BatchNorm2d(out_channels // 2)
@@ -178,7 +202,7 @@ class UpTransition(nn.Module):
         self.act_function2 = act(inplace=True)
         self.ops = _make_nconv(out_channels, convs, act)
 
-    def forward(self, x, skipx):
+    def forward(self, x: torch.Tensor, skipx: torch.Tensor) -> torch.Tensor:
         """Forward pass of the network."""
         out = self.dropout(x) if self.dropout is not None else x
         skipxdo = self.dropout2(skipx)
@@ -190,7 +214,24 @@ class UpTransition(nn.Module):
 
 
 class OutputTransition(nn.Module):
-    """Output Transition Block."""
+    """
+    Output Transition Block.
+
+    Parameters
+    ----------
+    in_channels : int
+        Number of input channels.
+    out_channels : int
+        Number of output channels.
+    act : nn.Module
+        Activation function.
+    bias : bool
+        Whether to use bias.
+
+    .. note::
+        This is a wrapper for Vnet implementation.
+        See: https://github.com/black0017/MedicalZooPytorch/blob/master/lib/medzoo/Vnet.py
+    """
 
     def __init__(
         self,
@@ -199,18 +240,6 @@ class OutputTransition(nn.Module):
         act: nn.Module = nn.ELU,
         bias: bool = False,
     ):
-        """
-        Parameters
-        ----------
-        in_channels : int
-            Number of input channels.
-        out_channels : int
-            Number of output channels.
-        act : nn.Module
-            Activation function.
-        bias : bool
-            Whether to use bias.
-        """
         super().__init__()
 
         self.conv_block = nn.Sequential(
@@ -220,7 +249,7 @@ class OutputTransition(nn.Module):
         )
         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=1)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass of the network."""
         # convolve 32 down to 2 channels
         out = self.conv_block(x)
@@ -230,15 +259,29 @@ class OutputTransition(nn.Module):
 
 class VNet(nn.Module):
     """
-    Implementation of the V-Net, as presented in Fausto Milletari, Nassir Navab, Seyed-Ahmad Ahmadi.
+    Implementation of the V-Net for MRI segmentation, as presented in [1].
 
     References
     ----------
-    ..
+    .. [1] Fausto Milletari, Nassir Navab, Seyed-Ahmad Ahmadi. V-Net: Fully Convolutional Neural Networks for
+        Volumetric Medical Image Segmentation, 2016. https://arxiv.org/abs/1606.04797
 
-        Fausto Milletari, Nassir Navab, Seyed-Ahmad Ahmadi. V-Net: Fully Convolutional Neural Networks for Volumetric \
-        Medical Image Segmentation, 2016. https://arxiv.org/abs/1606.04797
+    Parameters
+    ----------
+    in_chans : int
+        Number of input channels.
+    out_chans : int
+        Number of output channels.
+    act : nn.Module
+        Activation function.
+    drop_prob : float
+        Dropout probability.
+    bias : bool
+        Whether to use bias.
 
+    .. note::
+        This is a wrapper for Vnet implementation.
+        See: https://github.com/black0017/MedicalZooPytorch/blob/master/lib/medzoo/Vnet.py
     """
 
     def __init__(
@@ -249,20 +292,6 @@ class VNet(nn.Module):
         drop_prob: float = 0.5,
         bias: bool = False,
     ):
-        """
-        Parameters
-        ----------
-        in_chans : int
-            Number of input channels.
-        out_chans : int
-            Number of output channels.
-        act : nn.Module
-            Activation function.
-        drop_prob : float
-            Dropout probability.
-        bias : bool
-            Whether to use bias.
-        """
         super().__init__()
 
         if act == "elu":
@@ -289,7 +318,7 @@ class VNet(nn.Module):
         self.up_tr32 = UpTransition(64, 32, 1, act)
         self.out_tr = OutputTransition(32, out_chans, act, bias=bias)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass of the network."""
         out16 = self.in_tr(x)
         out32 = self.down_tr32(out16)

@@ -1,55 +1,78 @@
 # coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
+from typing import Union
+
 import torch
 import torch.nn as nn
 
 
 class ConvRNNStack(nn.Module):
-    """A stack of convolutional RNNs."""
+    """
+    A stack of convolutional RNNs.
+
+    Parameters
+    ----------
+    convs : list of torch.nn.Module
+        List of convolutional layers.
+    rnn : torch.nn.Module
+        RNN layer.
+    """
 
     def __init__(self, convs, rnn):
-        """
-        Parameters
-        ----------
-        convs: list of convolutional layers
-        rnn: list of RNN layers
-        """
         super(ConvRNNStack, self).__init__()
         self.convs = convs
         self.rnn = rnn
 
-    def forward(self, x, hidden):
+    def forward(self, x: torch.Tensor, hidden: torch.Tensor = None) -> torch.Tensor:
         """
         Parameters
         ----------
-        x: [batch_size, seq_len, input_size]
-        hidden: [num_layers * num_directions, batch_size, hidden_size
+        x : torch.Tensor
+            Input tensor of shape [batch_size, seq_len, input_size].
+        hidden : torch.Tensor
+            Initial hidden state of shape [num_layers * num_directions, batch_size, hidden_size].
 
         Returns
         -------
-        output: [batch_size, seq_len, hidden_size]
+        torch.Tensor
+            Output tensor of shape [batch_size, seq_len, hidden_size].
         """
         return self.rnn(self.convs(x), hidden)
 
 
 class ConvNonlinear(nn.Module):
-    """A convolutional layer with nonlinearity."""
+    """
+    A convolutional layer with nonlinearity.
 
-    def __init__(self, input_size, features, conv_dim, kernel_size, dilation, bias, nonlinear="relu"):
-        """
-        Initializes the convolutional layer.
+    Parameters
+    ----------
+    input_size : int
+        Number of input channels.
+    features : int
+        Number of output channels.
+    conv_dim : int
+        Number of dimensions of the convolutional layer.
+    kernel_size : int
+        Size of the convolutional kernel.
+    dilation : int
+        Dilation of the convolutional kernel.
+    bias : bool
+        Whether to use bias.
+    nonlinear : str, optional
+        Nonlinearity of the convolutional layer. Default is ``"ReLU"``.
+    """
 
-        Parameters
-        ----------
-        input_size: number of input channels.
-        features: number of output channels.
-        conv_dim: number of dimensions of the convolutional layer.
-        kernel_size: size of the convolutional kernel.
-        dilation: dilation of the convolutional kernel.
-        bias: whether to use bias.
-        nonlinear: nonlinearity of the convolutional layer.
-        """
+    def __init__(
+        self,
+        input_size: int,
+        features: int,
+        conv_dim: int,
+        kernel_size: int,
+        dilation: int,
+        bias: bool,
+        nonlinear: Union[str, None] = "ReLU",
+    ):
         super(ConvNonlinear, self).__init__()
 
         self.input_size = input_size
@@ -94,7 +117,7 @@ class ConvNonlinear(nn.Module):
             nn.init.zeros_(self.conv_layer.bias)
 
     @staticmethod
-    def determine_conv_class(n_dim):
+    def determine_conv_class(n_dim: int) -> nn.Module:
         """Determines the convolutional layer class."""
         if n_dim == 1:
             return nn.Conv1d
@@ -113,11 +136,11 @@ class ConvNonlinear(nn.Module):
             s += ", nonlinearity={nonlinear}"
         return s.format(**self.__dict__)
 
-    def check_forward_input(self, _input):
+    def check_forward_input(self, _input: torch.Tensor) -> torch.Tensor:
         """Checks input for correct size and shape."""
         if _input.size(1) != self.input_size:
             raise RuntimeError(f"input has inconsistent input_size: got {_input.size(1)}, expected {self.input_size}")
 
-    def forward(self, _input):
+    def forward(self, _input: torch.Tensor) -> torch.Tensor:
         """Forward pass of the convolutional layer."""
         return self.nonlinear(self.conv_layer(self.padding(_input)))

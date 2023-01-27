@@ -4,10 +4,10 @@ mridc.collections.quantitative.data package
 Submodules
 ----------
 
-mridc.collections.quantitative.data.qmri\_data module
------------------------------------------------------
+mridc.collections.quantitative.data.qmri\_loader module
+-------------------------------------------------------
 
-.. automodule:: mridc.collections.quantitative.data.qmri_data
+.. automodule:: mridc.collections.quantitative.data.qmri_loader
    :members:
    :undoc-members:
    :show-inheritance:

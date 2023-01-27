@@ -20,8 +20,36 @@ SUPPORTED_EMBEDDING_TYPES = {"conv", "perceptron"}
 
 class PatchEmbeddingBlock(nn.Module):
     """
-    A patch embedding block, based on: "Dosovitskiy et al.,
-    An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>"
+    Implementation of a patch embedding block, as presented in [1].
+
+    References
+    ----------
+    .. [1] Dosovitskiy A, Beyer L, Kolesnikov A, Weissenborn D, Zhai X, Unterthiner T, Dehghani M, Minderer M, Heigold
+        G, Gelly S, Uszkoreit J. An image is worth 16x16 words: Transformers for image recognition at scale. arXiv
+        preprint arXiv:2010.11929. 2020 Oct 22.
+
+    Parameters
+    ----------
+    in_channels : int
+        Dimension of input channels.
+    img_size : Union[Sequence[int], int]
+        Dimension of input image.
+    patch_size : Union[Sequence[int], int]
+        Dimension of patch size.
+    hidden_size : int
+        Dimension of hidden layer.
+    num_heads : int
+        Number of attention heads.
+    pos_embed : str
+        Position embedding layer type.
+    dropout_rate : float, optional
+        Faction of the input units to drop. Default is ``0.0``.
+    spatial_dims : int, optional
+        Number of spatial dimensions. Default is ``3``.
+
+    .. note::
+        This is a wrapper for monai implementation of PatchEmbeddingBlock.
+        See: https://github.com/Project-MONAI/MONAI/blob/c38d503a587f1779914bd071a1b2d66a6d9080c2/monai/networks/blocks/patchembedding.py#L28
     """
 
     def __init__(
@@ -34,19 +62,7 @@ class PatchEmbeddingBlock(nn.Module):
         pos_embed: str,
         dropout_rate: float = 0.0,
         spatial_dims: int = 3,
-    ) -> None:
-        """
-        Args:
-            in_channels: dimension of input channels.
-            img_size: dimension of input image.
-            patch_size: dimension of patch size.
-            hidden_size: dimension of hidden layer.
-            num_heads: number of attention heads.
-            pos_embed: position embedding layer type.
-            dropout_rate: faction of the input units to drop.
-            spatial_dims: number of spatial dimensions.
-        """
-
+    ):
         super().__init__()
 
         if not (0 <= dropout_rate <= 1):
@@ -93,7 +109,7 @@ class PatchEmbeddingBlock(nn.Module):
             chars = (("h", "p1"), ("w", "p2"), ("d", "p3"))[:spatial_dims]
             from_chars = "b c " + " ".join(f"({k} {v})" for k, v in chars)
             to_chars = f"b ({' '.join([c[0] for c in chars])}) ({' '.join([c[1] for c in chars])} c)"
-            axes_len = {f"p{i+1}": p for i, p in enumerate(patch_size)}  # type: ignore
+            axes_len = {f"p{i + 1}": p for i, p in enumerate(patch_size)}  # type: ignore
             self.patch_embeddings = nn.Sequential(
                 einops.rearrange(f"{from_chars} -> {to_chars}", **axes_len), nn.Linear(self.patch_dim, hidden_size)
             )
@@ -102,7 +118,8 @@ class PatchEmbeddingBlock(nn.Module):
         trunc_normal_(self.position_embeddings, mean=0.0, std=0.02, a=-2.0, b=2.0)
         self.apply(self._init_weights)
 
-    def _init_weights(self, m):
+    def _init_weights(self, m: nn.Module):
+        """Initialize the weights of the module."""
         if isinstance(m, nn.Linear):
             trunc_normal_(m.weight, mean=0.0, std=0.02, a=-2.0, b=2.0)
             if isinstance(m, nn.Linear) and m.bias is not None:
@@ -111,7 +128,8 @@ class PatchEmbeddingBlock(nn.Module):
             nn.init.constant_(m.bias, 0)
             nn.init.constant_(m.weight, 1.0)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward function of PatchEmbeddingBlock."""
         x = self.patch_embeddings(x)
         if self.pos_embed == "conv":
             x = x.flatten(2).transpose(-1, -2)
@@ -122,12 +140,33 @@ class PatchEmbeddingBlock(nn.Module):
 
 class PatchEmbed(nn.Module):
     """
-    Patch embedding block based on: "Liu et al.,
-    Swin Transformer: Hierarchical Vision Transformer using Shifted Windows
-    <https://arxiv.org/abs/2103.14030>"
-    https://github.com/microsoft/Swin-Transformer
+    Implementation of a patch embedding block, as presented in [1].
+
     Unlike ViT patch embedding block: (1) input is padded to satisfy window size requirements (2) normalized if
     specified (3) position embedding is not used.
+
+    References
+    ----------
+    .. [1] Liu Z, Lin Y, Cao Y, Hu H, Wei Y, Zhang Z, Lin S, Guo B. Swin transformer: Hierarchical vision transformer
+        using shifted windows. InProceedings of the IEEE/CVF International Conference on Computer Vision 2021 (pp.
+        10012-10022).
+
+    Parameters
+    ----------
+    patch_size : Union[Sequence[int], int]
+        Dimension of patch size. Default is ``2``.
+    in_chans : int
+        Dimension of input channels. Default is ``1``.
+    embed_dim : int
+        Dimension of embedding. Default is ``48``.
+    norm_layer : Type[LayerNorm]
+        Normalization layer. Default is ``nn.InstanceNorm2d``.
+    spatial_dims : int, optional
+        Number of spatial dimensions. Default is ``3``.
+
+    .. note::
+        This is a wrapper for monai implementation of PatchEmbeddingBlock.
+        See: https://github.com/Project-MONAI/MONAI/blob/c38d503a587f1779914bd071a1b2d66a6d9080c2/monai/networks/blocks/patchembedding.py#L28
     """
 
     def __init__(
@@ -137,16 +176,7 @@ class PatchEmbed(nn.Module):
         embed_dim: int = 48,
         norm_layer: Type[LayerNorm] = nn.InstanceNorm2d,
         spatial_dims: int = 3,
-    ) -> None:
-        """
-        Args:
-            patch_size: dimension of patch size.
-            in_chans: dimension of input channels.
-            embed_dim: number of linear projection output channels.
-            norm_layer: normalization layer.
-            spatial_dims: spatial dimension.
-        """
-
+    ):
         super().__init__()
 
         if not (spatial_dims == 2 or spatial_dims == 3):
@@ -168,23 +198,24 @@ class PatchEmbed(nn.Module):
         else:
             self.norm = None
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward function of PatchEmbed."""
         x_shape = x.size()
         if len(x_shape) == 5:
             _, _, d, h, w = x_shape
-            if w % self.patch_size[2] != 0:
-                x = F.pad(x, (0, self.patch_size[2] - w % self.patch_size[2]))
-            if h % self.patch_size[1] != 0:
-                x = F.pad(x, (0, 0, 0, self.patch_size[1] - h % self.patch_size[1]))
-            if d % self.patch_size[0] != 0:
-                x = F.pad(x, (0, 0, 0, 0, 0, self.patch_size[0] - d % self.patch_size[0]))
+            if w % self.patch_size[2] != 0:  # type: ignore
+                x = F.pad(x, (0, self.patch_size[2] - w % self.patch_size[2]))  # type: ignore
+            if h % self.patch_size[1] != 0:  # type: ignore
+                x = F.pad(x, (0, 0, 0, self.patch_size[1] - h % self.patch_size[1]))  # type: ignore
+            if d % self.patch_size[0] != 0:  # type: ignore
+                x = F.pad(x, (0, 0, 0, 0, 0, self.patch_size[0] - d % self.patch_size[0]))  # type: ignore
 
         elif len(x_shape) == 4:
             _, _, h, w = x_shape
-            if w % self.patch_size[1] != 0:
-                x = F.pad(x, (0, self.patch_size[1] - w % self.patch_size[1]))
-            if h % self.patch_size[0] != 0:
-                x = F.pad(x, (0, 0, 0, self.patch_size[0] - h % self.patch_size[0]))
+            if w % self.patch_size[1] != 0:  # type: ignore
+                x = F.pad(x, (0, self.patch_size[1] - w % self.patch_size[1]))  # type: ignore
+            if h % self.patch_size[0] != 0:  # type: ignore
+                x = F.pad(x, (0, 0, 0, self.patch_size[0] - h % self.patch_size[0]))  # type: ignore
 
         x = self.proj(x)
         if self.norm is not None:

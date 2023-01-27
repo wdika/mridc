@@ -6,9 +6,9 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import OmegaConf
 
+from mridc.collections.common.data.subsample import RandomMaskFunc
 from mridc.collections.common.parts import utils
 from mridc.collections.quantitative.models.qvn import qVarNet
-from mridc.collections.reconstruction.data.subsample import RandomMaskFunc
 from tests.collections.reconstruction.fastmri.conftest import create_input
 
 
@@ -26,7 +26,7 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "quantitative_module_out_channels": 8,
                 "quantitative_module_padding_size": 11,
                 "quantitative_module_normalize": True,
-                "quantitative_module_accumulate_estimates": False,
+                "quantitative_module_accumulate_predictions": False,
                 "quantitative_module_no_dc": False,
                 "quantitative_module_signal_forward_model_sequence": "MEGRE",
                 "quantitative_module_dimensionality": 2,
@@ -69,7 +69,7 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "reconstruction_module_out_channels": 4,
                 "reconstruction_module_padding_size": 11,
                 "reconstruction_module_normalize": True,
-                "reconstruction_module_accumulate_estimates": False,
+                "reconstruction_module_accumulate_predictions": False,
                 "reconstruction_module_no_dc": False,
                 "reconstruction_module_dimensionality": 2,
                 "quantitative_module_num_cascades": 8,
@@ -79,7 +79,7 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "quantitative_module_out_channels": 8,
                 "quantitative_module_padding_size": 11,
                 "quantitative_module_normalize": True,
-                "quantitative_module_accumulate_estimates": False,
+                "quantitative_module_accumulate_predictions": False,
                 "quantitative_module_no_dc": False,
                 "quantitative_module_signal_forward_model_sequence": "MEGRE",
                 "quantitative_module_dimensionality": 2,
@@ -122,7 +122,7 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "reconstruction_module_out_channels": 4,
                 "reconstruction_module_padding_size": 11,
                 "reconstruction_module_normalize": True,
-                "reconstruction_module_accumulate_estimates": False,
+                "reconstruction_module_accumulate_predictions": False,
                 "reconstruction_module_no_dc": False,
                 "reconstruction_module_dimensionality": 2,
                 "quantitative_module_num_cascades": 8,
@@ -132,7 +132,7 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "quantitative_module_out_channels": 8,
                 "quantitative_module_padding_size": 11,
                 "quantitative_module_normalize": True,
-                "quantitative_module_accumulate_estimates": False,
+                "quantitative_module_accumulate_predictions": False,
                 "quantitative_module_no_dc": False,
                 "quantitative_module_signal_forward_model_sequence": "MEGRE_no_phase",
                 "quantitative_module_dimensionality": 2,

@@ -6,10 +6,8 @@ __author__ = "Dimitrios Karkalousos"
 
 from typing import Tuple, Union
 
-import einops
 import torch
 import torch.nn as nn
-
 from einops.layers.torch import Rearrange
 
 SUPPORTED_DROPOUT_MODE = {"vit", "swin"}
@@ -17,8 +15,34 @@ SUPPORTED_DROPOUT_MODE = {"vit", "swin"}
 
 class MLPBlock(nn.Module):
     """
-    A multi-layer perceptron block, based on: "Dosovitskiy et al.,
-    An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>"
+    Implementation of a multi-layer perceptron block, as presented in [1].
+
+    References
+    ----------
+    .. [1] Dosovitskiy A, Beyer L, Kolesnikov A, Weissenborn D, Zhai X, Unterthiner T, Dehghani M, Minderer M, Heigold
+        G, Gelly S, Uszkoreit J. An image is worth 16x16 words: Transformers for image recognition at scale. arXiv
+        preprint arXiv:2010.11929. 2020 Oct 22.
+
+    Parameters
+    ----------
+    hidden_size : int
+        Dimension of hidden layer.
+    mlp_dim : int
+        Dimension of MLP layer.
+    dropout_rate : float, optional
+        Faction of the input units to drop. Default is ``0.0``.
+    act : Union[Tuple, str], optional
+        Activation type and arguments. Default is ``"GELU"``.
+    dropout_mode : str, optional
+        Dropout mode, can be "vit" or "swin". Default is ``vit``.
+        "vit" mode uses two dropout instances as implemented in
+        https://github.com/google-research/vision_transformer/blob/main/vit_jax/models.py#L87
+        "swin" corresponds to one instance as implemented in
+        https://github.com/microsoft/Swin-Transformer/blob/main/models/swin_mlp.py#L23
+
+    .. note::
+        This is a wrapper for monai implementation of a multi-layer perceptron block.
+        See: https://github.com/Project-MONAI/MONAI/blob/c38d503a587f1779914bd071a1b2d66a6d9080c2/monai/networks/blocks/transformerblock.py#L18
     """
 
     def __init__(
@@ -28,20 +52,7 @@ class MLPBlock(nn.Module):
         dropout_rate: float = 0.0,
         act: Union[Tuple, str] = "GELU",
         dropout_mode="vit",
-    ) -> None:
-        """
-        Args:
-            hidden_size: dimension of hidden layer.
-            mlp_dim: dimension of feedforward layer. If 0, `hidden_size` will be used.
-            dropout_rate: faction of the input units to drop.
-            act: activation type and arguments. Defaults to GELU.
-            dropout_mode: dropout mode, can be "vit" or "swin".
-                "vit" mode uses two dropout instances as implemented in
-                https://github.com/google-research/vision_transformer/blob/main/vit_jax/models.py#L87
-                "swin" corresponds to one instance as implemented in
-                https://github.com/microsoft/Swin-Transformer/blob/main/models/swin_mlp.py#L23
-        """
-
+    ):
         super().__init__()
 
         if not (0 <= dropout_rate <= 1):
@@ -58,7 +69,8 @@ class MLPBlock(nn.Module):
         else:
             raise ValueError(f"dropout_mode should be one of {SUPPORTED_DROPOUT_MODE}")
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward function of MLPBlock."""
         x = self.fn(self.linear1(x))
         x = self.drop1(x)
         x = self.linear2(x)
@@ -68,19 +80,31 @@ class MLPBlock(nn.Module):
 
 class SABlock(nn.Module):
     """
-    A self-attention block, based on: "Dosovitskiy et al.,
-    An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>"
+    Implementation of a self-attention block, as presented in [1].
+
+    References
+    ----------
+    .. [1] Dosovitskiy A, Beyer L, Kolesnikov A, Weissenborn D, Zhai X, Unterthiner T, Dehghani M, Minderer M, Heigold
+        G, Gelly S, Uszkoreit J. An image is worth 16x16 words: Transformers for image recognition at scale. arXiv
+        preprint arXiv:2010.11929. 2020 Oct 22.
+
+    Parameters
+    ----------
+    hidden_size : int
+        Dimension of hidden layer.
+    num_heads : int
+        Number of attention heads.
+    dropout_rate : float, optional
+        Faction of the input units to drop. Default is ``0.0``.
+    qkv_bias : bool, optional
+        Bias term for the qkv linear layer. Default is ``False``.
+
+    .. note::
+        This is a wrapper for monai implementation of self-attention block.
+        See: https://github.com/Project-MONAI/MONAI/blob/c38d503a587f1779914bd071a1b2d66a6d9080c2/monai/networks/blocks/transformerblock.py#L18
     """
 
-    def __init__(self, hidden_size: int, num_heads: int, dropout_rate: float = 0.0, qkv_bias: bool = False) -> None:
-        """
-        Args:
-            hidden_size: dimension of hidden layer.
-            num_heads: number of attention heads.
-            dropout_rate: faction of the input units to drop.
-            qkv_bias: bias term for the qkv linear layer.
-        """
-
+    def __init__(self, hidden_size: int, num_heads: int, dropout_rate: float = 0.0, qkv_bias: bool = False):
         super().__init__()
 
         if not (0 <= dropout_rate <= 1):
@@ -99,7 +123,8 @@ class SABlock(nn.Module):
         self.head_dim = hidden_size // num_heads
         self.scale = self.head_dim**-0.5
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward function of SABlock."""
         output = self.input_rearrange(self.qkv(x))
         q, k, v = output[0], output[1], output[2]
         att_mat = (torch.einsum("blxd,blyd->blxy", q, k) * self.scale).softmax(dim=-1)
@@ -113,8 +138,32 @@ class SABlock(nn.Module):
 
 class TransformerBlock(nn.Module):
     """
-    A transformer block, based on: "Dosovitskiy et al.,
-    An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>"
+    Implementation of a transformer block, as presented in [1].
+
+    References
+    ----------
+    .. [1] Dosovitskiy A, Beyer L, Kolesnikov A, Weissenborn D, Zhai X, Unterthiner T, Dehghani M, Minderer M, Heigold
+        G, Gelly S, Uszkoreit J. An image is worth 16x16 words: Transformers for image recognition at scale. arXiv
+        preprint arXiv:2010.11929. 2020 Oct 22.
+
+    Parameters
+    ----------
+    hidden_size : int
+        Dimension of hidden layer.
+    mlp_dim : int
+        Dimension of the mlp layer.
+    num_heads : int
+        Number of attention heads.
+    dropout_rate : float, optional
+        Faction of the input units to drop. Default is ``0.0``.
+    qkv_bias : bool, optional
+        Bias term for the qkv linear layer. Default is ``False``.
+    spatial_dims : int, optional
+        Number of spatial dimensions. Default is ``2``.
+
+    .. note::
+        This is a wrapper for monai implementation of self-attention block.
+        See: https://github.com/Project-MONAI/MONAI/blob/c38d503a587f1779914bd071a1b2d66a6d9080c2/monai/networks/blocks/transformerblock.py#L18
     """
 
     def __init__(
@@ -125,16 +174,7 @@ class TransformerBlock(nn.Module):
         dropout_rate: float = 0.0,
         qkv_bias: bool = False,
         spatial_dims: int = 2,
-    ) -> None:
-        """
-        Args:
-            hidden_size: dimension of hidden layer.
-            mlp_dim: dimension of feedforward layer.
-            num_heads: number of attention heads.
-            dropout_rate: faction of the input units to drop.
-            qkv_bias: apply bias term for the qkv linear layer
-        """
-
+    ):
         super().__init__()
 
         if not (0 <= dropout_rate <= 1):
@@ -153,7 +193,8 @@ class TransformerBlock(nn.Module):
             self.norm1 = nn.InstanceNorm3d(hidden_size)
             self.norm2 = nn.InstanceNorm3d(hidden_size)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward function of TransformerBlock."""
         x = x + self.attn(self.norm1(x))
         x = x + self.mlp(self.norm2(x))
         return x

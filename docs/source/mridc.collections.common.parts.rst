@@ -28,18 +28,10 @@ mridc.collections.common.parts.ptl\_overrides module
    :undoc-members:
    :show-inheritance:
 
-mridc.collections.common.parts.rnn\_utils module
+mridc.collections.common.parts.transforms module
 ------------------------------------------------
 
-.. automodule:: mridc.collections.common.parts.rnn_utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-mridc.collections.common.parts.training\_utils module
------------------------------------------------------
-
-.. automodule:: mridc.collections.common.parts.training_utils
+.. automodule:: mridc.collections.common.parts.transforms
    :members:
    :undoc-members:
    :show-inheritance:

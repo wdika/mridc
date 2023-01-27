@@ -6,8 +6,8 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import OmegaConf
 
+from mridc.collections.common.data.subsample import RandomMaskFunc
 from mridc.collections.common.parts import utils
-from mridc.collections.reconstruction.data.subsample import RandomMaskFunc
 from mridc.collections.reconstruction.models.lpd import LPDNet
 
 
@@ -26,12 +26,16 @@ def create_input(shape):
                 "num_dual": 5,
                 "num_iter": 5,
                 "primal_model_architecture": "UNET",
-                "primal_unet_num_filters": 16,
+                "primal_in_channels": 2,
+                "primal_out_channels": 2,
+                "primal_unet_num_filters": 4,
                 "primal_unet_num_pool_layers": 2,
                 "primal_unet_dropout_probability": 0.0,
                 "primal_unet_padding_size": 11,
                 "primal_unet_normalize": True,
                 "dual_model_architecture": "UNET",
+                "dual_in_channels": 2,
+                "dual_out_channels": 2,
                 "dual_unet_num_filters": 16,
                 "dual_unet_num_pool_layers": 2,
                 "dual_unet_dropout_probability": 0.0,
@@ -69,12 +73,16 @@ def create_input(shape):
                 "num_dual": 2,
                 "num_iter": 2,
                 "primal_model_architecture": "UNET",
+                "primal_in_channels": 2,
+                "primal_out_channels": 2,
                 "primal_unet_num_filters": 4,
                 "primal_unet_num_pool_layers": 4,
                 "primal_unet_dropout_probability": 0.0,
                 "primal_unet_padding_size": 15,
                 "primal_unet_normalize": False,
                 "dual_model_architecture": "UNET",
+                "dual_in_channels": 2,
+                "dual_out_channels": 2,
                 "dual_unet_num_filters": 4,
                 "dual_unet_num_pool_layers": 4,
                 "dual_unet_dropout_probability": 0.0,

@@ -6,9 +6,7 @@ from abc import ABC
 import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
-from torch.nn import L1Loss
 
-import mridc.collections.common.losses.ssim as losses
 import mridc.collections.common.parts.fft as fft
 import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.models.base as base_models
@@ -23,43 +21,35 @@ __all__ = ["VSNet"]
 
 class VSNet(base_models.BaseMRIReconstructionModel, ABC):
     """
-    Implementation of the Variable-Splitting Net, as presented in Duan, J. et al.
+    Implementation of the Variable-Splitting Net, as presented in [1].
 
     References
     ----------
-
-    ..
-
-        Duan, J. et al. (2019) ‘Vs-net: Variable splitting network for accelerated parallel MRI reconstruction’, \
-        Lecture Notes in Computer Science (including subseries Lecture Notes in Artificial Intelligence and Lecture \
+    .. [1] Duan, J. et al. (2019) ‘Vs-net: Variable splitting network for accelerated parallel MRI reconstruction’,
+        Lecture Notes in Computer Science (including subseries Lecture Notes in Artificial Intelligence and Lecture
         Notes in Bioinformatics), 11767 LNCS, pp. 713–722. doi: 10.1007/978-3-030-32251-9_78.
-
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
-        # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
         num_cascades = cfg_dict.get("num_cascades")
-        self.fft_normalization = cfg_dict.get("fft_normalization")
-        self.spatial_dims = cfg_dict.get("spatial_dims")
-        self.coil_dim = cfg_dict.get("coil_dim")
         self.num_cascades = cfg_dict.get("num_cascades")
 
         image_model_architecture = cfg_dict.get("imspace_model_architecture")
         if image_model_architecture == "CONV":
             image_model = conv2d.Conv2d(
-                in_channels=2,
-                out_channels=2,
+                in_channels=cfg_dict.get("imspace_in_channels", 2),
+                out_channels=cfg_dict.get("imspace_out_channels", 2),
                 hidden_channels=cfg_dict.get("imspace_conv_hidden_channels"),
                 n_convs=cfg_dict.get("imspace_conv_n_convs"),
                 batchnorm=cfg_dict.get("imspace_conv_batchnorm"),
             )
         elif image_model_architecture == "MWCNN":
             image_model = mwcnn_.MWCNN(
-                input_channels=2,
+                input_channels=cfg_dict.get("imspace_in_channels", 2),
                 first_conv_hidden_channels=cfg_dict.get("image_mwcnn_hidden_channels"),
                 num_scales=cfg_dict.get("image_mwcnn_num_scales"),
                 bias=cfg_dict.get("image_mwcnn_bias"),
@@ -69,8 +59,8 @@ class VSNet(base_models.BaseMRIReconstructionModel, ABC):
             image_model = unet_block.NormUnet(
                 cfg_dict.get("imspace_unet_num_filters"),
                 cfg_dict.get("imspace_unet_num_pool_layers"),
-                in_chans=2,
-                out_chans=2,
+                in_chans=cfg_dict.get("imspace_in_channels", 2),
+                out_chans=cfg_dict.get("imspace_out_channels", 2),
                 drop_prob=cfg_dict.get("imspace_unet_dropout_probability"),
                 padding_size=cfg_dict.get("imspace_unet_padding_size"),
                 normalize=cfg_dict.get("imspace_unet_normalize"),
@@ -96,27 +86,6 @@ class VSNet(base_models.BaseMRIReconstructionModel, ABC):
             coil_dim=self.coil_dim,
         )
 
-        self.coil_combination_method = cfg_dict.get("coil_combination_method")
-
-        if cfg_dict.get("train_loss_fn") == "ssim":
-            self.train_loss_fn = losses.SSIMLoss()
-        elif cfg_dict.get("train_loss_fn") == "l1":
-            self.train_loss_fn = L1Loss()
-        elif cfg_dict.get("train_loss_fn") == "mse":
-            self.train_loss_fn = torch.nn.MSELoss()
-        else:
-            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("train_loss_fn")))
-        if cfg_dict.get("val_loss_fn") == "ssim":
-            self.val_loss_fn = losses.SSIMLoss()
-        elif cfg_dict.get("val_loss_fn") == "l1":
-            self.val_loss_fn = L1Loss()
-        elif cfg_dict.get("val_loss_fn") == "mse":
-            self.val_loss_fn = torch.nn.MSELoss()
-        else:
-            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("val_loss_fn")))
-
-        self.accumulate_estimates = False
-
     @common_classes.typecheck()
     def forward(
         self,
@@ -131,27 +100,26 @@ class VSNet(base_models.BaseMRIReconstructionModel, ABC):
 
         Parameters
         ----------
-        y: Subsampled k-space data.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        sensitivity_maps: Coil sensitivity maps.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        mask: Sampling mask.
-            torch.Tensor, shape [1, 1, n_x, n_y, 1]
-        init_pred: Initial prediction.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
-        target: Target data to compute the loss.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        y : torch.Tensor
+            Subsampled k-space data. Shape [batch_size, n_coils, n_x, n_y, 2]
+        sensitivity_maps : torch.Tensor
+            Coil sensitivity maps. Shape [batch_size, n_coils, n_x, n_y, 2]
+        mask : torch.Tensor
+            Subsampling mask. Shape [1, 1, n_x, n_y, 1]
+        init_pred : torch.Tensor
+            Initial prediction. Shape [batch_size, n_x, n_y, 2]
+        target : torch.Tensor
+            Target data to compute the loss. Shape [batch_size, n_x, n_y, 2]
 
         Returns
         -------
-        pred: list of torch.Tensor, shape [batch_size, n_x, n_y, 2], or  torch.Tensor, shape [batch_size, n_x, n_y, 2]
-             If self.accumulate_loss is True, returns a list of all intermediate estimates.
-             If False, returns the final estimate.
+        torch.Tensor
+            Reconstructed image. Shape [batch_size, n_x, n_y, 2]
         """
         sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
         image = self.model(y, sensitivity_maps, mask)
         image = torch.view_as_complex(
-            utils.coil_combination(
+            utils.coil_combination_method(
                 fft.ifft2(
                     image,
                     centered=self.fft_centered,

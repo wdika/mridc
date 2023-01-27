@@ -3,6 +3,7 @@ __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/utils/export_utils.py
 import os
+from contextlib import nullcontext
 from enum import Enum
 from typing import Callable, Dict, Optional, Type
 
@@ -11,7 +12,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from mridc.utils import logging
+from mridc.utils import CastToFloat, CastToFloatAll, logging
 
 try:
     import onnxruntime
@@ -31,42 +32,40 @@ class ExportFormat(Enum):
 _EXT_DICT = {".pt": ExportFormat.TORCHSCRIPT, ".ts": ExportFormat.TORCHSCRIPT, ".onnx": ExportFormat.ONNX}
 
 
-def cast_tensor(x, from_dtype=torch.float16, to_dtype=torch.float32):
-    """Cast tensor from from_dtype to to_dtype"""
-    return x.to(dtype=to_dtype) if x.dtype == from_dtype else x
+class LinearWithBiasSkip(nn.Module):
+    """
+    Linear layer with bias and skip_bias_add option.
 
+    Parameters
+    ----------
+    weight : torch.Tensor
+        Weight tensor.
+    bias : torch.Tensor
+        Bias tensor.
+    skip_bias_add : bool
+        Whether to skip bias addition.
+    """
 
-def cast_all(x, from_dtype=torch.float16, to_dtype=torch.float32):
-    """Cast all tensors in x from from_dtype to to_dtype"""
-    if isinstance(x, torch.Tensor):
-        return cast_tensor(x, from_dtype=from_dtype, to_dtype=to_dtype)
-    if isinstance(x, dict):
-        return {k: cast_all(x[k], from_dtype=from_dtype, to_dtype=to_dtype) for k in x.keys()}
-    if isinstance(x, tuple):
-        return tuple(cast_all(y, from_dtype=from_dtype, to_dtype=to_dtype) for y in x)
-
-
-class CastToFloat(nn.Module):
-    """Cast input to float"""
-
-    def __init__(self, mod):
-        super().__init__()
-        self.mod = mod
+    def __init__(self, weight, bias, skip_bias_add):
+        super(LinearWithBiasSkip, self).__init__()
+        self.bias = bias
+        self.weight = weight
+        self.skip_bias_add = skip_bias_add
 
     def forward(self, x):
-        """Forward pass"""
-        return (
-            self.mod.forward(x.to(torch.float32).to(x.dtype)) if torch.is_autocast_enabled() else self.mod.forward(x)
-        )
+        """Forward pass."""
+        if self.skip_bias_add:
+            return F.linear(x, self.weight), self.bias
+        return F.linear(x, self.weight, self.bias), None
 
 
 def get_export_format(filename: str):
-    """Get export format from filename"""
+    """Get export format from filename."""
     _, ext = os.path.splitext(filename)
     try:
-        return _EXT_DICT[ext]
-    except KeyError as e:
-        raise ValueError(f"Export file {filename} extension does not correspond to any export format!") from e
+        return _EXT_DICT[ext.lower()]
+    except KeyError:
+        raise ValueError(f"Export file {filename} extension does not correspond to any export format!")
 
 
 def augment_filename(output: str, prepend: str):
@@ -122,6 +121,41 @@ def to_onnxrt_input(ort_input_names, input_names, input_dict, input_list):
     return odict
 
 
+def verify_torchscript(model, output, input_examples, check_tolerance=0.01):
+    """
+    Verify torchscript output with torchscript forward.
+
+    Parameters
+    ----------
+    model : torch.nn.Module
+        Model to verify.
+    output : str
+        Output filename.
+    input_examples : list
+        List of input examples.
+    check_tolerance : float
+        Tolerance for checking.
+
+    Returns
+    -------
+    bool
+        Whether the verification was successful.
+    """
+    all_good = True
+    for input_example in input_examples:
+        input_list, input_dict = parse_input_example(input_example)
+        # We disable autocast here to make sure exported TS will run under Triton or other C++ env
+        with torch.cuda.amp.autocast(enabled=False):
+            output_example = model.forward(*input_list, **input_dict)
+            ts_model = torch.jit.load(output)
+            all_good = all_good and run_ts_and_compare(
+                ts_model, input_list, input_dict, output_example, check_tolerance
+            )
+    status = "SUCCESS" if all_good else "FAIL"
+    logging.info(f"Torchscript generated at {output} verified with torchscript forward : " + status)
+    return all_good
+
+
 def verify_runtime(
     model,
     output,
@@ -141,10 +175,12 @@ def verify_runtime(
         return
 
     onnx_session_opt = onnxruntime.SessionOptions()
-    onnx_session_opt.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
+    onnx_session_opt.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_BASIC
     sess = onnxruntime.InferenceSession(
         onnx_model.SerializeToString(), sess_options=onnx_session_opt, providers=["CUDAExecutionProvider"]
     )
+    del onnx_model
+
     all_good = True
 
     for input_example in input_examples:
@@ -157,6 +193,28 @@ def verify_runtime(
     return all_good
 
 
+def run_ts_and_compare(ts_model, ts_input_list, ts_input_dict, output_example, check_tolerance=0.01):
+    """Run torchscript model and compare with pytorch output."""
+    # Verify the model can be read, and is valid
+    ts_out = ts_model(*ts_input_list, **ts_input_dict)
+    all_good = True
+    for i, out in enumerate(ts_out):
+        expected = output_example[i]
+        if torch.is_tensor(expected):
+            tout = out.to("cpu")
+            logging.debug(f"Checking output {i}, shape: {expected.shape}:\n")
+            this_good = True
+            try:
+                if not torch.allclose(tout, expected.cpu(), rtol=check_tolerance, atol=check_tolerance):
+                    this_good = False
+            except Exception:  # there maybe size mismatch and it may be OK
+                this_good = False
+            if not this_good:
+                logging.info(f"Results mismatch! PyTorch(expected):\n{expected}\nTorchScript:\n{tout}")
+                all_good = False
+    return all_good
+
+
 def run_ort_and_compare(sess, ort_input, output_example, check_tolerance=0.01):
     """Run onnxrt and compare with output example"""
     ort_out = sess.run(None, ort_input)
@@ -165,10 +223,16 @@ def run_ort_and_compare(sess, ort_input, output_example, check_tolerance=0.01):
         expected = output_example[i]
         if torch.is_tensor(expected):
             tout = torch.from_numpy(out)
-            logging.info(f"Checking output {i}, shape: {expected.shape}:\n{expected}\n{tout}")
-            if not torch.allclose(tout, expected.cpu(), rtol=check_tolerance, atol=100 * check_tolerance):
-                all_good = False
+            logging.debug(f"Checking output {i}, shape: {expected.shape}:\n")
+            this_good = True
+            try:
+                if not torch.allclose(tout, expected.cpu(), rtol=check_tolerance, atol=100 * check_tolerance):
+                    this_good = False
+            except Exception:  # there maybe size mismatch and it may be OK
+                this_good = False
+            if not this_good:
                 logging.info(f"onnxruntime results mismatch! PyTorch(expected):\n{expected}\nONNXruntime:\n{tout}")
+                all_good = False
     return all_good
 
 
@@ -262,11 +326,12 @@ def replace_modules(
     return model
 
 
-default_replacements = {
-    "BatchNorm1d": wrap_module(nn.BatchNorm1d, CastToFloat),
-    "BatchNorm2d": wrap_module(nn.BatchNorm2d, CastToFloat),
-    "LayerNorm": wrap_module(nn.LayerNorm, CastToFloat),
-}
+def script_module(m: nn.Module):
+    """Script a module."""
+    return torch.jit.script(m)
+
+
+script_replacements: Dict = {}
 
 
 def replace_for_export(model: nn.Module) -> nn.Module:
@@ -282,4 +347,11 @@ def replace_for_export(model: nn.Module) -> nn.Module:
     -------
     The model with replaced modules.
     """
+    default_replacements = {
+        "BatchNorm1d": wrap_module(nn.BatchNorm1d, CastToFloat),
+        "BatchNorm2d": wrap_module(nn.BatchNorm2d, CastToFloat),
+        "LayerNorm": wrap_module(nn.LayerNorm, CastToFloat),
+        "InstanceNorm1d": wrap_module(nn.InstanceNorm1d, CastToFloat),
+    }
     replace_modules(model, default_replacements)
+    replace_modules(model, script_replacements)

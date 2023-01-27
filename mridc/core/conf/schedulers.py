@@ -219,4 +219,5 @@ AVAILABLE_SCHEDULER_PARAMS = {
     "WarmupAnnealingParams": WarmupAnnealingParams,
     "PolynomialDecayAnnealingParams": PolynomialDecayAnnealingParams,
     "PolynomialHoldDecayAnnealingParams": PolynomialHoldDecayAnnealingParams,
+    "ReduceLROnPlateauParams": ReduceLROnPlateauParams,
 }

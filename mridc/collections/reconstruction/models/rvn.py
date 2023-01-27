@@ -8,11 +8,8 @@ from typing import Optional
 import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
-from torch.nn import L1Loss
 
-import mridc.collections.common.losses.ssim as losses
 import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.rnn_utils as rnn_utils
 import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.models.base as base_models
 import mridc.collections.reconstruction.models.recurrentvarnet.recurrentvarnet as recurrentvarnet
@@ -23,24 +20,18 @@ __all__ = ["RecurrentVarNet"]
 
 class RecurrentVarNet(base_models.BaseMRIReconstructionModel, ABC):
     """
-    Implementation of the Recurrent Variational Network implementation, as presented in Yiasemis, George, et al.
+    Implementation of the Recurrent Variational Network implementation, as presented in [1].
 
     References
     ----------
-
-    ..
-
-        Yiasemis, George, et al. “Recurrent Variational Network: A Deep Learning Inverse Problem Solver Applied to \
-        the Task of Accelerated MRI Reconstruction.” ArXiv:2111.09639 [Physics], Nov. 2021. arXiv.org, \
+    .. [1] Yiasemis, George, et al. “Recurrent Variational Network: A Deep Learning Inverse Problem Solver Applied to
+        the Task of Accelerated MRI Reconstruction.” ArXiv:2111.09639 [Physics], Nov. 2021. arXiv.org,
         http://arxiv.org/abs/2111.09639.
-
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
-        # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
 
-        # Cascades of RIM blocks
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
         self.in_channels = cfg_dict.get("in_channels")
@@ -82,12 +73,6 @@ class RecurrentVarNet(base_models.BaseMRIReconstructionModel, ABC):
         else:
             self.initializer = None  # type: ignore
 
-        self.fft_centered = cfg_dict.get("fft_centered")
-        self.fft_normalization = cfg_dict.get("fft_normalization")
-        self.spatial_dims = cfg_dict.get("spatial_dims")
-        self.coil_dim = cfg_dict.get("coil_dim")
-        self.coil_combination_method = cfg_dict.get("coil_combination_method")
-
         self.block_list: torch.nn.Module = torch.nn.ModuleList()
         for _ in range(self.num_steps if self.no_parameter_sharing else 1):
             self.block_list.append(
@@ -106,26 +91,7 @@ class RecurrentVarNet(base_models.BaseMRIReconstructionModel, ABC):
 
         # initialize weights if not using pretrained cirim
         if not cfg_dict.get("pretrained", False):
-            self.block_list.apply(lambda module: rnn_utils.rnn_weights_init(module, std_init_range))
-
-        if cfg_dict.get("train_loss_fn") == "ssim":
-            self.train_loss_fn = losses.SSIMLoss()
-        elif cfg_dict.get("train_loss_fn") == "l1":
-            self.train_loss_fn = L1Loss()
-        elif cfg_dict.get("train_loss_fn") == "mse":
-            self.train_loss_fn = torch.nn.MSELoss()
-        else:
-            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("train_loss_fn")))
-        if cfg_dict.get("val_loss_fn") == "ssim":
-            self.val_loss_fn = losses.SSIMLoss()
-        elif cfg_dict.get("val_loss_fn") == "l1":
-            self.val_loss_fn = L1Loss()
-        elif cfg_dict.get("val_loss_fn") == "mse":
-            self.val_loss_fn = torch.nn.MSELoss()
-        else:
-            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("val_loss_fn")))
-
-        self.accumulate_estimates = False
+            self.block_list.apply(lambda module: utils.rnn_weights_init(module, std_init_range))
 
     @common_classes.typecheck()
     def forward(
@@ -142,22 +108,21 @@ class RecurrentVarNet(base_models.BaseMRIReconstructionModel, ABC):
 
         Parameters
         ----------
-        y: Subsampled k-space data.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        sensitivity_maps: Coil sensitivity maps.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        mask: Sampling mask.
-            torch.Tensor, shape [1, 1, n_x, n_y, 1]
-        init_pred: Initial prediction.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
-        target: Target data to compute the loss.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        y : torch.Tensor
+            Subsampled k-space data. Shape [batch_size, n_coils, n_x, n_y, 2]
+        sensitivity_maps : torch.Tensor
+            Coil sensitivity maps. Shape [batch_size, n_coils, n_x, n_y, 2]
+        mask : torch.Tensor
+            Subsampling mask. Shape [1, 1, n_x, n_y, 1]
+        init_pred : torch.Tensor
+            Initial prediction. Shape [batch_size, n_x, n_y, 2]
+        target : torch.Tensor
+            Target data to compute the loss. Shape [batch_size, n_x, n_y, 2]
 
         Returns
         -------
-        pred: list of torch.Tensor, shape [batch_size, n_x, n_y, 2], or  torch.Tensor, shape [batch_size, n_x, n_y, 2]
-             If self.accumulate_loss is True, returns a list of all intermediate estimates.
-             If False, returns the final estimate.
+        torch.Tensor
+            Reconstructed image. Shape [batch_size, n_x, n_y, 2]
         """
         previous_state: Optional[torch.Tensor] = None
 
@@ -214,13 +179,15 @@ class RecurrentVarNet(base_models.BaseMRIReconstructionModel, ABC):
                 previous_state,
             )
 
-        eta = fft.ifft2(
+        prediction = fft.ifft2(
             kspace_prediction,
             centered=self.fft_centered,
             normalization=self.fft_normalization,
             spatial_dims=self.spatial_dims,
         )
-        eta = utils.coil_combination(eta, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim)
-        eta = torch.view_as_complex(eta)
-        _, eta = utils.center_crop_to_smallest(target, eta)
-        return eta
+        prediction = utils.coil_combination_method(
+            prediction, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim
+        )
+        prediction = torch.view_as_complex(prediction)
+        _, prediction = utils.center_crop_to_smallest(target, prediction)
+        return prediction

@@ -2,7 +2,6 @@
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NKI-AI/direct/blob/main/direct/nn/mwcnn/mwcnn.py
-# Copyright (c) DIRECT Contributors
 
 from collections import OrderedDict
 from typing import Optional, Tuple
@@ -14,20 +13,15 @@ import torch.nn.functional as F
 
 class DWT(nn.Module):
     """
-    2D Discrete Wavelet Transform as implemented in Liu, Pengju, et al.
+    2D Discrete Wavelet Transform as implemented in [1].
 
     References
     ----------
-
-    ..
-
-        Liu, Pengju, et al. “Multi-Level Wavelet-CNN for Image Restoration.” ArXiv:1805.07071 [Cs], May 2018. \
+    .. [1] Liu, Pengju, et al. “Multi-Level Wavelet-CNN for Image Restoration.” ArXiv:1805.07071 [Cs], May 2018.
         arXiv.org, http://arxiv.org/abs/1805.07071.
-
     """
 
     def __init__(self):
-        """Inits DWT."""
         super().__init__()
         self.requires_grad = False
 
@@ -38,11 +32,13 @@ class DWT(nn.Module):
 
         Parameters
         ----------
-        x: Input tensor.
+        x : torch.Tensor
+            Input tensor.
 
         Returns
         -------
-        DWT of `x`.
+        torch.Tensor
+            DWT of `x`.
         """
         x01 = x[:, :, 0::2, :] / 2
         x02 = x[:, :, 1::2, :] / 2
@@ -60,20 +56,15 @@ class DWT(nn.Module):
 
 class IWT(nn.Module):
     """
-    2D Inverse Wavelet Transform as implemented in Liu, Pengju, et al.
+    2D Inverse Wavelet Transform as implemented in [1].
 
     References
     ----------
-
-    ..
-
-        Liu, Pengju, et al. “Multi-Level Wavelet-CNN for Image Restoration.” ArXiv:1805.07071 [Cs], May 2018. \
+    .. [1] Liu, Pengju, et al. “Multi-Level Wavelet-CNN for Image Restoration.” ArXiv:1805.07071 [Cs], May 2018.
         arXiv.org, http://arxiv.org/abs/1805.07071.
-
     """
 
     def __init__(self):
-        """Inits IWT."""
         super().__init__()
         self.requires_grad = False
         self._r = 2
@@ -84,11 +75,13 @@ class IWT(nn.Module):
 
         Parameters
         ----------
-        x: Input tensor.
+        x : torch.Tensor
+            Input tensor.
 
         Returns
         -------
-        IWT of `x`.
+        torch.Tensor
+            IWT of `x`.
         """
         batch, in_channel, in_height, in_width = x.size()
         out_channel, out_height, out_width = int(in_channel / (self._r**2)), self._r * in_height, self._r * in_width
@@ -110,16 +103,29 @@ class IWT(nn.Module):
 
 class ConvBlock(nn.Module):
     """
-    Convolution Block for MWCNN as implemented in Liu, Pengju, et al.
+    Convolution Block for MWCNN as implemented in [1].
 
     References
     ----------
-
-    ..
-
-        Liu, Pengju, et al. “Multi-Level Wavelet-CNN for Image Restoration.” ArXiv:1805.07071 [Cs], May 2018. \
+    .. [1] Liu, Pengju, et al. “Multi-Level Wavelet-CNN for Image Restoration.” ArXiv:1805.07071 [Cs], May 2018.
         arXiv.org, http://arxiv.org/abs/1805.07071.
 
+    Parameters
+    ----------
+    in_channels : int
+        Number of input channels.
+    out_channels : int
+        Number of output channels.
+    kernel_size : int
+        Kernel size of convolution.
+    bias : bool, optional
+        Use convolution bias. Default is ``True``.
+    batchnorm : bool, optional
+        Use batch normalization. Default is ``False``.
+    activation : torch.nn.Module, optional
+        Activation function. Default is ``nn.ReLU(True)``.
+    scale : float, optional
+        Scale factor for convolution. Default is ``1.0``.
     """
 
     def __init__(
@@ -132,26 +138,6 @@ class ConvBlock(nn.Module):
         activation: nn.Module = nn.ReLU(True),
         scale: Optional[float] = 1.0,
     ):
-        """
-        Inits ConvBlock.
-
-        Parameters
-        ----------
-        in_channels: Number of input channels.
-            int
-        out_channels: Number of output channels.
-            int
-        kernel_size: Conv kernel size.
-            int
-        bias: Use convolution bias.
-            bool, Default: True.
-        batchnorm: Use batch normalization.
-            bool, Default: False.
-        activation: Activation function.
-            torch.nn.Module, Default: nn.ReLU(True).
-        scale: Scale factor for convolution.
-            float (optional), Default: 1.0.
-        """
         super().__init__()
 
         net = [
@@ -177,27 +163,44 @@ class ConvBlock(nn.Module):
 
         Parameters
         ----------
-        x: Input with shape (N, C, H, W).
+        x : torch.Tensor
+            Input with shape (N, C, H, W).
 
         Returns
         -------
-        Output with shape (N, C', H', W').
+        torch.Tensor
+            Output with shape (N, C', H', W').
         """
         return self.net(x) * self.scale
 
 
 class DilatedConvBlock(nn.Module):
     """
-    Double dilated Convolution Block fpr MWCNN as implemented in Liu, Pengju, et al.
+    Double dilated Convolution Block fpr MWCNN as implemented in [1].
 
     References
     ----------
-
-    ..
-
-        Liu, Pengju, et al. “Multi-Level Wavelet-CNN for Image Restoration.” ArXiv:1805.07071 [Cs], May 2018. \
+    .. [1] Liu, Pengju, et al. “Multi-Level Wavelet-CNN for Image Restoration.” ArXiv:1805.07071 [Cs], May 2018.
         arXiv.org, http://arxiv.org/abs/1805.07071.
 
+    Parameters
+    ----------
+    in_channels : int
+        Number of input channels.
+    dilations : Tuple[int, int]
+        Dilations for first and second convolution.
+    kernel_size : int
+        Kernel size of convolution.
+    out_channels : int
+        Number of output channels.
+    bias : bool, optional
+        Use convolution bias. Default is ``True``.
+    batchnorm : bool, optional
+        Use batch normalization. Default is ``False``.
+    activation : torch.nn.Module, optional
+        Activation function. Default is ``nn.ReLU(True)``.
+    scale : float, optional
+        Scale factor for convolution. Default is ``1.0``.
     """
 
     def __init__(
@@ -211,28 +214,6 @@ class DilatedConvBlock(nn.Module):
         activation: nn.Module = nn.ReLU(True),
         scale: Optional[float] = 1.0,
     ):
-        """
-        Inits DilatedConvBlock.
-
-        Parameters
-        ----------
-        in_channels: Number of input channels.
-            int
-        dilations: Number of dilations.
-            Tuple[int, int], Default: (1, 1).
-        kernel_size: Conv kernel size.
-            int
-        out_channels: Number of output channels.
-            int (optional), Default: None.
-        bias: Use convolution bias.
-            bool, Default: True.
-        batchnorm: Use batch normalization.
-            bool, Default: False.
-        activation: Activation function.
-            torch.nn.Module, Default: nn.ReLU(True).
-        scale: Scale factor for convolution.
-            float (optional), Default: 1.0.
-        """
         super().__init__()
         net = [
             nn.Conv2d(
@@ -273,27 +254,40 @@ class DilatedConvBlock(nn.Module):
 
         Parameters
         ----------
-        x: Input with shape (N, C, H, W).
+        x : torch.Tensor
+            Input with shape (N, C, H, W).
 
         Returns
         -------
-        Output with shape (N, C', H', W').
+        torch.Tensor
+            Output with shape (N, C', H', W').
         """
         return self.net(x) * self.scale
 
 
 class MWCNN(nn.Module):
     """
-    Multi-level Wavelet CNN (MWCNN) implementation as implemented in Liu, Pengju, et al.
+    Multi-level Wavelet CNN (MWCNN) implementation as implemented in [1].
 
     References
     ----------
-
-    ..
-
-        Liu, Pengju, et al. “Multi-Level Wavelet-CNN for Image Restoration.” ArXiv:1805.07071 [Cs], May 2018. \
+    .. [1] Liu, Pengju, et al. “Multi-Level Wavelet-CNN for Image Restoration.” ArXiv:1805.07071 [Cs], May 2018.
         arXiv.org, http://arxiv.org/abs/1805.07071.
 
+    Parameters
+    ----------
+    input_channels : int
+        Number of input channels.
+    first_conv_hidden_channels : int
+        Number of hidden channels in first convolution.
+    num_scales : int, optional
+        Number of scales. Default is ``4``.
+    bias : bool, optional
+        Use convolution bias. Default is ``True``.
+    batchnorm : bool, optional
+        Use batch normalization. Default is ``False``.
+    activation : torch.nn.Module, optional
+        Activation function. Default is ``nn.ReLU(True)``.
     """
 
     def __init__(
@@ -305,24 +299,6 @@ class MWCNN(nn.Module):
         batchnorm: bool = False,
         activation: nn.Module = nn.ReLU(True),
     ):
-        """
-        Inits MWCNN.
-
-        Parameters
-        ----------
-        input_channels: Input channels dimension.
-            int
-        first_conv_hidden_channels: First convolution output channels dimension.
-            int
-        num_scales: Number of scales.
-            int, Default: 4.
-        bias: Convolution bias. If True, adds a learnable bias to the output.
-            bool, Default: True.
-        batchnorm: If True, a batchnorm layer is added after each convolution.
-            bool, Default: False.
-        activation: Activation function applied after each convolution.
-            torch.nn.Module, Default: nn.ReLU().
-        """
         super().__init__()
         self._kernel_size = 3
         self.DWT = DWT()
@@ -401,17 +377,19 @@ class MWCNN(nn.Module):
         self.num_scales = num_scales
 
     @staticmethod
-    def pad(x):
+    def pad(x: torch.Tensor) -> torch.Tensor:
         """
-        Pad the input with zeros.
+        Pads input to height and width dimensions if odd.
 
         Parameters
         ----------
-        x: Input tensor.
+        x : torch.Tensor
+            Input tensor.
 
         Returns
         -------
-        Padded tensor.
+        torch.Tensor
+            Padded tensor.
         """
         padding = [0, 0, 0, 0]
 
@@ -424,18 +402,21 @@ class MWCNN(nn.Module):
         return x
 
     @staticmethod
-    def crop_to_shape(x, shape):
+    def crop_to_shape(x: torch.Tensor, shape: tuple) -> torch.Tensor:
         """
-        Crop the input to the given shape.
+        Crops ``x`` to specified shape.
 
         Parameters
         ----------
-        x: Input tensor.
-        shape: Tuple of (height, width).
+        x : torch.Tensor
+            Input tensor with shape ('\'*, H, W).
+        shape : tuple
+            Crop shape corresponding to H, W.
 
         Returns
         -------
-        Cropped tensor.
+        torch.Tensor
+            Cropped tensor.
         """
         h, w = x.shape[-2:]
 
@@ -451,14 +432,15 @@ class MWCNN(nn.Module):
 
         Parameters
         ----------
-        input_tensor: Input tensor.
-            torch.tensor
-        res: If True, residual connection is applied to the output.
-            bool, Default: False.
+        input_tensor : torch.Tensor
+            Input tensor with shape ('\'*, C, H, W).
+        res : bool, optional
+            If True, residual connection is applied to the output. Default is ``False``.
 
         Returns
         -------
-        Output tensor.
+        torch.Tensor
+            Output tensor with shape ('\'*, C, H, W).
         """
         res_values = []
         x = self.pad(input_tensor.clone())

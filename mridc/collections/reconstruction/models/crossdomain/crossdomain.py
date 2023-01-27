@@ -2,7 +2,7 @@
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NKI-AI/direct/blob/main/direct/nn/crossdomain/crossdomain.py
-# Copyright (c) DIRECT Contributors
+
 from typing import Optional, Tuple, Union
 
 import torch
@@ -13,7 +13,40 @@ import mridc.collections.common.parts.utils as utils
 
 
 class CrossDomainNetwork(nn.Module):
-    """This performs optimisation in both, k-space ("K") and image ("I") domains according to domain_sequence."""
+    """
+    Based on KIKINet implementation. Modified to work with multi-coil k-space data, as presented in [1].
+
+    This performs optimisation in both, k-space ("K") and image ("I") domains according to domain_sequence.
+
+    References
+    ----------
+    .. [1] Eo, Taejoon, et al. “KIKI-Net: Cross-Domain Convolutional Neural Networks for Reconstructing Undersampled
+        Magnetic Resonance Images.” Magnetic Resonance in Medicine, vol. 80, no. 5, Nov. 2018, pp. 2188–201. PubMed,
+        https://doi.org/10.1002/mrm.27201.
+
+    Parameters
+    ----------
+    image_model_list : torch.nn.Module
+        Image domain model list.
+    kspace_model_list : torch.nn.Module, optional
+        K-space domain model list. If set to None, a correction step is applied. Default is ``None``.
+    domain_sequence : str, optional
+        Domain sequence. Default is ``"KIKI"``.
+    image_buffer_size : int, optional
+        Image buffer size. Default is ``1``.
+    kspace_buffer_size : int, optional
+        K-space buffer size. Default is ``1``.
+    normalize_image : bool, optional
+        Whether to normalize the image. Default is ``False``.
+    fft_centered : bool, optional
+        Whether to use centered FFT. Default is ``False``.
+    fft_normalization : str, optional
+        Whether to normalize the FFT. Default is ``"backward"``.
+    spatial_dims : Tuple[int, int], optional
+        Spatial dimensions of the input. Default is ``None``.
+    coil_dim : int, optional
+        Coil dimension. Default is ``1``.
+    """
 
     def __init__(
         self,
@@ -23,40 +56,11 @@ class CrossDomainNetwork(nn.Module):
         image_buffer_size: int = 1,
         kspace_buffer_size: int = 1,
         normalize_image: bool = False,
-        fft_centered: bool = True,
-        fft_normalization: str = "ortho",
+        fft_centered: bool = False,
+        fft_normalization: str = "backward",
         spatial_dims: Optional[Tuple[int, int]] = None,
         coil_dim: int = 1,
-        **kwargs,
     ):
-        """
-        Inits CrossDomainNetwork.
-
-        Parameters
-        ----------
-        image_model_list: Image domain model list.
-            torch.nn.Module
-        kspace_model_list: K-space domain model list. If set to None, a correction step is applied.
-            torch.nn.Module, Default: None.
-        domain_sequence: Domain sequence containing only "K" (k-space domain) and/or "I" (image domain).
-            str, Default: "KIKI".
-        image_buffer_size: Image buffer size.
-            int, Default: 1.
-        kspace_buffer_size: K-space buffer size.
-            int, Default: 1.
-        normalize_image: If True, input is normalized.
-            bool, Default: False.
-        fft_centered: If True, FFT is centered.
-            bool, Default: True.
-        fft_normalization: FFT normalization.
-            str, Default: "ortho".
-        spatial_dims: Spatial dimensions.
-            Tuple[int, int], Default: None.
-        coil_dim: Coil dimension.
-            int, Default: 1.
-        kwargs:Keyword Arguments.
-            dict
-        """
         super().__init__()
 
         self.fft_centered = fft_centered
@@ -82,8 +86,38 @@ class CrossDomainNetwork(nn.Module):
         self.image_model_list = image_model_list
         self.image_buffer_size = image_buffer_size
 
-    def kspace_correction(self, block_idx, image_buffer, kspace_buffer, sampling_mask, sensitivity_map, masked_kspace):
-        """Performs k-space correction."""
+    def kspace_correction(
+        self,
+        block_idx: int,
+        image_buffer: torch.Tensor,
+        kspace_buffer: torch.Tensor,
+        sampling_mask: torch.Tensor,
+        sensitivity_map: torch.Tensor,
+        masked_kspace: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Performs k-space correction.
+
+        Parameters
+        ----------
+        block_idx : int
+            Block index.
+        image_buffer : torch.Tensor
+            Image buffer.
+        kspace_buffer : torch.Tensor
+            K-space buffer.
+        sampling_mask : torch.Tensor
+            Subsampling mask.
+        sensitivity_map : torch.Tensor
+            Coil sensitivity maps.
+        masked_kspace : torch.Tensor
+            Subsampled k-space.
+
+        Returns
+        -------
+        torch.Tensor
+            K-space buffer.
+        """
         forward_buffer = [
             self._forward_operator(image.clone(), sampling_mask, sensitivity_map)
             for image in torch.split(image_buffer, 2, -1)
@@ -101,8 +135,35 @@ class CrossDomainNetwork(nn.Module):
 
         return kspace_buffer
 
-    def image_correction(self, block_idx, image_buffer, kspace_buffer, sampling_mask, sensitivity_map):
-        """Performs image correction."""
+    def image_correction(
+        self,
+        block_idx: int,
+        image_buffer: torch.Tensor,
+        kspace_buffer: torch.Tensor,
+        sampling_mask: torch.Tensor,
+        sensitivity_map: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Performs image correction.
+
+        Parameters
+        ----------
+        block_idx : int
+            Block index.
+        image_buffer : torch.Tensor
+            Image buffer.
+        kspace_buffer : torch.Tensor
+            K-space buffer.
+        sampling_mask : torch.Tensor
+            Subsampling mask.
+        sensitivity_map : torch.Tensor
+            Coil sensitivity maps.
+
+        Returns
+        -------
+        torch.Tensor
+            Image buffer.
+        """
         backward_buffer = [
             self._backward_operator(kspace.clone(), sampling_mask, sensitivity_map)
             for kspace in torch.split(kspace_buffer, 2, -1)
@@ -114,8 +175,29 @@ class CrossDomainNetwork(nn.Module):
 
         return image_buffer
 
-    def _forward_operator(self, image, sampling_mask, sensitivity_map):
-        """Forward operator."""
+    def _forward_operator(
+        self,
+        image: torch.Tensor,
+        sampling_mask: torch.Tensor,
+        sensitivity_map: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Custom forward operator for the cross-domain correction.
+
+        Parameters
+        ----------
+        image : torch.Tensor
+            Image space. Shape [batch, coils, height, width, 2].
+        sampling_mask : torch.Tensor
+            Subsampling mask. Shape [batch, 1, height, width, 1].
+        sensitivity_map : torch.Tensor
+            Coil sensitivity maps. Shape [batch, coils, height, width, 2].
+
+        Returns
+        -------
+        torch.Tensor
+            K-space prediction. Shape [batch, coils, height, width, 2].
+        """
         return torch.where(
             sampling_mask == 0,
             torch.tensor([0.0], dtype=image.dtype).to(image.device),
@@ -127,8 +209,29 @@ class CrossDomainNetwork(nn.Module):
             ).type(image.type()),
         )
 
-    def _backward_operator(self, kspace, sampling_mask, sensitivity_map):
-        """Backward operator."""
+    def _backward_operator(
+        self,
+        kspace: torch.Tensor,
+        sampling_mask: torch.Tensor,
+        sensitivity_map: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Custom backward operator for the cross-domain correction.
+
+        Parameters
+        ----------
+        kspae : torch.Tensor
+            K-space. Shape [batch, coils, height, width, 2].
+        sampling_mask : torch.Tensor
+            Subsampling mask. Shape [batch, 1, height, width, 1].
+        sensitivity_map : torch.Tensor
+            Coil sensitivity maps. Shape [batch, coils, height, width, 2].
+
+        Returns
+        -------
+        torch.Tensor
+            Image space prediction. Shape [batch, coils, height, width, 2].
+        """
         kspace = torch.where(sampling_mask == 0, torch.tensor([0.0], dtype=kspace.dtype).to(kspace.device), kspace)
         return (
             utils.complex_mul(
@@ -147,7 +250,7 @@ class CrossDomainNetwork(nn.Module):
     def forward(
         self,
         masked_kspace: torch.Tensor,
-        sensitivity_map: torch.Tensor,
+        sensitivity_maps: torch.Tensor,
         sampling_mask: torch.Tensor,
     ) -> torch.Tensor:
         """
@@ -155,19 +258,19 @@ class CrossDomainNetwork(nn.Module):
 
         Parameters
         ----------
-        masked_kspace: Subsampled k-space data.
-            torch.tenor, shape [batch_size, n_coil, height, width, 2]
-        sensitivity_map: Sensitivity map.
-            torch.tenor, shape [batch_size, n_coil, height, width, 2]
-        sampling_mask: Sampling mask.
-            torch.tenor, shape [batch_size, 1, height, width, 1]
+        masked_kspace : torch.Tensor
+            Subsampled k-space. Shape [batch_size, n_coils, n_x, n_y, 2]
+        sensitivity_maps : torch.Tensor
+            Coil sensitivity maps. Shape [batch_size, n_coils, n_x, n_y, 2]
+        sampling_mask : torch.Tensor
+            Subsampling mask. Shape [1, 1, n_x, n_y, 1]
 
         Returns
         -------
-        Output image.
-            torch.tenor, shape [batch_size, height, width, 2]
+        torch.Tensor
+            Reconstructed image. Shape [batch_size, n_x, n_y, 2]
         """
-        input_image = self._backward_operator(masked_kspace, sampling_mask, sensitivity_map)
+        input_image = self._backward_operator(masked_kspace, sampling_mask, sensitivity_maps)
 
         image_buffer = torch.cat([input_image] * self.image_buffer_size, -1).to(masked_kspace.device)
         kspace_buffer = torch.cat([masked_kspace] * self.kspace_buffer_size, -1).to(masked_kspace.device)
@@ -176,12 +279,12 @@ class CrossDomainNetwork(nn.Module):
         for block_domain in self.domain_sequence:
             if block_domain == "K":
                 kspace_buffer = self.kspace_correction(
-                    kspace_block_idx, image_buffer, kspace_buffer, sampling_mask, sensitivity_map, masked_kspace
+                    kspace_block_idx, image_buffer, kspace_buffer, sampling_mask, sensitivity_maps, masked_kspace
                 )
                 kspace_block_idx += 1
             else:
                 image_buffer = self.image_correction(
-                    image_block_idx, image_buffer, kspace_buffer, sampling_mask, sensitivity_map
+                    image_block_idx, image_buffer, kspace_buffer, sampling_mask, sensitivity_maps
                 )
                 image_block_idx += 1
 

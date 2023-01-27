@@ -8,8 +8,8 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import OmegaConf
 
+from mridc.collections.common.data.subsample import RandomMaskFunc
 from mridc.collections.common.parts import utils
-from mridc.collections.reconstruction.data.subsample import RandomMaskFunc
 from mridc.collections.reconstruction.models.rvn import RecurrentVarNet
 from tests.collections.reconstruction.fastmri.conftest import create_input
 
@@ -237,7 +237,9 @@ def test_recurrentvarnet(shape, cfg, center_fractions, accelerations, dimensiona
     rvn = RecurrentVarNet(cfg, trainer=trainer)
 
     with torch.no_grad():
-        y = rvn.forward(output, output, mask, output, eta=x.sum(1), target=torch.abs(torch.view_as_complex(output)))
+        y = rvn.forward(
+            output, output, mask, output, prediction=x.sum(1), target=torch.abs(torch.view_as_complex(output))
+        )
 
     if dimensionality == 3:
         x = x.reshape([x.shape[0] * x.shape[1], x.shape[2], x.shape[3], x.shape[4], x.shape[5]])

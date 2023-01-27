@@ -6,9 +6,9 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import OmegaConf
 
+from mridc.collections.common.data.subsample import RandomMaskFunc
 from mridc.collections.common.parts import utils
 from mridc.collections.quantitative.models.qcirim import qCIRIM
-from mridc.collections.reconstruction.data.subsample import RandomMaskFunc
 from tests.collections.reconstruction.fastmri.conftest import create_input
 
 
@@ -32,9 +32,9 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "quantitative_module_conv_dim": 2,
                 "quantitative_module_time_steps": 8,
                 "quantitative_module_num_cascades": 8,
-                "quantitative_module_accumulate_estimates": True,
+                "quantitative_module_accumulate_predictions": True,
                 "quantitative_module_no_dc": True,
-                "quantitative_module_keep_eta": True,
+                "quantitative_module_keep_prediction": True,
                 "quantitative_module_signal_forward_model_sequence": "MEGRE",
                 "quantitative_module_dimensionality": 2,
                 "use_sens_net": False,
@@ -82,9 +82,9 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "reconstruction_module_conv_dim": 2,
                 "reconstruction_module_time_steps": 8,
                 "reconstruction_module_num_cascades": 8,
-                "reconstruction_module_accumulate_estimates": True,
+                "reconstruction_module_accumulate_predictions": True,
                 "reconstruction_module_no_dc": True,
-                "reconstruction_module_keep_eta": True,
+                "reconstruction_module_keep_prediction": True,
                 "reconstruction_module_dimensionality": 2,
                 "quantitative_module_recurrent_layer": "IndRNN",
                 "quantitative_module_conv_filters": [64, 64, 4],
@@ -99,9 +99,9 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "quantitative_module_conv_dim": 2,
                 "quantitative_module_time_steps": 8,
                 "quantitative_module_num_cascades": 8,
-                "quantitative_module_accumulate_estimates": True,
+                "quantitative_module_accumulate_predictions": True,
                 "quantitative_module_no_dc": True,
-                "quantitative_module_keep_eta": True,
+                "quantitative_module_keep_prediction": True,
                 "quantitative_module_signal_forward_model_sequence": "MEGRE",
                 "quantitative_module_dimensionality": 2,
                 "use_sens_net": False,
@@ -149,9 +149,9 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "reconstruction_module_conv_dim": 2,
                 "reconstruction_module_time_steps": 8,
                 "reconstruction_module_num_cascades": 1,
-                "reconstruction_module_accumulate_estimates": True,
+                "reconstruction_module_accumulate_predictions": True,
                 "reconstruction_module_no_dc": True,
-                "reconstruction_module_keep_eta": True,
+                "reconstruction_module_keep_prediction": True,
                 "reconstruction_module_dimensionality": 2,
                 "quantitative_module_recurrent_layer": "IndRNN",
                 "quantitative_module_conv_filters": [64, 64, 4],
@@ -166,9 +166,9 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "quantitative_module_conv_dim": 2,
                 "quantitative_module_time_steps": 8,
                 "quantitative_module_num_cascades": 8,
-                "quantitative_module_accumulate_estimates": True,
+                "quantitative_module_accumulate_predictions": True,
                 "quantitative_module_no_dc": True,
-                "quantitative_module_keep_eta": True,
+                "quantitative_module_keep_prediction": True,
                 "quantitative_module_signal_forward_model_sequence": "MEGRE_no_phase",
                 "quantitative_module_dimensionality": 2,
                 "use_sens_net": False,

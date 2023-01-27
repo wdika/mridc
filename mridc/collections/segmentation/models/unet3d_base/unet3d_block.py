@@ -71,16 +71,28 @@ class TransposeConv3dBlock(nn.Module):
 
 class UNet3D(nn.Module):
     """
-    Implementation of the 3D UNet, as presented in O. Ronneberger, P. Fischer, and Thomas Brox.
+    Implementation of the (3D) UNet for MRI segmentation, as presented in [1].
 
     References
     ----------
-    ..
-
-        O. Ronneberger, P. Fischer, and Thomas Brox. U-net: Convolutional networks for biomedical image segmentation. \
+    .. [1] O. Ronneberger, P. Fischer, and Thomas Brox. U-net: Convolutional networks for biomedical image segmentation. \
          In International Conference on Medical image computing and computer-assisted intervention, pages 234–241.  \
          Springer, 2015.
 
+    Parameters
+    ----------
+    in_chans : int
+        Number of input channels.
+    out_chans : int
+        Number of output channels.
+    chans : int
+        Number of output channels of the first convolutional layer. Default is ``32``.
+    num_pool_layers : int
+        Number of down-sampling and up-sampling layers. Default is ``4``.
+    drop_prob : float
+        Dropout probability. Default is ``0.0``.
+    block : nn.Module
+        Convolutional block to use. Default is ``Conv3dBlock``.
     """
 
     def __init__(
@@ -93,22 +105,6 @@ class UNet3D(nn.Module):
         block=Conv3dBlock,
         **kwargs,
     ):
-        """
-        Parameters
-        ----------
-        in_chans : int
-            Number of input channels.
-        out_chans : int
-            Number of output channels.
-        chans : int
-            Number of output channels of the first convolutional layer.
-        num_pool_layers : int
-            Number of down-sampling and up-sampling layers.
-        drop_prob : float
-            Dropout probability.
-        block : nn.Module
-            Convolutional block to use.
-        """
         super().__init__()
 
         self.in_chans = in_chans

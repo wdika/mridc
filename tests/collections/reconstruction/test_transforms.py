@@ -5,13 +5,7 @@ import numpy as np
 import pytest
 import torch
 
-from mridc.collections.common.parts.utils import (
-    center_crop,
-    center_crop_to_smallest,
-    complex_center_crop,
-    tensor_to_complex_np,
-    to_tensor,
-)
+from mridc.collections.common.parts.utils import center_crop, center_crop_to_smallest, complex_center_crop, to_tensor
 
 
 @pytest.mark.parametrize("x", [(np.zeros([1, 320, 320]).astype(np.complex64))])
@@ -29,24 +23,6 @@ def test_to_tensor(x):
     if x.dim() != 4:
         raise AssertionError
     if x.shape[-1] != 2:
-        raise AssertionError
-
-
-@pytest.mark.parametrize("x", [(torch.zeros([1, 320, 320, 2]).type(torch.complex64))])
-def test_tensor_to_complex_np(x):
-    """
-    Test if the tensor_to_complex_np function works as expected.
-
-    Args:
-        x: The input array.
-
-    Returns:
-        None
-    """
-    x = tensor_to_complex_np(x)
-    if x.ndim != 3:
-        raise AssertionError
-    if x.shape[-1] == 2:
         raise AssertionError
 
 

@@ -1,162 +1,65 @@
 # coding=utf-8
 __author__ = "Dimitrios Karkalousos, Chaoping Zhang"
 
-from typing import List, Sequence, Union
+from typing import Any, List, Sequence
 
 import torch
 
 import mridc.collections.common.parts.fft as fft
 import mridc.collections.common.parts.utils as utils
+from mridc.collections.quantitative.models.base import SignalForwardModel
 
 
 class RescaleByMax:
-    def __init__(self, slack=1e-6):
+    """
+    Rescale by max.
+
+    Parameters
+    ----------
+    slack : float, optional
+        Slack to add to the denominator. Default is ``1e-6``.
+    """
+
+    def __init__(self, slack: float = 1e-6):
         self.slack = slack
 
-    def forward(self, data):
+    def forward(self, data: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Apply scaling."""
         gamma = torch.max(torch.max(torch.abs(data), 3, keepdim=True)[0], 2, keepdim=True)[0] + self.slack
         data = data / gamma
         return data, gamma
 
     @staticmethod
-    def reverse(data, gamma):
+    def reverse(data: torch.Tensor, gamma: torch.Tensor) -> torch.Tensor:
         """Reverse scaling."""
         return torch.stack([data[i] * gamma[i] for i in range(data.shape[0])], 0)
 
 
-class SignalForwardModel:
-    """Defines a signal forward model"""
+def expand_op(x: torch.Tensor, sensitivity_maps: torch.Tensor) -> torch.Tensor:
+    """
+    Expand a coil-combined image to multicoil.
 
-    def __init__(self, sequence: Union[str, None] = None):
-        super(SignalForwardModel, self).__init__()
-        self.sequence = sequence.lower() if isinstance(sequence, str) else None
-        self.scaling = 1e-3
+    Parameters
+    ----------
+    x : torch.Tensor
+        Coil-combined image.
+    sensitivity_maps : torch.Tensor
+        Coil sensitivity maps.
 
-    def __call__(
-        self,
-        R2star_map: torch.Tensor,
-        S0_map: torch.Tensor,
-        B0_map: torch.Tensor,
-        phi_map: torch.Tensor,
-        TEs=None,
-    ):
-        """
-        Defines forward model based on sequence.
+    Returns
+    -------
+    torch.Tensor
+        Multicoil image.
 
-        Parameters
-        ----------
-        R2star_map: R2* map.
-            torch.Tensor, shape [batch_size, n_x, n_y]
-        S0_map: S0 map.
-            torch.Tensor, shape [batch_size, n_x, n_y]
-        B0_map: B0 map.
-            torch.Tensor, shape [batch_size, n_x, n_y]
-        phi_map: phi map.
-            torch.Tensor, shape [batch_size, n_x, n_y]
-        TEs: List of echo times.
-            List of float, shape [n_echoes]
-        """
-        if TEs is None:
-            TEs = torch.Tensor([3.0, 11.5, 20.0, 28.5])
-        if self.sequence == "megre":
-            return self.MEGRESignalModel(R2star_map, S0_map, B0_map, phi_map, TEs)
-        if self.sequence == "megre_no_phase":
-            return self.MEGRENoPhaseSignalModel(R2star_map, S0_map, TEs)
-        raise ValueError(
-            "Only MEGRE and MEGRE no phase are supported are signal forward model at the moment. "
-            f"Found {self.sequence}"
-        )
-
-    def MEGRESignalModel(
-        self,
-        R2star_map: torch.Tensor,
-        S0_map: torch.Tensor,
-        B0_map: torch.Tensor,
-        phi_map: torch.Tensor,
-        TEs: List,
-    ):
-        """
-        MEGRE forward model.
-
-        Parameters
-        ----------
-        R2star_map: R2* map.
-            torch.Tensor, shape [batch_size, n_x, n_y]
-        S0_map: S0 map.
-            torch.Tensor, shape [batch_size, n_x, n_y]
-        B0_map: B0 map.
-            torch.Tensor, shape [batch_size, n_x, n_y]
-        phi_map: phi map.
-            torch.Tensor, shape [batch_size, n_x, n_y]
-        TEs: List of echo times.
-            List of float, shape [n_echoes]
-        """
-        S0_map_real = S0_map
-        S0_map_imag = phi_map
-
-        def first_term(i):
-            return torch.exp(-TEs[i] * self.scaling * R2star_map)
-
-        def second_term(i):
-            return torch.cos(B0_map * self.scaling * -TEs[i])
-
-        def third_term(i):
-            return torch.sin(B0_map * self.scaling * -TEs[i])
-
-        pred = torch.stack(
-            [
-                torch.stack(
-                    (
-                        S0_map_real * first_term(i) * second_term(i) - S0_map_imag * first_term(i) * third_term(i),
-                        S0_map_real * first_term(i) * third_term(i) + S0_map_imag * first_term(i) * second_term(i),
-                    ),
-                    -1,
-                )
-                for i in range(len(TEs))
-            ],
-            1,
-        )
-        pred[pred != pred] = 0.0
-        return torch.view_as_real(pred[..., 0] + 1j * pred[..., 1])
-
-    def MEGRENoPhaseSignalModel(
-        self,
-        R2star_map: torch.Tensor,
-        S0_map: torch.Tensor,
-        TEs: List,
-    ):
-        """
-        MEGRE no phase forward model.
-
-        Parameters
-        ----------
-        R2star_map: R2* map.
-            torch.Tensor, shape [batch_size, n_x, n_y]
-        S0_map: S0 map.
-            torch.Tensor, shape [batch_size, n_x, n_y]
-        TEs: List of echo times.
-            List of float, shape [n_echoes]
-        """
-        pred = torch.stack(
-            [
-                torch.stack(
-                    (
-                        S0_map * torch.exp(-TEs[i] * self.scaling * R2star_map),
-                        S0_map * torch.exp(-TEs[i] * self.scaling * R2star_map),
-                    ),
-                    -1,
-                )
-                for i in range(len(TEs))
-            ],
-            1,
-        )
-        pred[pred != pred] = 0.0
-        return torch.view_as_real(pred[..., 0] + 1j * pred[..., 1])
-
-
-def expand_op(x, sensitivity_maps):
-    """Expand a coil-combined image to multicoil."""
+    Examples
+    --------
+    >>> import torch
+    >>> from mridc.collections.quantitative.models.qrim.utils import expand_op
+    >>> data = torch.randn(2, 3, 4, 5)
+    >>> coil_sensitivity_maps = torch.randn(2, 3, 4, 5, 2)
+    >>> expand_op(data, coil_sensitivity_maps).shape
+    torch.Size([2, 3, 3, 4, 5, 2])
+    """
     x = utils.complex_mul(x, sensitivity_maps)
     if torch.isnan(x).any():
         x[x != x] = 0
@@ -187,38 +90,39 @@ def analytical_log_likelihood_gradient(
     ----------
     linear_forward_model: SignalForwardModel
         Signal forward model to use.
-    R2star_map: R2* map.
-        torch.Tensor, shape [batch_size, n_x, n_y]
-    S0_map: S0 map.
-        torch.Tensor, shape [batch_size, n_x, n_y]
-    B0_map: B0 map.
-        torch.Tensor, shape [batch_size, n_x, n_y]
-    phi_map: phi map.
-        torch.Tensor, shape [batch_size, n_x, n_y]
-    TEs: List of echo times.
-        List of float, shape [n_echoes]
-    sensitivity_maps: Coil sensitivity maps.
-        torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-    masked_kspace: Data.
-        torch.Tensor, shape [batch_size, n_echoes, n_coils, n_x, n_y, 2]
-    sampling_mask: Mask of the sampling.
-        torch.Tensor, shape [batch_size, 1, n_x, n_y, 1]
-    fft_centered: If True, the FFT is centered.
-        bool
-    fft_normalization: Normalization of the FFT.
-        str, one of "ortho", "forward", "backward", None
-    spatial_dims: Spatial dimensions of the input.
-        Sequence of int, shape [n_dims]
-    coil_dim: Coils dimension of the input.
-        int
-    coil_combination_method: Method to use for coil combination.
-        str, one of "SENSE", "RSS"
-    scaling: Scaling factor.
-        float
+    R2star_map : torch.Tensor
+        R2* map of shape [batch_size, n_x, n_y].
+    S0_map : torch.Tensor
+        S0 map of shape [batch_size, n_x, n_y].
+    B0_map : torch.Tensor
+        B0 map of shape [batch_size, n_x, n_y].
+    phi_map : torch.Tensor
+        phi map of shape [batch_size, n_x, n_y].
+    TEs : List
+        List of echo times.
+    sensitivity_maps : torch.Tensor
+        Coil sensitivity maps of shape [batch_size, n_coils, n_x, n_y, 2].
+    masked_kspace : torch.Tensor
+        Data of shape [batch_size, n_echoes, n_coils, n_x, n_y, 2].
+    sampling_mask : torch.Tensor
+        Mask of the sampling of shape [batch_size, 1, n_x, n_y, 1].
+    fft_centered : bool
+        If True, the FFT is centered.
+    fft_normalization : str
+        Normalization of the FFT.
+    spatial_dims : Sequence[int]
+        Spatial dimensions of the input.
+    coil_dim : int
+        Coil dimension.
+    coil_combination_method : str, optional
+        Coil combination method. Default is ``"SENSE"``.
+    scaling : float, optional
+        Scaling factor. Default is ``1e-3``.
 
     Returns
     -------
-    Analytical gradient of the log-likelihood function.
+    torch.Tensor
+        Analytical gradient of the log-likelihood function.
     """
     nr_TEs = len(TEs)
 
@@ -240,7 +144,7 @@ def analytical_log_likelihood_gradient(
     )
 
     diff_data = (pred_kspace - masked_kspace) * sampling_mask
-    diff_data_inverse = utils.coil_combination(
+    diff_data_inverse = utils.coil_combination_method(
         fft.ifft2(diff_data, fft_centered, fft_normalization, spatial_dims),
         sensitivity_maps.unsqueeze(0).unsqueeze(coil_dim - 1),
         method=coil_combination_method,

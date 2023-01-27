@@ -14,7 +14,7 @@ model:
   reconstruction_module_normalize: true
   reconstruction_module_no_dc: false
   reconstruction_module_dimensionality: 2
-  reconstruction_module_accumulate_estimates: false
+  reconstruction_module_accumulate_predictions: false
   quantitative_module_num_cascades: 1
   quantitative_module_channels: 4
   quantitative_module_pooling_layers: 2
@@ -24,7 +24,7 @@ model:
   quantitative_module_normalize: true
   quantitative_module_no_dc: false
   quantitative_module_dimensionality: 2
-  quantitative_module_accumulate_estimates: false
+  quantitative_module_accumulate_predictions: false
   quantitative_module_signal_forward_model_sequence: MEGRE
   quantitative_module_gamma_regularization_factors:
     - 150.0
@@ -44,57 +44,39 @@ model:
 #    - B0: 20000.0
 #    - phi: 500.0
   shift_B0_input: false
-  dimensionality: 2
-  consecutive_slices: 1
-  coil_combination_method: SENSE
-  use_sens_net: false
-  sens_chans: 8
-  sens_pools: 4
-  sens_mask_type: 2D
   fft_centered: false
   fft_normalization: backward
   spatial_dims:
     - -2
     - -1
   coil_dim: 2
-  complex_data: true
+  coil_combination_method: SENSE
+  use_sens_net: false
+  consecutive_slices: 1
   log_images: true
 
   test_ds:
     data_path: ???
-    sense_path: None
+    coil_sensitivity_maps_path: None
     mask_path: None
-    initial_predictions_path: None
-    challenge: multicoil
-    batch_size: 1
     sample_rate: 1
     volume_sample_rate: None
     use_dataset_cache: false
     dataset_cache_file: None
     num_cols: None
     consecutive_slices: 1
-    data_saved_per_slice: false
-    complex_data: true
-    apply_prewhitening: false
-    apply_gcc: false
-    coil_combination_method: SENSE
-    dimensionality: 2
-    sequence: MEGRE
-    init_coil_dim: -1
-    kspace_scaling_factor: 10000
-    fft_centered: false
-    fft_normalization: backward
-    spatial_dims:
-      - -2
-      - -1
-    coil_dim: 2
-    precompute_quantitative_maps: false
-    shift_B0_input: false
+    data_saved_per_slice: true
     TEs:
       - 3.0
       - 11.5
       - 20.0
       - 28.5
+    precompute_quantitative_maps: false
+    shift_B0_input: false
+    apply_prewhitening: false
+    apply_gcc: false
+    coil_combination_method: SENSE
+    dimensionality: 2
     mask_args:
       type: gaussian2d
       accelerations:
@@ -110,15 +92,30 @@ model:
       scale: 0.02
       shift_mask: false
       use_seed: false
-    normalize_inputs: true
-    max_norm: true
+    half_scan_percentage: 0.0
+    remask: false
     crop_size: None
+    kspace_crop: false
     crop_before_masking: true
     kspace_zero_filling_size: None
-    shuffle: false
+    normalize_inputs: true
+    normalization_type: max
+    fft_centered: false
+    fft_normalization: backward
+    spatial_dims:
+      - -2
+      - -1
+    coil_dim: 2
+    use_seed: false
+    sequence: MEGRE
+    init_coil_dim: -1
+    fixed_precomputed_acceleration: None
+    kspace_scaling_factor: 10000
+    batch_size: 1
+    shuffle: true
     num_workers: 8
-    drop_last: false
     pin_memory: false
+    drop_last: false
 
   optim:
     name: adam

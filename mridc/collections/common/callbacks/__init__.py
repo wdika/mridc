@@ -2,3 +2,4 @@
 __author__ = "Dimitrios Karkalousos"
 
 from mridc.collections.common.callbacks.callbacks import LogEpochTimeCallback
+from mridc.collections.common.callbacks.ema import EMA

@@ -5,18 +5,93 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
-from torch import Tensor
 
+import mridc.collections.common.data.subsample as subsample
 import mridc.collections.common.parts.fft as fft
 import mridc.collections.common.parts.utils as utils
-import mridc.collections.reconstruction.data.subsample as subsample
-import mridc.collections.reconstruction.parts.transforms as reconstruction_transforms
+from mridc.collections.common.parts.transforms import (
+    Cropper,
+    GeometricDecompositionCoilCompression,
+    Masker,
+    NoisePreWhitening,
+    Normalizer,
+    ZeroFilling,
+)
 
-__all__ = ["JRSMRIDataTransforms"]
+__all__ = ["SegmentationMRIDataTransforms"]
 
 
-class JRSMRIDataTransforms:
-    """Joint Reconstruction & Segmentation preprocessing data transforms."""
+class SegmentationMRIDataTransforms:
+    """
+    Data transforms MRI segmentation.
+
+    Parameters
+    ----------
+    complex_data : bool, optional
+        Whether to use complex data. If ``False`` the data are assumed to be magnitude only. Default is ``True``.
+    apply_prewhitening : bool, optional
+        Apply prewhitening. If ``True`` then the prewhitening arguments are used. Default is ``False``.
+    prewhitening_scale_factor : float, optional
+        Prewhitening scale factor. Default is ``1.0``.
+    prewhitening_patch_start : int, optional
+        Prewhitening patch start. Default is ``10``.
+    prewhitening_patch_length : int, optional
+        Prewhitening patch length. Default is ``30``.
+    apply_gcc : bool, optional
+        Apply Geometric Decomposition Coil Compression. If ``True`` then the GCC arguments are used.
+        Default is ``False``.
+    gcc_virtual_coils : int, optional
+        GCC virtual coils. Default is ``10``.
+    gcc_calib_lines : int, optional
+        GCC calibration lines. Default is ``24``.
+    gcc_align_data : bool, optional
+        GCC align data. Default is ``True``.
+    coil_combination_method : str, optional
+        Coil combination method. Default is ``"SENSE"``.
+    dimensionality : int, optional
+        Dimensionality. Default is ``2``.
+    mask_func : Optional[List[subsample.MaskFunc]], optional
+        Mask function to retrospectively undersample the k-space. Default is ``None``.
+    shift_mask : bool, optional
+        Whether to shift the mask. This needs to be set alongside with the ``fft_centered`` argument.
+        Default is ``False``.
+    mask_center_scale : Optional[float], optional
+        Center scale of the mask. This defines how much densely sampled will be the center of k-space.
+        Default is ``0.02``.
+    half_scan_percentage : float, optional
+        Whether to simulate a half scan. Default is ``0.0``.
+    remask : bool, optional
+        Use the same mask. Default is ``False``.
+    crop_size : Optional[Tuple[int, int]], optional
+        Center crop size. It applies cropping in image space. Default is ``None``.
+    kspace_crop : bool, optional
+        Whether to crop in k-space. Default is ``False``.
+    crop_before_masking : bool, optional
+        Whether to crop before masking. Default is ``True``.
+    kspace_zero_filling_size : Optional[Tuple], optional
+        Whether to apply zero filling in k-space. Default is ``None``.
+    normalize_inputs : bool, optional
+        Whether to normalize the inputs. Default is ``True``.
+    normalization_type : str, optional
+        Normalization type. Can be ``max`` or ``mean`` or ``minmax``. Default is ``max``.
+    fft_centered : bool, optional
+        Whether to center the FFT. Default is ``False``.
+    fft_normalization : str, optional
+        FFT normalization. Default is ``"backward"``.
+    spatial_dims : Sequence[int], optional
+        Spatial dimensions. Default is ``None``.
+    coil_dim : int, optional
+        Coil dimension. Default is ``0``, meaning that the coil dimension is the first dimension before applying batch.
+    consecutive_slices : int, optional
+        Consecutive slices. Default is ``1``.
+    use_seed : bool, optional
+        Whether to use seed. Default is ``True``.
+
+    Returns
+    -------
+    RSMRIDataTransforms
+        Data transformed for accelerated-MRI reconstruction and MRI segmentation.
+    """
 
     def __init__(
         self,
@@ -41,122 +116,41 @@ class JRSMRIDataTransforms:
         crop_before_masking: bool = True,
         kspace_zero_filling_size: Optional[Tuple] = None,
         normalize_inputs: bool = False,
-        max_norm: bool = True,
-        fft_centered: bool = True,
-        fft_normalization: str = "ortho",
+        normalization_type: str = "max",
+        fft_centered: bool = False,
+        fft_normalization: str = "backward",
         spatial_dims: Sequence[int] = None,
         coil_dim: int = 0,
         consecutive_slices: int = 1,
         use_seed: bool = True,
     ):
-        """
-        Initialize the data transform.
-
-        Parameters
-        ----------
-        complex_data: bool
-            Whether the input data is complex or not.
-        apply_prewhitening: Apply prewhitening.
-            bool
-        prewhitening_scale_factor: Prewhitening scale factor.
-            float
-        prewhitening_patch_start: Prewhitening patch start.
-            int
-        prewhitening_patch_length: Prewhitening patch length.
-            int
-        apply_gcc: Apply Geometric Decomposition Coil Compression.
-            bool
-        gcc_virtual_coils: GCC virtual coils.
-            int
-        gcc_calib_lines: GCC calibration lines.
-            int
-        gcc_align_data: GCC align data.
-            bool
-        coil_combination_method: Coil combination method. Default: SENSE.
-            str
-        dimensionality: Dimensionality.
-            int
-        mask_func: Mask function.
-            List[subsample.MaskFunc]
-        shift_mask: Shift mask.
-            bool
-        mask_center_scale: Mask center scale.
-            float
-        half_scan_percentage: Half scan percentage.
-            float
-        remask: Use the same mask. Default: False.
-            bool
-        crop_size: Crop size.
-            Tuple[int, int]
-        kspace_crop: K-space crop.
-            bool
-        crop_before_masking: Crop before masking.
-            bool
-        kspace_zero_filling_size: K-space zero filling size.
-            Tuple
-        normalize_inputs: Normalize inputs.
-            bool
-        max_norm: Normalization by the maximum value.
-            bool
-        fft_centered: FFT centered.
-            bool
-        fft_normalization: FFT normalization.
-            str
-        spatial_dims: Spatial dimensions.
-            Sequence[int]
-        coil_dim: Coil dimension.
-            int
-        consecutive_slices: Number of consecutive slices.
-            int
-        use_seed: Use seed.
-            bool
-        """
         self.complex_data = complex_data
-        if not self.complex_data:
-            if not utils.is_none(coil_combination_method):
-                raise ValueError("Coil combination method for non-complex data should be None.")
-        else:
-            self.coil_combination_method = coil_combination_method
-        self.dimensionality = dimensionality
-        if not self.complex_data:
-            if not utils.is_none(mask_func):
-                raise ValueError("Mask function for non-complex data should be None.")
-        else:
-            self.mask_func = mask_func
-        self.shift_mask = shift_mask
-        self.mask_center_scale = mask_center_scale
-        self.half_scan_percentage = half_scan_percentage
-        self.remask = remask
-        self.crop_size = crop_size
-        if not self.complex_data:
-            if kspace_crop:
-                raise ValueError("K-space crop for non-complex data should be None.")
-        else:
-            self.kspace_crop = kspace_crop
-        self.crop_before_masking = crop_before_masking
-        if not self.complex_data:
-            if not utils.is_none(kspace_zero_filling_size):
-                raise ValueError("K-space zero filling size for non-complex data should be None.")
-        else:
-            self.kspace_zero_filling_size = kspace_zero_filling_size
+
         self.normalize_inputs = normalize_inputs
-        self.max_norm = max_norm
+
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
         self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
-        if not self.complex_data:
-            if not utils.is_none(coil_dim):
-                raise ValueError("Coil dimension for non-complex data should be None.")
-        else:
-            self.coil_dim = coil_dim - 1
 
         if not self.complex_data:
+            if not utils.is_none(coil_combination_method):
+                raise ValueError("Coil combination method for non-complex data should be None.")
+            if not utils.is_none(mask_func):
+                raise ValueError("Mask function for non-complex data should be None.")
+            if kspace_crop:
+                raise ValueError("K-space crop for non-complex data should be None.")
+            if not utils.is_none(kspace_zero_filling_size):
+                raise ValueError("K-space zero filling size for non-complex data should be None.")
+            if not utils.is_none(coil_dim):
+                raise ValueError("Coil dimension for non-complex data should be None.")
             if apply_prewhitening:
                 raise ValueError("Prewhitening for non-complex data cannot be applied.")
+            if apply_gcc:
+                raise ValueError("GCC for non-complex data cannot be applied.")
         else:
             self.apply_prewhitening = apply_prewhitening
             self.prewhitening = (
-                reconstruction_transforms.NoisePreWhitening(
+                NoisePreWhitening(
                     patch_size=[
                         prewhitening_patch_start,
                         prewhitening_patch_length + prewhitening_patch_start,
@@ -168,13 +162,8 @@ class JRSMRIDataTransforms:
                 if apply_prewhitening
                 else None
             )
-
-        if not self.complex_data:
-            if apply_gcc:
-                raise ValueError("GCC for non-complex data cannot be applied.")
-        else:
             self.gcc = (
-                reconstruction_transforms.GeometricDecompositionCoilCompression(
+                GeometricDecompositionCoilCompression(
                     virtual_coils=gcc_virtual_coils,
                     calib_lines=gcc_calib_lines,
                     align_data=gcc_align_data,
@@ -185,6 +174,43 @@ class JRSMRIDataTransforms:
                 if apply_gcc
                 else None
             )
+            self.kspace_zero_filling = (
+                ZeroFilling(
+                    zero_filling_size=kspace_zero_filling_size,  # type: ignore
+                    spatial_dims=self.spatial_dims,  # type: ignore
+                )
+                if not utils.is_none(kspace_zero_filling_size)
+                else None
+            )
+            self.masking = Masker(
+                mask_func=mask_func,  # type: ignore
+                spatial_dims=self.spatial_dims,  # type: ignore
+                shift_mask=shift_mask,
+                half_scan_percentage=half_scan_percentage,
+                center_scale=mask_center_scale,  # type: ignore
+                dimensionality=dimensionality,
+                remask=remask,
+            )
+            self.kspace_crop = kspace_crop
+            self.crop_before_masking = crop_before_masking
+            self.coil_combination_method = coil_combination_method
+            self.coil_dim = coil_dim - 1
+
+        self.cropping = (
+            Cropper(
+                cropping_size=crop_size,  # type: ignore
+                spatial_dims=self.spatial_dims,  # type: ignore
+            )
+            if not utils.is_none(crop_size)
+            else None
+        )
+
+        self.normalization = Normalizer(
+            normalization_type=normalization_type,
+            fft_centered=self.fft_centered,
+            fft_normalization=self.fft_normalization,
+            spatial_dims=self.spatial_dims,  # type: ignore
+        )
 
         self.use_seed = use_seed
 
@@ -194,22 +220,22 @@ class JRSMRIDataTransforms:
         imspace: np.ndarray,
         sensitivity_map: np.ndarray,
         mask: np.ndarray,
-        initial_prediction: np.ndarray,
+        initial_prediction_reconstruction: np.ndarray,
         segmentation_labels: np.ndarray,
         attrs: Dict,
         fname: str,
         slice_idx: int,
     ) -> Tuple[
-        Tensor,
-        Union[Union[Tensor, List[Union[Union[float, Tensor], Any]], float], Any],
-        Union[Optional[Tensor], Any],
-        Union[Union[List[Union[Tensor, Any]], Tensor, List[Tensor]], Any],
-        Union[List[Tensor], Tensor],
-        Union[Tensor, Any],
-        Union[Optional[Tensor], Any],
+        torch.Tensor,
+        Union[Union[List, torch.Tensor], torch.Tensor],
+        Union[Optional[torch.Tensor], Any],
+        Union[List, Any],
+        Union[Optional[torch.Tensor], Any],
+        Union[torch.Tensor, Any],
+        Union[Optional[torch.Tensor], Any],
         str,
         int,
-        Union[List[int], int, Tensor],
+        Union[List, Any],
     ]:
         """
         Apply the data transform.
@@ -220,7 +246,7 @@ class JRSMRIDataTransforms:
         imspace: The image space.
         sensitivity_map: The sensitivity map.
         mask: List, sampling mask if exists and brain mask and head mask.
-        initial_prediction: The initial prediction.
+        initial_prediction_reconstruction: The initial reconstruction prediction.
         segmentation_labels: The segmentation labels.
         attrs: The attributes.
         fname: The file name.
@@ -230,36 +256,50 @@ class JRSMRIDataTransforms:
         -------
         The transformed data.
         """
-        if not self.complex_data:
-            imspace = torch.from_numpy(imspace)
-        else:
-            kspace = utils.to_tensor(kspace)
-
-            # This condition is necessary in case of auto estimation of sense maps.
-            if sensitivity_map is not None and sensitivity_map.ndim != 0:
-                sensitivity_map = utils.to_tensor(sensitivity_map)
-
-            if isinstance(mask, list):
-                mask = [torch.from_numpy(m) for m in mask]
-            elif mask.ndim != 0:
-                mask = torch.from_numpy(mask)
-
-        initial_prediction = torch.from_numpy(initial_prediction)
+        initial_prediction_reconstruction = (
+            utils.to_tensor(initial_prediction_reconstruction)
+            if initial_prediction_reconstruction is not None and initial_prediction_reconstruction.size != 0
+            else torch.tensor([])
+        )
 
         if segmentation_labels is not None and segmentation_labels.ndim > 1:
             segmentation_labels = torch.from_numpy(segmentation_labels)
         else:
             segmentation_labels = torch.empty([])
 
-        if self.complex_data:
-            if self.apply_prewhitening:
-                kspace = torch.stack(
-                    [self.prewhitening(kspace[echo]) for echo in range(kspace.shape[0])],  # type: ignore
-                    dim=0,
-                )
+        if not self.complex_data:
+            imspace = torch.from_numpy(imspace)
+            initial_prediction_reconstruction = torch.abs(imspace)
+            target_reconstruction = imspace
+            kspace = torch.empty([])
+            sensitivity_map = torch.empty([])
+            masked_kspace = torch.empty([])
+            mask = torch.empty([])
+            acc = torch.empty([])
+        else:
+            kspace = utils.to_tensor(kspace)
+
+            kspace = utils.add_coil_dim_if_singlecoil(kspace, dim=self.coil_dim)
+
+            # This condition is necessary in case of auto estimation of sense maps.
+            if sensitivity_map is not None and sensitivity_map.size != 0:
+                sensitivity_map = utils.to_tensor(sensitivity_map)
+            else:
+                # If no sensitivity map is provided, either the data is singlecoil or the sense net is used.
+                # Initialize the sensitivity map to 1 to assure for the singlecoil case.
+                sensitivity_map = torch.ones_like(kspace)
+
+            if mask is not None:
+                if isinstance(mask, list):
+                    mask = [torch.from_numpy(m) for m in mask]
+                elif mask.ndim != 0:
+                    mask = torch.from_numpy(mask)
+
+            if self.prewhitening is not None:
+                kspace = self.prewhitening(kspace)  # type: ignore
 
             if self.gcc is not None:
-                kspace = torch.stack([self.gcc(kspace[echo]) for echo in range(kspace.shape[0])], dim=0)
+                kspace = self.gcc(kspace)
                 if isinstance(sensitivity_map, torch.Tensor):
                     sensitivity_map = fft.ifft2(
                         self.gcc(
@@ -276,32 +316,15 @@ class JRSMRIDataTransforms:
                     )
 
             # Apply zero-filling on kspace
-            if self.kspace_zero_filling_size is not None and self.kspace_zero_filling_size not in ("", "None"):
-                padding_top = np.floor_divide(abs(int(self.kspace_zero_filling_size[0]) - kspace.shape[2]), 2)
-                padding_bottom = padding_top
-                padding_left = np.floor_divide(abs(int(self.kspace_zero_filling_size[1]) - kspace.shape[3]), 2)
-                padding_right = padding_left
-
-                kspace = torch.view_as_complex(kspace)
-                kspace = torch.nn.functional.pad(
-                    kspace, pad=(padding_left, padding_right, padding_top, padding_bottom), mode="constant", value=0
-                )
-                kspace = torch.view_as_real(kspace)
-
+            if self.kspace_zero_filling is not None:
+                kspace = self.kspace_zero_filling(kspace)
                 sensitivity_map = fft.fft2(
                     sensitivity_map,
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,
                 )
-                sensitivity_map = torch.view_as_complex(sensitivity_map)
-                sensitivity_map = torch.nn.functional.pad(
-                    sensitivity_map,
-                    pad=(padding_left, padding_right, padding_top, padding_bottom),
-                    mode="constant",
-                    value=0,
-                )
-                sensitivity_map = torch.view_as_real(sensitivity_map)
+                sensitivity_map = self.kspace_zero_filling(sensitivity_map)
                 sensitivity_map = fft.ifft2(
                     sensitivity_map,
                     centered=self.fft_centered,
@@ -309,20 +332,9 @@ class JRSMRIDataTransforms:
                     spatial_dims=self.spatial_dims,
                 )
 
-            # If the target is not given, we need to compute it.
-            if self.coil_combination_method.upper() == "RSS":
-                target_reconstruction = utils.rss(
-                    fft.ifft2(
-                        kspace,
-                        centered=self.fft_centered,
-                        normalization=self.fft_normalization,
-                        spatial_dims=self.spatial_dims,
-                    ),
-                    dim=self.coil_dim,
-                )
-            elif self.coil_combination_method.upper() == "SENSE":
-                if sensitivity_map is not None and sensitivity_map.dim() != 0:
-                    target_reconstruction = utils.sense(
+            if not utils.is_none(self.coil_combination_method.upper()):
+                if sensitivity_map is not None and sensitivity_map.size != 0:
+                    target_reconstruction = utils.coil_combination_method(
                         fft.ifft2(
                             kspace,
                             centered=self.fft_centered,
@@ -330,459 +342,130 @@ class JRSMRIDataTransforms:
                             spatial_dims=self.spatial_dims,
                         ),
                         sensitivity_map,
+                        method=self.coil_combination_method.upper(),
                         dim=self.coil_dim,
                     )
-            elif "target" in attrs or "target_rss" in attrs:
-                target_reconstruction = torch.tensor(attrs["target"])
             else:
-                raise ValueError("No target found")
-
-            target_reconstruction = torch.view_as_complex(target_reconstruction)  # type: ignore
-            target_reconstruction = torch.abs(target_reconstruction / torch.max(torch.abs(target_reconstruction)))
-        else:
-            target_reconstruction = imspace
+                raise ValueError("No target found, while coil combination method is not defined.")
+            if target_reconstruction.shape[-1] == 2:
+                target_reconstruction = torch.view_as_complex(target_reconstruction)  # type: ignore
 
         seed = tuple(map(ord, fname)) if self.use_seed else None
+
         acq_start = attrs["padding_left"] if "padding_left" in attrs else 0
         acq_end = attrs["padding_right"] if "padding_left" in attrs else 0
 
-        # This should be outside the condition because it needs to be returned in the end, even if cropping is off.
-        # crop_size = torch.tensor([attrs["recon_size"][0], attrs["recon_size"][1]])
-        crop_size = target_reconstruction.shape[1:] if target_reconstruction.dim() > 2 else target_reconstruction.shape
-        if self.crop_size is not None and self.crop_size not in ("", "None"):
-            # Check for smallest size against the target shape.
-            h = min(int(self.crop_size[0]), target_reconstruction.shape[-2])
-            w = min(int(self.crop_size[1]), target_reconstruction.shape[-1])
-
-            # Check for smallest size against the stored recon shape in metadata.
-            if crop_size[0] != 0:
-                h = h if h <= crop_size[0] else crop_size[0]
-            if crop_size[1] != 0:
-                w = w if w <= crop_size[1] else crop_size[1]
-
-            self.crop_size = (int(h), int(w))
-
-            target_reconstruction = utils.center_crop(target_reconstruction, self.crop_size)
-
-            if self.complex_data and sensitivity_map is not None and sensitivity_map.dim() != 0:
-                sensitivity_map = (
-                    fft.ifft2(
-                        utils.complex_center_crop(
-                            fft.fft2(
-                                sensitivity_map,
-                                centered=self.fft_centered,
-                                normalization=self.fft_normalization,
-                                spatial_dims=self.spatial_dims,
-                            ),
-                            self.crop_size,
-                        ),
-                        centered=self.fft_centered,
-                        normalization=self.fft_normalization,
-                        spatial_dims=self.spatial_dims,
-                    )
-                    if self.kspace_crop
-                    else utils.complex_center_crop(sensitivity_map, self.crop_size)
-                )
-
-            if initial_prediction is not None and initial_prediction.dim() != 0:
-                initial_prediction = (
-                    fft.ifft2(
-                        utils.complex_center_crop(
-                            fft.fft2(
-                                initial_prediction,
-                                centered=self.fft_centered,
-                                normalization=self.fft_normalization,
-                                spatial_dims=self.spatial_dims,
-                            ),
-                            self.crop_size,
-                        ),
-                        centered=self.fft_centered,
-                        normalization=self.fft_normalization,
-                        spatial_dims=self.spatial_dims,
-                    )
-                    if self.kspace_crop
-                    else utils.complex_center_crop(initial_prediction, self.crop_size)
-                )
-
+        if self.cropping is not None:
+            target_reconstruction = self.cropping(target_reconstruction)
+            if initial_prediction_reconstruction is not None and initial_prediction_reconstruction.ndim > 2:
+                initial_prediction_reconstruction = self.cropping(initial_prediction_reconstruction, self.kspace_crop)
             if segmentation_labels is not None and segmentation_labels.dim() > 1:
-                segmentation_labels = utils.center_crop(segmentation_labels, self.crop_size)
-
-        if self.complex_data:
-            # Cropping before masking will maintain the shape of original kspace intact for masking.
-            if self.crop_size is not None and self.crop_size not in ("", "None") and self.crop_before_masking:
-                kspace = (
-                    utils.complex_center_crop(kspace, self.crop_size)
-                    if self.kspace_crop
-                    else fft.fft2(
-                        utils.complex_center_crop(
-                            fft.ifft2(
-                                kspace,
-                                centered=self.fft_centered,
-                                normalization=self.fft_normalization,
-                                spatial_dims=self.spatial_dims,
-                            ),
-                            self.crop_size,
-                        ),
-                        centered=self.fft_centered,
-                        normalization=self.fft_normalization,
-                        spatial_dims=self.spatial_dims,
-                    )
-                )
-
-            if isinstance(mask, list):
-                masked_kspaces = []
-                masks = []
-                for _mask in mask:
-                    if list(_mask.shape) == [kspace.shape[-3], kspace.shape[-2]]:
-                        _mask = _mask.unsqueeze(0).unsqueeze(-1)
-
-                    padding = (acq_start, acq_end)
-                    if (not utils.is_none(padding[0]) and not utils.is_none(padding[1])) and padding[0] != 0:
-                        _mask[:, :, : padding[0]] = 0
-                        # padding value inclusive on right of zeros
-                        _mask[:, :, padding[1] :] = 0
-
-                    if isinstance(_mask, np.ndarray):
-                        _mask = torch.from_numpy(_mask).unsqueeze(0).unsqueeze(-1)
-
-                    if self.shift_mask:
-                        _mask = torch.fft.fftshift(_mask, dim=(self.spatial_dims[0] - 1, self.spatial_dims[1] - 1))
-
-                    if self.crop_size is not None and self.crop_size not in ("", "None") and self.crop_before_masking:
-                        _mask = utils.complex_center_crop(_mask, self.crop_size)
-
-                    masked_kspaces.append(kspace * _mask + 0.0)
-                    masks.append(_mask)
-                masked_kspace = masked_kspaces
-                mask = masks
-                acc = 1
-            # and not is_none(self.mask_func):
-            elif not utils.is_none(mask) and mask.ndim != 0:
-                for _mask in mask:
-                    if list(_mask.shape) == [kspace.shape[-3], kspace.shape[-2]]:
-                        mask = torch.from_numpy(_mask).unsqueeze(0).unsqueeze(-1)
-                        break
-
-                padding = (acq_start, acq_end)
-                if (not utils.is_none(padding[0]) and not utils.is_none(padding[1])) and padding[0] != 0:
-                    mask[:, :, : padding[0]] = 0
-                    # padding value inclusive on right of zeros
-                    mask[:, :, padding[1] :] = 0
-
-                if isinstance(mask, np.ndarray):
-                    mask = torch.from_numpy(mask).unsqueeze(0).unsqueeze(-1)
-
-                if mask.dim() == 2:
-                    mask = mask.unsqueeze(0).unsqueeze(-1)
-
-                if self.shift_mask:
-                    mask = torch.fft.fftshift(mask, dim=(self.spatial_dims[0] - 1, self.spatial_dims[1] - 1))
-
-                if self.crop_size is not None and self.crop_size not in ("", "None") and self.crop_before_masking:
-                    mask = utils.complex_center_crop(mask, self.crop_size)
-
-                masked_kspace = kspace * mask + 0.0  # the + 0.0 removes the sign of the zeros
-
-                acc = 1
-            elif utils.is_none(self.mask_func):
-                masked_kspace = kspace.clone()
-                acc = torch.tensor([1])
-
-                if mask is None or mask.ndim == 0:
-                    mask = torch.ones(masked_kspace.shape[-3], masked_kspace.shape[-2]).type(  # type: ignore
-                        torch.float32
-                    )
-                else:
-                    mask = torch.from_numpy(mask)
-
-                    if mask.dim() == 1:
-                        mask = mask.unsqueeze(0)
-
-                    if mask.shape[0] == masked_kspace.shape[2]:  # type: ignore
-                        mask = mask.permute(1, 0)
-                    elif mask.shape[0] != masked_kspace.shape[1]:  # type: ignore
-                        mask = torch.ones(
-                            [masked_kspace.shape[-3], masked_kspace.shape[-2]], dtype=torch.float32  # type: ignore
-                        )
-
-                if mask.shape[-2] == 1:  # 1D mask
-                    mask = torch.from_numpy(mask).unsqueeze(0).unsqueeze(-1)
-                else:  # 2D mask
-                    # Crop loaded mask.
-                    if self.crop_size is not None and self.crop_size not in ("", "None"):
-                        mask = utils.center_crop(mask, self.crop_size)
-                    mask = mask.unsqueeze(0).unsqueeze(-1)
-
-                if self.shift_mask:
-                    mask = torch.fft.fftshift(mask, dim=(1, 2))
-
-                masked_kspace = masked_kspace * mask
-                mask = mask.byte()
-            elif isinstance(self.mask_func, list):
-                masked_kspaces = []
-                masks = []
-                accs = []
-                for m in self.mask_func:
-                    if self.dimensionality == 2:
-                        _masked_kspace, _mask, _acc = utils.apply_mask(
-                            kspace,
-                            m,
-                            seed,
-                            (acq_start, acq_end),
-                            shift=self.shift_mask,
-                            half_scan_percentage=self.half_scan_percentage,
-                            center_scale=self.mask_center_scale,
-                        )
-                    elif self.dimensionality == 3:
-                        _masked_kspace = []
-                        _mask = None
-                        for i in range(kspace.shape[0]):
-                            _i_masked_kspace, _i_mask, _i_acc = utils.apply_mask(
-                                kspace[i],
-                                m,
-                                seed,
-                                (acq_start, acq_end),
-                                shift=self.shift_mask,
-                                half_scan_percentage=self.half_scan_percentage,
-                                center_scale=self.mask_center_scale,
-                                existing_mask=_mask,
-                            )
-                            if self.remask:
-                                _mask = _i_mask
-                            if i == 0:
-                                _acc = _i_acc
-                            _masked_kspace.append(_i_masked_kspace)
-                        _masked_kspace = torch.stack(_masked_kspace, dim=0)
-                        _mask = _i_mask.unsqueeze(0)
-                    else:
-                        raise ValueError(f"Unsupported data dimensionality {self.dimensionality}D.")
-                    masked_kspaces.append(_masked_kspace)
-                    masks.append(_mask.byte())
-                    accs.append(_acc)
-                masked_kspace = masked_kspaces
-                mask = masks
-                acc = accs  # type: ignore
-            else:
-                masked_kspace, mask, acc = utils.apply_mask(
-                    kspace,
-                    self.mask_func[0],  # type: ignore
-                    seed,
-                    (acq_start, acq_end),
-                    shift=self.shift_mask,
-                    half_scan_percentage=self.half_scan_percentage,
-                    center_scale=self.mask_center_scale,
-                )
-                mask = mask.byte()
-
-            # Cropping after masking.
-            if self.crop_size is not None and self.crop_size not in ("", "None") and not self.crop_before_masking:
-                kspace = (
-                    utils.complex_center_crop(kspace, self.crop_size)
-                    if self.kspace_crop
-                    else fft.fft2(
-                        utils.complex_center_crop(
-                            fft.ifft2(
-                                kspace,
-                                centered=self.fft_centered,
-                                normalization=self.fft_normalization,
-                                spatial_dims=self.spatial_dims,
-                            ),
-                            self.crop_size,
-                        ),
-                        centered=self.fft_centered,
-                        normalization=self.fft_normalization,
-                        spatial_dims=self.spatial_dims,
-                    )
-                )
-
-                masked_kspace = (
-                    utils.complex_center_crop(masked_kspace, self.crop_size)
-                    if self.kspace_crop
-                    else fft.fft2(
-                        utils.complex_center_crop(
-                            fft.ifft2(
-                                masked_kspace,
-                                centered=self.fft_centered,
-                                normalization=self.fft_normalization,
-                                spatial_dims=self.spatial_dims,
-                            ),
-                            self.crop_size,
-                        ),
-                        centered=self.fft_centered,
-                        normalization=self.fft_normalization,
-                        spatial_dims=self.spatial_dims,
-                    )
-                )
-
-                mask = utils.center_crop(mask.squeeze(-1), self.crop_size).unsqueeze(-1)
-
-            if self.normalize_inputs:
-                if isinstance(self.mask_func, list):
-                    if self.fft_normalization in ("backward", "ortho", "forward"):
-                        imspace = fft.ifft2(
-                            kspace,
-                            centered=self.fft_centered,
-                            normalization=self.fft_normalization,
-                            spatial_dims=self.spatial_dims,
-                        )
-                        if self.max_norm:
-                            imspace = imspace / torch.max(torch.abs(imspace))
-                        kspace = fft.fft2(
-                            imspace,
-                            centered=self.fft_centered,
-                            normalization=self.fft_normalization,
-                            spatial_dims=self.spatial_dims,
-                        )
-                    elif self.fft_normalization in ("none", None) and self.max_norm:
-                        imspace = torch.fft.ifftn(
-                            torch.view_as_complex(kspace), dim=list(self.spatial_dims), norm=None
-                        )
-                        imspace = imspace / torch.max(torch.abs(imspace))
-                        kspace = torch.view_as_real(torch.fft.fftn(imspace, dim=list(self.spatial_dims), norm=None))
-
-                    masked_kspaces = []
-                    for y in masked_kspace:
-                        if self.fft_normalization in ("backward", "ortho", "forward"):
-                            imspace = fft.ifft2(
-                                y,
-                                centered=self.fft_centered,
-                                normalization=self.fft_normalization,
-                                spatial_dims=self.spatial_dims,
-                            )
-                            if self.max_norm:
-                                imspace = imspace / torch.max(torch.abs(imspace))
-                            y = fft.fft2(
-                                imspace,
-                                centered=self.fft_centered,
-                                normalization=self.fft_normalization,
-                                spatial_dims=self.spatial_dims,
-                            )
-                        elif self.fft_normalization in ("none", None) and self.max_norm:
-                            imspace = torch.fft.ifftn(torch.view_as_complex(y), dim=list(self.spatial_dims), norm=None)
-                            imspace = imspace / torch.max(torch.abs(imspace))
-                            y = torch.view_as_real(torch.fft.fftn(imspace, dim=list(self.spatial_dims), norm=None))
-                        masked_kspaces.append(y)
-                    masked_kspace = masked_kspaces
-                elif self.fft_normalization in ("backward", "ortho", "forward"):
-                    imspace = fft.ifft2(
+                segmentation_labels = self.cropping(segmentation_labels)
+            if self.complex_data:
+                if sensitivity_map is not None and sensitivity_map.size != 0:
+                    sensitivity_map = self.cropping(sensitivity_map, self.kspace_crop)
+                if not self.kspace_crop:
+                    kspace = fft.ifft2(
                         kspace,
                         centered=self.fft_centered,
                         normalization=self.fft_normalization,
                         spatial_dims=self.spatial_dims,
                     )
-                    if self.max_norm:
-                        imspace = imspace / torch.max(torch.abs(imspace))
+                kspace = self.cropping(kspace)
+                if not self.kspace_crop:
                     kspace = fft.fft2(
-                        imspace,
+                        kspace,
                         centered=self.fft_centered,
                         normalization=self.fft_normalization,
                         spatial_dims=self.spatial_dims,
                     )
-                    imspace = fft.ifft2(
-                        masked_kspace,
-                        centered=self.fft_centered,
-                        normalization=self.fft_normalization,
-                        spatial_dims=self.spatial_dims,
-                    )
-                    if self.max_norm:
-                        imspace = imspace / torch.max(torch.abs(imspace))
-                    masked_kspace = fft.fft2(
-                        imspace,
-                        centered=self.fft_centered,
-                        normalization=self.fft_normalization,
-                        spatial_dims=self.spatial_dims,
-                    )
-                elif self.fft_normalization in ("none", None) and self.max_norm:
-                    imspace = torch.fft.ifftn(
-                        torch.view_as_complex(masked_kspace), dim=list(self.spatial_dims), norm=None
-                    )
-                    imspace = imspace / torch.max(torch.abs(imspace))
-                    masked_kspace = torch.view_as_real(torch.fft.fftn(imspace, dim=list(self.spatial_dims), norm=None))
 
-                    imspace = torch.fft.ifftn(torch.view_as_complex(kspace), dim=list(self.spatial_dims), norm=None)
-                    imspace = imspace / torch.max(torch.abs(imspace))
-                    kspace = torch.view_as_real(torch.fft.fftn(imspace, dim=list(self.spatial_dims), norm=None))
+        if self.complex_data:
+            if not utils.is_none(mask):
+                if isinstance(mask, list):
+                    if len(mask) == 0:
+                        mask = None
+                elif mask.dim() == 0:
+                    mask = None
 
-                if self.max_norm:
-                    if sensitivity_map.dim() != 0:
-                        sensitivity_map = sensitivity_map / torch.max(torch.abs(sensitivity_map))
-                    target_reconstruction = target_reconstruction / torch.max(torch.abs(target_reconstruction))
+            masked_kspace, mask, acc = self.masking(kspace, mask, (acq_start, acq_end), seed)  # type: ignore
 
-            if isinstance(self.mask_func, list):
-                etas = []
-                for y in masked_kspace:
-                    if (
-                        self.coil_combination_method.upper() == "SENSE"
-                        and sensitivity_map is not None
-                        and sensitivity_map.dim() != 0
-                    ):
-                        eta = utils.sense(
-                            fft.ifft2(
-                                y,
+            if self.cropping is not None and not self.crop_before_masking:
+                if isinstance(masked_kspace, list):
+                    cropped_masked_kspace = []
+                    cropped_mask = []
+                    for masked_kspace_, mask_ in zip(masked_kspace, mask):
+                        if not self.kspace_crop:
+                            masked_kspace_ = fft.ifft2(
+                                masked_kspace_,
                                 centered=self.fft_centered,
                                 normalization=self.fft_normalization,
                                 spatial_dims=self.spatial_dims,
-                            ),
-                            sensitivity_map,
-                            dim=self.coil_dim,
-                        )
-                    else:
-                        eta = utils.rss(
-                            fft.ifft2(
-                                y,
+                            )
+                        masked_kspace_ = self.cropping(masked_kspace_)
+                        if not self.kspace_crop:
+                            masked_kspace_ = fft.fft2(
+                                masked_kspace_,
                                 centered=self.fft_centered,
                                 normalization=self.fft_normalization,
                                 spatial_dims=self.spatial_dims,
-                            ),
-                            dim=self.coil_dim,
-                        )
-                    etas.append(eta)
-                initial_prediction_reconstruction = etas
-            else:
-                if (
-                    self.coil_combination_method.upper() == "SENSE"
-                    and sensitivity_map is not None
-                    and sensitivity_map.dim() != 0
-                ):
-                    initial_prediction_reconstruction = utils.sense(
-                        fft.ifft2(
-                            masked_kspace,
-                            centered=self.fft_centered,
-                            normalization=self.fft_normalization,
-                            spatial_dims=self.spatial_dims,
-                        ),
-                        sensitivity_map,
-                        dim=self.coil_dim,
-                    )
+                            )
+                        cropped_masked_kspace.append(masked_kspace_)
+                        cropped_mask.append(self.cropping(mask_.squeeze(-1)).unsqueeze(-1))
+                    masked_kspace = cropped_masked_kspace
+                    mask = cropped_mask
                 else:
-                    initial_prediction_reconstruction = utils.rss(
-                        fft.ifft2(
+                    if not self.kspace_crop:
+                        masked_kspace = fft.ifft2(
+                            masked_kspace,  # type: ignore
+                            centered=self.fft_centered,
+                            normalization=self.fft_normalization,
+                            spatial_dims=self.spatial_dims,
+                        )
+                    masked_kspace = self.cropping(masked_kspace)
+                    if not self.kspace_crop:
+                        masked_kspace = fft.fft2(
                             masked_kspace,
                             centered=self.fft_centered,
                             normalization=self.fft_normalization,
                             spatial_dims=self.spatial_dims,
-                        ),
-                        dim=self.coil_dim,
+                        )
+                    mask = self.cropping(mask.squeeze(-1)).unsqueeze(-1)  # type: ignore
+
+        if self.normalize_inputs:
+            if self.complex_data:
+                kspace = self.normalization(kspace, apply_backward_transform=True)
+                if isinstance(masked_kspace, list):  # type: ignore
+                    masked_kspace = [
+                        self.normalization(x, apply_backward_transform=True) for x in masked_kspace  # type: ignore
+                    ]
+                else:
+                    masked_kspace = self.normalization(masked_kspace, apply_backward_transform=True)  # type: ignore
+                if sensitivity_map.size != 0:
+                    sensitivity_map = self.normalization(sensitivity_map, apply_backward_transform=False)
+            if initial_prediction_reconstruction is not None and initial_prediction_reconstruction.dim() != 0:
+                initial_prediction_reconstruction = torch.abs(initial_prediction_reconstruction)
+            target_reconstruction = self.normalization(target_reconstruction, apply_backward_transform=False)
+
+        if self.complex_data:
+            if initial_prediction_reconstruction.dim() < 2:
+                if isinstance(masked_kspace, list):  # type: ignore
+                    initial_prediction_reconstruction = [
+                        utils.coil_combination_method(
+                            fft.ifft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims),
+                            sensitivity_map,
+                            self.coil_combination_method,
+                            self.coil_dim,
+                        )
+                        for y in masked_kspace  # type: ignore
+                    ]
+                else:
+                    initial_prediction_reconstruction = utils.coil_combination_method(
+                        fft.ifft2(masked_kspace, self.fft_centered, self.fft_normalization, self.spatial_dims),
+                        sensitivity_map,
+                        self.coil_combination_method,
+                        self.coil_dim,
                     )
-        else:
-            if self.normalize_inputs:
-                imspace = imspace / torch.max(torch.abs(imspace))
-
-            kspace = torch.empty([])
-            sensitivity_map = torch.empty([])
-            masked_kspace = torch.empty([])
-            initial_prediction_reconstruction = torch.abs(imspace)
-
-            if target_reconstruction is None or target_reconstruction.dim() < 2:
-                target_reconstruction = torch.empty([])
-            else:
-                if self.max_norm:
-                    target_reconstruction = target_reconstruction / torch.max(torch.abs(target_reconstruction))
-
-            acc = 1
-
-        if initial_prediction is not None and initial_prediction.dim() != 0:
-            initial_prediction_reconstruction = torch.abs(initial_prediction)
 
         segmentation_labels = torch.abs(segmentation_labels)
 

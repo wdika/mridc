@@ -97,14 +97,6 @@ mridc.collections.reconstruction.models.multidomainnet module
    :undoc-members:
    :show-inheritance:
 
-mridc.collections.reconstruction.models.pics module
----------------------------------------------------
-
-.. automodule:: mridc.collections.reconstruction.models.pics
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 mridc.collections.reconstruction.models.rvn module
 --------------------------------------------------
 

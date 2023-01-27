@@ -16,6 +16,8 @@ from mridc.collections.segmentation.losses.utils import do_metric_reduction
 
 class Dice(_Loss):
     """
+    Wrapper for :py:class:`monai.losses.DiceLoss` to support multi-class and multi-label tasks.
+
     Compute average Dice loss between two tensors. It can support both multi-classes and multi-labels tasks.
     The data `input` (BNHW[D] where N is number of classes) is compared with ground truth `target` (BNHW[D]).
 
@@ -29,6 +31,66 @@ class Dice(_Loss):
     The original paper: Milletari, F. et. al. (2016) V-Net: Fully Convolutional Neural Networks forVolumetric
     Medical Image Segmentation, 3DV, 2016.
 
+    Parameters
+    ----------
+    include_background : bool
+        whether to skip Dice computation on the first channel of the predicted output. Default is ``True``.
+    to_onehot_y : bool
+        Whether to convert `y` into the one-hot format. Default is ``False``.
+    sigmoid : bool
+        Whether to add sigmoid function to the input data. Default is ``True``.
+    softmax : bool
+        Whether to add softmax function to the input data. Default is ``False``.
+    other_act : Callable
+        Use this parameter if you want to apply another type of activation layer. Default is ``None``.
+    squared_pred : bool
+        Whether to square the prediction before calculating Dice. Default is ``False``.
+    jaccard : bool
+        Whether to compute Jaccard Index as a loss. Default is ``False``.
+    flatten : bool
+        Whether to flatten input data. Default is ``False``.
+    reduction : str
+        Specifies the reduction to apply to the output: 'none' | 'mean' | 'sum'.
+        'none': no reduction will be applied.
+        'mean': the sum of the output will be divided by the number of elements in the output.
+        'sum': the output will be summed.
+        Default is ``mean``.
+    smooth_nr : float
+        A small constant added to the numerator to avoid `nan` when all items are 0. Default is ``1e-5``.
+    smooth_dr : float
+        A small constant added to the denominator to avoid `nan` when all items are 0. Default is ``1e-5``.
+    batch : bool
+        If True, compute Dice loss for each batch and return a tensor with shape (batch_size,).
+        If False, compute Dice loss for the whole batch and return a tensor with shape (1,).
+        Default is ``True``.
+
+    Examples
+    --------
+    >>> import torch
+    >>> from mridc.collections.segmentation.losses.dice import Dice
+    >>> pred = torch.tensor([[[[0.1, 0.2, 0.3, 0.4, 0.5],
+    ...                        [0.1, 0.2, 0.3, 0.4, 0.5],
+    ...                        [0.1, 0.2, 0.3, 0.4, 0.5],
+    ...                        [0.1, 0.2, 0.3, 0.4, 0.5],
+    ...                        [0.1, 0.2, 0.3, 0.4, 0.5]]],
+    ...                       [[[0.1, 0.2, 0.3, 0.4, 0.5],
+    ...                         [0.1, 0.2, 0.3, 0.4, 0.5],
+    ...                         [0.1, 0.2, 0.3, 0.4, 0.5],
+    ...                         [0.1, 0.2, 0.3, 0.4, 0.5],
+    ...                         [0.1, 0.2, 0.3, 0.4, 0.5]]]])
+    >>> target = torch.tensor([[[[0, 0, 0, 0, 0],
+    ...                          [0, 0, 0, 0, 0],
+    ...                          [0, 0, 0, 0, 0],
+    ...                          [0, 0, 0, 0, 0],
+    ...                          [0, 0, 0, 0, 0]]],
+    ...                         [[[1, 1, 1, 1, 1],
+    ...                           [1, 1, 1, 1, 1],
+    ...                           [1, 1, 1, 1, 1],
+    ...                           [1, 1, 1, 1, 1],
+    ...                           [1, 1, 1, 1, 1]]]])
+    >>> dice = Dice(include_background=False, to_onehot_y=True, sigmoid=False, softmax=False)
+    >>> dice(pred, target)
+    tensor(0.5000)
     """
 
     def __init__(
@@ -45,41 +107,7 @@ class Dice(_Loss):
         smooth_nr: float = 1e-5,
         smooth_dr: float = 1e-5,
         batch: bool = True,
-    ) -> None:
-        """
-        Parameters
-        ----------
-        include_background: bool
-            whether to skip Dice computation on the first channel of the predicted output. Defaults to True.
-        to_onehot_y: bool
-            Whether to convert `y` into the one-hot format. Defaults to False.
-        sigmoid: bool
-            Whether to add sigmoid function to the input data. Defaults to True.
-        softmax: bool
-            Whether to add softmax function to the input data. Defaults to False.
-        other_act: Callable
-            Use this parameter if you want to apply another type of activation layer.
-            Defaults to None.
-        squared_pred: bool
-            Whether to square the prediction before calculating Dice. Defaults to False.
-        jaccard: bool
-            Whether to compute Jaccard Index as a loss. Defaults to False.
-        flatten: bool
-            Whether to flatten input data. Defaults to False.
-        reduction: str
-            Specifies the reduction to apply to the output: 'none' | 'mean' | 'sum'.
-            'none': no reduction will be applied.
-            'mean': the sum of the output will be divided by the number of elements in the output.
-            'sum': the output will be summed.
-            Default: 'mean'
-        smooth_nr: float
-            A small constant added to the numerator to avoid `nan` when all items are 0.
-        smooth_dr: float
-            A small constant added to the denominator to avoid `nan` when all items are 0.
-        batch: bool
-            If True, compute Dice loss for each batch and return a tensor with shape (batch_size,).
-            If False, compute Dice loss for the whole batch and return a tensor with shape (1,).
-        """
+    ):
         super().__init__()
         other_act = None if utils.is_none(other_act) else other_act
         if other_act is not None and not callable(other_act):
@@ -103,12 +131,19 @@ class Dice(_Loss):
 
     def forward(self, target: torch.Tensor, input: torch.Tensor) -> Tuple[Union[Tensor, Any], Tensor]:
         """
+        Compute Dice loss.
+
         Parameters
         ----------
         input: torch.Tensor
-            the prediction of shape [BNHW[D]].
+            Prediction of shape [BNHW[D]].
         target: torch.Tensor
-            the ground truth of shape [BNHW[D]].
+            Ground truth of shape [BNHW[D]].
+
+        Returns
+        -------
+        torch.Tensor
+            Dice loss.
         """
         if self.flatten:
             target = target.reshape(target.shape[0], 1, -1)
@@ -187,6 +222,19 @@ def one_hot(labels: torch.Tensor, num_classes: int, dtype: torch.dtype = torch.f
         the data type of the returned tensor.
     dim: int
         the dimension to expand the one-hot tensor.
+
+    Returns
+    -------
+    torch.Tensor
+        The one-hot representation of the labels.
+
+    Examples
+    --------
+    >>> labels = torch.tensor([[[[0, 1, 2]]]])
+    >>> one_hot(labels, num_classes=3)
+    tensor([[[[1., 0., 0.],
+                [0., 1., 0.],
+                [0., 0., 1.]]]])
     """
     # if `dim` is bigger, add singleton dim at the end
     if labels.ndim < dim + 1:

@@ -1,6 +1,14 @@
 mridc.core.utils package
 ========================
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   mridc.core.utils.process_launcher
+
 Submodules
 ----------
 

@@ -13,37 +13,31 @@ class CascadeNetBlock(torch.nn.Module):
     """
     Model block for CascadeNet & Convolution Recurrent Neural Network.
 
-    This model applies a combination of soft data consistency with the input model as a regularizer.
-    A series of these blocks can be stacked to form the full variational network.
+    Parameters
+    ----------
+    model : torch.nn.Module
+        Model to apply soft data consistency.
+    fft_centered : bool, optional
+        Whether to center the FFT. Default is ``False``.
+    fft_normalization : str, optional
+        Whether to normalize the FFT. Default is ``"backward"``.
+    spatial_dims : Tuple[int, int], optional
+        Spatial dimensions of the input. Default is ``None``.
+    coil_dim : int, optional
+        Coil dimension. Default is ``1``.
+    no_dc : bool, optional
+        Flag to disable the soft data consistency. Default is ``False``.
     """
 
     def __init__(
         self,
         model: torch.nn.Module,
-        fft_centered: bool = True,
-        fft_normalization: str = "ortho",
+        fft_centered: bool = False,
+        fft_normalization: str = "backward",
         spatial_dims: Optional[Tuple[int, int]] = None,
         coil_dim: int = 1,
         no_dc: bool = False,
     ):
-        """
-        Initializes the model block.
-
-        Parameters
-        ----------
-        model: Model to apply soft data consistency.
-            torch.nn.Module
-        fft_centered: Whether to center the FFT.
-            bool
-        fft_normalization: Whether to normalize the FFT.
-            str
-        spatial_dims: Spatial dimensions of the input.
-            Tuple[int, int]
-        coil_dim: Coil dimension.
-            int
-        no_dc: Flag to disable the soft data consistency.
-            bool
-        """
         super().__init__()
 
         self.model = model
@@ -56,19 +50,19 @@ class CascadeNetBlock(torch.nn.Module):
 
     def sens_expand(self, x: torch.Tensor, sens_maps: torch.Tensor) -> torch.Tensor:
         """
-        Expand the sensitivity maps to the same size as the input.
+        Combines the sensitivity maps with coil-combined data to get multicoil data.
 
         Parameters
         ----------
-        x: Input data.
-            torch.Tensor, shape [batch_size, n_coils, height, width, 2]
-        sens_maps: Sensitivity maps.
-            torch.Tensor, shape [batch_size, n_coils, height, width, 2]
+        x : torch.Tensor
+            Input data.
+        sens_maps : torch.Tensor
+            Coil Sensitivity maps.
 
         Returns
         -------
-        SENSE reconstruction expanded to the same size as the input.
-            torch.Tensor, shape [batch_size, n_coils, height, width, 2]
+        torch.Tensor
+            Expanded multicoil data.
         """
         return fft.fft2(
             utils.complex_mul(x, sens_maps),
@@ -79,30 +73,30 @@ class CascadeNetBlock(torch.nn.Module):
 
     def sens_reduce(self, x: torch.Tensor, sens_maps: torch.Tensor) -> torch.Tensor:
         """
-        Reduce the sensitivity maps to the same size as the input.
+        Combines the sensitivity maps with multicoil data to get coil-combined data.
 
         Parameters
         ----------
-        x: Input data.
-            torch.Tensor, shape [batch_size, n_coils, height, width, 2]
-        sens_maps: Sensitivity maps.
-            torch.Tensor, shape [batch_size, n_coils, height, width, 2]
+        x : torch.Tensor
+            Input data.
+        sens_maps : torch.Tensor
+            Coil Sensitivity maps.
 
         Returns
         -------
-        SENSE reconstruction.
-            torch.Tensor, shape [batch_size, height, width, 2]
+        torch.Tensor
+            SENSE coil-combined reconstruction.
         """
         x = fft.ifft2(
             x, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
         )
-        return utils.complex_mul(x, utils.complex_conj(sens_maps)).sum(dim=self.coil_dim, keepdim=True)
+        return utils.complex_mul(x, utils.complex_conj(sens_maps)).sum(dim=self.coil_dim)
 
     def forward(
         self,
         pred: torch.Tensor,
         ref_kspace: torch.Tensor,
-        sens_maps: torch.Tensor,
+        sensitivity_maps: torch.Tensor,
         mask: torch.Tensor,
     ) -> torch.Tensor:
         """
@@ -110,30 +104,30 @@ class CascadeNetBlock(torch.nn.Module):
 
         Parameters
         ----------
-        pred: Predicted k-space data.
-            torch.Tensor, shape [batch_size, n_coils, height, width, 2]
-        ref_kspace: Reference k-space data.
-            torch.Tensor, shape [batch_size, n_coils, height, width, 2]
-        sens_maps: Sensitivity maps.
-            torch.Tensor, shape [batch_size, n_coils, height, width, 2]
-        mask: Mask to apply to the data.
-            torch.Tensor, shape [batch_size, 1, height, width, 1]
+        pred : torch.Tensor
+            Predicted k-space data. Shape [batch_size, n_coils, n_x, n_y, 2]
+        ref_kspace : torch.Tensor
+            Reference k-space data. Shape [batch_size, n_coils, n_x, n_y, 2]
+        sensitivity_maps : torch.Tensor
+            Coil sensitivity maps. Shape [batch_size, n_coils, n_x, n_y, 2]
+        mask : torch.Tensor
+            Subsampling mask. Shape [1, 1, n_x, n_y, 1]
 
         Returns
         -------
-        Reconstructed image.
-            torch.Tensor, shape [batch_size, height, width, 2]
+        torch.Tensor
+            Reconstructed image. Shape [batch_size, n_x, n_y, 2]
         """
         zero = torch.zeros(1, 1, 1, 1, 1).to(pred)
         soft_dc = torch.where(mask.bool(), pred - ref_kspace, zero) * self.dc_weight
 
-        eta = self.sens_reduce(pred, sens_maps)
-        eta = self.model(eta.squeeze(self.coil_dim).permute(0, 3, 1, 2)).permute(0, 2, 3, 1)
-        if eta.dim() < sens_maps.dim():
-            eta = eta.unsqueeze(1)
-        eta = self.sens_expand(eta, sens_maps)
+        prediction = self.sens_reduce(pred, sensitivity_maps)
+        prediction = self.model(prediction.squeeze(self.coil_dim).permute(0, 3, 1, 2)).permute(0, 2, 3, 1)
+        if prediction.dim() < sensitivity_maps.dim():
+            prediction = prediction.unsqueeze(1)
+        prediction = self.sens_expand(prediction, sensitivity_maps)
 
         if not self.no_dc:
-            eta = pred - soft_dc - eta
+            prediction = pred - soft_dc - prediction
 
-        return eta
+        return prediction

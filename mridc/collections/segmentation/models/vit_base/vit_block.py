@@ -11,16 +11,53 @@ import torch.nn as nn
 from mridc.collections.segmentation.models.vit_base.patchembedding import PatchEmbeddingBlock
 from mridc.collections.segmentation.models.vit_base.transformer_block import TransformerBlock
 
-
 __all__ = ["ViT"]
 
 
 class ViT(nn.Module):
     """
-    Vision Transformer (ViT), based on: "Dosovitskiy et al.,
-    An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>"
+    Implementation of a Vision Transformer (ViT), as presented in [1].
 
     ViT supports Torchscript but only works for Pytorch after 1.8.
+
+    References
+    ----------
+    .. [1] Dosovitskiy A, Beyer L, Kolesnikov A, Weissenborn D, Zhai X, Unterthiner T, Dehghani M, Minderer M, Heigold
+        G, Gelly S, Uszkoreit J. An image is worth 16x16 words: Transformers for image recognition at scale. arXiv
+        preprint arXiv:2010.11929. 2020 Oct 22.
+
+    Parameters
+    ----------
+    in_channels : int
+        Dimension of input channels.
+    img_size : Union[Sequence[int], int]
+        Dimension of input image.
+    patch_size : Union[Sequence[int], int]
+        Dimension of patch size.
+    hidden_size : int
+        Dimension of hidden layer. Default is ``768``.
+    mlp_dim : int
+        Dimension of MLP layer. Default is ``3072``.
+    num_layers : int
+        Number of transformer layers. Default is ``12``.
+    num_heads : int
+        Number of attention heads. Default is ``12``.
+    pos_embed : str
+        Position embedding layer type. Default is ``"conv"``.
+    classification : bool
+        Whether to add a classification head. Default is ``False``.
+    dropout_rate : float, optional
+        Faction of the input units to drop. Default is ``0.0``.
+    spatial_dims : int, optional
+        Number of spatial dimensions. Default is ``3``.
+    post_activation : str, optional
+        Post activation layer type. Default is ``"Tanh"``.
+    qkv_bias : bool, optional
+        Whether to add a bias to query, key, value. Default is ``False``.
+
+    .. note::
+        This is a wrapper for monai implementation of PatchEmbeddingBlock.
+        See: https://github.com/Project-MONAI/MONAI/blob/dev/monai/networks/nets/vit.py
     """
 
     def __init__(
@@ -39,38 +76,7 @@ class ViT(nn.Module):
         spatial_dims: int = 3,
         post_activation="Tanh",
         qkv_bias: bool = False,
-    ) -> None:
-        """
-        Args:
-            in_channels: dimension of input channels.
-            img_size: dimension of input image.
-            patch_size: dimension of patch size.
-            hidden_size: dimension of hidden layer.
-            mlp_dim: dimension of feedforward layer.
-            num_layers: number of transformer blocks.
-            num_heads: number of attention heads.
-            pos_embed: position embedding layer type.
-            classification: bool argument to determine if classification is used.
-            num_classes: number of classes if classification is used.
-            dropout_rate: faction of the input units to drop.
-            spatial_dims: number of spatial dimensions.
-            post_activation: add a final acivation function to the classification head when `classification` is True.
-                Default to "Tanh" for `nn.Tanh()`. Set to other values to remove this function.
-            qkv_bias: apply bias to the qkv linear layer in self attention block
-
-        Examples::
-
-            # for single channel input with image size of (96,96,96), conv position embedding and segmentation backbone
-            >>> net = ViT(in_channels=1, img_size=(96,96,96), pos_embed='conv')
-
-            # for 3-channel with image size of (128,128,128), 24 layers and classification backbone
-            >>> net = ViT(in_channels=3, img_size=(128,128,128), pos_embed='conv', classification=True)
-
-            # for 3-channel with image size of (224,224), 12 layers and classification backbone
-            >>> net = ViT(in_channels=3, img_size=(224,224), pos_embed='conv', classification=True, spatial_dims=2)
-
-        """
-
+    ):
         super().__init__()
 
         if not (0 <= dropout_rate <= 1):
@@ -101,7 +107,8 @@ class ViT(nn.Module):
             else:
                 self.classification_head = nn.Linear(hidden_size, num_classes)  # type: ignore
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> Union[torch.Tensor, Sequence[torch.Tensor]]:
+        """Forward pass of the network."""
         x = self.patch_embedding(x)
         if hasattr(self, "cls_token"):
             cls_token = self.cls_token.expand(x.shape[0], -1, -1)

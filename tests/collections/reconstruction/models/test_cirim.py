@@ -8,8 +8,8 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import OmegaConf
 
+from mridc.collections.common.data.subsample import RandomMaskFunc
 from mridc.collections.common.parts import utils
-from mridc.collections.reconstruction.data.subsample import RandomMaskFunc
 from mridc.collections.reconstruction.models.cirim import CIRIM
 from tests.collections.reconstruction.fastmri.conftest import create_input
 
@@ -33,9 +33,9 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "conv_dim": 2,
                 "time_steps": 8,
                 "num_cascades": 1,
-                "accumulate_estimates": True,
+                "accumulate_predictions": True,
                 "no_dc": True,
-                "keep_eta": True,
+                "keep_prediction": True,
                 "use_sens_net": False,
                 "coil_combination_method": "SENSE",
                 "fft_centered": True,
@@ -78,9 +78,9 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "conv_dim": 2,
                 "time_steps": 8,
                 "num_cascades": 5,
-                "accumulate_estimates": True,
+                "accumulate_predictions": True,
                 "no_dc": True,
-                "keep_eta": True,
+                "keep_prediction": True,
                 "use_sens_net": False,
                 "coil_combination_method": "SENSE",
                 "fft_centered": True,
@@ -123,9 +123,9 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "conv_dim": 2,
                 "time_steps": 8,
                 "num_cascades": 16,
-                "accumulate_estimates": True,
+                "accumulate_predictions": True,
                 "no_dc": True,
-                "keep_eta": True,
+                "keep_prediction": True,
                 "use_sens_net": False,
                 "coil_combination_method": "SENSE",
                 "fft_centered": True,
@@ -168,9 +168,9 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "conv_dim": 3,
                 "time_steps": 8,
                 "num_cascades": 5,
-                "accumulate_estimates": True,
+                "accumulate_predictions": True,
                 "no_dc": True,
-                "keep_eta": True,
+                "keep_prediction": True,
                 "use_sens_net": False,
                 "coil_combination_method": "SENSE",
                 "fft_centered": True,
@@ -213,9 +213,9 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "conv_dim": 3,
                 "time_steps": 8,
                 "num_cascades": 5,
-                "accumulate_estimates": True,
+                "accumulate_predictions": True,
                 "no_dc": True,
-                "keep_eta": True,
+                "keep_prediction": True,
                 "use_sens_net": False,
                 "coil_combination_method": "SENSE",
                 "fft_centered": True,
@@ -258,9 +258,9 @@ from tests.collections.reconstruction.fastmri.conftest import create_input
                 "conv_dim": 3,
                 "time_steps": 8,
                 "num_cascades": 5,
-                "accumulate_estimates": True,
+                "accumulate_predictions": True,
                 "no_dc": True,
-                "keep_eta": True,
+                "keep_prediction": True,
                 "use_sens_net": False,
                 "coil_combination_method": "SENSE",
                 "fft_centered": True,

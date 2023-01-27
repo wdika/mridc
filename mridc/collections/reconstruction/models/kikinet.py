@@ -6,9 +6,7 @@ from abc import ABC
 import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
-from torch.nn import L1Loss
 
-import mridc.collections.common.losses.ssim as losses
 import mridc.collections.common.parts.fft as fft
 import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.models.base as base_models
@@ -24,22 +22,16 @@ __all__ = ["KIKINet"]
 
 class KIKINet(base_models.BaseMRIReconstructionModel, ABC):
     """
-    Based on KIKINet implementation [1]. Modified to work with multi-coil k-space data, as presented in Eo, Taejoon, \
-    et al.
+    Based on KIKINet implementation. Modified to work with multi-coil k-space data, as presented in [1].
 
     References
     ----------
-
-    ..
-
-        Eo, Taejoon, et al. “KIKI-Net: Cross-Domain Convolutional Neural Networks for Reconstructing Undersampled \
-        Magnetic Resonance Images.” Magnetic Resonance in Medicine, vol. 80, no. 5, Nov. 2018, pp. 2188–201. PubMed, \
+    .. [1] Eo, Taejoon, et al. “KIKI-Net: Cross-Domain Convolutional Neural Networks for Reconstructing Undersampled
+        Magnetic Resonance Images.” Magnetic Resonance in Medicine, vol. 80, no. 5, Nov. 2018, pp. 2188–201. PubMed,
         https://doi.org/10.1002/mrm.27201.
-
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
-        # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
@@ -51,16 +43,16 @@ class KIKINet(base_models.BaseMRIReconstructionModel, ABC):
 
         if kspace_model_architecture == "CONV":
             kspace_model = conv2d.Conv2d(
-                in_channels=2,
-                out_channels=2,
+                in_channels=cfg_dict.get("kspace_in_channels", 2),
+                out_channels=cfg_dict.get("kspace_out_channels", 2),
                 hidden_channels=cfg_dict.get("kspace_conv_hidden_channels"),
                 n_convs=cfg_dict.get("kspace_conv_n_convs"),
                 batchnorm=cfg_dict.get("kspace_conv_batchnorm"),
             )
         elif kspace_model_architecture == "DIDN":
             kspace_model = didn_.DIDN(
-                in_channels=2,
-                out_channels=2,
+                in_channels=cfg_dict.get("kspace_in_channels", 2),
+                out_channels=cfg_dict.get("kspace_out_channels", 2),
                 hidden_channels=cfg_dict.get("kspace_didn_hidden_channels"),
                 num_dubs=cfg_dict.get("kspace_didn_num_dubs"),
                 num_convs_recon=cfg_dict.get("kspace_didn_num_convs_recon"),
@@ -69,8 +61,8 @@ class KIKINet(base_models.BaseMRIReconstructionModel, ABC):
             kspace_model = unet_block.NormUnet(
                 cfg_dict.get("kspace_unet_num_filters"),
                 cfg_dict.get("kspace_unet_num_pool_layers"),
-                in_chans=2,
-                out_chans=2,
+                in_chans=cfg_dict.get("kspace_in_channels", 2),
+                out_chans=cfg_dict.get("kspace_out_channels", 2),
                 drop_prob=cfg_dict.get("kspace_unet_dropout_probability"),
                 padding_size=cfg_dict.get("kspace_unet_padding_size"),
                 normalize=cfg_dict.get("kspace_unet_normalize"),
@@ -85,7 +77,7 @@ class KIKINet(base_models.BaseMRIReconstructionModel, ABC):
 
         if image_model_architecture == "MWCNN":
             image_model = mwcnn_.MWCNN(
-                input_channels=2,
+                input_channels=cfg_dict.get("imspace_in_channels", 2),
                 first_conv_hidden_channels=cfg_dict.get("image_mwcnn_hidden_channels"),
                 num_scales=cfg_dict.get("image_mwcnn_num_scales"),
                 bias=cfg_dict.get("image_mwcnn_bias"),
@@ -95,8 +87,8 @@ class KIKINet(base_models.BaseMRIReconstructionModel, ABC):
             image_model = unet_block.NormUnet(
                 cfg_dict.get("imspace_unet_num_filters"),
                 cfg_dict.get("imspace_unet_num_pool_layers"),
-                in_chans=2,
-                out_chans=2,
+                in_chans=cfg_dict.get("imspace_in_channels", 2),
+                out_chans=cfg_dict.get("imspace_out_channels", 2),
                 drop_prob=cfg_dict.get("imspace_unet_dropout_probability"),
                 padding_size=cfg_dict.get("imspace_unet_padding_size"),
                 normalize=cfg_dict.get("imspace_unet_normalize"),
@@ -107,33 +99,10 @@ class KIKINet(base_models.BaseMRIReconstructionModel, ABC):
                 f"Got {image_model_architecture}."
             )
 
-        self.fft_centered = cfg_dict.get("fft_centered")
-        self.fft_normalization = cfg_dict.get("fft_normalization")
-        self.spatial_dims = cfg_dict.get("spatial_dims")
-        self.coil_dim = cfg_dict.get("coil_dim")
-
         self.image_model_list = torch.nn.ModuleList([image_model] * self.num_iter)
         self.kspace_model_list = torch.nn.ModuleList([crossdomain.MultiCoil(kspace_model, coil_dim=1)] * self.num_iter)
 
-        if cfg_dict.get("train_loss_fn") == "ssim":
-            self.train_loss_fn = losses.SSIMLoss()
-        elif cfg_dict.get("train_loss_fn") == "l1":
-            self.train_loss_fn = L1Loss()
-        elif cfg_dict.get("train_loss_fn") == "mse":
-            self.train_loss_fn = torch.nn.MSELoss()
-        else:
-            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("train_loss_fn")))
-        if cfg_dict.get("val_loss_fn") == "ssim":
-            self.val_loss_fn = losses.SSIMLoss()
-        elif cfg_dict.get("val_loss_fn") == "l1":
-            self.val_loss_fn = L1Loss()
-        elif cfg_dict.get("val_loss_fn") == "mse":
-            self.val_loss_fn = torch.nn.MSELoss()
-        else:
-            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("val_loss_fn")))
-
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
-        self.accumulate_estimates = False
 
     @common_classes.typecheck()
     def forward(
@@ -149,22 +118,21 @@ class KIKINet(base_models.BaseMRIReconstructionModel, ABC):
 
         Parameters
         ----------
-        y: Subsampled k-space data.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        sensitivity_maps: Coil sensitivity maps.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        mask: Sampling mask.
-            torch.Tensor, shape [1, 1, n_x, n_y, 1]
-        init_pred: Initial prediction.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
-        target: Target data to compute the loss.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        y : torch.Tensor
+            Subsampled k-space data. Shape [batch_size, n_coils, n_x, n_y, 2]
+        sensitivity_maps : torch.Tensor
+            Coil sensitivity maps. Shape [batch_size, n_coils, n_x, n_y, 2]
+        mask : torch.Tensor
+            Subsampling mask. Shape [1, 1, n_x, n_y, 1]
+        init_pred : torch.Tensor
+            Initial prediction. Shape [batch_size, n_x, n_y, 2]
+        target : torch.Tensor
+            Target data to compute the loss. Shape [batch_size, n_x, n_y, 2]
 
         Returns
         -------
-        pred: list of torch.Tensor, shape [batch_size, n_x, n_y, 2], or  torch.Tensor, shape [batch_size, n_x, n_y, 2]
-             If self.accumulate_loss is True, returns a list of all intermediate estimates.
-             If False, returns the final estimate.
+        torch.Tensor
+            Reconstructed image. Shape [batch_size, n_x, n_y, 2]
         """
         kspace = y.clone()
         zero = torch.zeros(1, 1, 1, 1, 1).to(kspace)

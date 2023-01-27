@@ -5,10 +5,9 @@ __author__ = "Dimitrios Karkalousos"
 
 from dataclasses import dataclass
 
-import hydra
 from omegaconf import MISSING, OmegaConf
 
-from mridc.core.config import hydra_runner
+from mridc.core.conf.hydra_runner import hydra_runner
 
 
 @dataclass

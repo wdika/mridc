@@ -12,14 +12,6 @@ mridc.collections.common.losses.aggregator module
    :undoc-members:
    :show-inheritance:
 
-mridc.collections.common.losses.ssim module
--------------------------------------------
-
-.. automodule:: mridc.collections.common.losses.ssim
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Module contents
 ---------------
 

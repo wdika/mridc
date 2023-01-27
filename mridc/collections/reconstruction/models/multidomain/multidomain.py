@@ -2,7 +2,6 @@
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from:https://github.com/NKI-AI/direct/blob/main/direct/nn/multidomainnet/multidomain.py
-# Copyright (c) DIRECT Contributors
 
 from typing import Optional, Sequence, Tuple
 
@@ -15,12 +14,29 @@ import mridc.collections.common.parts.utils as utils
 
 
 class MultiDomainConv2d(nn.Module):
-    """Multi-domain convolution layer."""
+    """
+    Multi-domain convolution layer.
+
+    Parameters
+    ----------
+    fft_centered : bool, optional
+        If True, the FFT is centered. Default is ``False``.
+    fft_normalization : str, optional
+        Normalization of the FFT. Default is ``"backward"``.
+    spatial_dims : Sequence[int], optional
+        Spatial dimensions. Default is ``None``.
+    coil_dim : int, optional
+        Coil dimension. Default is ``1``.
+    in_channels : int, optional
+        Number of input channels. Default is ``4``.
+    out_channels : int, optional
+        Number of output channels. Default is ``4``.
+    """
 
     def __init__(
         self,
-        fft_centered: bool = True,
-        fft_normalization: str = "ortho",
+        fft_centered: bool = False,
+        fft_normalization: str = "backward",
         spatial_dims: Sequence[int] = None,
         coil_dim: int = 1,
         in_channels: int = 4,
@@ -37,7 +53,7 @@ class MultiDomainConv2d(nn.Module):
         self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
         self.coil_dim = 1
 
-    def forward(self, image):
+    def forward(self, image: torch.Tensor) -> torch.Tensor:
         """Forward method for the MultiDomainConv2d class."""
         kspace = [
             fft.fft2(
@@ -55,7 +71,7 @@ class MultiDomainConv2d(nn.Module):
                 normalization=self.fft_normalization,
                 spatial_dims=self.spatial_dims,
             ).type(image.type())
-            for ks in torch.split(kspace.permute(0, 2, 3, 1).contiguous(), 2, -1)
+            for ks in torch.split(kspace.permute(0, 2, 3, 1).contiguous(), 2, -1)  # type: ignore
         ]
         backward = torch.cat(backward, -1).permute(0, 3, 1, 2)
 
@@ -65,12 +81,29 @@ class MultiDomainConv2d(nn.Module):
 
 
 class MultiDomainConvTranspose2d(nn.Module):
-    """Multi-Domain convolutional transpose layer."""
+    """
+    Multi-Domain convolutional transpose layer.
+
+    Parameters
+    ----------
+    fft_centered : bool, optional
+        If True, the FFT is centered. Default is ``False``.
+    fft_normalization : str, optional
+        Normalization of the FFT. Default is ``"backward"``.
+    spatial_dims : Sequence[int], optional
+        Spatial dimensions. Default is ``None``.
+    coil_dim : int, optional
+        Coil dimension. Default is ``1``.
+    in_channels : int, optional
+        Number of input channels. Default is ``4``.
+    out_channels : int, optional
+        Number of output channels. Default is ``4``.
+    """
 
     def __init__(
         self,
-        fft_centered: bool = True,
-        fft_normalization: str = "ortho",
+        fft_centered: bool = False,
+        fft_normalization: str = "backward",
         spatial_dims: Sequence[int] = None,
         coil_dim: int = 1,
         in_channels: int = 4,
@@ -86,7 +119,7 @@ class MultiDomainConvTranspose2d(nn.Module):
         self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
         self.coil_dim = 1
 
-    def forward(self, image):
+    def forward(self, image: torch.Tensor) -> torch.Tensor:
         """Forward method for the MultiDomainConvTranspose2d class."""
         kspace = [
             fft.fft2(
@@ -104,7 +137,7 @@ class MultiDomainConvTranspose2d(nn.Module):
                 normalization=self.fft_normalization,
                 spatial_dims=self.spatial_dims,
             ).type(image.type())
-            for ks in torch.split(kspace.permute(0, 2, 3, 1).contiguous(), 2, -1)
+            for ks in torch.split(kspace.permute(0, 2, 3, 1).contiguous(), 2, -1)  # type: ignore
         ]
         backward = torch.cat(backward, -1).permute(0, 3, 1, 2)
 
@@ -116,29 +149,33 @@ class MultiDomainConvBlock(nn.Module):
     """
     A multi-domain convolutional block that consists of two multi-domain convolution layers each followed by instance
     normalization, LeakyReLU activation and dropout.
+
+    Parameters
+    ----------
+    fft_centered : bool, optional
+        If True, the FFT is centered. Default is ``False``.
+    fft_normalization : str, optional
+        Normalization of the FFT. Default is ``"backward"``.
+    spatial_dims : Sequence[int], optional
+        Spatial dimensions. Default is ``None``.
+    coil_dim : int, optional
+        Coil dimension. Default is ``1``.
+    in_channels : int, optional
+        Number of input channels. Default is ``4``.
+    out_channels : int, optional
+        Number of output channels. Default is ``4``.
     """
 
     def __init__(
         self,
-        fft_centered: bool = True,
-        fft_normalization: str = "ortho",
+        fft_centered: bool = False,
+        fft_normalization: str = "backwar",
         spatial_dims: Sequence[int] = None,
         coil_dim: int = 1,
         in_channels: int = 4,
         out_channels: int = 4,
         dropout_probability: float = 0.0,
     ):
-        """
-        Parameters
-        ----------
-        fft_centered : Whether to center the FFT.
-        fft_normalization : Whether to normalize the FFT.
-        spatial_dims : The spatial dimensions to apply the FFT to.
-        coil_dim : The dimension of the coil.
-        in_channels: Number of input channels.
-        out_channels: Number of output channels.
-        dropout_probability: Dropout probability.
-        """
         super().__init__()
 
         self.fft_centered = fft_centered
@@ -181,7 +218,7 @@ class MultiDomainConvBlock(nn.Module):
             nn.Dropout2d(dropout_probability),
         )
 
-    def forward(self, _input: torch.Tensor):
+    def forward(self, _input: torch.Tensor) -> torch.Tensor:
         """Forward method for the MultiDomainConvBlock class."""
         return self.layers(_input)
 
@@ -196,27 +233,32 @@ class TransposeMultiDomainConvBlock(nn.Module):
     """
     A Transpose Convolutional Block that consists of one convolution transpose layers followed by instance
     normalization and LeakyReLU activation.
+
+    Parameters
+    ----------
+    fft_centered : bool, optional
+        If True, the FFT is centered. Default is ``False``.
+    fft_normalization : str, optional
+        Normalization of the FFT. Default is ``"backward"``.
+    spatial_dims : Sequence[int], optional
+        Spatial dimensions. Default is ``None``.
+    coil_dim : int, optional
+        Coil dimension. Default is ``1``.
+    in_channels : int, optional
+        Number of input channels. Default is ``4``.
+    out_channels : int, optional
+        Number of output channels. Default is ``4``.
     """
 
     def __init__(
         self,
-        fft_centered: bool = True,
-        fft_normalization: str = "ortho",
+        fft_centered: bool = False,
+        fft_normalization: str = "backward",
         spatial_dims: Sequence[int] = None,
         coil_dim: int = 1,
         in_channels: int = 4,
         out_channels: int = 4,
     ):
-        """
-        Parameters
-        ----------
-        fft_centered : Whether to center the FFT.
-        fft_normalization : Whether to normalize the FFT.
-        spatial_dims : The spatial dimensions to apply the FFT to.
-        coil_dim : The dimension of the coil.
-        in_channels: Number of input channels.
-        out_channels: Number of output channels.
-        """
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -236,7 +278,7 @@ class TransposeMultiDomainConvBlock(nn.Module):
             nn.LeakyReLU(negative_slope=0.2, inplace=True),
         )
 
-    def forward(self, input_data: torch.Tensor):
+    def forward(self, input_data: torch.Tensor) -> torch.Tensor:
         """Forward method for the TransposeMultiDomainConvBlock class."""
         return self.layers(input_data)
 
@@ -260,9 +302,16 @@ class StandardizationLayer(nn.Module):
     :math:`{x_{res}}_i = xi - S_i X x_{sense}` and
 
     :math:`x_{sense} = '\'sum_{i=1}^{N_c} {S_i}^{*} X x_i`.
+
+    Parameters
+    ----------
+    coil_dim : int, optional
+        Coil dimension. Default is ``1``.
+    channel_dim : int, optional
+        Channel dimension. Default is ``-1``.
     """
 
-    def __init__(self, coil_dim=1, channel_dim=-1):
+    def __init__(self, coil_dim: int = 1, channel_dim: int = -1):
         super().__init__()
         self.coil_dim = coil_dim
         self.channel_dim = channel_dim
@@ -289,6 +338,27 @@ class MultiDomainUnet2d(nn.Module):
     """
     Unet modification to be used with Multi-domain network as in AIRS Medical submission to the Fast MRI 2020
     challenge.
+
+    Parameters
+    ----------
+    in_channels : int, optional
+        Number of input channels.
+    out_channels : int, optional
+        Number of output channels.
+    num_filters : int, optional
+        Number of filters.
+    num_pool_layers : int, optional
+        Number of pooling layers.
+    dropout_probability : float, optional
+        Dropout probability.
+    fft_centered : bool, optional
+        If True, the FFT is centered. Default is ``False``.
+    fft_normalization : str, optional
+        Normalization of the FFT. Default is ``"backward"``.
+    spatial_dims : Sequence[int], optional
+        Spatial dimensions. Default is ``None``.
+    coil_dim : int, optional
+        Coil dimension. Default is ``1``.
     """
 
     def __init__(
@@ -298,24 +368,11 @@ class MultiDomainUnet2d(nn.Module):
         num_filters: int,
         num_pool_layers: int,
         dropout_probability: float,
-        fft_centered: bool = True,
-        fft_normalization: str = "ortho",
+        fft_centered: bool = False,
+        fft_normalization: str = "backward",
         spatial_dims: Optional[Tuple[int, int]] = None,
         coil_dim: int = 1,
     ):
-        """
-        Parameters
-        ----------
-        in_channels: Number of input channels to the u-net.
-        out_channels: Number of output channels to the u-net.
-        num_filters: Number of output channels of the first convolutional layer.
-        num_pool_layers: Number of down-sampling and up-sampling layers (depth).
-        dropout_probability: Dropout probability.
-        fft_centered: Whether to use centered FFT.
-        fft_normalization: Whether to use normalization.
-        spatial_dims: Spatial dimensions of the input data.
-        coil_dim: Dimension of the coil dimension.
-        """
         super().__init__()
 
         self.in_channels = in_channels
@@ -406,8 +463,8 @@ class MultiDomainUnet2d(nn.Module):
             )
         ]
 
-    def forward(self, input_data: torch.Tensor):
-        """Forward pass of the u-net."""
+    def forward(self, input_data: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the MultiDomainUnet2d."""
         stack = []
         output = input_data
 

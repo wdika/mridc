@@ -2,7 +2,6 @@
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NKI-AI/direct/blob/main/direct/nn/recurrent/recurrent.py
-# Copyright (c) DIRECT Contributors
 
 from typing import List, Optional, Tuple
 
@@ -12,7 +11,30 @@ import torch.nn.functional as F
 
 
 class Conv2dGRU(nn.Module):
-    """2D Convolutional GRU Network."""
+    """
+    2D Convolutional GRU Network.
+
+    Parameters
+    ----------
+    in_channels : int
+        Number of input channels.
+    hidden_channels : int
+        Number of hidden channels.
+    out_channels : int, optional
+        Number of output channels. If None, same as in_channels.
+    num_layers : int, optional
+        Number of layers. Default is ``2``.
+    gru_kernel_size : int, optional
+        Size of the GRU kernel. Default is ``1``.
+    orthogonal_initialization : bool, optional
+        Orthogonal initialization is used if set to True. Default is ``True``.
+    instance_norm : bool, optional
+        Instance norm is used if set to True. Default is ``False``.
+    dense_connect : int, optional
+        Number of dense connections. Default is ``0``.
+    replication_padding : bool, optional
+        If set to true replication padding is applied. Default is ``True``.
+    """
 
     def __init__(
         self,
@@ -26,28 +48,6 @@ class Conv2dGRU(nn.Module):
         dense_connect: int = 0,
         replication_padding: bool = True,
     ):
-        """
-        Inits Conv2dGRU.
-
-        Parameters
-        ----------
-        in_channels: Number of input channels.
-            int
-        hidden_channels: Number of hidden channels.
-            int
-        out_channels: Number of output channels. If None, same as in_channels.
-            int (optional), Default: None.
-        num_layers: Number of layers.
-            int, Default: 2.
-        gru_kernel_size: Size of the GRU kernel.
-            int, Default: 1.
-        orthogonal_initialization: Orthogonal initialization is used if set to True.
-            bool, Default: True.
-        instance_norm: Instance norm is used if set to True.
-            bool, Default: False.
-        dense_connect: Number of dense connections.
-        replication_padding: If set to true replication padding is applied.
-        """
         super().__init__()
 
         if out_channels is None:
@@ -119,12 +119,15 @@ class Conv2dGRU(nn.Module):
 
         Parameters
         ----------
-        cell_input: Reconstruction input
-        previous_state: Tensor of previous states.
+        cell_input : torch.Tensor
+            Input tensor.
+        previous_state : torch.Tensor
+            Previous hidden state.
 
         Returns
         -------
-        Output and new states.
+        Tuple[torch.Tensor, torch.Tensor]
+            Tuple of output tensor and new hidden state.
         """
         new_states: List[torch.Tensor] = []
         conv_skip: List[torch.Tensor] = []

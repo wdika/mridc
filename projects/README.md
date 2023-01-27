@@ -36,21 +36,3 @@ The data should be saved as 2D slices and converted in h5 format.
 Please run the [preprocessing script](projects/quantitative/datasets/ahead/preprocessing.py) and the [reformat script](projects/quantitative/datasets/ahead/reformat.py) to prepare the data for training and testing.
 
 Note that in the "_A unified model for reconstruction and R2* mapping of accelerated 7T data using the quantitative Recurrent Inference Machine_" paper, the RIM image reconstruction + least squares fitting is performed as initialization of the parameters for qRIM. The qRIM code can process the least squares fitting, however, the reconstructed images are expected to be provided for data loading.
-
----
-## Notes
-For running Parallel-Imaging Compressed Sensing (PICS) you need to install the
-[BART](https://mrirecon.github.io/bart/). Important! To be able to run BART with a GPU, make sure to compile it with
-NVCC.
-
-Unfortunately, the BART package does not support straight-forward import.
-So, few things are needed to run BART:
-
--  After installation, set the TOOLBOX_PATH and PYTHONPATH environment variables for BART on projects/reconstruction/export_bart_path.sh .
--  Finally export tha paths included in the following script (running the script won't work):
-
-    ```
-    bash ./projects/export_bart_path.sh
-    ```
-  Apparently, this need to be done every time you want to run BART.
-- Uncomment lines 7 and 114-117 in the [pics module](mridc/collections/reconstruction/models/pics.py).

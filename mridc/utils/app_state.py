@@ -45,6 +45,7 @@ class AppState(metaclass=Singleton):
         self._tensor_model_parallel_size = None
         self._tensor_model_parallel_group = None
         self._pipeline_model_parallel_size = None
+        self._virtual_pipeline_model_parallel_size = None
         self._pipeline_model_parallel_group = None
         self._pipeline_model_parallel_split_rank = None
         self._model_parallel_group = None
@@ -121,6 +122,16 @@ class AppState(metaclass=Singleton):
         self._pipeline_model_parallel_size = size
 
     @property
+    def virtual_pipeline_model_parallel_size(self):
+        """Property returns the number of GPUs in each model parallel group."""
+        return self._virtual_pipeline_model_parallel_size
+
+    @virtual_pipeline_model_parallel_size.setter
+    def virtual_pipeline_model_parallel_size(self, size):
+        """Property sets the size of the virtual pipeline parallel model."""
+        self._virtual_pipeline_model_parallel_size = size
+
+    @property
     def data_parallel_size(self):
         """Property returns the number of GPUs in each data parallel group."""
         return self._data_parallel_size
@@ -179,6 +190,16 @@ class AppState(metaclass=Singleton):
     def pipeline_model_parallel_rank(self, rank):
         """Property sets the model parallel rank."""
         self._pipeline_model_parallel_rank = rank
+
+    @property
+    def virtual_pipeline_model_parallel_rank(self):
+        """Property returns the virtual pipeline parallel rank."""
+        return self._virtual_pipeline_model_parallel_rank
+
+    @virtual_pipeline_model_parallel_rank.setter
+    def virtual_pipeline_model_parallel_rank(self, rank):
+        """Property sets the virtual pipeline parallel rank."""
+        self._virtual_pipeline_model_parallel_rank = rank
 
     @property
     def pipeline_model_parallel_split_rank(self):

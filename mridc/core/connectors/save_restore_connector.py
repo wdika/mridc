@@ -1,24 +1,26 @@
 # coding=utf-8
-__author__ = "Dimitrios Karkalousos"
-
-# Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/connectors/save_restore_connector.py
+from __future__ import annotations  # necessary for lazy types evaluation
 
 import os
 import shutil
 import tarfile
 import tempfile
 import uuid
-from typing import Optional, Union
+from typing import Optional, Set, Union
 
 import torch
 from omegaconf import DictConfig, OmegaConf
 from omegaconf.omegaconf import open_dict
 from pytorch_lightning.trainer.trainer import Trainer
 
-import mridc.utils
-from mridc.utils import logging
+from mridc.core import classes as mridc_classes  # to avoid circular import do not import ModelPT directly
+from mridc.utils import logging, model_utils
 from mridc.utils.app_state import AppState
 from mridc.utils.get_rank import is_global_rank_zero
+
+__author__ = "Dimitrios Karkalousos"
+
+# Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/connectors/save_restore_connector.py
 
 
 class SaveRestoreConnector:
@@ -29,14 +31,16 @@ class SaveRestoreConnector:
         self._model_weights_ckpt = "model_weights.ckpt"
         self._model_extracted_dir = None
 
-    def save_to(self, model, save_path: str):
+    def save_to(self, model: "mridc.ModelPT", save_path: str):  # type: ignore
         """
         Saves model instance (weights and configuration) into .mridc file.
+
         You can use "restore_from" method to fully restore instance from .mridc file.
+
         .mridc file is an archive (tar.gz) with the following:
-        - model_config.yaml - model configuration in .yaml format. You can deserialize this into cfg argument for \
+        - model_config.yaml - model configuration in .yaml format. You can deserialize this into cfg argument for
         model's constructor
-        - model_wights.chpt - model checkpoint
+        - model_weights.ckpt - model checkpoint
 
         Parameters
         ----------
@@ -48,7 +52,9 @@ class SaveRestoreConnector:
                 config_yaml = os.path.join(tmpdir, self.model_config_yaml)
                 model_weights = os.path.join(tmpdir, self.model_weights_ckpt)
                 model.to_config_file(path2yaml_file=config_yaml)
-                if hasattr(model, "artifacts") and model.artifacts is not None:
+                # update subconfigs, if there are child model, since child model can change its config
+                self._update_subconfigs(model, path2yaml_file=config_yaml)
+                if model.has_native_or_submodules_artifacts():
                     self._handle_artifacts(model, mridc_file_folder=tmpdir)
                     # We should not update self._cfg here - the model can still be in use
                     self._update_artifact_paths(model, path2yaml_file=config_yaml)
@@ -302,6 +308,15 @@ class SaveRestoreConnector:
         .mridc will be untarred to a temporary folder location and an actual existing path will be returned else an
         error will be raised.
 
+            .. code-block::
+
+              If "src" is local existing path:
+                  then it will be returned in absolute path form
+              elif "src" starts with "mridc_file:unique_artifact_name":
+                  .mridc will be untarred to a temporary folder location and an actual existing path will be returned
+              else:
+                  an error will be raised.
+
         WARNING: use .register_artifact calls in your models' constructors.
         The returned path is not guaranteed to exist after you have exited your model's constructor.
 
@@ -320,7 +335,7 @@ class SaveRestoreConnector:
         """
         app_state = AppState()
 
-        artifact_item = mridc.utils.model_utils.ArtifactItem()  # type: ignore
+        artifact_item = model_utils.ArtifactItem()  # type: ignore
 
         # This is for backward compatibility, if the src objects exists simply inside the tarfile
         # without its key having been overridden, this pathway will be used.
@@ -333,15 +348,15 @@ class SaveRestoreConnector:
         # src is a local existing path - register artifact and return exact same path for usage by the model
         if os.path.exists(os.path.abspath(src)):
             return_path = os.path.abspath(src)
-            artifact_item.path_type = mridc.utils.model_utils.ArtifactPathType.LOCAL_PATH  # type: ignore
+            artifact_item.path_type = model_utils.ArtifactPathType.LOCAL_PATH  # type: ignore
 
         elif src.startswith("mridc:"):
             return_path = os.path.abspath(os.path.join(app_state.mridc_file_folder, src[5:]))
-            artifact_item.path_type = mridc.utils.model_utils.ArtifactPathType.TAR_PATH  # type: ignore
+            artifact_item.path_type = model_utils.ArtifactPathType.TAR_PATH  # type: ignore
 
         elif os.path.exists(src_obj_path):
             return_path = src_obj_path
-            artifact_item.path_type = mridc.utils.model_utils.ArtifactPathType.TAR_PATH  # type: ignore
+            artifact_item.path_type = model_utils.ArtifactPathType.TAR_PATH  # type: ignore
         elif verify_src_exists:
             raise FileNotFoundError(
                 f"src path does not exist or it is not a path in mridc file. src value I got was: {src}. "
@@ -374,32 +389,60 @@ class SaveRestoreConnector:
         """
         tarfile_artifacts = []
         app_state = AppState()
-        for conf_path, artiitem in model.artifacts.items():
-            if artiitem.path_type == mridc.utils.model_utils.ArtifactPathType.LOCAL_PATH:
-                if not os.path.exists(artiitem.path):
-                    raise FileNotFoundError(f"Artifact {conf_path} not found at location: {artiitem.path}")
 
-                # Generate new uniq artifact name and copy it to mridc_file_folder
-                # Note uuid.uuid4().hex is guaranteed to be 32 character long
-                artifact_base_name = os.path.basename(artiitem.path)
-                artifact_uniq_name = f"{uuid.uuid4().hex}_{artifact_base_name}"
-                shutil.copy2(artiitem.path, os.path.join(mridc_file_folder, artifact_uniq_name))
+        # aggregate artifacts from self and all children recursively
+        artifacts_containers = []
+        for _, config_path, module in model.named_mridc_modules():
+            if module.has_artifacts():  # MRIDC model with artifacts
+                artifacts_containers.append((config_path, module.artifacts))
 
-                # Update artifacts registry
-                artiitem.hashed_path = f"mridc:{artifact_uniq_name}"
-                model.artifacts[conf_path] = artiitem
+        if len(artifacts_containers) > 0 and (not hasattr(model, "artifacts") or model.artifacts is None):
+            # model has no artifacts, but submodules have some
+            model.artifacts = dict()
 
-            elif artiitem.path_type == mridc.utils.model_utils.ArtifactPathType.TAR_PATH:
-                # process all tarfile artifacts in one go, so preserve key-value pair
-                tarfile_artifacts.append((conf_path, artiitem))
+        for config_path, artifacts in artifacts_containers:
+            for subconf_path, artiitem in artifacts.items():
+                conf_path = f"{config_path}.{subconf_path}" if config_path else f"{subconf_path}"
+                if artiitem.path_type == model_utils.ArtifactPathType.LOCAL_PATH:
+                    if not os.path.exists(artiitem.path):
+                        raise FileNotFoundError(f"Artifact {conf_path} not found at location: {artiitem.path}")
 
-            else:
-                raise ValueError("Directly referencing artifacts from other mridc files isn't supported yet")
+                    # Generate new uniq artifact name and copy it to mridc_file_folder
+                    # Note uuid.uuid4().hex is guaranteed to be 32 character long
+                    artifact_base_name = os.path.basename(artiitem.path)
+                    artifact_uniq_name = f"{uuid.uuid4().hex}_{artifact_base_name}"
+                    shutil.copy2(artiitem.path, os.path.join(mridc_file_folder, artifact_uniq_name))
+
+                    # Update artifacts registry
+                    artiitem.hashed_path = "mridc:" + artifact_uniq_name
+                    model.artifacts[conf_path] = artiitem
+
+                elif artiitem.path_type == model_utils.ArtifactPathType.TAR_PATH:
+                    # process all tarfile artifacts in one go, so preserve key-value pair
+                    tarfile_artifacts.append((conf_path, artiitem))
+                    if subconf_path:  # artifact from submodule
+                        model.artifacts[conf_path] = artiitem
+
+                else:
+                    raise ValueError(f"Directly referencing artifacts from other mridc files isn't supported yet")
 
         # Process current tarfile artifacts by unpacking the previous tarfile and extract the artifacts
         # that are currently required.
+        # artifacts can be native (from the model itself) and from submodules
+        restoration_paths: Set[str] = set()  # model + submodules restoration paths, handle only unique paths
         model_metadata = app_state.get_model_metadata_from_guid(model.model_guid)
-        if tarfile_artifacts and model_metadata.restoration_path is not None:
+        if model_metadata.restoration_path is not None:
+            restoration_paths.add(model_metadata.restoration_path)
+        # aggregate restoration paths for all submodules recursively
+        for module in model.modules():
+            if isinstance(module, mridc_classes.modelPT.ModelPT):  # if MRIDC model
+                submodule_restoration_path = app_state.get_model_metadata_from_guid(module.model_guid).restoration_path
+                if submodule_restoration_path is not None:
+                    restoration_paths.add(submodule_restoration_path)
+        if len(tarfile_artifacts) > 0 and len(restoration_paths) == 0:
+            # TODO: see cases when this can occur, and if we can fix them
+            logging.warning("Model contains registered artifacts, but no restoration paths found")
+        if len(tarfile_artifacts) > 0 and len(restoration_paths) > 0:
             # Need to step into mridc archive to extract file
             # Get path where the command is executed - the artifacts will be "retrieved" there
             # (original .mridc behavior)
@@ -407,7 +450,10 @@ class SaveRestoreConnector:
             try:
                 # Step into the mridc archive to try and find the file
                 with tempfile.TemporaryDirectory() as archive_dir:
-                    self._unpack_mridc_file(path2file=model_metadata.restoration_path, out_folder=archive_dir)
+                    # unpack all restorations paths (mridc checkpoints)
+                    # in mridc checkpoints all resources contain hash in name, so there should be no collisions
+                    for path in restoration_paths:
+                        self._unpack_mridc_file(path2file=path, out_folder=archive_dir)
                     os.chdir(archive_dir)
                     for conf_path, artiitem in tarfile_artifacts:
                         # Get basename and copy it to mridc_file_folder
@@ -420,13 +466,30 @@ class SaveRestoreConnector:
                         shutil.copy2(artifact_base_name, os.path.join(mridc_file_folder, artifact_uniq_name))
 
                         # Update artifacts registry
-                        new_artiitem = mridc.utils.model_utils.ArtifactItem()
-                        new_artiitem.path = f"mridc:{artifact_uniq_name}"
-                        new_artiitem.path_type = mridc.utils.model_utils.ArtifactPathType.TAR_PATH
+                        new_artiitem = model_utils.ArtifactItem()
+                        new_artiitem.path = "mridc:" + artifact_uniq_name
+                        new_artiitem.path_type = model_utils.ArtifactPathType.TAR_PATH
                         model.artifacts[conf_path] = new_artiitem
             finally:
                 # change back working directory
                 os.chdir(cwd)
+
+    @staticmethod
+    def _update_subconfigs(model: "mridc_classes.ModelPT", path2yaml_file):  # type: ignore
+        """
+        Update subconfigs of the model if ModelPT has submodules. Should be called before updating artifacts paths.
+        """
+        if not model.has_mridc_submodules():
+            # no submodules => nothing to update
+            return
+        conf = OmegaConf.load(path2yaml_file)
+        # update subconfigs for all children recursively, parent configs updated before children
+        for _, conf_path, submodule in model.named_mridc_modules():
+            if not conf_path:  # self
+                continue
+            OmegaConf.update(conf, conf_path, submodule.cfg)
+        with open(path2yaml_file, "w", encoding="utf-8") as fout:
+            OmegaConf.save(config=conf, f=fout, resolve=True)
 
     @staticmethod
     def _update_artifact_paths(model, path2yaml_file):
@@ -434,7 +497,7 @@ class SaveRestoreConnector:
         This method is called by ModelPT.save_to() and ModelPT.load_from() to update the artifact paths in the
         model.
         """
-        if model.artifacts is not None and len(model.artifacts) > 0:
+        if hasattr(model, "artifacts") and model.artifacts is not None and len(model.artifacts) > 0:
             conf = OmegaConf.load(path2yaml_file)
             for conf_path, item in model.artifacts.items():
                 if item.hashed_path is None:
@@ -451,7 +514,7 @@ class SaveRestoreConnector:
         into the checkpoint file name.
         """
         model_weights = os.path.join(dirname, basename)
-        model_weights = mridc.utils.model_utils.inject_model_parallel_rank(model_weights)
+        model_weights = model_utils.inject_model_parallel_rank(model_weights)
         return model_weights
 
     @staticmethod

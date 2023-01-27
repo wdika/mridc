@@ -2,16 +2,19 @@
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/utils/exp_manager.py
+
+import glob
 import os
 import re
 import subprocess
 import sys
 import time
+import warnings
 from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 from shutil import copy, move
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import pytorch_lightning
 import torch
@@ -21,15 +24,17 @@ from omegaconf import DictConfig, OmegaConf, open_dict
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from pytorch_lightning.callbacks.timer import Timer
-from pytorch_lightning.loggers import LoggerCollection as _LoggerCollection
 from pytorch_lightning.loggers import TensorBoardLogger, WandbLogger
 from pytorch_lightning.loops import TrainingEpochLoop
 from pytorch_lightning.strategies.ddp import DDPStrategy
+from pytorch_lightning.utilities import rank_zero_info
 
 import mridc.utils
-from mridc.constants import MRIDC_ENV_VARNAME_VERSION
+from mridc.collections.common.callbacks import EMA
+from mridc.constants import MRIDC_ENV_VARNAME_TESTING, MRIDC_ENV_VARNAME_VERSION
 from mridc.utils import logging, timers
 from mridc.utils.app_state import AppState
+from mridc.utils.env_var_parsing import get_envbool
 from mridc.utils.exceptions import MRIDCBaseException
 from mridc.utils.get_rank import is_global_rank_zero
 from mridc.utils.lightning_logger_patch import add_filehandlers_to_pl_logger
@@ -93,6 +98,15 @@ class StepTimingParams:
 
 
 @dataclass
+class EMAParams:
+    enable: Optional[bool] = False
+    decay: Optional[float] = 0.999
+    cpu_offload: Optional[bool] = False
+    validate_original_weights: Optional[bool] = False
+    every_n_steps: int = 1
+
+
+@dataclass
 class ExpManagerConfig:
     """Configuration for the experiment manager."""
 
@@ -123,6 +137,8 @@ class ExpManagerConfig:
     log_global_rank_0_only: Optional[bool] = False
     # disable initial validation when resuming from a checkpoint saved during validation
     disable_validation_on_resume: Optional[bool] = True
+    ema: Optional[EMAParams] = EMAParams()
+    max_time_per_run: Optional[str] = None
 
 
 class TimingCallback(Callback):
@@ -238,6 +254,9 @@ def exp_manager(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None)
         True if you are using DDP with many GPUs and do not want many log files in your exp dir.
         - log_global_rank_0_only: Whether to only create log files for global rank 0. Defaults to False. Set this to \
         True if you are using DDP with many GPUs and do not want many log files in your exp dir.
+        - max_time (str): The maximum wall clock time *per run*. This is intended to be used on clusters where you want
+        a checkpoint to be saved after this specified time and be able to resume from that checkpoint.
+        Defaults to None.
 
     Returns
     -------
@@ -280,12 +299,23 @@ def exp_manager(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None)
     )
 
     if cfg.resume_if_exists:
-        check_resume(trainer, str(log_dir), cfg.resume_past_end, cfg.resume_ignore_no_checkpoint)
+        # Check for existing checkpoints in `dirpath` if it's specified, use <log_dir>/checkpoints otherwise
+        if cfg.checkpoint_callback_params.dirpath:
+            check_resume(
+                trainer,
+                str(log_dir),
+                cfg.resume_past_end,
+                cfg.resume_ignore_no_checkpoint,
+                cfg.checkpoint_callback_params.dirpath,
+            )
+        else:
+            check_resume(trainer, str(log_dir), cfg.resume_past_end, cfg.resume_ignore_no_checkpoint)
 
     checkpoint_name = name
     # If name returned from get_log_dir is "", use cfg.name for checkpointing
     if checkpoint_name is None or checkpoint_name == "":
         checkpoint_name = cfg.name or "default"
+
     cfg.name = name  # Used for configure_loggers so that the log_dir is properly set even if name is ""
     cfg.version = version
 
@@ -307,11 +337,24 @@ def exp_manager(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None)
 
     if cfg.log_local_rank_0_only is True and cfg.log_global_rank_0_only is True:
         raise ValueError(
-            "Cannot set both log_local_rank_0_only and log_global_rank_0_only to True."
+            "Cannot set both log_local_rank_0_only and log_global_rank_0_only to True. "
             "Please set either one or neither."
         )
 
+    # This is set if the env var MRIDC_TESTING is set to True.
+    mridc_testing = get_envbool(MRIDC_ENV_VARNAME_TESTING, False)
+
+    # Handle logging to file
     log_file = log_dir / f"mridc_log_globalrank-{global_rank}_localrank-{local_rank}.txt"
+    if cfg.log_local_rank_0_only is True and not mridc_testing:
+        if local_rank == 0:
+            logging.add_file_handler(log_file)
+    elif cfg.log_global_rank_0_only is True and not mridc_testing:
+        if global_rank == 0:
+            logging.add_file_handler(log_file)
+    else:
+        # Logs on all ranks.
+        logging.add_file_handler(log_file)
 
     logging.add_file_handler(log_file)
     # For some reason, LearningRateLogger requires trainer to have a logger. Safer to create logger on all ranks
@@ -333,10 +376,45 @@ def exp_manager(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None)
         timing_callback = TimingCallback(timer_kwargs=cfg.step_timing_kwargs or {})
         trainer.callbacks.insert(0, timing_callback)
 
+    if cfg.ema.enable:
+        ema_callback = EMA(
+            decay=cfg.ema.decay,
+            validate_original_weights=cfg.ema.validate_original_weights,
+            cpu_offload=cfg.ema.cpu_offload,
+            every_n_steps=cfg.ema.every_n_steps,
+        )
+        trainer.callbacks.append(ema_callback)
+
     if cfg.create_checkpoint_callback:
         configure_checkpointing(
             trainer, log_dir, checkpoint_name, cfg.resume_if_exists, cfg.checkpoint_callback_params
         )
+
+    if cfg.disable_validation_on_resume:
+        # extend training loop to skip initial validation when resuming from checkpoint
+        configure_no_restart_validation_training_loop(trainer)
+
+    # Setup a stateless timer for use on clusters.
+    if cfg.max_time_per_run is not None:
+        found_ptl_timer = False
+        for idx, callback in enumerate(trainer.callbacks):
+            if isinstance(callback, Timer):
+                # NOTE: PTL does not expose a `trainer.max_time`. By the time we are in this function, PTL has already
+                # setup a timer if the user specifies `trainer.max_time` so best we can do is replace that.
+                # Working: If only `trainer.max_time` is set - it behaves as a normal PTL timer.
+                # If only `exp_manager.max_time_per_run` is set - it behaves as a StateLessTimer.
+                # If both are set, it also behaves as a StateLessTimer.
+                logging.warning(
+                    "Found a PTL Timer callback, replacing with a StatelessTimer callback. "
+                    "This will happen if you set trainer.max_time as well as exp_manager.max_time_per_run."
+                )
+                trainer.callbacks[idx] = StatelessTimer(cfg.max_time_per_run)
+                found_ptl_timer = True
+                break
+
+        if not found_ptl_timer:
+            trainer.max_time = cfg.max_time_per_run
+            trainer.callbacks.append(StatelessTimer(cfg.max_time_per_run))
 
     if is_global_rank_zero():
         # Move files_to_copy to folder and add git information if present
@@ -368,7 +446,7 @@ def error_checks(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None
     """
     Checks that the passed trainer is compliant with MRIDC and exp_manager's passed configuration. Checks that:
         - Throws error when hydra has changed the working directory. This causes issues with lightning's DDP
-        - Throws error when trainer has loggers defined but create_tensorboard_logger or create_WandB_logger is True
+        - Throws error when trainer has loggers defined but create_tensorboard_logger or create_wandB_logger is True
         - Prints error messages when 1) run on multi-node and not Slurm, and 2) run on multi-gpu without DDP
     """
     if HydraConfig.initialized() and get_original_cwd() != os.getcwd():
@@ -380,8 +458,8 @@ def error_checks(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None
     if trainer.logger is not None and (cfg.create_tensorboard_logger or cfg.create_wandb_logger):  # type: ignore
         raise LoggerMisconfigurationError(
             "The pytorch lightning trainer that was passed to exp_manager contained a logger, and either "
-            "create_tensorboard_logger or create_wandb_logger was set to True. These can only be used if trainer does "
-            "not already have a logger."
+            f"create_tensorboard_logger: {cfg.create_tensorboard_logger} or create_wandb_logger: "  # type: ignore
+            f"was set to True. These can only be used if trainer does not already have a logger."
         )
 
     if trainer.num_nodes > 1 and not check_slurm(trainer):  # type: ignore
@@ -403,6 +481,7 @@ def check_resume(
     log_dir: str,
     resume_past_end: bool = False,
     resume_ignore_no_checkpoint: bool = False,
+    dirpath: str = None,
 ):
     """
     Checks that resume=True was used correctly with the arguments pass to exp_manager. Sets
@@ -414,16 +493,18 @@ def check_resume(
     log_dir: The directory where the logs are being saved.
     resume_past_end: Whether to resume from the end of the experiment.
     resume_ignore_no_checkpoint: Whether to ignore if there is no checkpoint to resume from.
+    dirpath: The directory to resume from. If None, will resume from the latest checkpoint.
 
     Returns
     -------
     NotFoundError: If resume is True, resume_ignore_no_checkpoint is False, and checkpoints could not be found.
-    ValueError: If resume is True, and there were more than 1 checkpoint could found.
+    ValueError: If resume is True, and there were more than 1 checkpoint could be found.
     """
     if not log_dir:
         raise ValueError(f"Resuming requires the log_dir {log_dir} to be passed to exp_manager")
 
-    checkpoint_dir = Path(Path(log_dir) / "checkpoints")
+    # Use <log_dir>/checkpoints/ unless `dirpath` is set
+    checkpoint_dir = Path(dirpath) if dirpath else Path(Path(log_dir) / "checkpoints")
 
     checkpoint = None
     end_checkpoints = list(checkpoint_dir.rglob("*end.ckpt"))
@@ -618,25 +699,6 @@ def get_git_diff():
         return f'{err.output.decode("utf-8")}\n'
 
 
-class LoggerList(_LoggerCollection):
-    """A thin wrapper on Lightning's LoggerCollection such that name and version are better aligned with exp_manager"""
-
-    def __init__(self, _logger_iterable, mridc_name=None, mridc_version=""):
-        super().__init__(_logger_iterable)
-        self._mridc_name = mridc_name
-        self._mridc_version = mridc_version
-
-    @property
-    def name(self) -> str:
-        """The name of the experiment."""
-        return self._mridc_name
-
-    @property
-    def version(self) -> str:
-        """The version of the experiment. If the logger was created with a version, this will be the version."""
-        return self._mridc_version
-
-
 def configure_loggers(
     trainer: Trainer,
     exp_dir: List[Union[Path, str]],
@@ -648,8 +710,8 @@ def configure_loggers(
     wandb_kwargs: dict,
 ):
     """
-    Creates TensorboardLogger and/or WandBLogger and attach them to trainer. Raises ValueError if summary_writer_kwargs
-    or wandb_kwargs are miss configured.
+    Creates TensorboardLogger and/or WandBLogger and attach them to trainer.
+    Raises ValueError if summary_writer_kwargs or wandb_kwargs are miss configured.
 
     Parameters
     ----------
@@ -687,17 +749,11 @@ def configure_loggers(
             wandb_kwargs = {}
         if "name" not in wandb_kwargs and "project" not in wandb_kwargs:
             raise ValueError("name and project are required for wandb_logger")
-        # if wandb_kwargs.get("save_dir", None) is None:
-        #     wandb_kwargs["save_dir"] = str(exp_dir[0])
-        #     os.makedirs(wandb_kwargs["save_dir"], exist_ok=True)
         wandb_logger = WandbLogger(save_dir=str(exp_dir[0]), version=version, **wandb_kwargs)
 
         logger_list.append(wandb_logger)
         logging.info("WandBLogger has been set up")
 
-    logger_list = (
-        LoggerList(logger_list, mridc_name=name, mridc_version=version) if len(logger_list) > 1 else logger_list[0]
-    )
     trainer._logger_connector.configure_logger(logger_list)
 
 
@@ -706,12 +762,12 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
 
     def __init__(
         self,
-        always_save_mridc=False,
-        save_mridc_on_train_end=True,
-        save_best_model=False,
-        postfix=".mridc",
-        n_resume=False,
-        model_parallel_size=None,
+        always_save_mridc: bool = False,
+        save_mridc_on_train_end: bool = True,
+        save_best_model: bool = False,
+        postfix: str = ".mridc",
+        n_resume: bool = False,
+        model_parallel_size: int = None,
         **kwargs,
     ):
         """
@@ -759,7 +815,7 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
         self.best_model_score = None
         self.best_model_path = ""
 
-        checkpoints = list(Path(self.dirpath).rglob("*.ckpt"))
+        checkpoints = list(path for path in self._saved_checkpoint_paths if not self._is_ema_filepath(path))
         for checkpoint in checkpoints:
             if "mp_rank" in str(checkpoint) or "tp_rank" in str(checkpoint):
                 checkpoint = mridc.utils.model_utils.uninject_model_parallel_rank(checkpoint)
@@ -787,10 +843,16 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
         else:
             models_to_delete = len(best_k_models) - self.save_top_k
         logging.debug(f"Number of models to delete: {models_to_delete}")
+
+        # If EMA enabled, delete the additional EMA weights
+        ema_enabled = self._has_ema_ckpts(self._saved_checkpoint_paths)
+
         for _ in range(models_to_delete):
             model = best_k_models.pop(-1)
             self.best_k_models.pop(model)
             self._del_model_without_trainer(model)
+            if ema_enabled and self._fs.exists(self._ema_format_filepath(model)):
+                self._del_model_without_trainer(self._ema_format_filepath(model))
             logging.debug(f"Removed checkpoint: {model}")
 
         self.kth_best_model_path = best_k_models[-1]
@@ -905,6 +967,56 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
             except FileNotFoundError:
                 logging.info(f"Tried to remove checkpoint: {filepath} but failed.")
 
+    def _ema_callback(self, trainer: "pytorch_lightning.Trainer") -> Optional[EMA]:
+        """Get the EMA callback from the trainer."""
+        ema_callback = None
+        for callback in trainer.callbacks:
+            if isinstance(callback, EMA):
+                ema_callback = callback
+        return ema_callback
+
+    def _save_checkpoint(self, trainer: "pytorch_lightning.Trainer", filepath: str) -> None:
+        """Save the checkpoint and the EMA copy of the model."""
+        ema_callback = self._ema_callback(trainer)
+        if ema_callback is not None:
+            with ema_callback.save_original_optimizer_state(trainer):
+                super()._save_checkpoint(trainer, filepath)
+
+            # save EMA copy of the model as well.
+            with ema_callback.save_ema_model(trainer):
+                filepath = self._ema_format_filepath(filepath)
+                if self.verbose:
+                    rank_zero_info(f"Saving EMA weights to separate checkpoint {filepath}")
+                super()._save_checkpoint(trainer, filepath)
+        else:
+            super()._save_checkpoint(trainer, filepath)
+
+    def _remove_checkpoint(self, trainer: "pytorch_lightning.Trainer", filepath: str) -> None:
+        """Remove the checkpoint and the EMA copy of the model."""
+        super()._remove_checkpoint(trainer, filepath)
+        ema_callback = self._ema_callback(trainer)
+        if ema_callback is not None:
+            # remove EMA copy of the state dict as well.
+            filepath = self._ema_format_filepath(filepath)
+            super()._remove_checkpoint(trainer, filepath)
+
+    def _ema_format_filepath(self, filepath: str) -> str:
+        """Format the filepath to include the EMA suffix."""
+        return filepath.replace(self.FILE_EXTENSION, f"-EMA{self.FILE_EXTENSION}")
+
+    def _has_ema_ckpts(self, checkpoints: Iterable[Path]) -> bool:
+        """Check if any of the checkpoints are EMA checkpoints."""
+        return any(self._is_ema_filepath(checkpoint_path) for checkpoint_path in checkpoints)
+
+    def _is_ema_filepath(self, filepath: Union[Path, str]) -> bool:
+        """Check if the filepath is an EMA checkpoint."""
+        return str(filepath).endswith(f"-EMA{self.FILE_EXTENSION}")
+
+    @property
+    def _saved_checkpoint_paths(self) -> Iterable[Path]:
+        """Get the paths to all saved checkpoints."""
+        return Path(self.dirpath).rglob("*.ckpt")
+
 
 def configure_checkpointing(trainer: Trainer, log_dir: Path, name: str, resume: bool, params: "DictConfig"):
     """Adds ModelCheckpoint to trainer. Raises CheckpointMisconfigurationError if trainer already has a ModelCheckpoint
@@ -953,7 +1065,7 @@ def configure_checkpointing(trainer: Trainer, log_dir: Path, name: str, resume: 
                 f"ModelCheckpoint(monitor='{params.monitor}') not found in the returned metrics. Please ensure that "
                 "validation is run within trainer.max_epochs."
             )
-        elif trainer.max_steps is not None:
+        elif trainer.max_steps is not None and trainer.max_steps != -1:
             logging.warning(
                 "The checkpoint callback was told to monitor a validation value and trainer's max_steps was set to "
                 f"{trainer.max_steps}. Please ensure that max_steps will run for at least "
@@ -998,3 +1110,56 @@ class StatelessTimer(Timer):
 
     def load_state_dict(self, state_dict: Dict[str, Any]) -> None:
         """Loads the state of the timer."""
+
+
+def configure_no_restart_validation_training_loop(trainer: pytorch_lightning.Trainer) -> None:
+    """Configure the training loop to skip validation when resuming from a checkpoint."""
+    if type(trainer.fit_loop.epoch_loop) != TrainingEpochLoop:
+        warnings.warn("Detected custom epoch loop. Skipping no validation on restart support.", UserWarning)
+        return
+    loop = SkipResumeTrainingValidationLoop(trainer.min_steps, trainer.max_steps)
+    loop.trainer = trainer
+    trainer.fit_loop.epoch_loop = loop
+
+
+class SkipResumeTrainingValidationLoop(TrainingEpochLoop):
+    """
+    Extend the PTL Epoch loop to skip validating when resuming. This happens when resuming a checkpoint that has
+    already run validation, but loading restores the training state before validation has run.
+    """
+
+    def _should_check_val_fx(self) -> bool:
+        """Skip validation if we are resuming from a checkpoint and the global step is a multiple of the validation."""
+        if self.restarting and self.global_step % self.trainer.val_check_batch == 0:
+            return False
+        return super()._should_check_val_fx()
+
+
+def clean_exp_ckpt(exp_log_dir: Union[str, Path], remove_ckpt: bool = True, remove_mridc: bool = False):
+    """
+    Helper method that removes Pytorch Lightning .ckpt files or MRIDC .mridc files from the checkpoint directory.
+
+    Parameters
+    ----------
+    exp_log_dir: str or Path
+        Path to the root directory of the current experiment.
+    remove_ckpt: bool, optional
+        Whether to remove all *.ckpt files in the checkpoints directory. Default is True.
+    remove_mridc: bool, optional
+        Whether to remove all *.mridc files in the checkpoints directory. Default is False.
+    """
+    exp_log_dir = str(exp_log_dir)
+
+    if remove_ckpt:
+        logging.info("Deleting *.ckpt files ...")
+        ckpt_files = glob.glob(os.path.join(exp_log_dir, "checkpoints", "*.ckpt"))
+        for filepath in ckpt_files:
+            os.remove(filepath)
+            logging.info(f"Deleted file : {filepath}")
+
+    if remove_mridc:
+        logging.info("Deleting *.mridc files ...")
+        mridc_files = glob.glob(os.path.join(exp_log_dir, "checkpoints", "*.mridc"))
+        for filepath in mridc_files:
+            os.remove(filepath)
+            logging.info(f"Deleted file : {filepath}")

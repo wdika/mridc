@@ -11,12 +11,14 @@ from dataclasses import dataclass, field
 from enum import Enum
 from functools import total_ordering
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/classes/common.py
 import hydra
 import torch
 import wrapt
+from huggingface_hub import HfApi, HfFolder, ModelFilter, hf_hub_download
+from huggingface_hub.hf_api import ModelInfo
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
@@ -26,12 +28,12 @@ from mridc.core.neural_types.comparison import NeuralTypeComparisonResult
 from mridc.core.neural_types.neural_type import NeuralType
 from mridc.utils import logging
 from mridc.utils.cloud import maybe_download_from_cloud
-
-_HAS_HYDRA = True
+from mridc.utils.data_utils import resolve_cache_dir
 
 __all__ = ["Typing", "FileIO", "Model", "PretrainedModelInfo", "Serialization", "is_typecheck_enabled", "typecheck"]
 
 _TYPECHECK_ENABLED = True
+_HAS_HYDRA = True
 
 
 def is_typecheck_enabled():
@@ -39,7 +41,7 @@ def is_typecheck_enabled():
     return _TYPECHECK_ENABLED
 
 
-@dataclass(frozen=True)
+@dataclass
 class TypecheckMetadata:
     """
     Metadata class for input/output neural types.
@@ -252,7 +254,10 @@ class Typing(ABC):
 
         elif len(out_container) > len(out_types_list) or len(out_container) < len(mandatory_out_types_list):
             raise TypeError(
-                f"Number of output arguments provided ({len(out_container)}) is not as expected. It should be larger than {len(out_types_list)} and less than {len(mandatory_out_types_list)}.\nThis can be either because insufficient/extra number of output NeuralTypes were provided,or the provided NeuralTypes {output_types} should enable container support (add '[]' to the NeuralType definition)"
+                f"Number of output arguments provided ({len(out_container)}) is not as expected. It should be larger "
+                f"than {len(out_types_list)} and less than {len(mandatory_out_types_list)}.\nThis can be either "
+                "because insufficient/extra number of output NeuralTypes were provided,or the provided NeuralTypes "
+                f"{output_types} should enable container support (add '[]' to the NeuralType definition)"
             )
 
             # Attach types recursively, if possible
@@ -603,7 +608,7 @@ class Model(Typing, Serialization, FileIO, ABC):  # type: ignore
     """Abstract class offering interface which should be implemented by all mridc models."""
 
     @classmethod
-    def list_available_models(cls) -> Optional[PretrainedModelInfo]:
+    def list_available_models(cls) -> Optional[List[PretrainedModelInfo]]:
         """
         Should list all pre-trained models available.
         Note: There is no check that requires model names and aliases to be unique. In the case of a collision,
@@ -614,6 +619,110 @@ class Model(Typing, Serialization, FileIO, ABC):  # type: ignore
         A list of PretrainedModelInfo entries.
         """
         raise NotImplementedError()
+
+    @classmethod
+    def search_huggingface_models(
+        cls, model_filter: Optional[Union[ModelFilter, List[ModelFilter]]] = None
+    ) -> List[ModelInfo]:
+        """
+        Should list all pre-trained models available via Hugging Face Hub.
+
+        The following metadata can be passed via the `model_filter` for additional results.
+
+        .. metadata::
+            resolve_card_info: Bool flag, if set, returns the model card metadata. Default: False.
+            limit_results: Optional int, limits the number of results returned.
+
+        .. code-block:: python
+
+            # You can replace <DomainSubclass> with any subclass of ModelPT.
+            from mridc.core import ModelPT
+
+            # Get default ModelFilter
+            filt = <DomainSubclass>.get_hf_model_filter()
+
+            # Make any modifications to the filter as necessary
+            filt.language = [...]
+            filt.task = ...
+            filt.tags = [...]
+
+            # Add any metadata to the filter as needed
+            filt.limit_results = 5
+
+            # Obtain model info
+            model_infos = <DomainSubclass>.search_huggingface_models(model_filter=filt)
+
+            # Browse through cards and select an appropriate one
+            card = model_infos[0]
+
+            # Restore model using `modelId` of the card.
+            model = ModelPT.from_pretrained(card.modelId)
+
+        Parameters
+        ----------
+        model_filter: Optional ModelFilter or List[ModelFilter] (from Hugging Face Hub)
+            Filters the returned list of compatible model cards, and selects all results from each filter.
+            Users can then use `model_card.modelId` in `from_pretrained()` to restore a MRIDC Model.
+            If no ModelFilter is provided, uses the classes default filter as defined by `get_hf_model_filter()`.
+
+        Returns
+        -------
+        list
+            A list of ModelInfo entries.
+        """
+        # Resolve model filter if not provided as argument
+        if model_filter is None:
+            model_filter = cls.get_hf_model_filter()
+
+        # If single model filter, wrap into list
+        if not isinstance(model_filter, Iterable):
+            model_filter = [model_filter]
+
+        # Inject `mridc` library filter
+        for mfilter in model_filter:
+            if isinstance(mfilter.library, str) and mfilter.library != "mridc":
+                logging.warning(f"Model filter's `library` tag updated be `mridc`. Original value: {mfilter.library}")
+                mfilter.library = "mridc"
+
+            elif isinstance(mfilter, Iterable) and "mridc" not in mfilter.library:  # type: ignore
+                logging.warning(
+                    "Model filter's `library` list updated to include `mridc`. "
+                    f"Original value: {mfilter.library}"  # type: ignore
+                )
+                mfilter.library = list(mfilter)  # type: ignore
+                mfilter.library.append("mridc")  # type: ignore
+
+        # Check if api token exists, use if it does
+        is_token_available = HfFolder.get_token() is not None
+
+        # Search for all valid models after filtering
+        api = HfApi()
+
+        # Setup extra arguments for model filtering
+        all_results = []  # type: List[ModelInfo]
+
+        for mfilter in model_filter:
+            cardData = None
+            limit = None
+
+            if hasattr(mfilter, "resolve_card_info") and mfilter.resolve_card_info is True:
+                cardData = True
+
+            if hasattr(mfilter, "limit_results") and mfilter.limit_results is not None:
+                limit = mfilter.limit_results
+
+            results = api.list_models(
+                filter=mfilter,
+                use_auth_token=is_token_available,
+                sort="lastModified",
+                direction=-1,
+                cardData=cardData,
+                limit=limit,
+            )  # type: List[ModelInfo]
+
+            all_results.extend(results)
+
+        return all_results
 
     @classmethod
     def get_available_model_names(cls) -> List[str]:
@@ -629,6 +738,30 @@ class Model(Typing, Serialization, FileIO, ABC):  # type: ignore
             if cls.list_available_models() is not None
             else []
         )
+
+    @classmethod
+    def get_hf_model_filter(cls) -> ModelFilter:
+        """
+        Generates a filter for HuggingFace models.
+
+        Additionally, includes default values of some metadata about results returned by the Hub.
+
+        .. metadata::
+            resolve_card_info: Bool flag, if set, returns the model card metadata. Default: False.
+            limit_results: Optional int, limits the number of results returned.
+
+        Returns
+        -------
+        list
+            A Hugging Face Hub ModelFilter object.
+        """
+        model_filter = ModelFilter(library="mridc")
+
+        # Attach some additional info
+        model_filter.resolve_card_info = False
+        model_filter.limit_results = None
+
+        return model_filter
 
     @classmethod
     def from_pretrained(
@@ -666,8 +799,52 @@ class Model(Typing, Serialization, FileIO, ABC):  # type: ignore
         if save_restore_connector is None:
             save_restore_connector = SaveRestoreConnector()
 
+        # Resolve if the pretrained model name is from NGC or other sources
+        # HF Hub source
+        if "/" in model_name:
+            class_, mridc_model_file_in_cache = cls._get_hf_hub_pretrained_model_info(  # type: ignore
+                model_name=model_name, refresh_cache=refresh_cache
+            )
+        else:
+            # NGC source
+            class_, mridc_model_file_in_cache = cls._get_ngc_pretrained_model_info(  # type: ignore
+                model_name=model_name, refresh_cache=refresh_cache
+            )
+
+        instance = class_.restore_from(  # type: ignore
+            restore_path=mridc_model_file_in_cache,
+            override_config_path=override_config_path,
+            map_location=map_location,
+            strict=strict,
+            return_config=return_config,
+            trainer=trainer,
+            save_restore_connector=save_restore_connector,
+        )
+        return instance
+
+    def _get_ngc_pretrained_model_info(cls, model_name: str, refresh_cache: bool = False) -> Tuple[type, str]:
+        """
+        Resolve the NGC model pretrained information given a model name.
+
+        Assumes the model subclass implements the `list_available_models()` inherited method.
+
+        Parameters
+        ----------
+        model_name: str
+            Name of the model. Must be the original name or an alias of the model, without any '/'.
+        refresh_cache: bool
+            Determines whether cache must be refreshed (model is re-downloaded).
+
+        Returns
+        -------
+        A tuple of details describing :
+            -   The resolved class of the model. This requires subclass to implement PretrainedModelInfo.class_.
+                If the class cannot be resolved, default to the class that called this method.
+            -   The path to the MRIDC model (.mridc file) in some cached directory.
+        """
         location_in_the_cloud = None
         description = None
+        class_ = None
         models = cls.list_available_models()
         if models is not None:
             for pretrained_model_info in cls.list_available_models():  # type: ignore
@@ -687,32 +864,69 @@ class Model(Typing, Serialization, FileIO, ABC):  # type: ignore
 
         if location_in_the_cloud is None:
             raise FileNotFoundError(
-                f"Model {model_name} was not found. "
-                "Check cls.list_available_models() for the list of all available models."
+                f"Model {model_name} was not found. Check cls.list_available_models() for the list of all available models."
             )
         filename = location_in_the_cloud.split("/")[-1]
         url = location_in_the_cloud.replace(filename, "")
-        cache_dir = Path.joinpath(mridc.utils.model_utils.resolve_cache_dir(), f"{filename[:-5]}")  # type: ignore
+        cache_dir = Path.joinpath(resolve_cache_dir(), f"{filename[:-5]}")
         # If either description and location in the cloud changes, this will force re-download
-        # of the model.
-        cache_subfolder = hashlib.sha512((location_in_the_cloud + description).encode("utf-8")).hexdigest()
+        cache_subfolder = hashlib.md5((location_in_the_cloud + description).encode("utf-8")).hexdigest()  # type: ignore
         # if file exists on cache_folder/subfolder, it will be re-used, unless refresh_cache is True
         mridc_model_file_in_cache = maybe_download_from_cloud(
             url=url, filename=filename, cache_dir=cache_dir, subfolder=cache_subfolder, refresh_cache=refresh_cache
         )
+
         logging.info("Instantiating model from pre-trained checkpoint")
+
         if class_ is None:
             class_ = cls
 
-        return class_.restore_from(
-            restore_path=mridc_model_file_in_cache,
-            override_config_path=override_config_path,
-            map_location=map_location,
-            strict=strict,
-            return_config=return_config,
-            trainer=trainer,
-            save_restore_connector=save_restore_connector,
+        return class_, mridc_model_file_in_cache  # type: ignore
+
+    def _get_hf_hub_pretrained_model_info(cls, model_name: str, refresh_cache: bool = False) -> Tuple[type, str]:
+        """
+        Resolve the HuggingFace Hub model pretrained information given a model name.
+
+        The model name must be of general syntax ``{source_repo}/{model_name}``.
+
+        .. note:
+            This allows public, externally contributed models to be run freely using MRIDC.
+
+        Parameters
+        ----------
+        model_name: str
+            Name of the model. Must be the original name or an alias of the model, without any '/'.
+        refresh_cache: bool
+            Determines whether cache must be refreshed (model is re-downloaded).
+
+        Returns
+        -------
+        A tuple of details describing :
+            -   The resolved class of the model. Since the source is external to MRIDC, always default to using
+                the calling class. Depend on target class resolution by restore_from() for calling the correct class.
+            -   The path to the MRIDC model (.mridc file) in some cached directory (managed by HF Hub).
+        """
+        # Resolve the model name without origin for filename
+        resolved_model_filename = model_name.split("/")[-1] + ".mridc"
+
+        # Check if api token exists, use if it does
+        is_token_available = HfFolder.get_token() is not None
+
+        # Try to load the model from the Huggingface Hub
+        path = hf_hub_download(
+            repo_id=model_name,
+            filename=resolved_model_filename,
+            library_name="mridc",
+            library_version=mridc.__version__,
+            force_download=refresh_cache,
+            use_auth_token=is_token_available,
         )
+
+        # Cannot pre-resolve the specific class without double instantiation
+        # (first for config, second for model params)
+        # Default to current class, and perform basic class path resolution (handled via restore_from() + target class)
+        class_ = cls
+        return class_, path  # type: ignore
 
 
 class typecheck:

@@ -5,6 +5,7 @@ import os
 import sys
 from dataclasses import dataclass, is_dataclass
 from enum import Enum
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, List, Optional, Set, Tuple, Union
 
@@ -476,6 +477,7 @@ def maybe_update_config_version(cfg: "DictConfig"):
     return cfg
 
 
+@lru_cache(maxsize=1024)
 def import_class_by_path(path: str):
     """Recursive import of class by path string."""
     paths = path.split(".")

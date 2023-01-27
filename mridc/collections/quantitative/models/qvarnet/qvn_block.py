@@ -5,51 +5,53 @@ from typing import List, Optional, Tuple
 
 import torch
 
-import mridc.collections.common.parts.fft as fft
 import mridc.collections.common.parts.utils as utils
-import mridc.collections.quantitative.models.qrim.utils as qrim_utils
+from mridc.collections.common.parts.fft import fft2, ifft2
+from mridc.collections.quantitative.models.base import SignalForwardModel
 
 
 class qVarNetBlock(torch.nn.Module):
     """
-    Implementation of the quantitative End-to-end Variational Network (qVN), as presented in Zhang, C. et al.
+    Implementation of the quantitative End-to-end Variational Network (qVN), as presented in [1].
 
     References
     ----------
+    .. [1] Zhang C, Karkalousos D, Bazin PL, Coolen BF, Vrenken H, Sonke JJ, Forstmann BU, Poot DH, Caan MW. A unified
+        model for reconstruction and R2* mapping of accelerated 7T data using the quantitative recurrent inference
+        machine. NeuroImage. 2022 Dec 1;264:119680.
 
-    ..
-
-        Zhang, C. et al. (2022) ‘A unified model for reconstruction and R2 mapping of accelerated 7T data using \
-        quantitative Recurrent Inference Machine’. In review.
-
+    Parameters
+    ----------
+    model : torch.nn.Module
+        Model to apply soft data consistency.
+    fft_centered : bool, optional
+        Whether to center the fft. Default is ``False``.
+    fft_normalization : str, optional
+        The normalization of the fft. Default is ``backward``.
+    spatial_dims : tuple, optional
+        The spatial dimensions of the data. Default is ``None``.
+    coil_dim : int, optional
+        The dimension of the coils. Default is ``1``.
+    no_dc : bool, optional
+        Whether to not apply the DC component. Default is ``False``.
+    linear_forward_model : torch.nn.Module, optional
+        Linear forward model. Default is ``None``.
     """
 
     def __init__(
         self,
         model: torch.nn.Module,
-        fft_centered: bool = True,
-        fft_normalization: str = "ortho",
+        fft_centered: bool = False,
+        fft_normalization: str = "backward",
         spatial_dims: Optional[Tuple[int, int]] = None,
         coil_dim: int = 1,
         no_dc: bool = False,
         linear_forward_model=None,
     ):
-        """
-        Initialize the model block.
-
-        Parameters
-        ----------
-        model: Model to apply soft data consistency.
-        fft_centered: Whether to center the fft.
-        fft_normalization: The normalization of the fft.
-        spatial_dims: The spatial dimensions of the data.
-        coil_dim: The dimension of the coil dimension.
-        no_dc: Whether to remove the DC component.
-        """
         super().__init__()
 
         self.linear_forward_model = (
-            qrim_utils.SignalForwardModel(sequence="MEGRE") if linear_forward_model is None else linear_forward_model
+            SignalForwardModel(sequence="MEGRE") if linear_forward_model is None else linear_forward_model
         )
 
         self.model = model
@@ -62,18 +64,21 @@ class qVarNetBlock(torch.nn.Module):
 
     def sens_expand(self, x: torch.Tensor, sens_maps: torch.Tensor) -> torch.Tensor:
         """
-        Expand the sensitivity maps to the same size as the input.
+        Combines the sensitivity maps with coil-combined data to get multicoil data.
 
         Parameters
         ----------
-        x: Input data.
-        sens_maps: Coil Sensitivity maps.
+        x : torch.Tensor
+            Input data.
+        sens_maps : torch.Tensor
+            Coil Sensitivity maps.
 
         Returns
         -------
-        SENSE reconstruction expanded to the same size as the input sens_maps.
+        torch.Tensor
+            Expanded multicoil data.
         """
-        return fft.fft2(
+        return fft2(
             utils.complex_mul(x, sens_maps),
             centered=self.fft_centered,
             normalization=self.fft_normalization,
@@ -82,25 +87,25 @@ class qVarNetBlock(torch.nn.Module):
 
     def sens_reduce(self, x: torch.Tensor, sens_maps: torch.Tensor) -> torch.Tensor:
         """
-        Reduce the sensitivity maps.
+        Combines the sensitivity maps with multicoil data to get coil-combined data.
 
         Parameters
         ----------
-        x: Input data.
-        sens_maps: Coil Sensitivity maps.
+        x : torch.Tensor
+            Input data.
+        sens_maps : torch.Tensor
+            Coil Sensitivity maps.
 
         Returns
         -------
-        SENSE coil-combined reconstruction.
+        torch.Tensor
+            SENSE coil-combined reconstruction.
         """
-        x = fft.ifft2(
-            x, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
-        )
+        x = ifft2(x, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims)
         return utils.complex_mul(x, utils.complex_conj(sens_maps)).sum(dim=self.coil_dim)
 
     def forward(
         self,
-        prediction: torch.Tensor,
         masked_kspace: torch.Tensor,
         R2star_map_init: torch.Tensor,
         S0_map_init: torch.Tensor,
@@ -109,38 +114,41 @@ class qVarNetBlock(torch.nn.Module):
         TEs: List,
         sensitivity_maps: torch.Tensor,
         sampling_mask: torch.Tensor,
+        prediction: torch.Tensor = None,
         gamma: torch.Tensor = None,
     ) -> torch.Tensor:
         """
-
         Parameters
         ----------
-        prediction: Initial prediction of the subsampled k-space.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        masked_kspace: Data.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        R2star_map_init: Initial R2* map.
-            torch.Tensor, shape [batch_size, n_echoes, n_coils, n_x, n_y]
-        S0_map_init: Initial S0 map.
-            torch.Tensor, shape [batch_size, n_echoes, n_coils, n_x, n_y]
-        B0_map_init: Initial B0 map.
-            torch.Tensor, shape [batch_size, n_echoes, n_coils, n_x, n_y]
-        phi_map_init: Initial phi map.
-            torch.Tensor, shape [batch_size, n_echoes, n_coils, n_x, n_y]
-        TEs: List of echo times.
-            List of int, shape [batch_size, n_echoes]
-        sensitivity_maps: Coil sensitivity maps.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        sampling_mask: Mask of the sampling.
-            torch.Tensor, shape [batch_size, 1, n_x, n_y, 2]
-        gamma: Scaling normalization factor.
-            torch.Tensor, shape [batch_size, 1, 1, 1, 1]
+        masked_kspace : torch.Tensor
+            Subsampled k-space of shape [batch_size, n_coils, n_x, n_y, 2].
+        R2star_map_init : torch.Tensor
+            Initial R2* map of shape [batch_size, n_echoes, n_coils, n_x, n_y].
+        S0_map_init : torch.Tensor
+            Initial S0 map of shape [batch_size, n_echoes, n_coils, n_x, n_y].
+        B0_map_init : torch.Tensor
+            Initial B0 map of shape [batch_size, n_echoes, n_coils, n_x, n_y].
+        phi_map_init : torch.Tensor
+            Initial phi map of shape [batch_size, n_echoes, n_coils, n_x, n_y].
+        TEs : List
+            Echo times.
+        sensitivity_maps : torch.Tensor
+            Coil sensitivity maps of shape [batch_size, n_coils, n_x, n_y, 2].
+        sampling_mask : torch.Tensor
+            Sampling mask of shape [batch_size, n_coils, n_x, n_y].
+        prediction : torch.Tensor, optional
+            Initial prediction of the quantitative maps. If None, it will be initialized with the initial maps.
+            Default is ``None``.
+        gamma : torch.Tensor, optional
+            Scaling normalization factor of shape [batch_size, 1, 1, 1, 1].
 
         Returns
         -------
-        Reconstructed image.
+        torch.Tensor
+            Reconstructed image of shape [batch_size, n_coils, n_x, n_y, 2].
         """
-        init_eta = torch.stack([R2star_map_init, S0_map_init, B0_map_init, phi_map_init], dim=1)
+        if prediction is None:
+            prediction = torch.stack([R2star_map_init, S0_map_init, B0_map_init, phi_map_init], dim=1)
 
         R2star_map_init = (R2star_map_init * gamma[0]).unsqueeze(0)  # type: ignore
         S0_map_init = (S0_map_init * gamma[1]).unsqueeze(0)  # type: ignore
@@ -152,9 +160,9 @@ class qVarNetBlock(torch.nn.Module):
         soft_dc = (pred_kspace - masked_kspace) * sampling_mask * self.dc_weight
         init_pred = self.sens_reduce(soft_dc, sensitivity_maps.unsqueeze(self.coil_dim - 1)).to(masked_kspace)
 
-        eta = torch.view_as_real(init_eta + torch.view_as_complex(self.model(init_pred.to(masked_kspace))))
-        eta_tmp = eta[:, 0, ...]
-        eta_tmp[eta_tmp < 0] = 0
-        eta[:, 0, ...] = eta_tmp
+        prediction = torch.view_as_real(prediction + torch.view_as_complex(self.model(init_pred.to(masked_kspace))))
+        prediction_tmp = prediction[:, 0, ...]
+        prediction_tmp[prediction_tmp < 0] = 0
+        prediction[:, 0, ...] = prediction_tmp
 
-        return eta
+        return prediction

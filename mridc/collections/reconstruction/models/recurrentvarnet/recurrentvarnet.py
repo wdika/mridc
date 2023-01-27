@@ -2,7 +2,6 @@
 __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NKI-AI/direct/blob/main/direct/nn/recurrentvarnet/recurrentvarnet.py
-# Copyright (c) DIRECT Contributors
 
 from typing import Optional, Tuple, Union
 
@@ -18,19 +17,29 @@ import mridc.collections.reconstruction.models.recurrentvarnet.conv2gru as conv2
 
 class RecurrentInit(nn.Module):
     """
-    Recurrent State Initializer (RSI) module of Recurrent Variational Network as presented in Yiasemis, George, et al.
-    The RSI module learns to initialize the recurrent hidden state :math:`h_0`, input of the first
-    RecurrentVarNetBlock of the RecurrentVarNet.
+    Recurrent State Initializer (RSI) module of Recurrent Variational Network as presented in [1].
 
     References
     ----------
-
-    ..
-
-        Yiasemis, George, et al. “Recurrent Variational Network: A Deep Learning Inverse Problem Solver Applied to \
-        the Task of Accelerated MRI Reconstruction.” ArXiv:2111.09639 [Physics], Nov. 2021. arXiv.org, \
+    .. [1] Yiasemis, George, et al. “Recurrent Variational Network: A Deep Learning Inverse Problem Solver Applied to
+        the Task of Accelerated MRI Reconstruction.” ArXiv:2111.09639 [Physics], Nov. 2021. arXiv.org,
         http://arxiv.org/abs/2111.09639.
 
+    Parameters
+    ----------
+    in_channels : int
+        Input channels.
+    out_channels : int
+        Number of hidden channels of the recurrent unit of RecurrentVarNet Block.
+    channels : Tuple[int, ...]
+        Channels :math:`n_d` in the convolutional layers of initializer.
+    dilations : Tuple[int, ...]
+        Dilations :math:`p` of the convolutional layers of the initializer.
+    depth : int, optional
+        RecurrentVarNet Block number of layers :math:`n_l`. Default is ``2``.
+    multiscale_depth : int, optional
+        Number of feature layers to aggregate for the output, if 1, multi-scale context aggregation is disabled.
+        Default is ``1``.
     """
 
     def __init__(
@@ -42,25 +51,6 @@ class RecurrentInit(nn.Module):
         depth: int = 2,
         multiscale_depth: int = 1,
     ):
-        """
-        Inits RecurrentInit.
-
-        Parameters
-        ----------
-        in_channels: Input channels.
-            int
-        out_channels: Number of hidden channels of the recurrent unit of RecurrentVarNet Block.
-            int
-        channels: Channels :math:`n_d` in the convolutional layers of initializer.
-            Tuple[int, ...]
-        dilations: Dilations :math:`p` of the convolutional layers of the initializer.
-            Tuple[int, ...]
-        depth: RecurrentVarNet Block number of layers :math:`n_l`.
-            int
-        multiscale_depth: Number of feature layers to aggregate for the output, if 1, multi-scale context aggregation
-        is disabled.
-            int
-        """
         super().__init__()
 
         self.conv_blocks = nn.ModuleList()
@@ -86,11 +76,13 @@ class RecurrentInit(nn.Module):
 
         Parameters
         ----------
-        x: Initialization for RecurrentInit.
+        x : torch.Tensor
+            Initialization for RecurrentInit.
 
         Returns
         -------
-        Initial recurrent hidden state from input `x`.
+        torch.Tensor
+            Initial recurrent hidden state from input `x`.
         """
         features = []
         for block in self.conv_blocks:
@@ -108,18 +100,30 @@ class RecurrentInit(nn.Module):
 
 class RecurrentVarNetBlock(nn.Module):
     """
-    Recurrent Variational Network Block :math:`'\'mathcal{H}_{'\'theta_{t}}` as presented in Yiasemis, George, et al.
-
+    Recurrent Variational Network Block :math:`'\'mathcal{H}_{'\'theta_{t}}` as presented in [1].
 
     References
     ----------
-
-    ..
-
-        Yiasemis, George, et al. “Recurrent Variational Network: A Deep Learning Inverse Problem Solver Applied to \
-        the Task of Accelerated MRI Reconstruction.” ArXiv:2111.09639 [Physics], Nov. 2021. arXiv.org, \
+    .. [1] Yiasemis, George, et al. “Recurrent Variational Network: A Deep Learning Inverse Problem Solver Applied to
+        the Task of Accelerated MRI Reconstruction.” ArXiv:2111.09639 [Physics], Nov. 2021. arXiv.org,
         http://arxiv.org/abs/2111.09639.
 
+    Parameters
+    ----------
+    in_channels : int
+        Input channels. Default is ``2`` for complex data.
+    hidden_channels : int
+        Number of hidden channels of the recurrent unit of RecurrentVarNet Block. Default is ``64``.
+    num_layers : int
+        Number of layers of :math:`n_l` recurrent unit. Default is ``4``.
+    fft_centered : bool
+        Whether to center the FFT. Default is ``False``.
+    fft_normalization : str
+        Whether to normalize the FFT. Default is ``"backward"``.
+    spatial_dims : Tuple[int, int], optional
+        Spatial dimensions of the input. Default is ``None``.
+    coil_dim : int
+        Coil dimension of the input. Default is ``1``.
     """
 
     def __init__(
@@ -127,31 +131,11 @@ class RecurrentVarNetBlock(nn.Module):
         in_channels: int = 2,
         hidden_channels: int = 64,
         num_layers: int = 4,
-        fft_centered: bool = True,
-        fft_normalization: str = "ortho",
+        fft_centered: bool = False,
+        fft_normalization: str = "backward",
         spatial_dims: Optional[Tuple[int, int]] = None,
         coil_dim: int = 1,
     ):
-        """
-        Inits RecurrentVarNetBlock.
-
-        Parameters
-        ----------
-        in_channels: Input channel number.
-            int, Default is 2 for complex data.
-        hidden_channels: Hidden channels.
-            int, Default: 64.
-        num_layers: Number of layers of :math:`n_l` recurrent unit.
-            int, Default: 4.
-        fft_centered: Whether to center the FFT.
-            bool, Default: True.
-        fft_normalization: Whether to normalize the FFT.
-            str, Default: "ortho".
-        spatial_dims: Spatial dimensions of the input.
-            Tuple[int, int], Default: None.
-        coil_dim: Number of coils.
-            int, Default: 1.
-        """
         super().__init__()
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
@@ -179,23 +163,23 @@ class RecurrentVarNetBlock(nn.Module):
 
         Parameters
         ----------
-        current_kspace: Current k-space prediction.
-            torch.Tensor, shape [batch_size, n_coil, height, width, 2]
-        masked_kspace: Subsampled k-space.
-            torch.Tensor, shape [batch_size, n_coil, height, width, 2]
-        sampling_mask: Sampling mask.
-            torch.Tensor, shape [batch_size, 1, height, width, 1]
-        sensitivity_map: Coil sensitivities.
-            torch.Tensor, shape [batch_size, n_coil, height, width, 2]
-        hidden_state: ConvGRU hidden state.
-            None or torch.Tensor, shape [batch_size, n_l, height, width, hidden_channels]
+        current_kspace : torch.Tensor
+            Current k-space prediction. Shape [batch_size, n_coil, height, width, 2].
+        masked_kspace : torch.Tensor
+            Subsampled k-space. Shape [batch_size, n_coil, height, width, 2].
+        sampling_mask : torch.Tensor
+            Sampling mask. Shape [batch_size, 1, height, width, 1].
+        sensitivity_map : torch.Tensor
+            Coil sensitivities. Shape [batch_size, n_coil, height, width, 2].
+        hidden_state : Union[None, torch.Tensor]
+            ConvGRU hidden state. Shape [batch_size, n_l, height, width, hidden_channels].
 
         Returns
         -------
-        new_kspace: New k-space prediction.
-            torch.Tensor, shape [batch_size, n_coil, height, width, 2]
-        hidden_state: Next hidden state.
-            list of torch.Tensor, shape [batch_size, hidden_channels, height, width, num_layers]
+        new_kspace : torch.Tensor
+            New k-space prediction. Shape [batch_size, n_coil, height, width, 2].
+        new_hidden_state : list of torch.Tensor
+            New ConvGRU hidden state. Shape [batch_size, n_l, height, width, hidden_channels].
         """
         kspace_error = torch.where(
             sampling_mask == 0,

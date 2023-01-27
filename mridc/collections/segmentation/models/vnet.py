@@ -3,7 +3,7 @@ __author__ = "Dimitrios Karkalousos"
 
 import math
 from abc import ABC
-from typing import Any, List, Tuple
+from typing import List, Tuple
 
 import torch
 from omegaconf import DictConfig, OmegaConf
@@ -16,30 +16,20 @@ import mridc.core.classes.common as common_classes
 __all__ = ["SegmentationVNet"]
 
 
-class SegmentationVNet(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel, ABC):
-    """Implementation of the V-Net as a module."""
+class SegmentationVNet(base_segmentation_models.BaseMRISegmentationModel, ABC):
+    """
+    Implementation of the V-Net for MRI segmentation, as presented in [1].
+
+    References
+    ----------
+    .. [1] Fausto Milletari, Nassir Navab, Seyed-Ahmad Ahmadi. V-Net: Fully Convolutional Neural Networks for
+        Volumetric Medical Image Segmentation, 2016. https://arxiv.org/abs/1606.04797
+    """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
-        # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
-
-        self.use_reconstruction_module = cfg_dict.get("use_reconstruction_module", False)
-
-        self.fft_centered = cfg_dict.get("fft_centered")
-        self.fft_normalization = cfg_dict.get("fft_normalization")
-        self.spatial_dims = cfg_dict.get("spatial_dims")
-        self.coil_dim = cfg_dict.get("coil_dim")
-        self.coil_combination_method = cfg_dict.get("coil_combination_method")
-
-        self.input_channels = cfg_dict.get("segmentation_module_input_channels", 2)
-        if self.input_channels == 0:
-            raise ValueError("Segmentation module input channels cannot be 0.")
-        if self.input_channels > 2:
-            raise ValueError(
-                "Segmentation module input channels must be either 1 or 2. Found: {}".format(self.input_channels)
-            )
 
         self.segmentation_module = vnet_block.VNet(
             in_chans=self.input_channels,
@@ -51,10 +41,6 @@ class SegmentationVNet(base_segmentation_models.BaseMRIJointReconstructionSegmen
 
         self.padding_size = cfg_dict.get("segmentation_module_padding_size", 11)
 
-        self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
-        self.magnitude_input = cfg_dict.get("magnitude_input", True)
-        self.normalize_segmentation_output = cfg_dict.get("normalize_segmentation_output", True)
-
     @common_classes.typecheck()
     def forward(
         self,
@@ -63,28 +49,27 @@ class SegmentationVNet(base_segmentation_models.BaseMRIJointReconstructionSegmen
         mask: torch.Tensor,
         init_reconstruction_pred: torch.Tensor,
         target_reconstruction: torch.Tensor,
-    ) -> Tuple[Any, Any]:
+    ) -> torch.Tensor:
         """
         Forward pass of the network.
 
         Parameters
         ----------
-        y: Data.
-            torch.Tensor, shape [batch_size, n_echoes, n_coils, n_x, n_y, 2]
-        sensitivity_maps: Coil sensitivity maps.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        mask: Sub-sampling mask.
-            torch.Tensor, shape [batch_size, 1, n_x, n_y, 2]
-        init_reconstruction_pred: Initial reconstruction prediction.
-            torch.Tensor, shape [batch_size, 1, n_x, n_y, 2]
-        target_reconstruction: Target reconstruction.
-            torch.Tensor, shape [batch_size, 1, n_x, n_y, 2]
+        y : torch.Tensor
+            Subsampled k-space data. Shape [batch_size, n_coils, n_x, n_y, 2]
+        sensitivity_maps : torch.Tensor
+            Coil sensitivity maps. Shape [batch_size, n_coils, n_x, n_y, 2]
+        mask : torch.Tensor
+            Subsampling mask. Shape [1, 1, n_x, n_y, 1]
+        init_reconstruction_pred : torch.Tensor
+            Initial reconstruction prediction. Shape [batch_size, n_x, n_y, 2]
+        target_reconstruction : torch.Tensor
+            Target reconstruction. Shape [batch_size, n_x, n_y, 2]
 
         Returns
         -------
-        pred_reconstruction: void
-        pred_segmentation: Predicted segmentation.
-            torch.Tensor, shape [batch_size, nr_classes, n_x, n_y]
+        torch.Tensor
+            Predicted segmentation. Shape [batch_size, n_classes, n_x, n_y]
         """
         if self.consecutive_slices > 1:
             batch, slices = init_reconstruction_pred.shape[:2]
@@ -117,7 +102,6 @@ class SegmentationVNet(base_segmentation_models.BaseMRIJointReconstructionSegmen
         init_reconstruction_pred, pad_sizes = self.pad(init_reconstruction_pred)
         pred_segmentation = self.segmentation_module(init_reconstruction_pred)
         pred_segmentation = self.unpad(pred_segmentation, *pad_sizes)
-
         pred_segmentation = torch.abs(pred_segmentation)
 
         if self.normalize_segmentation_output:
@@ -134,7 +118,7 @@ class SegmentationVNet(base_segmentation_models.BaseMRIJointReconstructionSegmen
                 ]
             )
 
-        return torch.empty([]), pred_segmentation
+        return pred_segmentation
 
     def pad(self, x: torch.Tensor) -> Tuple[torch.Tensor, Tuple[List[int], List[int], int, int]]:
         """Pad the input with zeros to make it square."""

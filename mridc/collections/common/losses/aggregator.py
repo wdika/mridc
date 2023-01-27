@@ -21,8 +21,10 @@ class AggregatorLoss(Loss):
 
     Parameters
     ----------
-    num_inputs: number of input losses
-    weights: a list of coefficient for merging losses
+    num_inputs : int
+        Number of losses to be summed.
+    weights : List[float]
+        Weights to be applied to each loss. If None, all losses are weighted equally.
     """
 
     @property
@@ -40,7 +42,6 @@ class AggregatorLoss(Loss):
         self._num_losses = num_inputs
         if weights is not None and len(weights) != num_inputs:
             raise ValueError("Length of weights should be equal to the number of inputs (num_inputs)")
-
         self._weights = weights
 
     @typecheck()

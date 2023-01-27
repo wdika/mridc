@@ -6,8 +6,8 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import OmegaConf
 
+from mridc.collections.common.data.subsample import RandomMaskFunc
 from mridc.collections.common.parts import utils
-from mridc.collections.reconstruction.data.subsample import RandomMaskFunc
 from mridc.collections.segmentation.models.attention_unet import SegmentationAttentionUNet
 from tests.collections.reconstruction.fastmri.conftest import create_input
 
@@ -261,7 +261,7 @@ def test_attention_unet(shape, cfg, center_fractions, accelerations, dimensional
     segmentation_attention_unet = SegmentationAttentionUNet(cfg, trainer=trainer)
 
     with torch.no_grad():
-        _, pred_segmentation = segmentation_attention_unet.forward(
+        pred_segmentation = segmentation_attention_unet.forward(
             output,
             output,
             mask,

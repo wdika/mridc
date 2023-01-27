@@ -11,7 +11,6 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
 import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.rnn_utils as rnn_utils
 import mridc.collections.common.parts.utils as utils
 import mridc.collections.quantitative.models.base as base_quantitative_models
 import mridc.collections.quantitative.models.qrim.qrim_block as qrim_block
@@ -25,16 +24,15 @@ __all__ = ["qCIRIM"]
 
 class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
     """
-    Implementation of the quantitative Recurrent Inference Machines (qRIM), as presented in Zhang, C. et al.
+    Implementation of the quantitative Recurrent Inference Machines (qRIM), as presented in [1].
+
+    Also implements the qCIRIM model, which is a qRIM model with cascades.
 
     References
     ----------
-
-    ..
-
-        Zhang, C. et al. (2022) ‘A unified model for reconstruction and R2 mapping of accelerated 7T data using \
-        quantitative Recurrent Inference Machine’. In review.
-
+    .. [1] Zhang C, Karkalousos D, Bazin PL, Coolen BF, Vrenken H, Sonke JJ, Forstmann BU, Poot DH, Caan MW. A unified
+        model for reconstruction and R2* mapping of accelerated 7T data using the quantitative recurrent inference
+        machine. NeuroImage. 2022 Dec 1;264:119680.
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
@@ -52,11 +50,6 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
         if not quantitative_module_no_dc:
             raise ValueError("qCIRIM does not support explicit DC component.")
 
-        self.fft_centered = cfg_dict.get("fft_centered")
-        self.fft_normalization = cfg_dict.get("fft_normalization")
-        self.spatial_dims = cfg_dict.get("spatial_dims")
-        self.coil_dim = cfg_dict.get("coil_dim")
-        self.coil_combination_method = cfg_dict.get("coil_combination_method")
         self.shift_B0_input = cfg_dict.get("shift_B0_input")
 
         self.cirim = torch.nn.ModuleList([])
@@ -83,7 +76,6 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
                         depth=cfg_dict.get("reconstruction_module_depth"),
                         time_steps=self.reconstruction_module_time_steps,
                         conv_dim=cfg_dict.get("reconstruction_module_conv_dim"),
-                        no_dc=self.reconstruction_module_no_dc,
                         fft_centered=self.fft_centered,
                         fft_normalization=self.fft_normalization,
                         spatial_dims=self.spatial_dims,
@@ -92,17 +84,17 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
                     )
                 )
 
-            # Keep estimation through the cascades if keep_eta is True or re-estimate it if False.
-            self.reconstruction_module_keep_eta = cfg_dict.get("reconstruction_module_keep_eta")
+            # Keep estimation through the cascades if keep_prediction is True or re-estimate it if False.
+            self.reconstruction_module_keep_prediction = cfg_dict.get("reconstruction_module_keep_prediction")
 
             # initialize weights if not using pretrained cirim
             if not cfg_dict.get("pretrained", False):
                 std_init_range = 1 / self.reconstruction_module_recurrent_filters[0] ** 0.5
-                self.cirim.apply(lambda module: rnn_utils.rnn_weights_init(module, std_init_range))
+                self.cirim.apply(lambda module: utils.rnn_weights_init(module, std_init_range))
 
             self.dc_weight = torch.nn.Parameter(torch.ones(1))
-            self.reconstruction_module_accumulate_estimates = cfg_dict.get(
-                "reconstruction_module_accumulate_estimates"
+            self.reconstruction_module_accumulate_predictions = cfg_dict.get(
+                "reconstruction_module_accumulate_predictions"
             )
 
         quantitative_module_num_cascades = cfg_dict.get("quantitative_module_num_cascades")
@@ -121,8 +113,7 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
                     depth=cfg_dict.get("quantitative_module_depth"),
                     time_steps=cfg_dict.get("quantitative_module_time_steps"),
                     conv_dim=cfg_dict.get("quantitative_module_conv_dim"),
-                    no_dc=cfg_dict.get("quantitative_module_no_dc"),
-                    linear_forward_model=qrim_utils.SignalForwardModel(
+                    linear_forward_model=base_quantitative_models.SignalForwardModel(
                         sequence=cfg_dict.get("quantitative_module_signal_forward_model_sequence")
                     ),
                     fft_centered=self.fft_centered,
@@ -136,7 +127,7 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
             ]
         )
 
-        self.accumulate_estimates = cfg_dict.get("quantitative_module_accumulate_estimates")
+        self.accumulate_predictions = cfg_dict.get("quantitative_module_accumulate_predictions")
 
         self.gamma = torch.tensor(cfg_dict.get("quantitative_module_gamma_regularization_factors"))
         self.preprocessor = qrim_utils.RescaleByMax
@@ -159,41 +150,40 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
 
         Parameters
         ----------
-        R2star_map_init: Initial R2* map.
-            torch.Tensor, shape [batch_size, n_x, n_y]
-        S0_map_init: Initial S0 map.
-            torch.Tensor, shape [batch_size, n_x, n_y]
-        B0_map_init: Initial B0 map.
-            torch.Tensor, shape [batch_size, n_x, n_y]
-        phi_map_init: Initial phi map.
-            torch.Tensor, shape [batch_size, n_x, n_y]
-        TEs: List of echo times.
-            List of float, shape [n_echoes]
-        y: Data.
-            torch.Tensor, shape [batch_size, n_echoes, n_coils, n_x, n_y, 2]
-        sensitivity_maps: Coil sensitivity maps.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        mask_brain: Mask of the brain.
-            torch.Tensor, shape [batch_size, 1, n_x, n_y, 2]
-        sampling_mask: Mask of the sampling.
-            torch.Tensor, shape [batch_size, 1, n_x, n_y, 2]
+        R2star_map_init : torch.Tensor
+            Initial R2* map of shape [batch_size, n_x, n_y].
+        S0_map_init : torch.Tensor
+            Initial S0 map of shape [batch_size, n_x, n_y].
+        B0_map_init : torch.Tensor
+            Initial B0 map of shape [batch_size, n_x, n_y].
+        phi_map_init : torch.Tensor
+            Initial phase map of shape [batch_size, n_x, n_y].
+        TEs : List
+            List of echo times.
+        y : torch.Tensor
+            Subsampled k-space data of shape [batch_size, n_echoes, n_coils, n_x, n_y, 2].
+        sensitivity_maps : torch.Tensor
+            Coil sensitivity maps of shape [batch_size, n_coils, n_x, n_y, 2].
+        mask_brain : torch.Tensor
+            Brain mask of shape [batch_size, 1, n_x, n_y, 1].
+        sampling_mask : torch.Tensor
+            Sampling mask of shape [batch_size, 1, n_x, n_y, 1].
 
         Returns
         -------
-        pred: list of list of torch.Tensor, shape [qmaps][batch_size, n_x, n_y, 2],
-                or torch.Tensor, shape [batch_size, n_x, n_y, 2]
-             If self.accumulate_loss is True, returns a list of all intermediate estimates.
+        List of list of torch.Tensor or torch.Tensor
+             If self.accumulate_loss is True, returns a list of all intermediate predictions.
              If False, returns the final estimate.
         """
         if self.use_reconstruction_module:
-            echoes_etas = []
-            cascades_echoes_etas = []
+            echoes_predictions = []
+            cascades_echoes_predictions = []
             sigma = 1.0
             for echo in range(y.shape[1]):
                 prediction = y[:, echo, ...].clone()
                 init_pred = None
                 hx = None
-                cascades_etas = []
+                cascades_predictions = []
                 for i, cascade in enumerate(self.cirim):
                     # Forward pass through the cascades
                     prediction, hx = cascade(
@@ -204,17 +194,17 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
                         init_pred,
                         hx,
                         sigma,
-                        keep_eta=False if i == 0 else self.reconstruction_module_keep_eta,
+                        keep_prediction=False if i == 0 else self.reconstruction_module_keep_prediction,
                     )
-                    cascades_etas.append([torch.view_as_complex(x) for x in prediction])
-                cascades_echoes_etas.append(cascades_etas)
-                echoes_etas.append(cascades_etas[-1][-1])
+                    cascades_predictions.append([torch.view_as_complex(x) for x in prediction])
+                cascades_echoes_predictions.append(cascades_predictions)
+                echoes_predictions.append(cascades_predictions[-1][-1])
 
-            eta = torch.stack(echoes_etas, dim=1)
-            if eta.shape[-1] != 2:
-                eta = torch.view_as_real(eta)
+            prediction = torch.stack(echoes_predictions, dim=1)
+            if prediction.shape[-1] != 2:
+                prediction = torch.view_as_real(prediction)
             y = fft.fft2(
-                utils.complex_mul(eta.unsqueeze(self.coil_dim), sensitivity_maps.unsqueeze(self.coil_dim - 1)),
+                utils.complex_mul(prediction.unsqueeze(self.coil_dim), sensitivity_maps.unsqueeze(self.coil_dim - 1)),
                 self.fft_centered,
                 self.fft_normalization,
                 self.spatial_dims,
@@ -224,9 +214,9 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
             S0_maps_init = []
             B0_maps_init = []
             phi_maps_init = []
-            for batch_idx in range(eta.shape[0]):
-                R2star_map_init, S0_map_init, B0_map_init, phi_map_init = transforms.R2star_B0_real_S0_complex_mapping(
-                    eta[batch_idx],
+            for batch_idx in range(prediction.shape[0]):
+                R2star_map_init, S0_map_init, B0_map_init, phi_map_init = transforms.R2star_B0_S0_phi_mapping(
+                    prediction[batch_idx],
                     TEs,
                     mask_brain,
                     torch.ones_like(mask_brain),
@@ -250,8 +240,7 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
         B0_map_pred = B0_map_init / self.gamma[2]
         phi_map_pred = phi_map_init / self.gamma[3]
 
-        prediction = y.clone()
-        eta = None
+        prediction = None
         hx = None
 
         cascades_R2star_maps = []
@@ -261,7 +250,6 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
         for i, cascade in enumerate(self.qcirim):
             # Forward pass through the cascades
             prediction, hx = cascade(
-                prediction,
                 y,
                 R2star_map_pred,
                 S0_map_pred,
@@ -270,10 +258,9 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
                 TEs,
                 sensitivity_maps,
                 sampling_mask,
-                eta,
+                prediction,
                 hx,
                 self.gamma,
-                keep_eta=i != 0,
             )
             R2star_map_pred, S0_map_pred, B0_map_pred, phi_map_pred = (
                 prediction[-1][:, 0],
@@ -296,7 +283,7 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
             time_steps_phi_maps = []
             for pred in prediction:
                 _R2star_map_pred, _S0_map_pred, _B0_map_pred, _phi_map_pred = self.process_intermediate_pred(
-                    torch.abs(pred), None, None, False
+                    torch.abs(pred)
                 )
                 time_steps_R2star_maps.append(_R2star_map_pred)
                 time_steps_S0_maps.append(_S0_map_pred)
@@ -307,31 +294,35 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
             cascades_B0_maps.append(time_steps_B0_maps)
             cascades_phi_maps.append(time_steps_phi_maps)
 
-        pred = cascades_echoes_etas if self.use_reconstruction_module else torch.empty([])
+            prediction = torch.stack(
+                [
+                    cascades_R2star_maps[-1][-1],
+                    cascades_S0_maps[-1][-1],
+                    cascades_B0_maps[-1][-1],
+                    cascades_phi_maps[-1][-1],
+                ],
+                dim=1,
+            )
+
+        pred = cascades_echoes_predictions if self.use_reconstruction_module else torch.empty([])
 
         yield [pred, cascades_R2star_maps, cascades_S0_maps, cascades_B0_maps, cascades_phi_maps]
 
-    def process_intermediate_pred(self, pred, sensitivity_maps, target, do_coil_combination=False):
+    def process_intermediate_pred(self, x):
         """
         Process the intermediate prediction.
 
         Parameters
         ----------
-        pred: Intermediate prediction.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        sensitivity_maps: Coil sensitivity maps.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        target: Target data to crop to size.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
-        do_coil_combination: Whether to do coil combination.
-            bool, default False
+        x : torch.Tensor
+            Prediction of shape [batch_size, n_coils, n_x, n_y, 2].
 
         Returns
         -------
-        pred: torch.Tensor, shape [batch_size, n_x, n_y, 2]
-            Processed prediction.
+        torch.Tensor
+            Processed prediction of shape [batch_size, n_x, n_y, 2].
         """
-        x = self.preprocessor.reverse(pred, self.gamma)
+        x = self.preprocessor.reverse(x, self.gamma)
         R2star_map_pred, S0_map_pred, B0_map_pred, phi_map_pred = (
             x[:, 0, ...],
             x[:, 1, ...],
@@ -340,112 +331,185 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
         )
         return R2star_map_pred, S0_map_pred, B0_map_pred, phi_map_pred
 
-    def process_quantitative_loss(self, target, pred, mask_brain, map, _loss_fn):
+    def process_quantitative_loss(
+        self,
+        target: torch.Tensor,
+        prediction: Union[list, torch.Tensor],
+        mask_brain: torch.Tensor,
+        quantitative_map: str,
+        loss_func: torch.nn.Module,
+    ) -> torch.Tensor:
         """
-        Processes the loss.
+        Processes the quantitative loss for the qRIM and qCIRIM models.
 
         Parameters
         ----------
-        target: Target data.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
-        pred: Final prediction(s).
-            list of torch.Tensor, shape [batch_size, n_x, n_y, 2], or
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
-        mask_brain: Mask for brain.
-            torch.Tensor, shape [batch_size, n_x, n_y, 1]
-        map: Type of map to regularize the loss.
-            str in {"R2star", "S0", "B0", "phi"}
-        _loss_fn: Loss function.
-            torch.nn.Module, default torch.nn.L1Loss()
+        target : torch.Tensor
+            Target data of shape [batch_size, n_x, n_y, 2].
+        prediction : Union[list, torch.Tensor]
+            Prediction(s) of shape [batch_size, n_x, n_y, 2].
+        mask_brain : torch.Tensor
+            Mask for brain of shape [batch_size, n_x, n_y, 1].
+        quantitative_map : str
+            Type of quantitative map to regularize the loss. Must be one of {"R2star", "S0", "B0", "phi"}.
+        loss_func : torch.nn.Module
+            Loss function. Must be one of {torch.nn.L1Loss(), torch.nn.MSELoss(),
+            mridc.collections.reconstruction.losses.ssim.SSIMLoss()}. Default is ``torch.nn.L1Loss()``.
 
         Returns
         -------
-        loss: torch.FloatTensor, shape [1]
+        loss: torch.FloatTensor
             If self.accumulate_loss is True, returns an accumulative result of all intermediate losses.
+            Otherwise, returns the loss of the last intermediate loss.
         """
-        if "ssim" in str(_loss_fn).lower():
+        if "ssim" in str(loss_func).lower():
 
-            def loss_fn(x, y, m):
-                """Calculate the ssim loss."""
+            def compute_quantitative_loss(x: torch.Tensor, y: torch.Tensor, m: torch.Tensor) -> torch.FloatTensor:
+                """
+                Wrapper for SSIM loss.
+
+                Parameters
+                ----------
+                x : torch.Tensor
+                    Target of shape [batch_size, n_x, n_y, 2].
+                y : torch.Tensor
+                    Prediction of shape [batch_size, n_x, n_y, 2].
+                m : torch.Tensor
+                    Mask of shape [batch_size, n_x, n_y, 1].
+
+                Returns
+                -------
+                loss: torch.FloatTensor
+                    Loss value.
+                """
                 x = x / torch.max(torch.abs(x))
                 y = (y / torch.max(torch.abs(y))).to(x)
                 max_value = torch.max(torch.abs(y)) - torch.min(torch.abs(y)).unsqueeze(dim=0)
                 m = torch.abs(m).to(x)
 
-                loss = _loss_fn(x * m, y * m, data_range=max_value) * self.loss_regularization_factors[map]
+                loss = (
+                    loss_func(x * m, y * m, data_range=max_value) * self.loss_regularization_factors[quantitative_map]
+                )
                 return loss
 
         else:
 
-            def loss_fn(x, y, m):
-                """Calculate other loss."""
+            def compute_quantitative_loss(x: torch.Tensor, y: torch.Tensor, m: torch.Tensor) -> torch.FloatTensor:
+                """
+                Wrapper for any (expect the SSIM) loss.
+
+                Parameters
+                ----------
+                x : torch.Tensor
+                    Target of shape [batch_size, n_x, n_y, 2].
+                y : torch.Tensor
+                    Prediction of shape [batch_size, n_x, n_y, 2].
+                m : torch.Tensor
+                    Mask of shape [batch_size, n_x, n_y, 1].
+
+                Returns
+                -------
+                loss: torch.FloatTensor
+                    Loss value.
+                """
                 x = x / torch.max(torch.abs(x))
                 y = (y / torch.max(torch.abs(y))).to(x)
                 m = torch.abs(m).to(x)
 
-                if "mse" in str(_loss_fn).lower():
+                if "mse" in str(loss_func).lower():
                     x = x.float()
                     y = y.float()
                     m = m.float()
-                return _loss_fn(x * m, y * m) / self.loss_regularization_factors[map]
+                return loss_func(x * m, y * m) / self.loss_regularization_factors[quantitative_map]
 
-        if self.accumulate_estimates:
+        if self.accumulate_predictions:
             cascades_loss = []
-            for cascade_pred in pred:
-                time_steps_loss = [loss_fn(target, time_step_pred, mask_brain) for time_step_pred in cascade_pred]
-                cascades_loss.append(torch.sum(torch.stack(time_steps_loss, dim=0)) / len(pred))
+            for cascade_pred in prediction:
+                time_steps_loss = [
+                    compute_quantitative_loss(target, time_step_pred, mask_brain) for time_step_pred in cascade_pred
+                ]
+                cascades_loss.append(torch.sum(torch.stack(time_steps_loss, dim=0)) / len(prediction))
             yield sum(cascades_loss) / len(self.qcirim)
         else:
-            return loss_fn(target, pred, mask_brain)
+            return compute_quantitative_loss(target, prediction, mask_brain)
 
-    def process_reconstruction_loss(self, target, pred, _loss_fn=None):
+    def process_reconstruction_loss(
+        self,
+        target: torch.Tensor,
+        prediction: Union[list, torch.Tensor],
+        loss_func: torch.nn.Module,
+    ) -> torch.Tensor:
         """
-        Process the loss.
+        Processes the reconstruction loss for the qRIM and qCIRIM models.
 
         Parameters
         ----------
-        target: Target data.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
-        pred: Final prediction(s).
-            list of torch.Tensor, shape [batch_size, n_x, n_y, 2], or
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
-        _loss_fn: Loss function.
-            torch.nn.Module, default torch.nn.L1Loss()
+        target : torch.Tensor
+            Target data of shape [batch_size, n_x, n_y, 2].
+        prediction : Union[list, torch.Tensor]
+            Prediction(s) of shape [batch_size, n_x, n_y, 2].
+        loss_func : torch.nn.Module
+            Loss function. Must be one of {torch.nn.L1Loss(), torch.nn.MSELoss(),
+            mridc.collections.reconstruction.losses.ssim.SSIMLoss()}. Default is ``torch.nn.L1Loss()``.
 
         Returns
         -------
-        loss: torch.FloatTensor, shape [1]
+        loss: torch.FloatTensor
             If self.accumulate_loss is True, returns an accumulative result of all intermediate losses.
+            Otherwise, returns the loss of the last intermediate loss.
         """
         target = torch.abs(target / torch.max(torch.abs(target)))
 
-        if "ssim" in str(_loss_fn).lower():
+        if "ssim" in str(loss_func).lower():
             max_value = np.array(torch.max(torch.abs(target)).item()).astype(np.float32)
 
-            def loss_fn(x, y):
-                """Calculate the ssim loss."""
+            def compute_reconstruction_loss(x, y):
+                """
+                Wrapper for SSIM loss.
+
+                Parameters
+                ----------
+                x : torch.Tensor
+                    Target of shape [batch_size, n_x, n_y, 2].
+                y : torch.Tensor
+                    Prediction of shape [batch_size, n_x, n_y, 2].
+
+                Returns
+                -------
+                loss: torch.FloatTensor
+                    Loss value.
+                """
                 y = torch.abs(y / torch.max(torch.abs(y)))
-                return _loss_fn(
-                    x,
-                    y,
-                    data_range=torch.tensor(max_value).unsqueeze(dim=0).to(x.device),
-                )
+                return loss_func(x, y, data_range=torch.tensor(max_value).unsqueeze(dim=0).to(x.device))
 
         else:
 
-            def loss_fn(x, y):
-                """Calculate other loss."""
-                x = torch.abs(x / torch.max(torch.abs(x)))
-                y = torch.abs(y / torch.max(torch.abs(y)))
-                return _loss_fn(x, y)
+            def compute_reconstruction_loss(x, y):
+                """
+                Wrapper for any (expect the SSIM) loss.
 
-        if self.reconstruction_module_accumulate_estimates:
+                Parameters
+                ----------
+                x : torch.Tensor
+                    Target of shape [batch_size, n_x, n_y, 2].
+                y : torch.Tensor
+                    Prediction of shape [batch_size, n_x, n_y, 2].
+
+                Returns
+                -------
+                loss: torch.FloatTensor
+                    Loss value.
+                """
+                return loss_func(x, y)
+
+        if self.reconstruction_module_accumulate_predictions:
             echoes_loss = []
-            for echo_time, item in enumerate(pred):
+            for echo_time, item in enumerate(prediction):
                 cascades_loss = []
                 for cascade_pred in item:
                     time_steps_loss = [
-                        loss_fn(target[:, echo_time, :, :], time_step_pred).mean() for time_step_pred in cascade_pred
+                        compute_reconstruction_loss(target[:, echo_time, :, :], time_step_pred).mean()
+                        for time_step_pred in cascade_pred
                     ]
                     _loss = [
                         x * torch.logspace(-1, 0, steps=self.reconstruction_module_time_steps).to(time_steps_loss[0])
@@ -453,6 +517,6 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
                     ]
                     cascades_loss.append(sum(sum(_loss) / self.reconstruction_module_time_steps))
                 echoes_loss.append(sum(list(cascades_loss)) / len(self.cirim))
-            yield sum(echoes_loss) / len(pred)
+            yield sum(echoes_loss) / len(prediction)
         else:
-            return loss_fn(target, pred)
+            return compute_reconstruction_loss(target, prediction)

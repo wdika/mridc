@@ -3,6 +3,8 @@ __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from:
 # https://github.com/khammernik/sigmanet/blob/master/reconstruction/common/mytorch/models/sn.py
+# TODO: refactor this file
+
 import numpy as np
 import torch
 

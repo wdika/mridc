@@ -6,8 +6,8 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import OmegaConf
 
+from mridc.collections.common.data.subsample import RandomMaskFunc
 from mridc.collections.common.parts import utils
-from mridc.collections.reconstruction.data.subsample import RandomMaskFunc
 from mridc.collections.segmentation.models.vnet import SegmentationVNet
 from tests.collections.reconstruction.fastmri.conftest import create_input
 
@@ -261,7 +261,7 @@ def test_vnet(shape, cfg, center_fractions, accelerations, dimensionality, segme
     segmentation_vnet = SegmentationVNet(cfg, trainer=trainer)
 
     with torch.no_grad():
-        _, pred_segmentation = segmentation_vnet.forward(
+        pred_segmentation = segmentation_vnet.forward(
             output,
             output,
             mask,

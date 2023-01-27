@@ -6,9 +6,7 @@ from abc import ABC
 import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
-from torch.nn import L1Loss
 
-import mridc.collections.common.losses.ssim as losses
 import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.models.base as base_models
 import mridc.collections.reconstruction.models.conv.conv2d as conv2d
@@ -24,20 +22,15 @@ __all__ = ["XPDNet"]
 
 class XPDNet(base_models.BaseMRIReconstructionModel, ABC):
     """
-    Implementation of the XPDNet, as presented in Ramzi, Zaccharie, et al.
+    Implementation of the XPDNet, as presented in [1].
 
     References
     ----------
-
-    ..
-
-        Ramzi, Zaccharie, et al. “XPDNet for MRI Reconstruction: An Application to the 2020 FastMRI Challenge. \
-        ” ArXiv:2010.07290 [Physics, Stat], July 2021. arXiv.org, http://arxiv.org/abs/2010.07290.
-
+    .. [1] Ramzi, Zaccharie, et al. “XPDNet for MRI Reconstruction: An Application to the 2020 FastMRI Challenge.
+        ArXiv:2010.07290 [Physics, Stat], July 2021. arXiv.org, http://arxiv.org/abs/2010.07290.
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
-        # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
@@ -47,12 +40,12 @@ class XPDNet(base_models.BaseMRIReconstructionModel, ABC):
         num_iter = cfg_dict.get("num_iter")
 
         kspace_model_architecture = cfg_dict.get("kspace_model_architecture")
-        dual_conv_hidden_channels = cfg_dict.get("dual_conv_hidden_channels")
-        dual_conv_num_dubs = cfg_dict.get("dual_conv_num_dubs")
-        dual_conv_batchnorm = cfg_dict.get("dual_conv_batchnorm")
-        dual_didn_hidden_channels = cfg_dict.get("dual_didn_hidden_channels")
-        dual_didn_num_dubs = cfg_dict.get("dual_didn_num_dubs")
-        dual_didn_num_convs_recon = cfg_dict.get("dual_didn_num_convs_recon")
+        dual_conv_hidden_channels = cfg_dict.get("dual_conv_hidden_channels", 64)
+        dual_conv_num_dubs = cfg_dict.get("dual_conv_num_dubs", 2)
+        dual_conv_batchnorm = cfg_dict.get("dual_conv_batchnorm", True)
+        dual_didn_hidden_channels = cfg_dict.get("dual_didn_hidden_channels", 64)
+        dual_didn_num_dubs = cfg_dict.get("dual_didn_num_dubs", 2)
+        dual_didn_num_convs_recon = cfg_dict.get("dual_didn_num_convs_recon", True)
 
         if cfg_dict.get("use_primal_only"):
             kspace_model_list = None
@@ -62,8 +55,8 @@ class XPDNet(base_models.BaseMRIReconstructionModel, ABC):
                 [
                     crossdomain_multicoil.MultiCoil(
                         conv2d.Conv2d(
-                            2 * (num_dual + num_primal + 1),
-                            2 * num_dual,
+                            cfg_dict.get("kspace_in_channels") * (num_dual + num_primal + 1),
+                            cfg_dict.get("kspace_out_channels") * num_dual,
                             dual_conv_hidden_channels,
                             dual_conv_num_dubs,
                             batchnorm=dual_conv_batchnorm,
@@ -77,8 +70,8 @@ class XPDNet(base_models.BaseMRIReconstructionModel, ABC):
                 [
                     crossdomain_multicoil.MultiCoil(
                         didn_.DIDN(
-                            in_channels=2 * (num_dual + num_primal + 1),
-                            out_channels=2 * num_dual,
+                            in_channels=cfg_dict.get("kspace_in_channels") * (num_dual + num_primal + 1),
+                            out_channels=cfg_dict.get("kspace_out_channels") * num_dual,
                             hidden_channels=dual_didn_hidden_channels,
                             num_dubs=dual_didn_num_dubs,
                             num_convs_recon=dual_didn_num_convs_recon,
@@ -94,8 +87,8 @@ class XPDNet(base_models.BaseMRIReconstructionModel, ABC):
                         unet_block.NormUnet(
                             cfg_dict.get("kspace_unet_num_filters"),
                             cfg_dict.get("kspace_unet_num_pool_layers"),
-                            in_chans=2 * (num_dual + num_primal + 1),
-                            out_chans=2 * num_dual,
+                            in_chans=cfg_dict.get("kspace_in_channels") * (num_dual + num_primal + 1),
+                            out_chans=cfg_dict.get("kspace_out_channels") * num_dual,
                             drop_prob=cfg_dict.get("kspace_unet_dropout_probability"),
                             padding_size=cfg_dict.get("kspace_unet_padding_size"),
                             normalize=cfg_dict.get("kspace_unet_normalize"),
@@ -112,17 +105,17 @@ class XPDNet(base_models.BaseMRIReconstructionModel, ABC):
             )
 
         image_model_architecture = cfg_dict.get("image_model_architecture")
-        mwcnn_hidden_channels = cfg_dict.get("mwcnn_hidden_channels")
-        mwcnn_num_scales = cfg_dict.get("mwcnn_num_scales")
-        mwcnn_bias = cfg_dict.get("mwcnn_bias")
-        mwcnn_batchnorm = cfg_dict.get("mwcnn_batchnorm")
+        mwcnn_hidden_channels = cfg_dict.get("mwcnn_hidden_channels", 16)
+        mwcnn_num_scales = cfg_dict.get("mwcnn_num_scales", 2)
+        mwcnn_bias = cfg_dict.get("mwcnn_bias", True)
+        mwcnn_batchnorm = cfg_dict.get("mwcnn_batchnorm", True)
 
         if image_model_architecture == "MWCNN":
             image_model_list = torch.nn.ModuleList(
                 [
                     torch.nn.Sequential(
                         mwcnn_.MWCNN(
-                            input_channels=2 * (num_primal + num_dual),
+                            input_channels=cfg_dict.get("imspace_in_channels") * (num_primal + num_dual),
                             first_conv_hidden_channels=mwcnn_hidden_channels,
                             num_scales=mwcnn_num_scales,
                             bias=mwcnn_bias,
@@ -139,8 +132,8 @@ class XPDNet(base_models.BaseMRIReconstructionModel, ABC):
                     unet_block.NormUnet(
                         cfg_dict.get("imspace_unet_num_filters"),
                         cfg_dict.get("imspace_unet_num_pool_layers"),
-                        in_chans=2 * (num_primal + num_dual),
-                        out_chans=2 * num_primal,
+                        in_chans=cfg_dict.get("imspace_in_channels") * (num_primal + num_dual),
+                        out_chans=cfg_dict.get("imspace_out_channels") * num_primal,
                         drop_prob=cfg_dict.get("imspace_unet_dropout_probability"),
                         padding_size=cfg_dict.get("imspace_unet_padding_size"),
                         normalize=cfg_dict.get("imspace_unet_normalize"),
@@ -151,9 +144,6 @@ class XPDNet(base_models.BaseMRIReconstructionModel, ABC):
         else:
             raise NotImplementedError(f"Image model architecture {image_model_architecture} not found for XPDNet.")
 
-        self.fft_normalization = cfg_dict.get("fft_normalization")
-        self.spatial_dims = cfg_dict.get("spatial_dims")
-        self.coil_dim = cfg_dict.get("coil_dim")
         self.num_cascades = cfg_dict.get("num_cascades")
 
         self.xpdnet = crossdomain.CrossDomainNetwork(
@@ -169,25 +159,6 @@ class XPDNet(base_models.BaseMRIReconstructionModel, ABC):
             coil_dim=self.coil_dim,
         )
 
-        if cfg_dict.get("train_loss_fn") == "ssim":
-            self.train_loss_fn = losses.SSIMLoss()
-        elif cfg_dict.get("train_loss_fn") == "l1":
-            self.train_loss_fn = L1Loss()
-        elif cfg_dict.get("train_loss_fn") == "mse":
-            self.train_loss_fn = torch.nn.MSELoss()
-        else:
-            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("train_loss_fn")))
-        if cfg_dict.get("val_loss_fn") == "ssim":
-            self.val_loss_fn = losses.SSIMLoss()
-        elif cfg_dict.get("val_loss_fn") == "l1":
-            self.val_loss_fn = L1Loss()
-        elif cfg_dict.get("val_loss_fn") == "mse":
-            self.val_loss_fn = torch.nn.MSELoss()
-        else:
-            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("val_loss_fn")))
-
-        self.accumulate_estimates = False
-
     @common_classes.typecheck()
     def forward(
         self,
@@ -202,24 +173,23 @@ class XPDNet(base_models.BaseMRIReconstructionModel, ABC):
 
         Parameters
         ----------
-        y: Subsampled k-space data.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        sensitivity_maps: Coil sensitivity maps.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        mask: Sampling mask.
-            torch.Tensor, shape [1, 1, n_x, n_y, 1]
-        init_pred: Initial prediction.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
-        target: Target data to compute the loss.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        y : torch.Tensor
+            Subsampled k-space data. Shape [batch_size, n_coils, n_x, n_y, 2]
+        sensitivity_maps : torch.Tensor
+            Coil sensitivity maps. Shape [batch_size, n_coils, n_x, n_y, 2]
+        mask : torch.Tensor
+            Subsampling mask. Shape [1, 1, n_x, n_y, 1]
+        init_pred : torch.Tensor
+            Initial prediction. Shape [batch_size, n_x, n_y, 2]
+        target : torch.Tensor
+            Target data to compute the loss. Shape [batch_size, n_x, n_y, 2]
 
         Returns
         -------
-        pred: list of torch.Tensor, shape [batch_size, n_x, n_y, 2], or  torch.Tensor, shape [batch_size, n_x, n_y, 2]
-             If self.accumulate_loss is True, returns a list of all intermediate estimates.
-             If False, returns the final estimate.
+        torch.Tensor
+            Reconstructed image. Shape [batch_size, n_x, n_y, 2]
         """
-        eta = self.xpdnet(y, sensitivity_maps, mask)
-        eta = (eta**2).sqrt().sum(-1)
-        _, eta = utils.center_crop_to_smallest(target, eta)
-        return eta
+        prediction = self.xpdnet(y, sensitivity_maps, mask)
+        prediction = (prediction**2).sqrt().sum(-1)
+        _, prediction = utils.center_crop_to_smallest(target, prediction)
+        return prediction

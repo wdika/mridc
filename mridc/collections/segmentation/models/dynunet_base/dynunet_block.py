@@ -16,23 +16,58 @@ from mridc.collections.segmentation.models.unetr_base.unetr_block import (
     UnetUpBlock,
 )
 
-
 __all__ = ["DynUNet", "DynUnet", "Dynunet"]
 
 
 class DynUNetSkipLayer(nn.Module):
     """
-    Defines a layer in the UNet topology which combines the downsample and upsample pathways with the skip connection.
-    The member `next_layer` may refer to instances of this class or the final bottleneck layer at the bottom the UNet
-    structure. The purpose of using a recursive class like this is to get around the Torchscript restrictions on
-    looping over lists of layers and accumulating lists of output tensors which must be indexed. The `heads` list is
-    shared amongst all the instances of this class and is used to store the output from the supervision heads during
-    forward passes of the network.
+     Implementation of a Dynamic UNet (DynUNet) Skip Layer, based on [1].
+
+     References
+     ----------
+     .. [1] Isensee F, Petersen J, Klein A, Zimmerer D, Jaeger PF, Kohl S, Wasserthal J, Koehler G, Norajitra T, Wirkert
+         S, Maier-Hein KH. nnu-net: Self-adapting framework for u-net-based medical image segmentation. arXiv preprint
+         arXiv:1809.10486. 2018 Sep 27.
+
+     Parameters
+     ----------
+     index : int
+         The index of the layer in the UNet structure.
+     downsample : nn.Module
+         The downsample layer of the skip connection.
+     upsample : nn.Module
+         The upsample layer of the skip connection.
+     next_layer : nn.Module
+         The next layer in the UNet structure.
+     heads : List[torch.Tensor]
+         The list of output tensors from the supervision heads. Default is ``None``.
+    super_head : nn.Module
+        The supervision head for this layer. Default is ``None``.
+
+     .. note::
+         This class is a wrapper of the original DynUNetSkipLayer class from MONAI.
+         See: https://github.com/Project-MONAI/MONAI/blob/dev/monai/networks/nets/dynunet.py
+
+     .. note::
+         Defines a layer in the UNet topology which combines the downsample and upsample pathways with the skip
+         connection. The member `next_layer` may refer to instances of this class or the final bottleneck layer at the
+         bottom the UNet structure. The purpose of using a recursive class like this is to get around the Torchscript
+         restrictions on looping over lists of layers and accumulating lists of output tensors which must be indexed.
+         The `heads` list is shared amongst all the instances of this class and is used to store the output from the
+         supervision heads during forward passes of the network.
     """
 
     heads: Optional[List[torch.Tensor]]
 
-    def __init__(self, index, downsample, upsample, next_layer, heads=None, super_head=None):
+    def __init__(
+        self,
+        index: int,
+        downsample: nn.Module,
+        upsample: nn.Module,
+        next_layer: nn.Module,
+        heads: List[torch.Tensor] = None,
+        super_head: Optional[nn.Module] = None,
+    ):
         super().__init__()
         self.downsample = downsample
         self.next_layer = next_layer
@@ -41,7 +76,8 @@ class DynUNetSkipLayer(nn.Module):
         self.heads = heads
         self.index = index
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the layer."""
         downout = self.downsample(x)
         nextout = self.next_layer(downout)
         upout = self.upsample(nextout, downout)
@@ -53,76 +89,63 @@ class DynUNetSkipLayer(nn.Module):
 
 class DynUNet(nn.Module):
     """
-    This reimplementation of a dynamic UNet (DynUNet) is based on:
-    `Automated Design of Deep Learning Methods for Biomedical Image Segmentation <https://arxiv.org/abs/1904.08128>`_.
-    `nnU-Net: Self-adapting Framework for U-Net-Based Medical Image Segmentation <https://arxiv.org/abs/1809.10486>`_.
-    `Optimized U-Net for Brain Tumor Segmentation <https://arxiv.org/pdf/2110.03352.pdf>`_.
+    Implementation of a Dynamic UNet (DynUNet) Skip Layer, based on [1].
 
-    This model is more flexible compared with ``monai.networks.nets.UNet`` in three
-    places:
+    References
+    ----------
+    .. [1] Isensee F, Petersen J, Klein A, Zimmerer D, Jaeger PF, Kohl S, Wasserthal J, Koehler G, Norajitra T, Wirkert
+        S, Maier-Hein KH. nnu-net: Self-adapting framework for u-net-based medical image segmentation. arXiv preprint
+        arXiv:1809.10486. 2018 Sep 27.
 
-        - Residual connection is supported in conv blocks.
-        - Anisotropic kernel sizes and strides can be used in each layers.
-        - Deep supervision heads can be added.
+    Parameters
+    ----------
+    spatial_dims : int
+        The number of spatial dimensions of the input data.
+    in_channels : int
+        The number of input channels.
+    out_channels : int
+        The number of output channels.
+    kernel_size : Union[int, Sequence[int]]
+        The kernel size for the convolutional layers.
+    strides : Union[int, Sequence[int]]
+        The stride for the convolutional layers.
+    upsample_kernel_size : Union[int, Sequence[int]]
+        Convolution kernel size for transposed convolution layers. The values should equal to strides[1:].
+    filters : Sequence[int]
+        The number of output channels for each block. Different from nnU-Net, in this implementation we add this
+        argument to make the network more flexible. One way to determine this parameter is like:
+        ``[64, 96, 128, 192, 256, 384, 512, 768, 1024][: len(strides)]``. If not specified, the way which nnUNet used
+        will be employed. Defaults to ``None``.
+    dropout : float
+        Dropout ratio. Defaults to no dropout.
+    norm_name : str
+        Feature normalization type and arguments. Defaults to ``INSTANCE``.
+        `INSTANCE_NVFUSER` is a faster version of the instance norm layer, it can be used when:
+        1) `spatial_dims=3`, 2) CUDA device is available, 3) `apex` is installed and 4) non-Windows OS is used.
+    act_name : str
+        Activation layer type and arguments. Defaults to ``leakyrelu``.
+    deep_supervision : bool
+        Whether to add deep supervision head before output. Defaults to ``False``. If ``True``, in training mode, the
+        forward function will output not only the final feature map (from `output_block`), but also the feature maps
+        that come from the intermediate up sample layers. In order to unify the return type (the restriction of
+        TorchScript), all intermediate feature maps are interpolated into the same size as the final feature map and
+        stacked together (with a new dimension in the first axis)into one single tensor. For instance, if there are two
+         intermediate feature maps with shapes: (1, 2, 16, 12) and (1, 2, 8, 6), and the final feature map has the
+        shape (1, 2, 32, 24), then all intermediate feature maps will be interpolated into (1, 2, 32, 24), and the
+        stacked tensor will have the shape (1, 3, 2, 32, 24). When calculating the loss, you can use torch.unbind to
+        get all feature maps can compute the loss one by one with the ground truth, then do a weighted average for all
+        losses to achieve the final loss.
+    deep_supr_num : int
+        Number of feature maps that will output during deep supervision head. The value should be larger than 0 and
+        less than the number of up sample layers. Defaults to ``1``.
+    res_block : bool
+        Whether to use residual connection based convolution blocks during the network. Defaults to ``False``.
+    trans_bias : bool
+        Whether to set the bias parameter in transposed convolution layers. Defaults to ``False``.
 
-    The model supports 2D or 3D inputs and is consisted with four kinds of blocks:
-    one input block, `n` downsample blocks, one bottleneck and `n+1` upsample blocks. Where, `n>0`.
-    The first and last kernel and stride values of the input sequences are used for input block and
-    bottleneck respectively, and the rest value(s) are used for downsample and upsample blocks.
-    Therefore, pleasure ensure that the length of input sequences (``kernel_size`` and ``strides``)
-    is no less than 3 in order to have at least one downsample and upsample blocks.
-
-    To meet the requirements of the structure, the input size for each spatial dimension should be divisible
-    by the product of all strides in the corresponding dimension. In addition, the minimal spatial size should have
-    at least one dimension that has twice the size of the product of all strides.
-    For example, if `strides=((1, 2, 4), 2, 2, 1)`, the spatial size should be divisible by `(4, 8, 16)`,
-    and the minimal spatial size is `(8, 8, 16)` or `(4, 16, 16)` or `(4, 8, 32)`.
-
-    The output size for each spatial dimension equals to the input size of the corresponding dimension divided by the
-    stride in strides[0].
-    For example, if `strides=((1, 2, 4), 2, 2, 1)` and the input size is `(64, 32, 32)`, the output size is `(64, 16, 8)`.
-
-    For backwards compatibility with old weights, please set `strict=False` when calling `load_state_dict`.
-
-    Usage example with medical segmentation decathlon dataset is available at:
-    https://github.com/Project-MONAI/tutorials/tree/master/modules/dynunet_pipeline.
-
-    Args:
-        spatial_dims: number of spatial dimensions.
-        in_channels: number of input channels.
-        out_channels: number of output channels.
-        kernel_size: convolution kernel size.
-        strides: convolution strides for each blocks.
-        upsample_kernel_size: convolution kernel size for transposed convolution layers. The values should
-            equal to strides[1:].
-        filters: number of output channels for each blocks. Different from nnU-Net, in this implementation we add
-            this argument to make the network more flexible. As shown in the third reference, one way to determine
-            this argument is like:
-            ``[64, 96, 128, 192, 256, 384, 512, 768, 1024][: len(strides)]``.
-            The above way is used in the network that wins task 1 in the BraTS21 Challenge.
-            If not specified, the way which nnUNet used will be employed. Defaults to ``None``.
-        dropout: dropout ratio. Defaults to no dropout.
-        norm_name: feature normalization type and arguments. Defaults to ``INSTANCE``.
-            `INSTANCE_NVFUSER` is a faster version of the instance norm layer, it can be used when:
-            1) `spatial_dims=3`, 2) CUDA device is available, 3) `apex` is installed and 4) non-Windows OS is used.
-        act_name: activation layer type and arguments. Defaults to ``leakyrelu``.
-        deep_supervision: whether to add deep supervision head before output. Defaults to ``False``.
-            If ``True``, in training mode, the forward function will output not only the final feature map
-            (from `output_block`), but also the feature maps that come from the intermediate up sample layers.
-            In order to unify the return type (the restriction of TorchScript), all intermediate
-            feature maps are interpolated into the same size as the final feature map and stacked together
-            (with a new dimension in the first axis)into one single tensor.
-            For instance, if there are two intermediate feature maps with shapes: (1, 2, 16, 12) and
-            (1, 2, 8, 6), and the final feature map has the shape (1, 2, 32, 24), then all intermediate feature maps
-            will be interpolated into (1, 2, 32, 24), and the stacked tensor will has the shape (1, 3, 2, 32, 24).
-            When calculating the loss, you can use torch.unbind to get all feature maps can compute the loss
-            one by one with the ground truth, then do a weighted average for all losses to achieve the final loss.
-        deep_supr_num: number of feature maps that will output during deep supervision head. The
-            value should be larger than 0 and less than the number of up sample layers.
-            Defaults to 1.
-        res_block: whether to use residual connection based convolution blocks during the network.
-            Defaults to ``False``.
-        trans_bias: whether to set the bias parameter in transposed convolution layers. Defaults to ``False``.
+    .. note::
+        This class is a wrapper of the original DynUNetSkipLayer class from MONAI.
+        See: https://github.com/Project-MONAI/MONAI/blob/dev/monai/networks/nets/dynunet.py
     """
 
     def __init__(
@@ -175,15 +198,33 @@ class DynUNet(nn.Module):
         self.apply(self.initialize_weights)
         self.check_kernel_stride()
 
-        def create_skips(index, downsamples, upsamples, bottleneck, superheads=None):
+        def create_skips(
+            index: int,
+            downsamples: List[nn.Module],
+            upsamples: List[nn.Module],
+            bottleneck: nn.Module,
+            superheads: List[nn.Module] = None,
+        ) -> nn.Module:
             """
             Construct the UNet topology as a sequence of skip layers terminating with the bottleneck layer. This is
             done recursively from the top down since a recursive nn.Module subclass is being used to be compatible
             with Torchscript. Initially the length of `downsamples` will be one more than that of `superheads`
             since the `input_block` is passed to this function as the first item in `downsamples`, however this
             shouldn't be associated with a supervision head.
-            """
 
+            Parameters
+            ----------
+            index : int
+                The index of the current skip layer.
+            downsamples : List[nn.Module]
+                The list of downsample layers.
+            upsamples : List[nn.Module]
+                The list of upsample layers.
+            bottleneck : nn.Module
+                The bottleneck layer.
+            superheads : List[nn.Module]
+                The list of supervision heads. Default is ``None``.
+            """
             if len(downsamples) != len(upsamples):
                 raise ValueError(f"{len(downsamples)} != {len(upsamples)}")
 
@@ -192,7 +233,9 @@ class DynUNet(nn.Module):
 
             if superheads is None:
                 next_layer = create_skips(1 + index, downsamples[1:], upsamples[1:], bottleneck)
-                return DynUNetSkipLayer(index, downsample=downsamples[0], upsample=upsamples[0], next_layer=next_layer)
+                return DynUNetSkipLayer(
+                    index, downsample=downsamples[0], upsample=upsamples[0], next_layer=next_layer  # type: ignore
+                )
 
             super_head_flag = False
             if index == 0:  # don't associate a supervision head with self.input_block
@@ -216,7 +259,9 @@ class DynUNet(nn.Module):
                     super_head=superheads[0],
                 )
 
-            return DynUNetSkipLayer(index, downsample=downsamples[0], upsample=upsamples[0], next_layer=next_layer)
+            return DynUNetSkipLayer(
+                index, downsample=downsamples[0], upsample=upsamples[0], next_layer=next_layer  # type: ignore
+            )
 
         if not self.deep_supervision:
             self.skip_layers = create_skips(
@@ -232,6 +277,7 @@ class DynUNet(nn.Module):
             )
 
     def check_kernel_stride(self):
+        """Check the length of kernel_size and strides."""
         kernels, strides = self.kernel_size, self.strides
         error_msg = "length of kernel_size and strides should be the same, and no less than 3."
         if len(kernels) != len(strides) or len(kernels) < 3:
@@ -249,6 +295,7 @@ class DynUNet(nn.Module):
                     raise ValueError(error_msg)
 
     def check_deep_supr_num(self):
+        """Check the number of deep supervision heads."""
         deep_supr_num, strides = self.deep_supr_num, self.strides
         num_up_layers = len(strides) - 1
         if deep_supr_num >= num_up_layers:
@@ -257,13 +304,15 @@ class DynUNet(nn.Module):
             raise ValueError("deep_supr_num should be larger than 0.")
 
     def check_filters(self):
+        """Check the length of filters."""
         filters = self.filters
         if len(filters) < len(self.strides):
             raise ValueError("length of filters should be no less than the length of strides.")
         else:
             self.filters = filters[: len(self.strides)]
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass."""
         out = self.skip_layers(x)
         out = self.output_block(out)
         if self.training and self.deep_supervision:
@@ -273,7 +322,8 @@ class DynUNet(nn.Module):
             return torch.stack(out_all, dim=1)
         return out
 
-    def get_input_block(self):
+    def get_input_block(self) -> nn.Module:
+        """Get the input block."""
         return self.conv_block(
             self.spatial_dims,
             self.in_channels,
@@ -285,7 +335,8 @@ class DynUNet(nn.Module):
             dropout=self.dropout,
         )
 
-    def get_bottleneck(self):
+    def get_bottleneck(self) -> nn.Module:
+        """Get the bottleneck block."""
         return self.conv_block(
             self.spatial_dims,
             self.filters[-2],
@@ -297,20 +348,29 @@ class DynUNet(nn.Module):
             dropout=self.dropout,
         )
 
-    def get_output_block(self, idx: int):
+    def get_output_block(self, idx: int) -> nn.Module:
+        """Get the output block."""
         return UnetOutBlock(self.spatial_dims, self.filters[idx], self.out_channels, dropout=self.dropout)
 
-    def get_downsamples(self):
-        inp, out = self.filters[:-2], self.filters[1:-1]
+    def get_downsamples(self) -> nn.ModuleList:
+        """Get the downsampling blocks."""
+        inp, out = self.filters[:-2], self.filters[1:-1]  # type: ignore
         strides, kernel_size = self.strides[1:-1], self.kernel_size[1:-1]
-        return self.get_module_list(inp, out, kernel_size, strides, self.conv_block)
+        return self.get_module_list(inp, out, kernel_size, strides, self.conv_block)  # type: ignore
 
-    def get_upsamples(self):
+    def get_upsamples(self) -> nn.ModuleList:
+        """Get the upsampling blocks."""
         inp, out = self.filters[1:][::-1], self.filters[:-1][::-1]
         strides, kernel_size = self.strides[1:][::-1], self.kernel_size[1:][::-1]
-        upsample_kernel_size = self.upsample_kernel_size[::-1]
+        upsample_kernel_size = self.upsample_kernel_size[::-1]  # type: ignore
         return self.get_module_list(
-            inp, out, kernel_size, strides, UnetUpBlock, upsample_kernel_size, trans_bias=self.trans_bias
+            inp,  # type: ignore
+            out,  # type: ignore
+            kernel_size,
+            strides,
+            UnetUpBlock,
+            upsample_kernel_size,
+            trans_bias=self.trans_bias,
         )
 
     def get_module_list(
@@ -322,7 +382,32 @@ class DynUNet(nn.Module):
         conv_block: nn.Module,
         upsample_kernel_size: Optional[Sequence[Union[Sequence[int], int]]] = None,
         trans_bias: bool = False,
-    ):
+    ) -> nn.ModuleList:
+        """
+        Get the module list of the network.
+
+        Parameters
+        ----------
+        in_channels : List[int]
+            The number of input channels.
+        out_channels : List[int]
+            The number of output channels.
+        kernel_size : Sequence[Union[Sequence[int], int]]
+            The kernel size.
+        strides : Sequence[Union[Sequence[int], int]]
+            The strides size.
+        conv_block : nn.Module
+            The convolutional block.
+        upsample_kernel_size : Optional[Sequence[Union[Sequence[int], int]]]
+            The upsample kernel size.
+        trans_bias : bool
+            Whether to use bias in the transpose convolutional layer.
+
+        Returns
+        -------
+        nn.ModuleList
+            The module list of the network.
+        """
         layers = []
         if upsample_kernel_size is not None:
             for in_c, out_c, kernel, stride, up_kernel in zip(
@@ -358,15 +443,12 @@ class DynUNet(nn.Module):
                 layers.append(layer)
         return nn.ModuleList(layers)
 
-    def get_deep_supervision_heads(self):
+    def get_deep_supervision_heads(self) -> nn.ModuleList:
         return nn.ModuleList([self.get_output_block(i + 1) for i in range(self.deep_supr_num)])
 
     @staticmethod
-    def initialize_weights(module):
+    def initialize_weights(module: nn.Module):
         if isinstance(module, (nn.Conv3d, nn.Conv2d, nn.ConvTranspose3d, nn.ConvTranspose2d)):
             module.weight = nn.init.kaiming_normal_(module.weight, a=0.01)
             if module.bias is not None:
                 module.bias = nn.init.constant_(module.bias, 0)
-
-
-DynUnet = Dynunet = DynUNet

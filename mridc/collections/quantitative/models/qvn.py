@@ -23,16 +23,13 @@ __all__ = ["qVarNet"]
 
 class qVarNet(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
     """
-    Implementation of the quantitative End-to-end Variational Network (qVN), as presented in Zhang, C. et al.
+    Implementation of the quantitative End-to-end Variational Network (qVN), as presented in [1].
 
     References
     ----------
-
-    ..
-
-        Zhang, C. et al. (2022) ‘A unified model for reconstruction and R2 mapping of accelerated 7T data using \
-        quantitative Recurrent Inference Machine’. In review.
-
+    .. [1] Zhang C, Karkalousos D, Bazin PL, Coolen BF, Vrenken H, Sonke JJ, Forstmann BU, Poot DH, Caan MW. A unified
+        model for reconstruction and R2* mapping of accelerated 7T data using the quantitative recurrent inference
+        machine. NeuroImage. 2022 Dec 1;264:119680.
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
@@ -46,11 +43,6 @@ class qVarNet(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
                 f"Only 2D is currently supported for qMRI models.Found {quantitative_module_dimensionality}"
             )
 
-        self.fft_centered = cfg_dict.get("fft_centered")
-        self.fft_normalization = cfg_dict.get("fft_normalization")
-        self.spatial_dims = cfg_dict.get("spatial_dims")
-        self.coil_dim = cfg_dict.get("coil_dim")
-        self.coil_combination_method = cfg_dict.get("coil_combination_method")
         self.shift_B0_input = cfg_dict.get("shift_B0_input")
 
         self.vn = torch.nn.ModuleList([])
@@ -80,8 +72,8 @@ class qVarNet(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
                 )
 
             self.dc_weight = torch.nn.Parameter(torch.ones(1))
-            self.reconstruction_module_accumulate_estimates = cfg_dict.get(
-                "reconstruction_module_accumulate_estimates"
+            self.reconstruction_module_accumulate_predictions = cfg_dict.get(
+                "reconstruction_module_accumulate_predictions"
             )
 
         quantitative_module_num_cascades = cfg_dict.get("quantitative_module_num_cascades")
@@ -101,7 +93,7 @@ class qVarNet(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
                     spatial_dims=self.spatial_dims,
                     coil_dim=self.coil_dim,
                     no_dc=cfg_dict.get("quantitative_module_no_dc"),
-                    linear_forward_model=qrim_utils.SignalForwardModel(
+                    linear_forward_model=base_quantitative_models.SignalForwardModel(
                         sequence=cfg_dict.get("quantitative_module_signal_forward_model_sequence")
                     ),
                 )
@@ -109,7 +101,7 @@ class qVarNet(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
             ]
         )
 
-        self.accumulate_estimates = cfg_dict.get("quantitative_module_accumulate_estimates")
+        self.accumulate_predictions = cfg_dict.get("quantitative_module_accumulate_predictions")
 
         self.gamma = torch.tensor(cfg_dict.get("quantitative_module_gamma_regularization_factors"))
         self.preprocessor = qrim_utils.RescaleByMax
@@ -132,34 +124,33 @@ class qVarNet(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
 
         Parameters
         ----------
-        R2star_map_init: Initial R2* map.
-            torch.Tensor, shape [batch_size, n_x, n_y]
-        S0_map_init: Initial S0 map.
-            torch.Tensor, shape [batch_size, n_x, n_y]
-        B0_map_init: Initial B0 map.
-            torch.Tensor, shape [batch_size, n_x, n_y]
-        phi_map_init: Initial phi map.
-            torch.Tensor, shape [batch_size, n_x, n_y]
-        TEs: List of echo times.
-            List of float, shape [n_echoes]
-        y: Data.
-            torch.Tensor, shape [batch_size, n_echoes, n_coils, n_x, n_y, 2]
-        sensitivity_maps: Coil sensitivity maps.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        mask_brain: Mask of the brain.
-            torch.Tensor, shape [batch_size, 1, n_x, n_y, 2]
-        sampling_mask: Mask of the sampling.
-            torch.Tensor, shape [batch_size, 1, n_x, n_y, 2]
+        R2star_map_init : torch.Tensor
+            Initial R2* map of shape [batch_size, n_x, n_y].
+        S0_map_init : torch.Tensor
+            Initial S0 map of shape [batch_size, n_x, n_y].
+        B0_map_init : torch.Tensor
+            Initial B0 map of shape [batch_size, n_x, n_y].
+        phi_map_init : torch.Tensor
+            Initial phase map of shape [batch_size, n_x, n_y].
+        TEs : List
+            List of echo times.
+        y : torch.Tensor
+            Subsampled k-space data of shape [batch_size, n_echoes, n_coils, n_x, n_y, 2].
+        sensitivity_maps : torch.Tensor
+            Coil sensitivity maps of shape [batch_size, n_coils, n_x, n_y, 2].
+        mask_brain : torch.Tensor
+            Brain mask of shape [batch_size, 1, n_x, n_y, 1].
+        sampling_mask : torch.Tensor
+            Sampling mask of shape [batch_size, 1, n_x, n_y, 1].
 
         Returns
         -------
-        pred: list of list of torch.Tensor, shape [qmaps][batch_size, n_x, n_y, 2],
-                or torch.Tensor, shape [batch_size, n_x, n_y, 2]
-             If self.accumulate_loss is True, returns a list of all intermediate estimates.
+        List of list of torch.Tensor or torch.Tensor
+             If self.accumulate_loss is True, returns a list of all intermediate predictions.
              If False, returns the final estimate.
         """
         if self.use_reconstruction_module:
-            cascades_echoes_etas = []
+            cascades_echoes_predictions = []
             for echo in range(y.shape[1]):
                 prediction = y[:, echo, ...].clone()
                 for cascade in self.vn:
@@ -171,29 +162,29 @@ class qVarNet(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
                     normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,
                 )
-                estimation = utils.coil_combination(
+                estimation = utils.coil_combination_method(
                     estimation, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim - 1
                 )
-                cascades_echoes_etas.append(torch.view_as_complex(estimation))
+                cascades_echoes_predictions.append(torch.view_as_complex(estimation))
 
-            eta = torch.stack(cascades_echoes_etas, dim=1)
-            if eta.shape[-1] != 2:
-                eta = torch.view_as_real(eta)
+            prediction = torch.stack(cascades_echoes_predictions, dim=1)
+            if prediction.shape[-1] != 2:
+                prediction = torch.view_as_real(prediction)
             y = fft.fft2(
-                utils.complex_mul(eta.unsqueeze(self.coil_dim), sensitivity_maps.unsqueeze(self.coil_dim - 1)),
+                utils.complex_mul(prediction.unsqueeze(self.coil_dim), sensitivity_maps.unsqueeze(self.coil_dim - 1)),
                 self.fft_centered,
                 self.fft_normalization,
                 self.spatial_dims,
             )
-            recon_eta = torch.view_as_complex(eta).clone()
+            recon_prediction = torch.view_as_complex(prediction).clone()
 
             R2star_maps_init = []
             S0_maps_init = []
             B0_maps_init = []
             phi_maps_init = []
-            for batch_idx in range(eta.shape[0]):
-                R2star_map_init, S0_map_init, B0_map_init, phi_map_init = transforms.R2star_B0_real_S0_complex_mapping(
-                    eta[batch_idx],
+            for batch_idx in range(prediction.shape[0]):
+                R2star_map_init, S0_map_init, B0_map_init, phi_map_init = transforms.R2star_B0_S0_phi_mapping(
+                    prediction[batch_idx],
                     TEs,
                     mask_brain,
                     torch.ones_like(mask_brain),
@@ -217,11 +208,10 @@ class qVarNet(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
         B0_map_pred = B0_map_init / self.gamma[2]
         phi_map_pred = phi_map_init / self.gamma[3]
 
-        prediction = y.clone()
+        prediction = None
         for cascade in self.qvn:
             # Forward pass through the cascades
             prediction = cascade(
-                prediction,
                 y,
                 R2star_map_pred,
                 S0_map_pred,
@@ -230,8 +220,11 @@ class qVarNet(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
                 TEs,
                 sensitivity_maps,
                 sampling_mask,
+                prediction,
                 self.gamma,
             )
+            final_prediction = prediction
+
             R2star_map_pred, S0_map_pred, B0_map_pred, phi_map_pred = (
                 prediction[:, 0],
                 prediction[:, 1],
@@ -247,39 +240,38 @@ class qVarNet(base_quantitative_models.BaseqMRIReconstructionModel, ABC):
             if phi_map_pred.shape[-1] == 2:
                 phi_map_pred = torch.view_as_complex(phi_map_pred)
 
+            prediction = torch.stack(
+                [torch.abs(R2star_map_pred), torch.abs(S0_map_pred), torch.abs(B0_map_pred), torch.abs(phi_map_pred)],
+                dim=1,
+            )
+
         R2star_map_pred, S0_map_pred, B0_map_pred, phi_map_pred = self.process_intermediate_pred(
-            torch.abs(torch.view_as_complex(prediction)), None, None, False
+            torch.abs(torch.view_as_complex(final_prediction))
         )
 
         return [
-            recon_eta if self.use_reconstruction_module else torch.empty([]),
+            recon_prediction if self.use_reconstruction_module else torch.empty([]),
             R2star_map_pred,
             S0_map_pred,
             B0_map_pred,
             phi_map_pred,
         ]
 
-    def process_intermediate_pred(self, pred, sensitivity_maps, target, do_coil_combination=False):
+    def process_intermediate_pred(self, x):
         """
         Process the intermediate prediction.
 
         Parameters
         ----------
-        pred: Intermediate prediction.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        sensitivity_maps: Coil sensitivity maps.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        target: Target data to crop to size.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
-        do_coil_combination: Whether to do coil combination.
-            bool, default False
+        x : torch.Tensor
+            Prediction of shape [batch_size, n_coils, n_x, n_y, 2].
 
         Returns
         -------
-        pred: torch.Tensor, shape [batch_size, n_x, n_y, 2]
-            Processed prediction.
+        torch.Tensor
+            Processed prediction of shape [batch_size, n_x, n_y, 2].
         """
-        x = self.preprocessor.reverse(pred, self.gamma)
+        x = self.preprocessor.reverse(x, self.gamma)
         R2star_map_pred, S0_map_pred, B0_map_pred, phi_map_pred = (
             x[:, 0, ...],
             x[:, 1, ...],

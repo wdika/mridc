@@ -4,18 +4,10 @@ mridc.collections.reconstruction.data package
 Submodules
 ----------
 
-mridc.collections.reconstruction.data.mri\_data module
-------------------------------------------------------
+mridc.collections.reconstruction.data.mri\_reconstruction\_loader module
+------------------------------------------------------------------------
 
-.. automodule:: mridc.collections.reconstruction.data.mri_data
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-mridc.collections.reconstruction.data.subsample module
-------------------------------------------------------
-
-.. automodule:: mridc.collections.reconstruction.data.subsample
+.. automodule:: mridc.collections.reconstruction.data.mri_reconstruction_loader
    :members:
    :undoc-members:
    :show-inheritance:

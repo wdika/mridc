@@ -13,23 +13,23 @@ coverage:
 # --------------
 # which folders/files to ignore
 ignore:
-  - mridc/collections/common/data/*
-  - mridc/collections/common/metrics/*
-  - mridc/collections/common/parts/patch_utils.py
-  - mridc/collections/common/parts/ptl_overrides.py
-  - mridc/collections/segmentation/metrics/distance.py
-  - mridc/collections/reconstruction/models/pics.py
-  - mridc/collections/reconstruction/models/zf.py
-  - mridc/core/classes/module.py
-  - mridc/core/optim/adafactor.py
-  - mridc/core/optim/novograd.py
-  - mridc/core/optim/radam.py
-  - mridc/core/utils/numba_utils.py
-  - mridc/utils/decorators/*
-  - mridc/utils/cloud.py
-  - mridc/utils/arguments.py
-  - mridc/utils/debug_hook.py
-  - mridc/launch.py
+#  - mridc/collections/common/data/*
+#  - mridc/collections/common/metrics/*
+#  - mridc/collections/common/parts/patch_utils.py
+#  - mridc/collections/common/parts/ptl_overrides.py
+#  - mridc/collections/segmentation/metrics/distance.py
+#  - mridc/collections/reconstruction/models/pics.py
+#  - mridc/collections/reconstruction/models/zf.py
+#  - mridc/core/classes/module.py
+#  - mridc/core/optim/adafactor.py
+#  - mridc/core/optim/novograd.py
+#  - mridc/core/optim/radam.py
+#  - mridc/core/utils/numba_utils.py
+#  - mridc/utils/decorators/*
+#  - mridc/utils/cloud.py
+#  - mridc/utils/arguments.py
+#  - mridc/utils/debug_hook.py
+#  - mridc/launch.py
   - projects/*
   - projects/quantitative/datasets/ahead/*
   - setup.py

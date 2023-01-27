@@ -8,10 +8,60 @@ import torch
 import mridc.collections.quantitative.models.qrim.utils as qrim_utils
 import mridc.collections.reconstruction.models.rim.conv_layers as conv_layers
 import mridc.collections.reconstruction.models.rim.rnn_cells as rnn_cells
+from mridc.collections.quantitative.models.base import SignalForwardModel
 
 
 class qRIMBlock(torch.nn.Module):
-    """qRIMBlock extends a block of Recurrent Inference Machines (RIMs)."""
+    """
+    qRIMBlock extends a block of Recurrent Inference Machines (RIMs) as presented in [1].
+
+    References
+    ----------
+    .. [1] Zhang C, Karkalousos D, Bazin PL, Coolen BF, Vrenken H, Sonke JJ, Forstmann BU, Poot DH, Caan MW. A unified
+        model for reconstruction and R2* mapping of accelerated 7T data using the quantitative recurrent inference
+        machine. NeuroImage. 2022 Dec 1;264:119680.
+
+    Parameters
+    ----------
+    recurrent_layer : torch.nn.Module, optional
+        Recurrent layer. Default is ``None``.
+    conv_filters : int, optional
+        Number of filters in the convolutional layers. Default is ``None``.
+    conv_kernels : int, optional
+        Kernel size of the convolutional layers. Default is ``None``.
+    conv_dilations : int, optional
+        Dilation of the convolutional layers. Default is ``None``.
+    conv_bias : bool, optional
+        Bias of the convolutional layers. Default is ``None``.
+    recurrent_filters : int, optional
+        Number of filters in the recurrent layers. Default is ``None``.
+    recurrent_kernels : int, optional
+        Kernel size of the recurrent layers. Default is ``None``.
+    recurrent_dilations : int, optional
+        Dilation of the recurrent layers. Default is ``None``.
+    recurrent_bias : bool, optional
+        Bias of the recurrent layers. Default is ``None``.
+    depth : int, optional
+        Number of RIM layers. Default is ``2``.
+    time_steps : int, optional
+        Number of time steps. Default is ``8``.
+    conv_dim : int, optional
+        Dimension of the convolutional layers. Default is ``2``.
+    linear_forward_model : SignalForwardModel, optional
+        Linear forward model. Default is ``None``.
+    fft_centered : bool, optional
+        Whether to center the FFT. Default is ``False``.
+    fft_normalization : str, optional
+        Normalization of the FFT. Default is ``"backward"``.
+    spatial_dims : tuple, optional
+        Spatial dimensions of the input. Default is ``None``.
+    coil_dim : int, optional
+        Coils dimension of the input. Default is ``1``.
+    coil_combination_method : str, optional
+        Method to combine the coils. Default is ``"SENSE"``.
+    dimensionality : int, optional
+        Dimensionality of the input. Default is ``2``.
+    """
 
     def __init__(
         self,
@@ -27,44 +77,18 @@ class qRIMBlock(torch.nn.Module):
         depth: int = 2,
         time_steps: int = 8,
         conv_dim: int = 2,
-        no_dc: bool = False,
         linear_forward_model=None,
-        fft_centered: bool = True,
-        fft_normalization: str = "ortho",
+        fft_centered: bool = False,
+        fft_normalization: str = "backward",
         spatial_dims: Optional[Tuple[int, int]] = None,
         coil_dim: int = 1,
         coil_combination_method: str = "SENSE",
         dimensionality: int = 2,
     ):
-        """
-        Initialize the RIMBlock.
-
-        Parameters
-        ----------
-        recurrent_layer: Type of recurrent layer.
-        conv_filters: Number of filters in the convolutional layers.
-        conv_kernels: Kernel size of the convolutional layers.
-        conv_dilations: Dilation of the convolutional layers.
-        conv_bias: Bias of the convolutional layers.
-        recurrent_filters: Number of filters in the recurrent layers.
-        recurrent_kernels: Kernel size of the recurrent layers.
-        recurrent_dilations: Dilation of the recurrent layers.
-        recurrent_bias: Bias of the recurrent layers.
-        depth: Number of layers in the block.
-        time_steps: Number of time steps in the block.
-        conv_dim: Dimension of the convolutional layers.
-        no_dc: If True, the DC component is removed from the input.
-        fft_centered: If True, the FFT is centered.
-        fft_normalization: Normalization of the FFT.
-        spatial_dims: Spatial dimensions of the input.
-        coil_dim: Coils dimension of the input.
-        coil_combination_method: Method to combine the coils.
-        dimensionality: Dimensionality of the input.
-        """
         super(qRIMBlock, self).__init__()
 
         self.linear_forward_model = (
-            qrim_utils.SignalForwardModel(sequence="MEGRE") if linear_forward_model is None else linear_forward_model
+            SignalForwardModel(sequence="MEGRE") if linear_forward_model is None else linear_forward_model
         )
 
         self.input_size = depth * 4
@@ -94,7 +118,7 @@ class qRIMBlock(torch.nn.Module):
                     kernel_size=conv_k_size,
                     dilation=conv_dilation,
                     bias=l_conv_bias,
-                    nonlinear=nonlinear,
+                    nonlinear=nonlinear,  # type: ignore
                 )
                 self.input_size = conv_features
 
@@ -133,7 +157,6 @@ class qRIMBlock(torch.nn.Module):
 
     def forward(
         self,
-        pred: torch.Tensor,
         masked_kspace: torch.Tensor,
         R2star_map_init: torch.Tensor,
         S0_map_init: torch.Tensor,
@@ -142,55 +165,54 @@ class qRIMBlock(torch.nn.Module):
         TEs: List,
         sensitivity_maps: torch.Tensor,
         sampling_mask: torch.Tensor,
-        eta: torch.Tensor = None,
+        prediction: torch.Tensor = None,
         hx: torch.Tensor = None,
         gamma: torch.Tensor = None,
-        keep_eta: bool = False,
     ) -> Tuple[Any, Union[list, torch.Tensor, None]]:
         """
         Forward pass of the RIMBlock.
 
         Parameters
         ----------
-        pred: Initial prediction of the subsampled k-space.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        masked_kspace: Data.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        R2star_map_init: Initial R2* map.
-            torch.Tensor, shape [batch_size, n_echoes, n_coils, n_x, n_y]
-        S0_map_init: Initial S0 map.
-            torch.Tensor, shape [batch_size, n_echoes, n_coils, n_x, n_y]
-        B0_map_init: Initial B0 map.
-            torch.Tensor, shape [batch_size, n_echoes, n_coils, n_x, n_y]
-        phi_map_init: Initial phi map.
-            torch.Tensor, shape [batch_size, n_echoes, n_coils, n_x, n_y]
-        TEs: List of echo times.
-            List of int, shape [batch_size, n_echoes]
-        sensitivity_maps: Coil sensitivity maps.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        sampling_mask: Mask of the sampling.
-            torch.Tensor, shape [batch_size, 1, n_x, n_y, 2]
-        eta: Initial zero-filled.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
-        hx: Initial guess for the hidden state.
-        gamma: Scaling normalization factor.
-        keep_eta: Whether to keep the eta.
+        masked_kspace : torch.Tensor
+            Subsampled k-space of shape [batch_size, n_coils, n_x, n_y, 2].
+        R2star_map_init : torch.Tensor
+            Initial R2* map of shape [batch_size, n_echoes, n_coils, n_x, n_y].
+        S0_map_init : torch.Tensor
+            Initial S0 map of shape [batch_size, n_echoes, n_coils, n_x, n_y].
+        B0_map_init : torch.Tensor
+            Initial B0 map of shape [batch_size, n_echoes, n_coils, n_x, n_y].
+        phi_map_init : torch.Tensor
+            Initial phi map of shape [batch_size, n_echoes, n_coils, n_x, n_y].
+        TEs : List
+            List of echo times.
+        sensitivity_maps : torch.Tensor
+            Coil sensitivity maps of shape [batch_size, n_coils, n_x, n_y, 2].
+        sampling_mask : torch.Tensor
+            Sampling mask of shape [batch_size, 1, n_x, n_y, 1].
+        prediction : torch.Tensor, optional
+            Initial prediction of the quantitative maps. If None, it will be initialized with the initial maps.
+            Default is ``None``.
+        hx : torch.Tensor, optional
+            Initial hidden state. If None, it will be initialized with zeros. Default is ``None``.
+        gamma : torch.Tensor, optional
+            Scaling normalization factor. If None, it will be initialized with ones. Default is ``None``.
 
         Returns
         -------
-        Reconstructed image and hidden states.
+        Tuple[Any, Union[list, torch.Tensor, None]]
+            Tuple containing the prediction and the hidden state. The prediction is a list of the predicted
+            quantitative maps of shape [batch_size, n_echoes, n_coils, n_x, n_y] and the hidden state is a list
+            of the hidden states of the recurrent layers.
         """
         batch_size = masked_kspace.shape[0]
 
-        if isinstance(pred, list):
-            pred = pred[-1].detach()
-
-        if eta is None:
-            eta = torch.stack([R2star_map_init, S0_map_init, B0_map_init, phi_map_init], dim=1)
+        if prediction is None:
+            prediction = torch.stack([R2star_map_init, S0_map_init, B0_map_init, phi_map_init], dim=1)
 
         if hx is None:
             hx = [
-                eta.new_zeros((eta.size(0), f, *eta.size()[2:])).to(masked_kspace)
+                prediction.new_zeros((prediction.size(0), f, *prediction.size()[2:])).to(masked_kspace)
                 for f in self.recurrent_filters
                 if f != 0
             ]
@@ -200,11 +222,11 @@ class qRIMBlock(torch.nn.Module):
         B0_map_init = B0_map_init * gamma[2]  # type: ignore
         phi_map_init = phi_map_init * gamma[3]  # type: ignore
 
-        etas = []
+        predictions = []
         for _ in range(self.time_steps):
-            grad_eta = torch.zeros_like(eta)
+            grad_prediction = torch.zeros_like(prediction)
             for idx in range(batch_size):
-                idx_grad_eta = qrim_utils.analytical_log_likelihood_gradient(
+                idx_grad_prediction = qrim_utils.analytical_log_likelihood_gradient(
                     self.linear_forward_model,
                     R2star_map_init[idx],
                     S0_map_init[idx],
@@ -220,21 +242,21 @@ class qRIMBlock(torch.nn.Module):
                     coil_dim=self.coil_dim,
                     coil_combination_method=self.coil_combination_method,
                 ).contiguous()
-                grad_eta[idx] = idx_grad_eta / 100
-                grad_eta[grad_eta != grad_eta] = 0.0
+                grad_prediction[idx] = idx_grad_prediction / 100
+                grad_prediction[grad_prediction != grad_prediction] = 0.0
 
-            grad_eta = torch.cat([grad_eta, eta], dim=self.coil_dim - 1).to(masked_kspace)
+            grad_prediction = torch.cat([grad_prediction, prediction], dim=self.coil_dim - 1).to(masked_kspace)
 
             for h, convrnn in enumerate(self.layers):
-                hx[h] = convrnn(grad_eta, hx[h])
-                grad_eta = hx[h]
+                hx[h] = convrnn(grad_prediction, hx[h])
+                grad_prediction = hx[h]
 
-            grad_eta = self.final_layer(grad_eta)
-            eta = eta + grad_eta
-            eta_tmp = eta[:, 0, :, :]
-            eta_tmp[eta_tmp < 0] = 0
-            eta[:, 0, :, :] = eta_tmp
+            grad_prediction = self.final_layer(grad_prediction)
+            prediction = prediction + grad_prediction
+            prediction_tmp = prediction[:, 0, :, :]
+            prediction_tmp[prediction_tmp < 0] = 0
+            prediction[:, 0, :, :] = prediction_tmp
 
-            etas.append(eta)
+            predictions.append(prediction)
 
-        return etas, None
+        return predictions, None

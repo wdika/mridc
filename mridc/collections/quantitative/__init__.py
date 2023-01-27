@@ -10,4 +10,4 @@ __version = __version__
 __author__ = "Dimitrios Karkalousos, Chaoping Zhang"
 
 # Set collection name.
-__description__ = "Quantitative MRI models collection"
+__description__ = "Collection of quantitative MRI data and models."

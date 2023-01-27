@@ -18,56 +18,54 @@ class Convolution(nn.Sequential):
         -- (Conv|ConvTrans) -- (Norm -- Dropout -- Acti) --
     if ``conv_only`` set to ``True``::
         -- (Conv|ConvTrans) --
-    For example:
-    .. code-block:: python
-        from monai.networks.blocks import Convolution
-        conv = Convolution(
-            spatial_dims=3,
-            in_channels=1,
-            out_channels=1,
-            adn_ordering="ADN",
-            act=("prelu", {"init": 0.2}),
-            dropout=0.1,
-            norm=("layer", {"normalized_shape": (10, 10, 10)}),
-        )
-        print(conv)
-    output::
-        Convolution(
-          (conv): Conv3d(1, 1, kernel_size=(3, 3, 3), stride=(1, 1, 1), padding=(1, 1, 1))
-          (adn): ADN(
-            (A): PReLU(num_parameters=1)
-            (D): Dropout(p=0.1, inplace=False)
-            (N): LayerNorm((10, 10, 10), eps=1e-05, elementwise_affine=True)
-          )
-        )
-    Args:
-        spatial_dims: number of spatial dimensions.
-        in_channels: number of input channels.
-        out_channels: number of output channels.
-        strides: convolution stride. Defaults to 1.
-        kernel_size: convolution kernel size. Defaults to 3.
-        adn_ordering: a string representing the ordering of activation, normalization, and dropout.
-            Defaults to "NDA".
-        act: activation type and arguments. Defaults to PReLU.
-        norm: feature normalization type and arguments. Defaults to instance norm.
-        dropout: dropout ratio. Defaults to no dropout.
-        dropout_dim: determine the spatial dimensions of dropout. Defaults to 1.
-            - When dropout_dim = 1, randomly zeroes some of the elements for each channel.
-            - When dropout_dim = 2, Randomly zeroes out entire channels (a channel is a 2D feature map).
-            - When dropout_dim = 3, Randomly zeroes out entire channels (a channel is a 3D feature map).
-            The value of dropout_dim should be no larger than the value of `spatial_dims`.
-        dilation: dilation rate. Defaults to 1.
-        groups: controls the connections between inputs and outputs. Defaults to 1.
-        bias: whether to have a bias term. Defaults to True.
-        conv_only: whether to use the convolutional layer only. Defaults to False.
-        is_transposed: if True uses ConvTrans instead of Conv. Defaults to False.
-        padding: controls the amount of implicit zero-paddings on both sides for padding number of points
-            for each dimension. Defaults to None.
-        output_padding: controls the additional size added to one side of the output shape.
-            Defaults to None.
-    See also:
-        :py:class:`monai.networks.layers.Conv`
-        :py:class:`monai.networks.blocks.ADN`
+
+    Parameters
+    ----------
+    spatial_dims : int
+        Number of spatial dimensions.
+    in_channels : int
+        Number of input channels.
+    out_channels : int
+        Number of output channels.
+    kernel_size : Union[Sequence[int], int]
+        Size of the convolving kernel.
+    stride : Union[Sequence[int], int], optional
+        Stride of the convolution. Default is ``1``.
+    kernel_size : Union[Sequence[int], int]
+        Size of the convolving kernel. Default is ``3``.
+    adn_ordering : str, optional
+        A string representing the ordering of activation, normalization, and dropout. Default is ``"NDA"``.
+    act : Union[Type[nn.Module], Tuple[Type[nn.Module], dict]], optional
+        Activation type and arguments. Default is ``PReLU``.
+    norm : Union[Type[nn.Module], Tuple[Type[nn.Module], dict]], optional
+        Feature normalization type and arguments. Default is ``instance norm``.
+    dropout : float, optional
+        Dropout ratio. Default is ``no dropout``.
+    dropout_dim : int, optional
+        Determine the spatial dimensions of dropout. Default is ``1``. \
+        - When dropout_dim = 1, randomly zeroes some of the elements for each channel.
+        - When dropout_dim = 2, Randomly zeroes out entire channels (a channel is a 2D feature map).
+        - When dropout_dim = 3, Randomly zeroes out entire channels (a channel is a 3D feature map).
+        The value of dropout_dim should be no larger than the value of `spatial_dims`.
+    dilation : int, optional
+        Dilation rate. Default is ``1``.
+    groups : int, optional
+        Controls the connections between inputs and outputs. Default is ``1``.
+    bias : bool, optional
+        Whether to have a bias term. Default is ``True``.
+    conv_only : bool, optional
+        Whether to use the convolutional layer only. Default is ``False``.
+    is_transposed : bool, optional
+        If ``True`` uses ConvTrans instead of Conv. Default is ``False``.
+    padding : Union[Sequence[int], int], optional
+        Controls the amount of implicit zero-paddings on both sides for padding number of points for each dimension.
+        Default is ``None``.
+    output_padding : Union[Sequence[int], int], optional
+        Controls the additional size added to one side of the output shape. Default is ``None``.
+
+    .. note::
+        This is a wrapper for monai implementation.
+        See: https://github.com/Project-MONAI/MONAI/blob/c38d503a587f1779914bd071a1b2d66a6d9080c2/monai/networks/layers/weight_init.py#L45
     """
 
     def __init__(
@@ -149,6 +147,21 @@ class Convolution(nn.Sequential):
 def stride_minus_kernel_padding(
     kernel_size: Union[Sequence[int], int], stride: Union[Sequence[int], int]
 ) -> Union[Tuple[int, ...], int]:
+    """
+    Calculate the output padding for the given kernel size and stride.
+
+    Parameters
+    ----------
+    kernel_size : Union[Sequence[int], int]
+        The kernel size.
+    stride : Union[Sequence[int], int]
+        The stride.
+
+    Returns
+    -------
+    Union[Tuple[int, ...], int]
+        The output padding.
+    """
     kernel_size_np = np.atleast_1d(kernel_size)
     stride_np = np.atleast_1d(stride)
 
@@ -161,7 +174,21 @@ def stride_minus_kernel_padding(
 def get_padding(
     kernel_size: Union[Sequence[int], int], stride: Union[Sequence[int], int]
 ) -> Union[Tuple[int, ...], int]:
+    """
+    Calculate the padding for the given kernel size and stride.
 
+    Parameters
+    ----------
+    kernel_size : Union[Sequence[int], int]
+        The kernel size.
+    stride : Union[Sequence[int], int]
+        The stride.
+
+    Returns
+    -------
+    Union[Tuple[int, ...], int]
+        The padding.
+    """
     kernel_size_np = np.atleast_1d(kernel_size)
     stride_np = np.atleast_1d(stride)
     padding_np = (kernel_size_np - stride_np + 1) / 2
@@ -175,6 +202,21 @@ def get_padding(
 def get_output_padding(
     kernel_size: Union[Sequence[int], int], stride: Union[Sequence[int], int], padding: Union[Sequence[int], int]
 ) -> Union[Tuple[int, ...], int]:
+    """
+    Calculate the output padding for the given kernel size, stride and padding.
+
+    Parameters
+    ----------
+    kernel_size : Union[Sequence[int], int]
+        The kernel size.
+    stride : Union[Sequence[int], int]
+        The stride.
+
+    Returns
+    -------
+    Union[Tuple[int, ...], int]
+        The output padding.
+    """
     kernel_size_np = np.atleast_1d(kernel_size)
     stride_np = np.atleast_1d(stride)
     padding_np = np.atleast_1d(padding)
@@ -193,10 +235,23 @@ def same_padding(
     """
     Return the padding value needed to ensure a convolution using the given kernel size produces an output of the same
     shape as the input for a stride of 1, otherwise ensure a shape of the input divided by the stride rounded down.
-    Raises:
-        NotImplementedError: When ``np.any((kernel_size - 1) * dilation % 2 == 1)``.
-    """
 
+    Raises
+    ------
+        NotImplementedError: When ``np.any((kernel_size - 1) * dilation % 2 == 1)``.
+
+    Parameters
+    ----------
+    kernel_size : Union[Sequence[int], int]
+        The kernel size.
+    dilation : Union[Sequence[int], int]
+        The dilation.
+
+    Returns
+    -------
+    Union[Tuple[int, ...], int]
+        The padding.
+    """
     kernel_size_np = np.atleast_1d(kernel_size)
     dilation_np = np.atleast_1d(dilation)
 
@@ -223,7 +278,40 @@ def get_conv_layer(
     bias: bool = False,
     conv_only: bool = True,
     is_transposed: bool = False,
-):
+) -> Convolution:
+    """
+    Get a convolution layer with the given parameters.
+
+    Parameters
+    ----------
+    spatial_dims : int
+        The number of spatial dimensions.
+    in_channels : int
+        The number of input channels.
+    out_channels : int
+        The number of output channels.
+    kernel_size : Union[Sequence[int], int]
+        The kernel size. Default is ``3``.
+    stride : Union[Sequence[int], int]
+        The stride. Default is ``1``.
+    act : Optional[Union[Tuple, str]]
+        The activation function. Default is ``nn.PReLU``.
+    norm : Optional[Union[Tuple, str]]
+        The normalization layer. Default is ``nn.InstanceNorm2d``.
+    dropout : Optional[Union[Tuple, str, float]]
+        The dropout layer. Default is ``None``.
+    bias : bool
+        Whether to add a bias. Default is ``False``.
+    conv_only : bool
+        Whether to only return the convolution layer. Default is ``True``.
+    is_transposed : bool
+        Whether to use a transposed convolution. Default is ``False``.
+
+    Returns
+    -------
+    Convolution
+        The convolution layer.
+    """
     padding = get_padding(kernel_size, stride)
     output_padding = None
     if is_transposed:
@@ -245,20 +333,30 @@ def get_conv_layer(
     )
 
 
-def _no_grad_trunc_normal_(tensor, mean, std, a, b):
-    """Tensor initialization with truncated normal distribution.
+def _no_grad_trunc_normal_(tensor: torch.Tensor, mean: float = 0.0, std: float = 1.0, a: float = -2.0, b: float = 2.0):
+    """
+    Tensor initialization with truncated normal distribution.
+
     Based on:
     https://people.sc.fsu.edu/~jburkardt/presentations/truncated_normal.pdf
     https://github.com/rwightman/pytorch-image-models
-    Args:
-       tensor: an n-dimensional `torch.Tensor`.
-       mean: the mean of the normal distribution.
-       std: the standard deviation of the normal distribution.
-       a: the minimum cutoff value.
-       b: the maximum cutoff value.
+
+    Parameters
+    ----------
+    tensor : torch.Tensor
+        The tensor to initialize.
+    mean : float
+        The mean of the normal distribution. Default is ``0.0``.
+    std : float
+        The standard deviation of the normal distribution. Default is ``1.0``.
+    a : float
+        The lower bound of the truncated normal distribution. Default is ``-2.0``.
+    b : float
+        The upper bound of the truncated normal distribution. Default is ``2.0``.
     """
 
-    def norm_cdf(x):
+    def norm_cdf(x: float) -> float:
+        """Normal cumulative distribution function."""
         return (1.0 + math.erf(x / math.sqrt(2.0))) / 2.0
 
     with torch.no_grad():
@@ -272,22 +370,30 @@ def _no_grad_trunc_normal_(tensor, mean, std, a, b):
         return tensor
 
 
-def trunc_normal_(tensor, mean=0.0, std=1.0, a=-2.0, b=2.0):
-    """Tensor initialization with truncated normal distribution.
+def trunc_normal_(
+    tensor: torch.Tensor, mean: float = 0.0, std: float = 1.0, a: float = -2.0, b: float = 2.0
+) -> torch.Tensor:
+    """
+    Tensor initialization with truncated normal distribution.
+
     Based on:
     https://github.com/rwightman/pytorch-image-models
-    Args:
-       tensor: an n-dimensional `torch.Tensor`
-       mean: the mean of the normal distribution
-       std: the standard deviation of the normal distribution
-       a: the minimum cutoff value
-       b: the maximum cutoff value
-    """
 
+    Parameters
+    ----------
+    tensor : torch.Tensor
+        The tensor to initialize.
+    mean : float
+        The mean of the normal distribution. Default is ``0.0``.
+    std : float
+        The standard deviation of the normal distribution. Default is ``1.0``.
+    a : float
+        The lower bound of the truncated normal distribution. Default is ``-2.0``.
+    b : float
+        The upper bound of the truncated normal distribution. Default is ``2.0``.
+    """
     if std <= 0:
         raise ValueError("the standard deviation should be greater than zero.")
-
     if a >= b:
         raise ValueError("minimum cutoff value (a) should be smaller than maximum cutoff value (b).")
-
     return _no_grad_trunc_normal_(tensor, mean, std, a, b)

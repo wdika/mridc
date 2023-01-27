@@ -2,7 +2,6 @@
 __author__ = "Dimitrios Karkalousos"
 
 from abc import ABC
-from typing import Any, Tuple
 
 import torch
 from omegaconf import DictConfig, OmegaConf
@@ -15,37 +14,26 @@ from mridc.collections.segmentation.models.dynunet_base.dynunet_block import Dyn
 __all__ = ["DYNUNet"]
 
 
-class DYNUNet(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel, ABC):
-    """Implementation of the DYNUNet as a module."""
+class DYNUNet(base_segmentation_models.BaseMRISegmentationModel, ABC):
+    """
+    Implementation of a Dynamic UNet (DynUNet), based on [1].
+
+    References
+    ----------
+    .. [1] Isensee F, Petersen J, Klein A, Zimmerer D, Jaeger PF, Kohl S, Wasserthal J, Koehler G, Norajitra T, Wirkert
+        S, Maier-Hein KH. nnu-net: Self-adapting framework for u-net-based medical image segmentation. arXiv preprint
+        arXiv:1809.10486. 2018 Sep 27.
+    """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
-        # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
-        self.use_reconstruction_module = cfg_dict.get("use_reconstruction_module", False)
-
-        self.fft_centered = cfg_dict.get("fft_centered")
-        self.fft_normalization = cfg_dict.get("fft_normalization")
-        self.spatial_dims = cfg_dict.get("spatial_dims")
-        self.coil_dim = cfg_dict.get("coil_dim")
-        self.coil_combination_method = cfg_dict.get("coil_combination_method")
-
-        self.input_channels = cfg_dict.get("segmentation_module_input_channels", 2)
-        if self.input_channels == 0:
-            raise ValueError("Segmentation module input channels cannot be 0.")
-        if self.input_channels > 2:
-            raise ValueError(
-                "Segmentation module input channels must be either 1 or 2. Found: {}".format(self.input_channels)
-            )
-
-        dimensionality = cfg_dict.get("dimensionality", 2)
-
         strides = cfg_dict.get("segmentation_module_strides", (1, 1, 1, 1))
         self.deep_supervision = cfg_dict.get("segmentation_module_deep_supervision", False)
         self.segmentation_module = DynUNet(
-            spatial_dims=dimensionality,
+            spatial_dims=cfg_dict.get("dimensionality", 2),
             in_channels=self.input_channels,
             out_channels=cfg_dict.get("segmentation_module_output_channels", 2),
             kernel_size=cfg_dict.get("segmentation_module_kernel_size", 3),
@@ -59,10 +47,6 @@ class DYNUNet(base_segmentation_models.BaseMRIJointReconstructionSegmentationMod
             deep_supr_num=cfg_dict.get("segmentation_module_deep_supervision_levels", 1),
         )
 
-        self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
-        self.magnitude_input = cfg_dict.get("magnitude_input", True)
-        self.normalize_segmentation_output = cfg_dict.get("normalize_segmentation_output", True)
-
     @common_classes.typecheck()
     def forward(
         self,
@@ -71,28 +55,27 @@ class DYNUNet(base_segmentation_models.BaseMRIJointReconstructionSegmentationMod
         mask: torch.Tensor,
         init_reconstruction_pred: torch.Tensor,
         target_reconstruction: torch.Tensor,
-    ) -> Tuple[Any, Any]:
+    ) -> torch.Tensor:
         """
         Forward pass of the network.
 
         Parameters
         ----------
-        y: Data.
-            torch.Tensor, shape [batch_size, n_echoes, n_coils, n_x, n_y, 2]
-        sensitivity_maps: Coil sensitivity maps.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        mask: Sub-sampling mask.
-            torch.Tensor, shape [batch_size, 1, n_x, n_y, 2]
-        init_reconstruction_pred: Initial reconstruction prediction.
-            torch.Tensor, shape [batch_size, 1, n_x, n_y, 2]
-        target_reconstruction: Target reconstruction.
-            torch.Tensor, shape [batch_size, 1, n_x, n_y, 2]
+        y : torch.Tensor
+            Subsampled k-space data. Shape [batch_size, n_coils, n_x, n_y, 2]
+        sensitivity_maps : torch.Tensor
+            Coil sensitivity maps. Shape [batch_size, n_coils, n_x, n_y, 2]
+        mask : torch.Tensor
+            Subsampling mask. Shape [1, 1, n_x, n_y, 1]
+        init_reconstruction_pred : torch.Tensor
+            Initial reconstruction prediction. Shape [batch_size, n_x, n_y, 2]
+        target_reconstruction : torch.Tensor
+            Target reconstruction. Shape [batch_size, n_x, n_y, 2]
 
         Returns
         -------
-        pred_reconstruction: void
-        pred_segmentation: Predicted segmentation.
-            torch.Tensor, shape [batch_size, nr_classes, n_x, n_y]
+        torch.Tensor
+            Predicted segmentation. Shape [batch_size, n_classes, n_x, n_y]
         """
         if self.consecutive_slices > 1:
             batch, slices = init_reconstruction_pred.shape[:2]
@@ -145,4 +128,4 @@ class DYNUNet(base_segmentation_models.BaseMRIJointReconstructionSegmentationMod
                 ]
             )
 
-        return torch.empty([]), pred_segmentation
+        return pred_segmentation

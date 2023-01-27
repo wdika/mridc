@@ -12,43 +12,44 @@
 **MRIDC is a toolbox for applying AI methods on MR imaging. A collection of tools for data consistency and data quality
 is provided for MRI data analysis. Primarily it focuses on the following tasks:**
 
-### **Reconstruction**
+# TODO: Add more tasks
 
-The following models are implemented for accelerated MRI reconstruction:
-1.[Cascades of Independently Recurrent Inference Machines (CIRIM)](https://iopscience.iop.org/article/10.1088/1361-6560/ac6cc2)
-,
-2.[Compressed Sensing (CS)](https://ieeexplore.ieee.org/document/4472246),
-3.[Convolutional Recurrent Neural Networks (CRNN)](https://ieeexplore.ieee.org/document/8425639),
-4.[Deep Cascade of Convolutional Neural Networks (CCNN)](https://ieeexplore.ieee.org/document/8067520),
-5.[Down-Up Net (DUNET)](https://onlinelibrary.wiley.com/doi/10.1002/mrm.28827),
-6.[End-to-End Variational Network (E2EVN)](https://link.springer.com/chapter/10.1007/978-3-030-59713-9_7),
-7.[Joint Deep Model-Based MR Image and Coil Sensitivity Reconstruction Network (Joint-ICNet)](https://ieeexplore.ieee.org/document/9578412)
-,
-8.[Independently Recurrent Inference Machines (IRIM)](http://arxiv.org/abs/2012.07819),
-9.[KIKI-Net](https://onlinelibrary.wiley.com/doi/10.1002/mrm.27201),
-10.[Learned Primal-Dual Net (LPDNet)](https://ieeexplore.ieee.org/document/8271999),
-11.[MultiDomainNet](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8428775/),
-12.[Recurrent Inference Machines (RIM)](https://www.sciencedirect.com/science/article/abs/pii/S1361841518306078?via%3Dihub)
-,
-13.[Recurrent Variational Network (RVN)](https://arxiv.org/abs/2111.09639),
-14.[UNet](https://link.springer.com/chapter/10.1007/978-3-319-24574-4_28),
-15.[Variable Splitting Network (VSNet)](https://dl.acm.org/doi/abs/10.1007/978-3-030-32251-9_78),
-16.[XPDNet](https://arxiv.org/abs/2010.07290),
-17.and Zero-Filled reconstruction (ZF).
+### **MultiTask**
+
+_Coming soon..._
+
 
 ### **Quantitative Imaging**
 
 The following models are implemented for quantitative imaging:
-1.[quantitative Cascades of Independently Recurrent Inference Machines (qCIRIM)](https://iopscience.iop.org/article/10.1088/1361-6560/ac6cc2)
-,
-2.[quantitative End-to-End Variational Network (qE2EVN)](https://link.springer.com/chapter/10.1007/978-3-030-59713-9_7)
-,
+1.[quantitative Cascades of Independently Recurrent Inference Machines (qCIRIM)](https://iopscience.iop.org/article/10.1088/1361-6560/ac6cc2),
+2.[quantitative End-to-End Variational Network (qE2EVN)](https://link.springer.com/chapter/10.1007/978-3-030-59713-9_7),
 3.[quantitative Independently Recurrent Inference Machines (qIRIM)](http://arxiv.org/abs/2012.07819),
 4.[quantitative Recurrent Inference Machines (qRIM)](https://www.sciencedirect.com/science/article/abs/pii/S1361841518306078?via%3Dihub)
 .
 
 _Note: Currently only the above models are implemented. More models can be added by extending the reconstruction models
 for quantitative imaging. If you wish to extend the toolbox, please open an issue._
+
+### **Reconstruction**
+
+The following models are implemented for accelerated MRI reconstruction:
+1.[Cascades of Independently Recurrent Inference Machines (CIRIM)](https://iopscience.iop.org/article/10.1088/1361-6560/ac6cc2),
+2.[Convolutional Recurrent Neural Networks (CRNN)](https://ieeexplore.ieee.org/document/8425639),
+3.[Deep Cascade of Convolutional Neural Networks (CCNN)](https://ieeexplore.ieee.org/document/8067520),
+4.[Down-Up Net (DUNET)](https://onlinelibrary.wiley.com/doi/10.1002/mrm.28827),
+5.[End-to-End Variational Network (E2EVN)](https://link.springer.com/chapter/10.1007/978-3-030-59713-9_7),
+6.[Joint Deep Model-Based MR Image and Coil Sensitivity Reconstruction Network (Joint-ICNet)](https://ieeexplore.ieee.org/document/9578412),
+7.[Independently Recurrent Inference Machines (IRIM)](http://arxiv.org/abs/2012.07819),
+8.[KIKI-Net](https://onlinelibrary.wiley.com/doi/10.1002/mrm.27201),
+9.[Learned Primal-Dual Net (LPDNet)](https://ieeexplore.ieee.org/document/8271999),
+10.[MultiDomainNet](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8428775/),
+11.[Recurrent Inference Machines (RIM)](https://www.sciencedirect.com/science/article/abs/pii/S1361841518306078?via%3Dihub),
+12.[Recurrent Variational Network (RVN)](https://arxiv.org/abs/2111.09639),
+13.[UNet](https://link.springer.com/chapter/10.1007/978-3-319-24574-4_28),
+14.[Variable Splitting Network (VSNet)](https://dl.acm.org/doi/abs/10.1007/978-3-030-32251-9_78),
+15.[XPDNet](https://arxiv.org/abs/2010.07290),
+16.and Zero-Filled reconstruction (ZF).
 
 ### **Segmentation**
 

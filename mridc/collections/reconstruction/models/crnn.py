@@ -8,9 +8,7 @@ import numpy as np
 import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
-from torch.nn import L1Loss
 
-import mridc.collections.common.losses.ssim as losses
 import mridc.collections.common.parts.fft as fft
 import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.models.base as base_models
@@ -23,31 +21,21 @@ __all__ = ["CRNNet"]
 
 class CRNNet(base_models.BaseMRIReconstructionModel, ABC):
     """
-    Implementation of the Convolutional Recurrent Neural Network, inspired by C. Qin, J. Schlemper, J. Caballero, \
-    A. N. Price, J. V. Hajnal and D. Rueckert.
+    Implementation of the Convolutional Recurrent Neural Network, inspired by [1].
 
     References
     ----------
-
-    ..
-
-        C. Qin, J. Schlemper, J. Caballero, A. N. Price, J. V. Hajnal and D. Rueckert, "Convolutional Recurrent \
-        Neural Networks for Dynamic MR Image Reconstruction," in IEEE Transactions on Medical Imaging, vol. 38, \
-        no. 1, pp. 280-290, Jan. 2019, doi: 10.1109/TMI.2018.2863670.
-
+    .. [1] C. Qin, J. Schlemper, J. Caballero, A. N. Price, J. V. Hajnal and D. Rueckert, "Convolutional Recurrent
+        Neural Networks for Dynamic MR Image Reconstruction," in IEEE Transactions on Medical Imaging, vol. 38, no. 1,
+        pp. 280-290, Jan. 2019, doi: 10.1109/TMI.2018.2863670.
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
-        # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
         self.no_dc = cfg_dict.get("no_dc")
-        self.fft_centered = cfg_dict.get("fft_centered")
-        self.fft_normalization = cfg_dict.get("fft_normalization")
-        self.spatial_dims = cfg_dict.get("spatial_dims")
-        self.coil_dim = cfg_dict.get("coil_dim")
         self.num_iterations = cfg_dict.get("num_iterations")
 
         self.crnn = crnn_block.RecurrentConvolutionalNetBlock(
@@ -66,29 +54,6 @@ class CRNNet(base_models.BaseMRIReconstructionModel, ABC):
             no_dc=self.no_dc,
         )
 
-        self.coil_combination_method = cfg_dict.get("coil_combination_method")
-
-        # initialize weights if not using pretrained ccnn
-        # TODO if not ccnn_cfg_dict.get("pretrained", False)
-
-        if cfg_dict.get("train_loss_fn") == "ssim":
-            self.train_loss_fn = losses.SSIMLoss()
-        elif cfg_dict.get("train_loss_fn") == "l1":
-            self.train_loss_fn = L1Loss()
-        elif cfg_dict.get("train_loss_fn") == "mse":
-            self.train_loss_fn = torch.nn.MSELoss()
-        else:
-            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("train_loss_fn")))
-        if cfg_dict.get("val_loss_fn") == "ssim":
-            self.val_loss_fn = losses.SSIMLoss()
-        elif cfg_dict.get("val_loss_fn") == "l1":
-            self.val_loss_fn = L1Loss()
-        elif cfg_dict.get("val_loss_fn") == "mse":
-            self.val_loss_fn = torch.nn.MSELoss()
-        else:
-            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("val_loss_fn")))
-        self.accumulate_estimates = True
-
     @common_classes.typecheck()
     def forward(
         self,
@@ -103,90 +68,135 @@ class CRNNet(base_models.BaseMRIReconstructionModel, ABC):
 
         Parameters
         ----------
-        y: Subsampled k-space data.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        sensitivity_maps: Coil sensitivity maps.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        mask: Sampling mask.
-            torch.Tensor, shape [1, 1, n_x, n_y, 1]
-        init_pred: Initial prediction.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
-        target: Target data to compute the loss.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        y : torch.Tensor
+            Subsampled k-space data. Shape [batch_size, n_coils, n_x, n_y, 2]
+        sensitivity_maps : torch.Tensor
+            Coil sensitivity maps. Shape [batch_size, n_coils, n_x, n_y, 2]
+        mask : torch.Tensor
+            Subsampling mask. Shape [1, 1, n_x, n_y, 1]
+        init_pred : torch.Tensor
+            Initial prediction. Shape [batch_size, n_x, n_y, 2]
+        target : torch.Tensor
+            Target data to compute the loss. Shape [batch_size, n_x, n_y, 2]
 
         Returns
         -------
-        pred: list of torch.Tensor, shape [batch_size, n_x, n_y, 2], or  torch.Tensor, shape [batch_size, n_x, n_y, 2]
-             If self.accumulate_loss is True, returns a list of all intermediate estimates.
-             If False, returns the final estimate.
+        torch.Tensor
+            Reconstructed image. Shape [batch_size, n_x, n_y, 2]
         """
         pred = self.crnn(y, sensitivity_maps, mask)
         yield [self.process_intermediate_pred(x, sensitivity_maps, target) for x in pred]
 
-    def process_intermediate_pred(self, pred, sensitivity_maps, target):
+    def process_intermediate_pred(
+        self,
+        prediction: Union[list, torch.Tensor],
+        sensitivity_maps: torch.Tensor,
+        target: torch.Tensor,
+    ) -> torch.Tensor:
         """
         Process the intermediate prediction.
 
         Parameters
         ----------
-        pred: Intermediate prediction.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        sensitivity_maps: Coil sensitivity maps.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        target: Target data to crop to size.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        prediction : torch.Tensor
+            Intermediate prediction. Shape [batch_size, n_coils, n_x, n_y, 2]
+        sensitivity_maps : torch.Tensor
+            Coil sensitivity maps. Shape [batch_size, n_coils, n_x, n_y, 2]
+        target : torch.Tensor
+            Target data to crop to size. Shape [batch_size, n_x, n_y, 2]
 
         Returns
         -------
-        pred: torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        torch.Tensor, shape [batch_size, n_x, n_y, 2]
             Processed prediction.
         """
-        pred = fft.ifft2(
-            pred, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
+        prediction = fft.ifft2(
+            prediction,
+            centered=self.fft_centered,
+            normalization=self.fft_normalization,
+            spatial_dims=self.spatial_dims,
         )
-        pred = utils.coil_combination(pred, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim)
-        pred = torch.view_as_complex(pred)
-        _, pred = utils.center_crop_to_smallest(target, pred)
-        return pred
+        prediction = utils.coil_combination_method(
+            prediction, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim
+        )
+        prediction = torch.view_as_complex(prediction)
+        _, prediction = utils.center_crop_to_smallest(target, prediction)
+        return prediction
 
-    def process_loss(self, target, pred, _loss_fn=None, mask=None):
+    def process_reconstruction_loss(
+        self,
+        target: torch.Tensor,
+        prediction: Union[list, torch.Tensor],
+        loss_func: torch.nn.Module,
+    ) -> torch.Tensor:
         """
-        Process the loss.
+        Processes the reconstruction loss.
 
         Parameters
         ----------
-        target: Target data.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
-        pred: Final prediction(s).
-            list of torch.Tensor, shape [batch_size, n_x, n_y, 2], or
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
-        _loss_fn: Loss function.
-            torch.nn.Module, default torch.nn.L1Loss()
+        target : torch.Tensor
+            Target data of shape [batch_size, n_x, n_y, 2].
+        prediction : Union[list, torch.Tensor]
+            Prediction(s) of shape [batch_size, n_x, n_y, 2].
+        loss_func : torch.nn.Module
+            Loss function. Must be one of {torch.nn.L1Loss(), torch.nn.MSELoss(),
+            mridc.collections.reconstruction.losses.ssim.SSIMLoss()}. Default is ``torch.nn.L1Loss()``.
 
         Returns
         -------
-        loss: torch.FloatTensor, shape [1]
+        loss: torch.FloatTensor
             If self.accumulate_loss is True, returns an accumulative result of all intermediate losses.
+            Otherwise, returns the loss of the last intermediate loss.
         """
         target = torch.abs(target / torch.max(torch.abs(target)))
 
-        if "ssim" in str(_loss_fn).lower():
+        if "ssim" in str(loss_func).lower():
             max_value = np.array(torch.max(torch.abs(target)).item()).astype(np.float32)
 
-            def loss_fn(x, y):
-                """Calculate the ssim loss."""
-                return _loss_fn(
+            def compute_reconstruction_loss(x, y):
+                """
+                Wrapper for SSIM loss.
+
+                Parameters
+                ----------
+                x : torch.Tensor
+                    Target of shape [batch_size, n_x, n_y, 2].
+                y : torch.Tensor
+                    Prediction of shape [batch_size, n_x, n_y, 2].
+
+                Returns
+                -------
+                loss: torch.FloatTensor
+                    Loss value.
+                """
+                y = torch.abs(y / torch.max(torch.abs(y)))
+                return loss_func(
                     x.unsqueeze(dim=self.coil_dim),
-                    torch.abs(y / torch.max(torch.abs(y))).unsqueeze(dim=self.coil_dim),
+                    y.unsqueeze(dim=self.coil_dim),
                     data_range=torch.tensor(max_value).unsqueeze(dim=0).to(x.device),
                 )
 
         else:
 
-            def loss_fn(x, y):
-                """Calculate other loss."""
-                return _loss_fn(x, torch.abs(y / torch.max(torch.abs(y))))
+            def compute_reconstruction_loss(x, y):
+                """
+                Wrapper for any (expect the SSIM) loss.
 
-        iterations_loss = [loss_fn(target, iteration_pred) for iteration_pred in pred]
+                Parameters
+                ----------
+                x : torch.Tensor
+                    Target of shape [batch_size, n_x, n_y, 2].
+                y : torch.Tensor
+                    Prediction of shape [batch_size, n_x, n_y, 2].
+
+                Returns
+                -------
+                loss: torch.FloatTensor
+                    Loss value.
+                """
+                y = torch.abs(y / torch.max(torch.abs(y)))
+                return loss_func(x, y)
+
+        iterations_loss = [compute_reconstruction_loss(target, iteration_pred) for iteration_pred in prediction]
         _loss = [x * torch.logspace(-1, 0, steps=self.num_iterations).to(iterations_loss[0]) for x in iterations_loss]
         yield sum(sum(_loss) / self.num_iterations)

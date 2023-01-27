@@ -124,9 +124,8 @@ class StyleCommand(distutils_cmd.Command):
 
 setuptools.setup(
     name=__package_name__,
-    # Versions should comply with PEP440.  For a discussion on single-sourcing
-    # the version across setup.py and the project code, see
-    # https://packaging.python.org/en/latest/single_source_version.html
+    # Versions should comply with PEP440.  For a discussion on single-sourcing the version across setup.py and the
+    # project code, see https://packaging.python.org/en/latest/single_source_version.html
     version=__version__,
     description=__description__,
     long_description=long_description,
@@ -158,24 +157,22 @@ setuptools.setup(
         "Intended Audience :: Information Technology",
         # Indicate what your project relates to
         "Topic :: Scientific/Engineering",
-        "Topic :: Scientific/Engineering :: Mathematics",
-        "Topic :: Scientific/Engineering :: Physics",
+        "Topic :: Scientific/Engineering :: Magnetic Resonance Imaging",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
+        "Topic :: Scientific/Engineering :: Physics",
         "Topic :: Software Development :: Libraries",
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Topic :: Utilities",
         # Pick your license as you wish (should match "license" above)
         "License :: OSI Approved :: Apache Software License",
         # Supported python versions
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         # Additional Setting
         "Environment :: Console",
         "Natural Language :: English",
         "Operating System :: OS Independent",
     ],
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages(include=["mridc", "mridc.*"]),
     install_requires=install_requires,
     setup_requires=["pytest-runner"],
     # Add in any packaged data.
@@ -187,6 +184,12 @@ setuptools.setup(
     keywords=__keywords__,
     # Custom commands.
     cmdclass={"style": StyleCommand},
+    # entry points
+    entry_points={
+        "console_scripts": [
+            "mridc = mridc.cli:main",
+        ],
+    },
 )
 
 ###############################################################################

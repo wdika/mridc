@@ -28,10 +28,10 @@ mridc.core.optim.novograd module
    :undoc-members:
    :show-inheritance:
 
-mridc.core.optim.optimizer\_with\_master\_params module
--------------------------------------------------------
+mridc.core.optim.optimizer\_with\_main\_params module
+-----------------------------------------------------
 
-.. automodule:: mridc.core.optim.optimizer_with_master_params
+.. automodule:: mridc.core.optim.optimizer_with_main_params
    :members:
    :undoc-members:
    :show-inheritance:

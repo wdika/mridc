@@ -14,6 +14,25 @@ class NormUnet(torch.nn.Module):
 
     This is the same as a regular U-Net, but with normalization applied to the input before the U-Net.
     This keeps the values more numerically stable during training.
+
+    Parameters
+    ----------
+    chans : int
+        Number of output channels of the first convolution layer.
+    num_pools : int
+        Number of down-sampling and up-sampling layers.
+    in_chans : int, optional
+        Number of channels in the input to the U-Net model. Default is ``2``.
+    out_chans : int, optional
+        Number of channels in the output to the U-Net model. Default is ``2``.
+    drop_prob : float, optional
+        Dropout probability. Default is ``0.0``.
+    padding_size : int, optional
+        Size of the padding. Default is ``15``.
+    normalize : bool, optional
+        Whether to normalize the input. Default is ``True``.
+    norm_groups : int, optional
+        Number of groups to use for group normalization. Default is ``2``.
     """
 
     def __init__(
@@ -27,19 +46,6 @@ class NormUnet(torch.nn.Module):
         normalize: bool = True,
         norm_groups: int = 2,
     ):
-        """
-
-        Parameters
-        ----------
-        chans : Number of output channels of the first convolution layer.
-        num_pools : Number of down-sampling and up-sampling layers.
-        in_chans : Number of channels in the input to the U-Net model.
-        out_chans : Number of channels in the output to the U-Net model.
-        drop_prob : Dropout probability.
-        padding_size: Size of the padding.
-        normalize: Whether to normalize the input.
-        norm_groups: Number of groups to use for group normalization.
-        """
         super().__init__()
 
         self.unet = Unet(
@@ -138,25 +144,31 @@ class NormUnet(torch.nn.Module):
 
 class Unet(torch.nn.Module):
     """
-    PyTorch implementation of a U-Net model, as presented in [1]_.
+    U-Net model, as presented in [1].
 
     References
     ----------
-    .. [1] O. Ronneberger, P. Fischer, and Thomas Brox. U-net: Convolutional networks for biomedical image segmentation. In International Conference on Medical image computing and computer-assisted intervention, pages 234–241. Springer, 2015.
+    .. [1] O. Ronneberger, P. Fischer, and Thomas Brox. U-net: Convolutional networks for biomedical image
+        segmentation. In International Conference on Medical image computing and computer-assisted intervention, pages
+        234–241. Springer, 2015.
+
+    Parameters
+    ----------
+    in_chans : int
+        Number of channels in the input to the U-Net model.
+    out_chans : int
+        Number of channels in the output to the U-Net model.
+    chans : int
+        Number of output channels of the first convolution layer. Default is ``32``.
+    num_pool_layers : int
+        Number of down-sampling and up-sampling layers. Default is ``4``.
+    drop_prob : float
+        Dropout probability. Default is ``0.0``.
     """
 
     def __init__(
         self, in_chans: int, out_chans: int, chans: int = 32, num_pool_layers: int = 4, drop_prob: float = 0.0
     ):
-        """
-        Parameters
-        ----------
-        in_chans: Number of channels in the input to the U-Net model.
-        out_chans: Number of channels in the output to the U-Net model.
-        chans: Number of output channels of the first convolution layer.
-        num_pool_layers: Number of down-sampling and up-sampling layers.
-        drop_prob: Dropout probability.
-        """
         super().__init__()
 
         self.in_chans = in_chans
@@ -188,13 +200,17 @@ class Unet(torch.nn.Module):
 
     def forward(self, image: torch.Tensor) -> torch.Tensor:
         """
+        Forward pass of the U-Net model.
+
         Parameters
         ----------
-        image: Input 4D tensor of shape `(N, in_chans, H, W)`.
+        image : torch.Tensor
+            Input tensor of shape `(N, in_chans, H, W)`.
 
         Returns
         -------
-        Output tensor of shape `(N, out_chans, H, W)`.
+        torch.Tensor
+            Output tensor of shape `(N, out_chans, H, W)`.
         """
         stack = []
         output = image
@@ -231,16 +247,18 @@ class ConvBlock(torch.nn.Module):
     """
     A Convolutional Block that consists of two convolution layers each followed by instance normalization, LeakyReLU
     activation and dropout.
+
+    Parameters
+    ----------
+    in_chans : int
+        Number of channels in the input.
+    out_chans : int
+        Number of channels in the output.
+    drop_prob : float
+        Dropout probability.
     """
 
     def __init__(self, in_chans: int, out_chans: int, drop_prob: float):
-        """
-        Parameters
-        ----------
-        in_chans: Number of channels in the input.
-        out_chans: Number of channels in the output.
-        drop_prob: Dropout probability.
-        """
         super().__init__()
 
         self.in_chans = in_chans
@@ -262,11 +280,13 @@ class ConvBlock(torch.nn.Module):
         """
         Parameters
         ----------
-        image: Input 4D tensor of shape `(N, in_chans, H, W)`.
+        image : torch.Tensor
+            Input tensor of shape `(N, in_chans, H, W)`.
 
         Returns
         -------
-        Output tensor of shape `(N, out_chans, H, W)`.
+        torch.Tensor
+            Output tensor of shape `(N, out_chans, H, W)`.
         """
         return self.layers(image)
 
@@ -275,15 +295,16 @@ class TransposeConvBlock(torch.nn.Module):
     """
     A Transpose Convolutional Block that consists of one convolution transpose layers followed by instance
     normalization and LeakyReLU activation.
+
+    Parameters
+    ----------
+    in_chans : int
+        Number of channels in the input.
+    out_chans : int
+        Number of channels in the output.
     """
 
     def __init__(self, in_chans: int, out_chans: int):
-        """
-        Parameters
-        ----------
-        in_chans: Number of channels in the input.
-        out_chans: Number of channels in the output.
-        """
         super().__init__()
 
         self.in_chans = in_chans
@@ -297,12 +318,16 @@ class TransposeConvBlock(torch.nn.Module):
 
     def forward(self, image: torch.Tensor) -> torch.Tensor:
         """
+        Forward pass of the Transpose Convolutional Block.
+
         Parameters
         ----------
-        image: Input 4D tensor of shape `(N, in_chans, H, W)`.
+        image : torch.Tensor
+            Input tensor of shape `(N, in_chans, H, W)`.
 
         Returns
         -------
-        Output tensor of shape `(N, out_chans, H*2, W*2)`.
+        torch.Tensor
+            Output tensor of shape `(N, out_chans, H*2, W*2)`.
         """
         return self.layers(image)

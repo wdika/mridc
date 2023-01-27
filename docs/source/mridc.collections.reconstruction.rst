@@ -8,6 +8,8 @@ Subpackages
    :maxdepth: 4
 
    mridc.collections.reconstruction.data
+   mridc.collections.reconstruction.losses
+   mridc.collections.reconstruction.metrics
    mridc.collections.reconstruction.models
    mridc.collections.reconstruction.parts
 

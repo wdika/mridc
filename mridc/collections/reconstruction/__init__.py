@@ -1,6 +1,6 @@
 # coding=utf-8
 
-from mridc.collections.reconstruction import data, models, parts
+from mridc.collections.reconstruction import data, losses, models, parts
 from mridc.package_info import __version__
 
 # Set collection version equal to MRIDC version.

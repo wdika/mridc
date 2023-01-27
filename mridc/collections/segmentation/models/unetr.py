@@ -2,45 +2,33 @@
 __author__ = "Dimitrios Karkalousos"
 
 from abc import ABC
-from typing import Any, Tuple
 
 import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-import mridc.collections.reconstruction.models.unet_base.unet_block as unet_block
 import mridc.collections.segmentation.models.base as base_segmentation_models
 import mridc.core.classes.common as common_classes
+from mridc.collections.segmentation.models.unetr_base.unetr_block import UNETR
 
 __all__ = ["SegmentationUNetR"]
 
-from mridc.collections.segmentation.models.unetr_base.unetr_block import UNETR
 
+class SegmentationUNetR(base_segmentation_models.BaseMRISegmentationModel, ABC):
+    """
+    Implementation of the UNETR for MRI segmentation, as presented in [1].
 
-class SegmentationUNetR(base_segmentation_models.BaseMRIJointReconstructionSegmentationModel, ABC):
-    """Implementation of the UNetR as a module."""
+    References
+    ----------
+    .. Hatamizadeh A, Tang Y, Nath V, Yang D, Myronenko A, Landman B, Roth HR, Xu D. Unetr: Transformers for 3d medical
+        image segmentation. InProceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision 2022
+        (pp. 574-584).
+    """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
-        # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
-
-        self.use_reconstruction_module = cfg_dict.get("use_reconstruction_module", False)
-
-        self.fft_centered = cfg_dict.get("fft_centered")
-        self.fft_normalization = cfg_dict.get("fft_normalization")
-        self.spatial_dims = cfg_dict.get("spatial_dims")
-        self.coil_dim = cfg_dict.get("coil_dim")
-        self.coil_combination_method = cfg_dict.get("coil_combination_method")
-
-        self.input_channels = cfg_dict.get("segmentation_module_input_channels", 2)
-        if self.input_channels == 0:
-            raise ValueError("Segmentation module input channels cannot be 0.")
-        if self.input_channels > 2:
-            raise ValueError(
-                "Segmentation module input channels must be either 1 or 2. Found: {}".format(self.input_channels)
-            )
 
         self.segmentation_module = UNETR(
             in_channels=self.input_channels,
@@ -59,10 +47,6 @@ class SegmentationUNetR(base_segmentation_models.BaseMRIJointReconstructionSegme
             qkv_bias=cfg_dict.get("segmentation_module_qkv_bias", False),
         )
 
-        self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
-        self.magnitude_input = cfg_dict.get("magnitude_input", True)
-        self.normalize_segmentation_output = cfg_dict.get("normalize_segmentation_output", True)
-
     @common_classes.typecheck()
     def forward(
         self,
@@ -71,28 +55,27 @@ class SegmentationUNetR(base_segmentation_models.BaseMRIJointReconstructionSegme
         mask: torch.Tensor,
         init_reconstruction_pred: torch.Tensor,
         target_reconstruction: torch.Tensor,
-    ) -> Tuple[Any, Any]:
+    ) -> torch.Tensor:
         """
         Forward pass of the network.
 
         Parameters
         ----------
-        y: Data.
-            torch.Tensor, shape [batch_size, n_echoes, n_coils, n_x, n_y, 2]
-        sensitivity_maps: Coil sensitivity maps.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        mask: Sub-sampling mask.
-            torch.Tensor, shape [batch_size, 1, n_x, n_y, 2]
-        init_reconstruction_pred: Initial reconstruction prediction.
-            torch.Tensor, shape [batch_size, 1, n_x, n_y, 2]
-        target_reconstruction: Target reconstruction.
-            torch.Tensor, shape [batch_size, 1, n_x, n_y, 2]
+        y : torch.Tensor
+            Subsampled k-space data. Shape [batch_size, n_coils, n_x, n_y, 2]
+        sensitivity_maps : torch.Tensor
+            Coil sensitivity maps. Shape [batch_size, n_coils, n_x, n_y, 2]
+        mask : torch.Tensor
+            Subsampling mask. Shape [1, 1, n_x, n_y, 1]
+        init_reconstruction_pred : torch.Tensor
+            Initial reconstruction prediction. Shape [batch_size, n_x, n_y, 2]
+        target_reconstruction : torch.Tensor
+            Target reconstruction. Shape [batch_size, n_x, n_y, 2]
 
         Returns
         -------
-        pred_reconstruction: void
-        pred_segmentation: Predicted segmentation.
-            torch.Tensor, shape [batch_size, nr_classes, n_x, n_y]
+        torch.Tensor
+            Predicted segmentation. Shape [batch_size, n_classes, n_x, n_y]
         """
         if self.consecutive_slices > 1:
             batch, slices = init_reconstruction_pred.shape[:2]
@@ -122,9 +105,7 @@ class SegmentationUNetR(base_segmentation_models.BaseMRIJointReconstructionSegme
         with torch.no_grad():
             init_reconstruction_pred = torch.nn.functional.group_norm(init_reconstruction_pred, num_groups=1)
 
-        pred_segmentation = self.segmentation_module(init_reconstruction_pred)
-
-        pred_segmentation = torch.abs(pred_segmentation)
+        pred_segmentation = torch.abs(self.segmentation_module(init_reconstruction_pred))
 
         if self.normalize_segmentation_output:
             pred_segmentation = pred_segmentation / torch.max(pred_segmentation)
@@ -140,4 +121,4 @@ class SegmentationUNetR(base_segmentation_models.BaseMRIJointReconstructionSegme
                 ]
             )
 
-        return torch.empty([]), pred_segmentation
+        return pred_segmentation

@@ -12,6 +12,14 @@ mridc.collections.common.callbacks.callbacks module
    :undoc-members:
    :show-inheritance:
 
+mridc.collections.common.callbacks.ema module
+---------------------------------------------
+
+.. automodule:: mridc.collections.common.callbacks.ema
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

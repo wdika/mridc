@@ -6,9 +6,7 @@ from abc import ABC
 import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
-from torch.nn import L1Loss
 
-import mridc.collections.common.losses.ssim as losses
 import mridc.collections.common.parts.fft as fft
 import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.models.base as base_models
@@ -27,9 +25,6 @@ class MultiDomainNet(base_models.BaseMRIReconstructionModel, ABC):
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
-        self.fft_normalization = cfg_dict.get("fft_normalization")
-        self.spatial_dims = cfg_dict.get("spatial_dims")
-        self.coil_dim = cfg_dict.get("coil_dim")
         self.num_cascades = cfg_dict.get("num_cascades")
 
         standardization = cfg_dict["standardization"]
@@ -49,42 +44,21 @@ class MultiDomainNet(base_models.BaseMRIReconstructionModel, ABC):
             coil_dim=self.coil_dim,
         )
 
-        self.coil_combination_method = cfg_dict.get("coil_combination_method")
-
-        if cfg_dict.get("train_loss_fn") == "ssim":
-            self.train_loss_fn = losses.SSIMLoss()
-        elif cfg_dict.get("train_loss_fn") == "l1":
-            self.train_loss_fn = L1Loss()
-        elif cfg_dict.get("train_loss_fn") == "mse":
-            self.train_loss_fn = torch.nn.MSELoss()
-        else:
-            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("train_loss_fn")))
-        if cfg_dict.get("val_loss_fn") == "ssim":
-            self.val_loss_fn = losses.SSIMLoss()
-        elif cfg_dict.get("val_loss_fn") == "l1":
-            self.val_loss_fn = L1Loss()
-        elif cfg_dict.get("val_loss_fn") == "mse":
-            self.val_loss_fn = torch.nn.MSELoss()
-        else:
-            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("val_loss_fn")))
-
-        self.accumulate_estimates = False
-
-    def _compute_model_per_coil(self, model, data):
+    def _compute_model_per_coil(self, model: torch.nn.Module, data: torch.Tensor) -> torch.Tensor:
         """
-        Compute the model per coil.
+        Computes the model per coil.
 
         Parameters
         ----------
-        model: torch.nn.Module
+        model : torch.nn.Module
             The model to be computed.
-        data: torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-            The data to be computed.
+        data : torch.Tensor
+            The data to be computed. Shape [batch_size, n_coils, n_x, n_y, 2].
 
         Returns
         -------
-        torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-            The computed output.
+        torch.Tensor
+            The computed output. Shape [batch_size, n_coils, n_x, n_y, 2].
         """
         output = []
         for idx in range(data.size(self.coil_dim)):
@@ -107,22 +81,21 @@ class MultiDomainNet(base_models.BaseMRIReconstructionModel, ABC):
 
         Parameters
         ----------
-        y: Subsampled k-space data.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        sensitivity_maps: Coil sensitivity maps.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        mask: Sampling mask.
-            torch.Tensor, shape [1, 1, n_x, n_y, 1]
-        init_pred: Initial prediction.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
-        target: Target data to compute the loss.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        y : torch.Tensor
+            Subsampled k-space data. Shape [batch_size, n_coils, n_x, n_y, 2]
+        sensitivity_maps : torch.Tensor
+            Coil sensitivity maps. Shape [batch_size, n_coils, n_x, n_y, 2]
+        mask : torch.Tensor
+            Subsampling mask. Shape [1, 1, n_x, n_y, 1]
+        init_pred : torch.Tensor
+            Initial prediction. Shape [batch_size, n_x, n_y, 2]
+        target : torch.Tensor
+            Target data to compute the loss. Shape [batch_size, n_x, n_y, 2]
 
         Returns
         -------
-        pred: list of torch.Tensor, shape [batch_size, n_x, n_y, 2], or  torch.Tensor, shape [batch_size, n_x, n_y, 2]
-             If self.accumulate_loss is True, returns a list of all intermediate estimates.
-             If False, returns the final estimate.
+        torch.Tensor
+            Reconstructed image. Shape [batch_size, n_x, n_y, 2]
         """
         image = fft.ifft2(
             y, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims
@@ -132,7 +105,7 @@ class MultiDomainNet(base_models.BaseMRIReconstructionModel, ABC):
             image = self.standardization(image, sensitivity_maps)
 
         output_image = self._compute_model_per_coil(self.unet, image.permute(0, 1, 4, 2, 3)).permute(0, 1, 3, 4, 2)
-        output_image = utils.coil_combination(
+        output_image = utils.coil_combination_method(
             output_image, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim
         )
         output_image = torch.view_as_complex(output_image)

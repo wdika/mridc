@@ -21,12 +21,10 @@ exclude = '''
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py38, py39, py310
+envlist = py310
 skip_missing_interpreters=true
 [gh-actions]
 python =
-    3.8: py38
-    3.9: py39
     3.10: py310
 [testenv]
 deps = pytest
@@ -35,11 +33,3 @@ allowlist_externals = sh
 commands=
      sh -c "pytest --ignore=projects"
 """
-
-[tool.isort]
-multi_line_output = 3
-include_trailing_comma = true
-force_grid_wrap = 0
-use_parentheses = true
-ensure_newline_before_comments = true
-line_length = 119

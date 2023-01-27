@@ -26,10 +26,18 @@ def do_metric_reduction(f: torch.Tensor, reduction: str = "mean") -> Tuple[Tenso
         the reduced metric.
     Any
         NaNs if there are any NaNs in the input, otherwise 0.
-    """
 
-    # some elements might be Nan (if ground truth y was missing (zeros))
-    # we need to account for it
+    Examples
+    --------
+    >>> import torch
+    >>> from mridc.collections.segmentation.losses.utils import do_metric_reduction
+    >>> f = torch.tensor([[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]])
+    >>> do_metric_reduction(f, "mean")
+    (tensor(6.5000), 0)
+    >>> do_metric_reduction(f, "sum")
+    (tensor(78), 0)
+    """
+    # some elements might be Nan (if ground truth y was missing (zeros)), we need to account for it
     nans = torch.isnan(f)
     not_nans = (~nans).float()
 

@@ -14,6 +14,31 @@ from mridc.collections.segmentation.models.vit_base.vit_block import ViT
 
 
 class UnetOutBlock(nn.Module):
+    """
+    Implementation of the output block of UNETR, as presented in [1].
+
+    References
+    ----------
+    .. Hatamizadeh A, Tang Y, Nath V, Yang D, Myronenko A, Landman B, Roth HR, Xu D. Unetr: Transformers for 3d medical
+        image segmentation. InProceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision 2022
+        (pp. 574-584).
+
+    Parameters
+    ----------
+    spatial_dims : int
+        Number of spatial dimensions of the input image.
+    in_channels : int
+        Number of input channels.
+    out_channels : int
+        Number of output channels.
+    dropout : Optional[Union[Tuple, str, float]]
+        Dropout rate.
+
+    .. note::
+        This is a wrapper for monai implementation of UNETR.
+        See: https://github.com/Project-MONAI/MONAI/blob/dev/monai/networks/nets/unetr.py
+    """
+
     def __init__(
         self,
         spatial_dims: int,
@@ -41,8 +66,34 @@ class UnetOutBlock(nn.Module):
 
 class UnetrBasicBlock(nn.Module):
     """
-    A CNN module that can be used for UNETR, based on: "Hatamizadeh et al.,
-    UNETR: Transformers for 3D Medical Image Segmentation <https://arxiv.org/abs/2103.10504>"
+    A CNN module that can be used for UNETR, as presented in [1].
+
+    References
+    ----------
+    .. Hatamizadeh A, Tang Y, Nath V, Yang D, Myronenko A, Landman B, Roth HR, Xu D. Unetr: Transformers for 3d medical
+        image segmentation. InProceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision 2022
+        (pp. 574-584).
+
+    Parameters
+    ----------
+    spatial_dims : int
+        Number of spatial dimensions of the input image.
+    in_channels : int
+        Number of input channels.
+    out_channels : int
+        Number of output channels.
+    kernel_size : Union[Sequence[int], int]
+        Convolution kernel size.
+    stride : Union[Sequence[int], int]
+        Convolution stride.
+    norm_name : Union[Tuple, str]
+        Feature normalization type and arguments.
+    res_block : bool
+        If True, use a residual block.
+
+    .. note::
+        This is a wrapper for monai implementation of UNETR.
+        See: https://github.com/Project-MONAI/MONAI/blob/dev/monai/networks/nets/unetr.py
     """
 
     def __init__(
@@ -54,18 +105,7 @@ class UnetrBasicBlock(nn.Module):
         stride: Union[Sequence[int], int],
         norm_name: Union[Tuple, str],
         res_block: bool = False,
-    ) -> None:
-        """
-        Args:
-            spatial_dims: number of spatial dimensions.
-            in_channels: number of input channels.
-            out_channels: number of output channels.
-            kernel_size: convolution kernel size.
-            stride: convolution stride.
-            norm_name: feature normalization type and arguments.
-            res_block: bool argument to determine if residual block is used.
-        """
-
+    ):
         super().__init__()
 
         if res_block:
@@ -87,14 +127,47 @@ class UnetrBasicBlock(nn.Module):
                 norm_name=norm_name,
             )
 
-    def forward(self, inp):
+    def forward(self, inp: torch.Tensor) -> torch.Tensor:
+        """Forward function of the module."""
         return self.layer(inp)
 
 
 class UnetrPrUpBlock(nn.Module):
     """
-    A projection upsampling module that can be used for UNETR: "Hatamizadeh et al.,
-    UNETR: Transformers for 3D Medical Image Segmentation <https://arxiv.org/abs/2103.10504>"
+    A projection upsampling module that can be used for UNETR, as presented in [1].
+
+    References
+    ----------
+    .. Hatamizadeh A, Tang Y, Nath V, Yang D, Myronenko A, Landman B, Roth HR, Xu D. Unetr: Transformers for 3d medical
+        image segmentation. InProceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision 2022
+        (pp. 574-584).
+
+    Parameters
+    ----------
+    spatial_dims : int
+        Number of spatial dimensions of the input image.
+    in_channels : int
+        Number of input channels.
+    out_channels : int
+        Number of output channels.
+    num_layer : int
+        Number of layers.
+    kernel_size : Union[Sequence[int], int]
+        Convolution kernel size.
+    stride : Union[Sequence[int], int]
+        Convolution stride.
+    upsample_kernel_size : Union[Sequence[int], int]
+        Upsampling kernel size.
+    norm_name : Union[Tuple, str]
+        Feature normalization type and arguments.
+    conv_block : bool
+        If True, use a convolution block.
+    res_block : bool
+        If True, use a residual block.
+
+    .. note::
+        This is a wrapper for monai implementation of UNETR.
+        See: https://github.com/Project-MONAI/MONAI/blob/dev/monai/networks/nets/unetr.py
     """
 
     def __init__(
@@ -109,21 +182,7 @@ class UnetrPrUpBlock(nn.Module):
         norm_name: Union[Tuple, str],
         conv_block: bool = False,
         res_block: bool = False,
-    ) -> None:
-        """
-        Args:
-            spatial_dims: number of spatial dimensions.
-            in_channels: number of input channels.
-            out_channels: number of output channels.
-            num_layer: number of upsampling blocks.
-            kernel_size: convolution kernel size.
-            stride: convolution stride.
-            upsample_kernel_size: convolution kernel size for transposed convolution layers.
-            norm_name: feature normalization type and arguments.
-            conv_block: bool argument to determine if convolutional block is used.
-            res_block: bool argument to determine if residual block is used.
-        """
-
+    ):
         super().__init__()
 
         upsample_stride = upsample_kernel_size
@@ -203,7 +262,8 @@ class UnetrPrUpBlock(nn.Module):
                 ]
             )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward function of the module."""
         x = self.transp_conv_init(x)
         for blk in self.blocks:
             x = blk(x)
@@ -212,8 +272,34 @@ class UnetrPrUpBlock(nn.Module):
 
 class UnetrUpBlock(nn.Module):
     """
-    An upsampling module that can be used for UNETR: "Hatamizadeh et al.,
-    UNETR: Transformers for 3D Medical Image Segmentation <https://arxiv.org/abs/2103.10504>"
+    An upsampling module that can be used for UNETR, as presented in [1].
+
+    References
+    ----------
+    .. Hatamizadeh A, Tang Y, Nath V, Yang D, Myronenko A, Landman B, Roth HR, Xu D. Unetr: Transformers for 3d medical
+        image segmentation. InProceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision 2022
+        (pp. 574-584).
+
+    Parameters
+    ----------
+    spatial_dims : int
+        Number of spatial dimensions of the input image.
+    in_channels : int
+        Number of input channels.
+    out_channels : int
+        Number of output channels.
+    kernel_size : Union[Sequence[int], int]
+        Convolution kernel size.
+    upsample_kernel_size : Union[Sequence[int], int]
+        Upsampling kernel size.
+    norm_name : Union[Tuple, str]
+        Feature normalization type and arguments.
+    res_block : bool
+        If True, use a residual block.
+
+    .. note::
+        This is a wrapper for monai implementation of UNETR.
+        See: https://github.com/Project-MONAI/MONAI/blob/dev/monai/networks/nets/unetr.py
     """
 
     def __init__(
@@ -225,18 +311,7 @@ class UnetrUpBlock(nn.Module):
         upsample_kernel_size: Union[Sequence[int], int],
         norm_name: Union[Tuple, str],
         res_block: bool = False,
-    ) -> None:
-        """
-        Args:
-            spatial_dims: number of spatial dimensions.
-            in_channels: number of input channels.
-            out_channels: number of output channels.
-            kernel_size: convolution kernel size.
-            upsample_kernel_size: convolution kernel size for transposed convolution layers.
-            norm_name: feature normalization type and arguments.
-            res_block: bool argument to determine if residual block is used.
-        """
-
+    ):
         super().__init__()
         upsample_stride = upsample_kernel_size
         self.transp_conv = get_conv_layer(
@@ -268,7 +343,8 @@ class UnetrUpBlock(nn.Module):
                 norm_name=norm_name,
             )
 
-    def forward(self, inp, skip):
+    def forward(self, inp: torch.Tensor, skip: torch.Tensor) -> torch.Tensor:
+        """Forward function of the module."""
         # number of channels for skip should equals to out_channels
         out = self.transp_conv(inp)
         out = torch.cat((out, skip), dim=1)
@@ -278,18 +354,32 @@ class UnetrUpBlock(nn.Module):
 
 class UnetResBlock(nn.Module):
     """
-    A skip-connection based module that can be used for DynUNet, based on:
-    `Automated Design of Deep Learning Methods for Biomedical Image Segmentation <https://arxiv.org/abs/1904.08128>`_.
-    `nnU-Net: Self-adapting Framework for U-Net-Based Medical Image Segmentation <https://arxiv.org/abs/1809.10486>`_.
-    Args:
-        spatial_dims: number of spatial dimensions.
-        in_channels: number of input channels.
-        out_channels: number of output channels.
-        kernel_size: convolution kernel size.
-        stride: convolution stride.
-        norm_name: feature normalization type and arguments.
-        act_name: activation layer type and arguments.
-        dropout: dropout probability.
+    A skip-connection based module for UNETR, as presented in [1].
+
+    References
+    ----------
+    .. Hatamizadeh A, Tang Y, Nath V, Yang D, Myronenko A, Landman B, Roth HR, Xu D. Unetr: Transformers for 3d medical
+        image segmentation. InProceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision 2022
+        (pp. 574-584).
+
+    Parameters
+    ----------
+    spatial_dims : int
+        Number of spatial dimensions of the input image.
+    in_channels : int
+        Number of input channels.
+    out_channels : int
+        Number of output channels.
+    kernel_size : Union[Sequence[int], int]
+        Convolution kernel size.
+    stride : Union[Sequence[int], int]
+        Convolution stride.
+    norm_name : Union[Tuple, str]
+        Feature normalization type and arguments.
+    act_name : Union[Tuple, str]
+        Activation function type and arguments.
+    dropout : Optional[Union[Tuple, str, float]]
+        Dropout rate.
     """
 
     def __init__(
@@ -352,7 +442,8 @@ class UnetResBlock(nn.Module):
                 conv_only=False,
             )
 
-    def forward(self, inp):
+    def forward(self, inp: torch.Tensor) -> torch.Tensor:
+        """Forward function of the module."""
         residual = inp
         out = self.conv1(inp)
         out = self.norm1(out)
@@ -370,20 +461,40 @@ class UnetResBlock(nn.Module):
 
 class UnetUpBlock(nn.Module):
     """
-    An upsampling module that can be used for DynUNet, based on:
-    `Automated Design of Deep Learning Methods for Biomedical Image Segmentation <https://arxiv.org/abs/1904.08128>`_.
-    `nnU-Net: Self-adapting Framework for U-Net-Based Medical Image Segmentation <https://arxiv.org/abs/1809.10486>`_.
-    Args:
-        spatial_dims: number of spatial dimensions.
-        in_channels: number of input channels.
-        out_channels: number of output channels.
-        kernel_size: convolution kernel size.
-        stride: convolution stride.
-        upsample_kernel_size: convolution kernel size for transposed convolution layers.
-        norm_name: feature normalization type and arguments.
-        act_name: activation layer type and arguments.
-        dropout: dropout probability.
-        trans_bias: transposed convolution bias.
+    An upsampling module that can be used for UNETR, as presented in [1].
+
+    References
+    ----------
+    .. Hatamizadeh A, Tang Y, Nath V, Yang D, Myronenko A, Landman B, Roth HR, Xu D. Unetr: Transformers for 3d medical
+        image segmentation. InProceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision 2022
+        (pp. 574-584).
+
+    Parameters
+    ----------
+    spatial_dims : int
+        Number of spatial dimensions of the input image.
+    in_channels : int
+        Number of input channels.
+    out_channels : int
+        Number of output channels.
+    kernel_size : Union[Sequence[int], int]
+        Convolution kernel size.
+    stride : Union[Sequence[int], int]
+        Convolution stride.
+    upsample_kernel_size : Union[Sequence[int], int]
+        Upsampling kernel size.
+    norm_name : Union[Tuple, str]
+        Feature normalization type and arguments.
+    act_name : Union[Tuple, str]
+        Activation function type and arguments.
+    dropout : Optional[Union[Tuple, str, float]]
+        Dropout rate.
+    trans_bias : bool
+        Whether to use bias in the transposed convolution layer. Default is ``False``.
+
+    .. note::
+        This is a wrapper for monai implementation of UNETR.
+        See: https://github.com/Project-MONAI/MONAI/blob/dev/monai/networks/nets/unetr.py
     """
 
     def __init__(
@@ -425,8 +536,9 @@ class UnetUpBlock(nn.Module):
             act_name=act_name,
         )
 
-    def forward(self, inp, skip):
-        # number of channels for skip should equals to out_channels
+    def forward(self, inp: torch.Tensor, skip: torch.Tensor) -> torch.Tensor:
+        """Forward function of the module."""
+        # number of channels for skip should equal to out_channels
         out = self.transp_conv(inp)
         out = torch.cat((out, skip), dim=1)
         out = self.conv_block(out)
@@ -435,18 +547,36 @@ class UnetUpBlock(nn.Module):
 
 class UnetBasicBlock(nn.Module):
     """
-    A CNN module that can be used for DynUNet, based on:
-    `Automated Design of Deep Learning Methods for Biomedical Image Segmentation <https://arxiv.org/abs/1904.08128>`_.
-    `nnU-Net: Self-adapting Framework for U-Net-Based Medical Image Segmentation <https://arxiv.org/abs/1809.10486>`_.
-    Args:
-        spatial_dims: number of spatial dimensions.
-        in_channels: number of input channels.
-        out_channels: number of output channels.
-        kernel_size: convolution kernel size.
-        stride: convolution stride.
-        norm_name: feature normalization type and arguments.
-        act_name: activation layer type and arguments.
-        dropout: dropout probability.
+    A CNN module that can be used for UNETR, as presented in [1].
+
+    References
+    ----------
+    .. Hatamizadeh A, Tang Y, Nath V, Yang D, Myronenko A, Landman B, Roth HR, Xu D. Unetr: Transformers for 3d medical
+        image segmentation. InProceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision 2022
+        (pp. 574-584).
+
+    Parameters
+    ----------
+    spatial_dims : int
+        Number of spatial dimensions of the input image.
+    in_channels : int
+        Number of input channels.
+    out_channels : int
+        Number of output channels.
+    kernel_size : Union[Sequence[int], int]
+        Convolution kernel size.
+    stride : Union[Sequence[int], int]
+        Convolution stride.
+    norm_name : Union[Tuple, str]
+        Feature normalization type and arguments.
+    act_name : Union[Tuple, str]
+        Activation function type and arguments.
+    dropout : Optional[Union[Tuple, str, float]]
+        Dropout rate.
+
+    .. note::
+        This is a wrapper for monai implementation of UNETR.
+        See: https://github.com/Project-MONAI/MONAI/blob/dev/monai/networks/nets/unetr.py
     """
 
     def __init__(
@@ -491,7 +621,8 @@ class UnetBasicBlock(nn.Module):
             self.norm1 = nn.InstanceNorm3d(out_channels)
             self.norm2 = nn.InstanceNorm3d(out_channels)
 
-    def forward(self, inp):
+    def forward(self, inp: torch.Tensor) -> torch.Tensor:
+        """Forward function of the module."""
         out = self.conv1(inp)
         out = self.norm1(out)
         out = self.lrelu(out)
@@ -503,8 +634,48 @@ class UnetBasicBlock(nn.Module):
 
 class UNETR(nn.Module):
     """
-    UNETR based on: "Hatamizadeh et al.,
-    UNETR: Transformers for 3D Medical Image Segmentation <https://arxiv.org/abs/2103.10504>"
+    UNETR as presented in [1].
+
+    References
+    ----------
+    .. Hatamizadeh A, Tang Y, Nath V, Yang D, Myronenko A, Landman B, Roth HR, Xu D. Unetr: Transformers for 3d medical
+        image segmentation. InProceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision 2022
+        (pp. 574-584).
+
+    Parameters
+    ----------
+    in_channels : int
+        Number of input channels.
+    out_channels : int
+        Number of output channels.
+    img_size : Union[Sequence[int], int]
+        Dimension of input image.
+    feature_size : int
+        Dimension of network feature size. Default is ``16``.
+    hidden_size : int
+        Dimension of network hidden size. Default is ``768``.
+    mlp_dim : int
+        Dimension of network mlp size. Default is ``3072``.
+    num_heads : int
+        Number of attention heads. Default is ``12``.
+    pos_embed : str
+        Positional embedding type. Default is ``"conv"``.
+    norm_name : Union[Tuple, str]
+        Feature normalization type and arguments. Default is ``"instance"``.
+    conv_block : bool
+        Whether to use convolutional block. Default is ``True``.
+    res_block : bool
+        Whether to use residual block. Default is ``True``.
+    dropout_rate : float
+        Dropout rate. Default is ``0.0``.
+    spatial_dims : int
+        Number of spatial dimensions of the input image. Default is ``3``.
+    qkv_bias : bool
+        Whether to use bias for qkv. Default is ``False``.
+
+    .. note::
+        This is a wrapper for monai implementation of UNETR.
+        See: https://github.com/Project-MONAI/MONAI/blob/dev/monai/networks/nets/unetr.py
     """
 
     def __init__(
@@ -523,32 +694,7 @@ class UNETR(nn.Module):
         dropout_rate: float = 0.0,
         spatial_dims: int = 3,
         qkv_bias: bool = False,
-    ) -> None:
-        """
-        Args:
-            in_channels: dimension of input channels.
-            out_channels: dimension of output channels.
-            img_size: dimension of input image.
-            feature_size: dimension of network feature size.
-            hidden_size: dimension of hidden layer.
-            mlp_dim: dimension of feedforward layer.
-            num_heads: number of attention heads.
-            pos_embed: position embedding layer type.
-            norm_name: feature normalization type and arguments.
-            conv_block: bool argument to determine if convolutional block is used.
-            res_block: bool argument to determine if residual block is used.
-            dropout_rate: faction of the input units to drop.
-            spatial_dims: number of spatial dims.
-            qkv_bias: apply the bias term for the qkv linear layer in self attention block
-        Examples::
-            # for single channel input 4-channel output with image size of (96,96,96), feature size of 32 and batch norm
-            >>> net = UNETR(in_channels=1, out_channels=4, img_size=(96,96,96), feature_size=32, norm_name='batch')
-             # for single channel input 4-channel output with image size of (96,96), feature size of 32 and batch norm
-            >>> net = UNETR(in_channels=1, out_channels=4, img_size=96, feature_size=32, norm_name='batch', spatial_dims=2)
-            # for 4-channel input 3-channel output with image size of (128,128,128), conv position embedding and instance norm
-            >>> net = UNETR(in_channels=4, out_channels=3, img_size=(128,128,128), pos_embed='conv', norm_name='instance')
-        """
-
+    ):
         super().__init__()
 
         if not (0 <= dropout_rate <= 1):
@@ -662,13 +808,15 @@ class UNETR(nn.Module):
         self.proj_axes = (0, spatial_dims + 1) + tuple(d + 1 for d in range(spatial_dims))
         self.proj_view_shape = list(self.feat_size) + [self.hidden_size]
 
-    def proj_feat(self, x):
+    def proj_feat(self, x: torch.Tensor) -> torch.Tensor:
+        """Project the feature map to the hidden size."""
         new_view = [x.size(0)] + self.proj_view_shape
         x = x.view(new_view)
         x = x.permute(self.proj_axes).contiguous()
         return x
 
-    def forward(self, x_in):
+    def forward(self, x_in: torch.Tensor) -> torch.Tensor:
+        """Forward function for the network."""
         x, hidden_states_out = self.vit(x_in)
         enc1 = self.encoder1(x_in)
         x2 = hidden_states_out[3]

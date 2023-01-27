@@ -6,9 +6,7 @@ from abc import ABC
 import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
-from torch.nn import L1Loss
 
-import mridc.collections.common.losses.ssim as losses
 import mridc.collections.common.parts.fft as fft
 import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.models.base as base_models
@@ -21,29 +19,21 @@ __all__ = ["VarNet"]
 
 class VarNet(base_models.BaseMRIReconstructionModel, ABC):
     """
-    Implementation of the End-to-end Variational Network (VN), as presented in Sriram, A. et al.
+    Implementation of the End-to-end Variational Network (VN), as presented in [1].
 
     References
     ----------
-
-    ..
-
-        Sriram, A. et al. (2020) ‘End-to-End Variational Networks for Accelerated MRI Reconstruction’. Available \
-        at: https://github.com/facebookresearch/fastMRI.
-
+    .. [1] Sriram A, Zbontar J, Murrell T, Defazio A, Zitnick CL, Yakubova N, Knoll F, Johnson P. End-to-end
+        variational networks for accelerated MRI reconstruction. InInternational Conference on Medical Image Computing
+        and Computer-Assisted Intervention 2020 Oct 4 (pp. 64-73). Springer, Cham.
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
-        # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
 
         self.no_dc = cfg_dict.get("no_dc")
-        self.fft_centered = cfg_dict.get("fft_centered")
-        self.fft_normalization = cfg_dict.get("fft_normalization")
-        self.spatial_dims = cfg_dict.get("spatial_dims")
-        self.coil_dim = cfg_dict.get("coil_dim")
         self.num_cascades = cfg_dict.get("num_cascades")
 
         # Cascades of VN blocks
@@ -66,31 +56,6 @@ class VarNet(base_models.BaseMRIReconstructionModel, ABC):
             ]
         )
 
-        self.coil_combination_method = cfg_dict.get("coil_combination_method")
-
-        # initialize weights if not using pretrained vn
-        # TODO if not cfg_dict.get("pretrained", False)
-
-        if cfg_dict.get("train_loss_fn") == "ssim":
-            self.train_loss_fn = losses.SSIMLoss()
-        elif cfg_dict.get("train_loss_fn") == "l1":
-            self.train_loss_fn = L1Loss()
-        elif cfg_dict.get("train_loss_fn") == "mse":
-            self.train_loss_fn = torch.nn.MSELoss()
-        else:
-            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("train_loss_fn")))
-        if cfg_dict.get("val_loss_fn") == "ssim":
-            self.val_loss_fn = losses.SSIMLoss()
-        elif cfg_dict.get("val_loss_fn") == "l1":
-            self.val_loss_fn = L1Loss()
-        elif cfg_dict.get("val_loss_fn") == "mse":
-            self.val_loss_fn = torch.nn.MSELoss()
-        else:
-            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("val_loss_fn")))
-
-        self.dc_weight = torch.nn.Parameter(torch.ones(1))
-        self.accumulate_estimates = False
-
     @common_classes.typecheck()
     def forward(
         self,
@@ -105,22 +70,21 @@ class VarNet(base_models.BaseMRIReconstructionModel, ABC):
 
         Parameters
         ----------
-        y: Subsampled k-space data.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        sensitivity_maps: Coil sensitivity maps.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        mask: Sampling mask.
-            torch.Tensor, shape [1, 1, n_x, n_y, 1]
-        init_pred: Initial prediction.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
-        target: Target data to compute the loss.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        y : torch.Tensor
+            Subsampled k-space data. Shape [batch_size, n_coils, n_x, n_y, 2]
+        sensitivity_maps : torch.Tensor
+            Coil sensitivity maps. Shape [batch_size, n_coils, n_x, n_y, 2]
+        mask : torch.Tensor
+            Subsampling mask. Shape [1, 1, n_x, n_y, 1]
+        init_pred : torch.Tensor
+            Initial prediction. Shape [batch_size, n_x, n_y, 2]
+        target : torch.Tensor
+            Target data to compute the loss. Shape [batch_size, n_x, n_y, 2]
 
         Returns
         -------
-        pred: list of torch.Tensor, shape [batch_size, n_x, n_y, 2], or  torch.Tensor, shape [batch_size, n_x, n_y, 2]
-             If self.accumulate_loss is True, returns a list of all intermediate estimates.
-             If False, returns the final estimate.
+        torch.Tensor
+            Reconstructed image. Shape [batch_size, n_x, n_y, 2]
         """
         estimation = y.clone()
 
@@ -134,7 +98,7 @@ class VarNet(base_models.BaseMRIReconstructionModel, ABC):
             normalization=self.fft_normalization,
             spatial_dims=self.spatial_dims,
         )
-        estimation = utils.coil_combination(
+        estimation = utils.coil_combination_method(
             estimation, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim
         )
         estimation = torch.view_as_complex(estimation)

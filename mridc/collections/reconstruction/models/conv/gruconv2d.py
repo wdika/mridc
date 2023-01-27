@@ -12,11 +12,28 @@ import mridc.collections.reconstruction.models.rim.rnn_cells as rnn_cells
 
 class GRUConv2d(nn.Module):
     """
-    Implementation of a GRU followed by a number of 2D convolutions inspired by [1]_.
+    Implementation of a GRU followed by a number of 2D convolutions inspired by [1].
 
     References
     ----------
-    .. [1] C. Qin, J. Schlemper, J. Caballero, A. N. Price, J. V. Hajnal and D. Rueckert, "Convolutional Recurrent Neural Networks for Dynamic MR Image Reconstruction," in IEEE Transactions on Medical Imaging, vol. 38, no. 1, pp. 280-290, Jan. 2019, doi: 10.1109/TMI.2018.2863670.
+    .. [1] C. Qin, J. Schlemper, J. Caballero, A. N. Price, J. V. Hajnal and D. Rueckert, "Convolutional Recurrent
+        Neural Networks for Dynamic MR Image Reconstruction," in IEEE Transactions on Medical Imaging, vol. 38, no. 1,
+        pp. 280-290, Jan. 2019, doi: 10.1109/TMI.2018.2863670.
+
+    Parameters
+    ----------
+    in_channels : int
+        Number of input channels.
+    out_channels : int
+        Number of output channels.
+    hidden_channels : int
+        Number of hidden channels.
+    n_convs : int, optional
+        Number of convolutional layers. Default is ``3``.
+    activation : torch.nn.Module, optional
+        Activation function. Default is ``nn.ReLU()``.
+    batchnorm : bool, optional
+        If True a batch normalization layer is applied after every convolution. Default is ``False``.
     """
 
     def __init__(
@@ -28,24 +45,6 @@ class GRUConv2d(nn.Module):
         activation="ReLU",
         batchnorm=False,
     ):
-        """
-        Inits Conv2d.
-
-        Parameters
-        ----------
-        in_channels: Number of input channels.
-            int
-        out_channels: Number of output channels.
-            int
-        hidden_channels: Number of hidden channels.
-            int
-        n_convs: Number of convolutional layers.
-            int
-        activation: Activation function.
-            torch.nn.Module
-        batchnorm: If True a batch normalization layer is applied after every convolution.
-            bool
-        """
         super().__init__()
 
         self.layers = nn.ModuleList()
@@ -89,18 +88,19 @@ class GRUConv2d(nn.Module):
 
     def forward(self, x, hx: Optional[Tensor] = None):
         """
-        Performs the forward pass of Conv2d.
+        Performs the forward pass of GRUConv2d.
 
         Parameters
         ----------
-        x: Input tensor.
-            torch.Tensor
-        hx: Initial hidden state.
-            torch.Tensor
+        x : torch.Tensor
+            Input tensor.
+        hx : torch.Tensor, optional
+            Hidden state. Default is ``None``.
 
         Returns
         -------
-        Convoluted output.
+        torch.Tensor
+            Convoluted output.
         """
         if hx is None:
             hx = x.new_zeros((x.size(0), self.hidden_channels, *x.size()[2:]))

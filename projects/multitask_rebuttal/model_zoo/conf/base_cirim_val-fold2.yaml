@@ -1,0 +1,138 @@
+pretrained: true
+checkpoint: /data/projects/recon/other/dkarkalousos/MultiTaskLearning_rebuttal/trained_models/TECFIDERA_3D_FLAIR_Synthesized_Poisson2D_8x_fold2/Reconstruction/CIRIM/default/2023-02-12_10-28-32/checkpoints/default--val_loss=0.0802-epoch=49.ckpt
+mode: test
+
+model:
+  model_name: CIRIM
+  recurrent_layer: IndRNN
+  conv_filters:
+    - 64
+    - 64
+    - 2
+  conv_kernels:
+    - 5
+    - 3
+    - 3
+  conv_dilations:
+    - 1
+    - 2
+    - 1
+  conv_bias:
+    - true
+    - true
+    - false
+  recurrent_filters:
+    - 64
+    - 64
+    - 0
+  recurrent_kernels:
+    - 1
+    - 1
+    - 0
+  recurrent_dilations:
+    - 1
+    - 1
+    - 0
+  recurrent_bias:
+    - true
+    - true
+    - false
+  depth: 2
+  time_steps: 8
+  conv_dim: 2
+  num_cascades: 5
+  dimensionality: 2
+  no_dc: true
+  keep_prediction: true
+  accumulate_predictions: true
+  train_loss_fn: l1
+  val_loss_fn: l1
+  coil_combination_method: SENSE
+  fft_centered: false
+  fft_normalization: backward
+  spatial_dims:
+    - -2
+    - -1
+  coil_dim: 1
+  use_sens_net: false
+  consecutive_slices: 1
+  log_images: true
+
+  test_ds:
+    data_path: /data/projects/tecfidera/data/synthesized/folds/fold_2_val.json
+    coil_sensitivity_maps_path: None
+    mask_path: None
+    sample_rate: 1
+    volume_sample_rate: None
+    use_dataset_cache: false
+    dataset_cache_file: None
+    num_cols: None
+    consecutive_slices: 1
+    data_saved_per_slice: false
+    apply_prewhitening: false
+    apply_gcc: false
+    coil_combination_method: SENSE
+    dimensionality: 2
+    mask_args:
+      type: poisson2d
+      accelerations:
+        - 8
+      center_fractions:
+        - 0.7
+      scale: 0.02
+      shift_mask: true
+      use_seed: false
+    half_scan_percentage: 0.0
+    remask: false
+    crop_size: None
+    kspace_crop: false
+    crop_before_masking: true
+    kspace_zero_filling_size: None
+    normalize_inputs: true
+    normalization_type: max
+    fft_centered: false
+    fft_normalization: backward
+    spatial_dims:
+      - -2
+      - -1
+    coil_dim: 1
+    use_seed: false
+    batch_size: 1
+    shuffle: false
+    num_workers: 8
+    pin_memory: false
+    drop_last: false
+
+  optim:
+    name: adam
+    lr: 1e-4
+    betas:
+      - 0.9
+      - 0.98
+    weight_decay: 0.0
+    sched:
+      name: InverseSquareRootAnnealing
+      min_lr: 0.0
+      last_epoch: -1
+      warmup_ratio: 0.1
+
+trainer:
+  strategy: ddp
+  accelerator: gpu
+  devices: 1
+  num_nodes: 1
+  max_epochs: 50
+  precision: 16
+  enable_checkpointing: false
+  logger: false
+  log_every_n_steps: 50
+  check_val_every_n_epoch: -1
+  max_steps: -1
+
+exp_manager:
+  exp_dir: /data/projects/recon/other/dkarkalousos/MultiTaskLearning_rebuttal/predictions/TECFIDERA_3D_FLAIR_Synthesized_Poisson2D_8x_fold2_ValSet/Reconstruction/CIRIM
+  create_tensorboard_logger: true
+  create_wandb_logger: false
+  wandb_logger_kwargs:
+    project: ???
+  files_to_copy: [ ]

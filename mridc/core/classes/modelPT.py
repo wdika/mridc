@@ -10,7 +10,7 @@ import uuid
 from abc import abstractmethod
 from os import path
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
 import hydra
 import torch
@@ -25,7 +25,8 @@ from mridc.core.classes.common import Model
 from mridc.core.connectors.save_restore_connector import SaveRestoreConnector
 from mridc.utils import logging
 from mridc.utils.app_state import AppState
-from mridc.utils.get_rank import is_global_rank_zero
+from mridc.utils.exceptions import MRIDCBaseException
+from mridc.utils.get_rank import get_rank, is_global_rank_zero
 
 __all__ = ["ModelPT"]
 
@@ -94,6 +95,9 @@ class ModelPT(LightningModule, Model):
 
         self._cfg = cfg
 
+        # init mapping submodule attribute -> config_field for nested MRIDC models
+        self._mridc_submodule_name_to_config_field: Dict = dict()
+
         self.save_hyperparameters("cfg")
         self._train_dl = None
         self._validation_dl = None
@@ -101,8 +105,8 @@ class ModelPT(LightningModule, Model):
         self._optimizer_param_groups = None
         self._optimizer = None
         self._scheduler = None
-        self.trainer = trainer  # reference required for self.*_rank
-        self._trainer = self.trainer  # alias for backward compatibility
+        self.set_trainer(trainer)
+
         self._save_restore_connector = SaveRestoreConnector()
 
         self._set_model_guid()
@@ -112,14 +116,28 @@ class ModelPT(LightningModule, Model):
             app_state.device_id = torch.cuda.current_device()
 
         if self._cfg is not None and not self._is_model_being_restored():
-            if "train_ds" in self._cfg and self._cfg.train_ds is not None:
+            # Setup data loaders now (default) or defer setup to `self.setup()` if `defer_setup` is set in the config
+            # of the corresponding dataloader.
+            if (
+                "train_ds" in self._cfg
+                and self._cfg.train_ds is not None
+                and not self._cfg.train_ds.get("defer_setup", False)
+            ):
                 self.setup_training_data(self._cfg.train_ds)
 
-            if "validation_ds" in self._cfg and self._cfg.validation_ds is not None:
-                self.setup_multiple_validation_data(self._cfg.validation_ds)  # type: ignore
+            if (
+                "validation_ds" in self._cfg
+                and self._cfg.validation_ds is not None
+                and not self._cfg.validation_ds.get("defer_setup", False)
+            ):
+                self.setup_multiple_validation_data(val_data_config=cfg.validation_ds)
 
-            if "test_ds" in self._cfg and self._cfg.test_ds is not None:
-                self.setup_multiple_test_data(test_data_config=None)  # type: ignore
+            if (
+                "test_ds" in self._cfg
+                and self._cfg.test_ds is not None
+                and not self._cfg.test_ds.get("defer_setup", False)
+            ):
+                self.setup_multiple_test_data(test_data_config=cfg.test_ds)
 
         else:
             if "train_ds" in self._cfg and self._cfg.train_ds is not None:  # type: ignore
@@ -158,9 +176,19 @@ class ModelPT(LightningModule, Model):
         model.save_to("model.mridc") is called.
 
         How it works:
+
             1. It always returns existing absolute path which can be used during Model constructor call EXCEPTION: \
             src is None or "" in which case nothing will be done and src will be returned
             2. It will add (config_path, model_utils.ArtifactItem()) pair to self.artifacts
+
+            .. code-block::
+                    If "src" is local existing path:
+                        then it will be returned in absolute path form.
+                    elif "src" starts with "mridc_file:unique_artifact_name":
+                        .mridc will be untarred to a temporary folder location and an actual existing path will be
+                        returned
+                    else:
+                        an error will be raised.
 
         If "src" is local existing path, then it will be returned in absolute path form.
         elif "src" starts with "mridc_file:unique_artifact_name" .mridc will be untarred to a temporary folder \
@@ -184,6 +212,12 @@ class ModelPT(LightningModule, Model):
         if src is None or not src:
             return src
 
+        if Path(src).suffix == ".mridc":
+            raise MRIDCBaseException(
+                "Registering .mridc files as artifacts not supported. "
+                "If you are trying to make a nested model, use `register_mridc_submodule`."
+            )
+
         if not hasattr(self, "artifacts"):
             self.artifacts: Dict[str, mridc.utils.model_utils.ArtifactItem] = {}
 
@@ -197,6 +231,114 @@ class ModelPT(LightningModule, Model):
             )
 
         return self._save_restore_connector.register_artifact(self, config_path, src, verify_src_exists)
+
+    def has_artifacts(self) -> bool:
+        """Returns True if model has artifacts registered."""
+        return hasattr(self, "artifacts") and self.artifacts is not None and len(self.artifacts) > 0
+
+    def has_native_or_submodules_artifacts(self) -> bool:
+        """Returns True if it has artifacts or any of the submodules have artifacts."""
+        for module in self.modules():
+            if (
+                isinstance(module, ModelPT)
+                and hasattr(module, "artifacts")
+                and module.artifacts is not None
+                and len(module.artifacts) > 0
+            ):
+                return True
+        return False
+
+    def has_mridc_submodules(self) -> bool:
+        """Returns True if it has any registered MRIDC submodules."""
+        return len(self._mridc_submodule_name_to_config_field) > 0
+
+    def register_mridc_submodule(self, name: str, config_field: str, model: "ModelPT") -> None:
+        """
+        Adds a MRIDC model as a submodule.
+
+        Submodule can be accessed via the `name` attribute on the parent MRIDC model this submodule was registered on
+        (`self`).
+
+        In the saving process, the whole parent model (self) is held as a solid model with artifacts from the child
+        submodule, the submodule config will be saved to the `config_field` of the parent model.
+
+        This method is necessary to create a nested model, e.g.
+            .. code-block:: python
+
+                class ParentModel(ModelPT):
+                    def __init__(self, cfg, trainer=None):
+                        super().__init__(cfg=cfg, trainer=trainer)
+
+                        # annotate type for autocompletion and type checking (optional)
+                        self.child_model: Optional[ChildModel] = None
+                        if cfg.get("child_model") is not None:
+                            self.register_mridc_submodule(
+                                name="child_model",
+                                config_field="child_model",
+                                model=ChildModel(self.cfg.child_model, trainer=trainer),
+                            )
+                        # ... other code
+
+        Parameters
+        ----------
+        name : str
+            Name of the submodule. This name will be used to access the submodule from the parent model.
+        config_field : str
+            Name of the config field where the submodule config will be saved.
+        model : ModelPT
+            The submodule model.
+        """
+        # check it is a real MRIDC model
+        if not isinstance(model, ModelPT):
+            raise MRIDCBaseException(
+                f"Model is not and instance of ModelPT, so can't be registered. Got {type(model).__name__}"
+            )
+        # check if it is called after __init__
+        if not hasattr(self, "_mridc_submodule_name_to_config_field"):
+            raise MRIDCBaseException(
+                "You are trying to register a submodule before the model is initialized. This is not allowed. "
+                "Did you forget to call `super().__init__`?"
+            )
+        # assign attribute to self
+        setattr(self, name, model)
+        # add to the submodules mapping
+        self._mridc_submodule_name_to_config_field[name] = config_field
+
+    def named_mridc_modules(
+        self, prefix_name: str = "", prefix_config: str = ""
+    ) -> Iterator[Tuple[str, str, "ModelPT"]]:
+        """
+        Returns an iterator over all MRIDC submodules recursively, yielding tuples of (attribute path, path in config,
+        submodule), starting from the core module.
+
+        Parameters
+        ----------
+        prefix_name : str
+            Prefix for the name path.
+        prefix_config : str
+            Prefix for the path in config.
+
+        Returns
+        -------
+        Iterator over (attribute path, path in config, submodule), starting from (prefix, self).
+        """
+        if not hasattr(self, "_mridc_submodule_name_to_config_field"):
+            raise MRIDCBaseException(
+                "Model is not fully initialized. Calling `named_mridc_modules` before __init__ not allowed. "
+                "Did you forget to call `super().__init__`?"
+            )
+
+        yield prefix_name, prefix_config, self
+
+        # recursive iteration over all MRIDC submodules
+        for name, config_field in self._mridc_submodule_name_to_config_field.items():
+            attribute_path = f"{prefix_name}.{name}" if prefix_name else name
+            config_path = f"{prefix_config}.{config_field}" if prefix_config else config_field
+            module: ModelPT = getattr(self, name)
+            for submodule_name, subconfig_path, submodule in module.named_mridc_modules(
+                prefix_name=attribute_path, prefix_config=config_path
+            ):
+                yield submodule_name, subconfig_path, submodule
 
     def save_to(self, save_path: str):
         """
@@ -589,6 +731,42 @@ class ModelPT(LightningModule, Model):
             return self._optimizer, self._scheduler
 
         return [self._optimizer], [self._scheduler]
+
+    def setup(self, stage: Optional[str] = None):
+        """
+        Called at the beginning of fit, validate, test, or predict. This is called on every process when using DDP.
+
+        Parameters
+        ----------
+        stage: str
+            fit, validate, test or predict
+        """
+        if stage == "fit":
+            train_deferred_setup = (
+                "train_ds" in self._cfg
+                and self._cfg.train_ds is not None
+                and self._cfg.train_ds.get("defer_setup", False)
+            )
+            if self.train_dataloader() is None and train_deferred_setup:
+                self.setup_training_data(self._cfg.train_ds)
+
+        if stage in ("fit", "validate"):
+            val_deferred_setup = (
+                "validation_ds" in self._cfg
+                and self._cfg.validation_ds is not None
+                and self._cfg.validation_ds.get("defer_setup", False)
+            )
+            if self.val_dataloader() is None and val_deferred_setup:
+                self.setup_multiple_validation_data(val_data_config=self._cfg.validation_ds)
+
+        if stage == "test":
+            test_deferred_setup = (
+                "test_ds" in self._cfg
+                and self._cfg.test_ds is not None
+                and self._cfg.test_ds.get("defer_setup", False)
+            )
+            if self.test_dataloader() is None and test_deferred_setup:
+                self.setup_multiple_test_data(test_data_config=self._cfg.test_ds)
 
     def train_dataloader(self):
         """Return the training dataloader."""
@@ -1253,3 +1431,69 @@ class ModelPT(LightningModule, Model):
             cls._save_restore_connector = save_restore_connector
         else:
             setattr(cls, "_save_restore_connector", save_restore_connector)
+
+    def _setup_nsys_profiling(self):
+        """
+        Enables nsys profiling To use, add the following options to the model config:
+            nsys_profile: False
+                start_step: 10  # Global batch to start profiling
+                end_step: 10 # Global batch to end profiling
+                ranks: [0] # Global rank IDs to profile
+                gen_shape: False # Generate model and kernel details including input shapes
+
+        And then wrap the model training script with:
+            nsys profile -s none -o <profile filepath>  -t cuda,nvtx --force-overwrite true \
+            --capture-range=cudaProfilerApi --capture-range-end=stop python ./examples/...
+        See more options at: https://docs.nvidia.com/nsight-systems/UserGuide/index.html#cli-profiling
+        """
+        if self.cfg.get("nsys_profile", None) is not None:
+            if self.cfg.nsys_profile.get("enabled", False):
+                # Nsys profiling options
+                self._nsys_profile_enabled = True
+                self._nsys_profile_start_step = self.cfg.nsys_profile.get("start_step", 0)
+                self._nsys_profile_end_step = self.cfg.nsys_profile.get("end_step", 0)
+                self._nsys_profile_ranks = self.cfg.nsys_profile.get("ranks", [0])
+                self._nsys_profile_gen_shape = self.cfg.nsys_profile.get("gen_shape", False)
+
+                if type(self._nsys_profile_start_step) == int:
+                    logging.info(f"Nsys profiling setup with start_step: {self._nsys_profile_start_step}")
+                else:
+                    raise ValueError(
+                        f"Nsys start_step must be of type int. Found: {type(self._nsys_profile_start_step)}"
+                    )
+
+                if type(self._nsys_profile_end_step) == int:
+                    logging.info(f"Nsys profiling setup with end_step: {self._nsys_profile_end_step}")
+                else:
+                    raise ValueError(f"Nsys end_step must be of type int. Found: {type(self._nsys_profile_end_step)}")
+
+                if self._nsys_profile_end_step >= self._nsys_profile_start_step:
+                    pass
+                else:
+                    raise ValueError(f"Nsys end_step must be greater than or equal to nsys start_step")
+
+    def on_train_batch_start(self, batch: Any, batch_idx: int, unused: int = 0):
+        """PyTorch Lightning hook:
+        https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_module.html#on-train-batch-start
+        We use it here to enable nsys profiling.
+        """
+        if self.device.type == "cuda":
+            if hasattr(self, "_nsys_profile_enabled"):
+                if self._nsys_profile_enabled:
+                    if batch_idx == self._nsys_profile_start_step and get_rank() in self._nsys_profile_ranks:
+                        logging.info("====== Start nsys profiling ======")
+                        torch.cuda.cudart().cudaProfilerStart()
+                        if self._nsys_profile_gen_shape:
+                            torch.autograd.profiler.emit_nvtx(record_shapes=True).__enter__()
+
+    def on_train_batch_end(self, outputs, batch: Any, batch_idx: int, unused: int = 0) -> None:
+        """PyTorch Lightning hook:
+        https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_module.html#on-train-batch-end
+        We use it here to enable nsys profiling.
+        """
+        if self.device.type == "cuda":
+            if hasattr(self, "_nsys_profile_enabled"):
+                if self._nsys_profile_enabled:
+                    if batch_idx == self._nsys_profile_end_step and get_rank() in self._nsys_profile_ranks:
+                        logging.info("====== End nsys profiling ======")
+                        torch.cuda.cudart().cudaProfilerStop()

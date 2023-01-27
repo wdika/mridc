@@ -9,9 +9,9 @@ import mridc.collections.common.parts.fft as fft
 
 
 def log_likelihood_gradient(
-    eta: torch.Tensor,
+    prediction: torch.Tensor,
     masked_kspace: torch.Tensor,
-    sense: torch.Tensor,
+    sensitivity_maps: torch.Tensor,
     mask: torch.Tensor,
     sigma: float,
     fft_centered: bool,
@@ -24,28 +24,39 @@ def log_likelihood_gradient(
 
     Parameters
     ----------
-    eta: Initial guess for the reconstruction.
-    masked_kspace: Subsampled k-space data.
-    sense: Sensing matrix.
-    mask: Sampling mask.
-    sigma: Noise level.
-    fft_centered: Whether to center the FFT.
-    fft_normalization: Whether to normalize the FFT.
-    spatial_dims: Spatial dimensions of the data.
-    coil_dim: Dimension of the coil.
+    prediction : torch.Tensor
+        Initial guess for the reconstruction. Shape [batch_size, height, width, 2].
+    masked_kspace : torch.Tensor
+        Subsampled k-space data. Shape [batch_size, coils, height, width, 2].
+    sensitivity_maps : torch.Tensor
+        Coil sensitivity maps. Shape [batch_size, coils, height, width, 2].
+    mask : torch.Tensor
+        Subsampling mask. Shape [batch_size, 1, height, width, 1].
+    sigma : float
+        Noise level.
+    fft_centered : bool
+        Whether to center the FFT.
+    fft_normalization : str
+        Whether to normalize the FFT.
+    spatial_dims : Sequence[int]
+        Spatial dimensions of the data.
+    coil_dim : int
+        Dimension of the coil.
 
     Returns
     -------
-    Gradient of the log-likelihood function.
+    torch.Tensor
+        Gradient of the log-likelihood function. Shape [batch_size, 4, height, width]. 4 is the stacked real and
+        imaginary parts of the prediction and the real and imaginary parts of the gradient.
     """
     if coil_dim == 0:
         coil_dim += 1
 
-    eta_real, eta_imag = map(lambda x: torch.unsqueeze(x, coil_dim), eta.chunk(2, -1))
-    sense_real, sense_imag = sense.chunk(2, -1)
+    prediction_real, prediction_imag = map(lambda x: torch.unsqueeze(x, coil_dim), prediction.chunk(2, -1))
+    sensitivity_maps_real, sensitivity_maps_imag = sensitivity_maps.chunk(2, -1)
 
-    re_se = eta_real * sense_real - eta_imag * sense_imag
-    im_se = eta_real * sense_imag + eta_imag * sense_real
+    re_se = prediction_real * sensitivity_maps_real - prediction_imag * sensitivity_maps_imag
+    im_se = prediction_real * sensitivity_maps_imag + prediction_imag * sensitivity_maps_real
     pred = torch.cat((re_se, im_se), -1)
 
     pred = fft.fft2(pred, centered=fft_centered, normalization=fft_normalization, spatial_dims=spatial_dims)
@@ -58,10 +69,14 @@ def log_likelihood_gradient(
     )
     pred_real, pred_imag = pred.chunk(2, -1)
 
-    re_out = torch.sum(pred_real * sense_real + pred_imag * sense_imag, coil_dim) / (sigma**2.0)
-    im_out = torch.sum(pred_imag * sense_real - pred_real * sense_imag, coil_dim) / (sigma**2.0)
+    re_out = torch.sum(pred_real * sensitivity_maps_real + pred_imag * sensitivity_maps_imag, coil_dim) / (
+        sigma**2.0
+    )
+    im_out = torch.sum(pred_imag * sensitivity_maps_real - pred_real * sensitivity_maps_imag, coil_dim) / (
+        sigma**2.0
+    )
 
-    eta_real = eta_real.squeeze(coil_dim)
-    eta_imag = eta_imag.squeeze(coil_dim)
+    prediction_real = prediction_real.squeeze(coil_dim)
+    prediction_imag = prediction_imag.squeeze(coil_dim)
 
-    return torch.cat((eta_real, eta_imag, re_out, im_out), -1).permute(0, 3, 1, 2)
+    return torch.cat((prediction_real, prediction_imag, re_out, im_out), -1).permute(0, 3, 1, 2)

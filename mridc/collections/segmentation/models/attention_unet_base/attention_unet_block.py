@@ -8,20 +8,27 @@ import mridc.collections.reconstruction.models.unet_base.unet_block as unet_bloc
 
 
 class AttentionGate(nn.Module):
-    """A Convolutional Block that consists of two convolution layers each followed by instance normalization, \
-    LeakyReLU, activation and dropout."""
+    """
+    A Convolutional Block that consists of two convolution layers each followed by instance normalization, LeakyReLU,
+    activation and dropout, as presented in [1].
+
+    References
+    ----------
+    .. [1] O. Oktay, J. Schlemper, L.L. Folgoc, M. Lee, M. Heinrich, K. Misawa, K. Mori, S. McDonagh, N.Y. Hammerla,
+        B. Kainz, B. Glocker, D. Rueckert. Attention U-Net: Learning Where to Look for the Pancreas. 2018.
+        https://arxiv.org/abs/1804.03999
+
+    Parameters
+    ----------
+    in_chans_x : int
+        Number of input channels of the input tensor `x`.
+    in_chans_g : int
+        Number of input channels of the input tensor `g`.
+    out_chans : int
+        Number of output channels.
+    """
 
     def __init__(self, in_chans_x: int, in_chans_g: int, out_chans: int):
-        """
-        Parameters
-        ----------
-        in_chans_x : int
-            Number of input channels of the input tensor `x`.
-        in_chans_g : int
-            Number of input channels of the input tensor `g`.
-        out_chans : int
-            Number of output channels.
-        """
         super().__init__()
 
         self.in_chans_x = in_chans_x
@@ -45,7 +52,7 @@ class AttentionGate(nn.Module):
 
         Returns
         -------
-        out : torch.Tensor
+        torch.Tensor
             Output tensor with shape [batch_size, out_chans, n_x, n_y].
         """
         W_x = self.W_x(x)
@@ -59,16 +66,28 @@ class AttentionGate(nn.Module):
 
 class AttentionUnet(nn.Module):
     """
-    Implementation of the Attention UNet, as presented in Ozan Oktay et al.
+    Implementation of the Attention UNet for MRI segmentation, as presented in [1].
 
     References
     ----------
-    ..
+    .. [1] O. Oktay, J. Schlemper, L.L. Folgoc, M. Lee, M. Heinrich, K. Misawa, K. Mori, S. McDonagh, N.Y. Hammerla,
+        B. Kainz, B. Glocker, D. Rueckert. Attention U-Net: Learning Where to Look for the Pancreas. 2018.
+        https://arxiv.org/abs/1804.03999
 
-        O. Oktay, J. Schlemper, L.L. Folgoc, M. Lee, M. Heinrich, K. Misawa, K. Mori, S. McDonagh, N.Y. Hammerla, \
-        B. Kainz, B. Glocker, D. Rueckert. Attention U-Net: Learning Where to Look for the Pancreas. \
-        2018. https://arxiv.org/abs/1804.03999
-
+    Parameters
+    ----------
+    in_chans : int
+        Number of input channels.
+    out_chans : int
+        Number of output channels.
+    chans : int
+        Number of channels in the convolutional layers.
+    num_pool_layers : int
+        Number of pooling layers.
+    drop_prob : float
+        Dropout probability.
+    block : nn.Module
+        Convolutional block to use.
     """
 
     def __init__(
@@ -81,22 +100,6 @@ class AttentionUnet(nn.Module):
         block=unet_block.ConvBlock,
         **kwargs,
     ):
-        """
-        Parameters
-        ----------
-        in_chans : int
-            Number of input channels.
-        out_chans : int
-            Number of output channels.
-        chans : int
-            Number of channels in the convolutional layers.
-        num_pool_layers : int
-            Number of pooling layers.
-        drop_prob : float
-            Dropout probability.
-        block : nn.Module
-            Convolutional block to use.
-        """
         super().__init__()
 
         self.in_chans = in_chans
@@ -141,7 +144,7 @@ class AttentionUnet(nn.Module):
 
         Returns
         -------
-        out : torch.Tensor
+        torch.Tensor
             Output tensor with shape [batch_size, out_chans, n_x, n_y].
         """
         stack = []

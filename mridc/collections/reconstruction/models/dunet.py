@@ -6,9 +6,7 @@ from abc import ABC
 import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
-from torch.nn import L1Loss
 
-import mridc.collections.common.losses.ssim as losses
 import mridc.collections.common.parts.fft as fft
 import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.models.base as base_models
@@ -23,34 +21,25 @@ __all__ = ["DUNet"]
 
 class DUNet(base_models.BaseMRIReconstructionModel, ABC):
     """
-    Implementation of the Down-Up NET, inspired by Hammernik, K, Schlemper, J, Qin, C, et al.
+    Implementation of the Down-Up NET, inspired by [1].
 
     References
     ----------
-
-    ..
-
-        Hammernik, K, Schlemper, J, Qin, C, et al. Systematic valuation of iterative deep neural networks for fast \
-        parallel MRI reconstruction with sensitivity-weighted coil combination. Magn Reson Med. 2021; 86: 1859– 1872. \
-         https://doi.org/10.1002/mrm.28827
-
+    .. [1] Hammernik, K, Schlemper, J, Qin, C, et al. Systematic valuation of iterative deep neural networks for fast
+        parallel MRI reconstruction with sensitivity-weighted coil combination. Magn Reson Med. 2021; 86: 1859– 1872.
+        https://doi.org/10.1002/mrm.28827
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
-        # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
-        self.fft_centered = cfg_dict.get("fft_centered")
-        self.fft_normalization = cfg_dict.get("fft_normalization")
-        self.spatial_dims = cfg_dict.get("spatial_dims")
-        self.coil_dim = cfg_dict.get("coil_dim")
 
         reg_model_architecture = cfg_dict.get("reg_model_architecture")
         if reg_model_architecture == "DIDN":
             reg_model = didn_.DIDN(
-                in_channels=2,
-                out_channels=2,
+                in_channels=cfg_dict.get("in_channels", 2),
+                out_channels=cfg_dict.get("out_channels", 2),
                 hidden_channels=cfg_dict.get("didn_hidden_channels"),
                 num_dubs=cfg_dict.get("didn_num_dubs"),
                 num_convs_recon=cfg_dict.get("didn_num_convs_recon"),
@@ -59,8 +48,8 @@ class DUNet(base_models.BaseMRIReconstructionModel, ABC):
             reg_model = unet_block.NormUnet(
                 cfg_dict.get("unet_num_filters"),
                 cfg_dict.get("unet_num_pool_layers"),
-                in_chans=2,
-                out_chans=2,
+                in_chans=cfg_dict.get("in_channels", 2),
+                out_chans=cfg_dict.get("out_channels", 2),
                 drop_prob=cfg_dict.get("unet_dropout_probability"),
                 padding_size=cfg_dict.get("unet_padding_size"),
                 normalize=cfg_dict.get("unet_normalize"),
@@ -83,7 +72,7 @@ class DUNet(base_models.BaseMRIReconstructionModel, ABC):
         elif data_consistency_term == "PROX":
             dc_layer = dc_layers.DataProxCGLayer(
                 lambda_init=cfg_dict.get("data_consistency_lambda_init"),
-                iter=cfg_dict.get("data_consistency_iterations"),
+                iter=cfg_dict.get("data_consistency_iterations", 10),
                 fft_centered=self.fft_centered,
                 fft_normalization=self.fft_normalization,
                 spatial_dims=self.spatial_dims,
@@ -108,26 +97,6 @@ class DUNet(base_models.BaseMRIReconstructionModel, ABC):
             reset_cache=False,
         )
 
-        if cfg_dict.get("train_loss_fn") == "ssim":
-            self.train_loss_fn = losses.SSIMLoss()
-        elif cfg_dict.get("train_loss_fn") == "l1":
-            self.train_loss_fn = L1Loss()
-        elif cfg_dict.get("train_loss_fn") == "mse":
-            self.train_loss_fn = torch.nn.MSELoss()
-        else:
-            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("train_loss_fn")))
-        if cfg_dict.get("val_loss_fn") == "ssim":
-            self.val_loss_fn = losses.SSIMLoss()
-        elif cfg_dict.get("val_loss_fn") == "l1":
-            self.val_loss_fn = L1Loss()
-        elif cfg_dict.get("val_loss_fn") == "mse":
-            self.val_loss_fn = torch.nn.MSELoss()
-        else:
-            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("val_loss_fn")))
-
-        self.dc_weight = torch.nn.Parameter(torch.ones(1))
-        self.accumulate_estimates = False
-
     @common_classes.typecheck()
     def forward(
         self,
@@ -142,22 +111,21 @@ class DUNet(base_models.BaseMRIReconstructionModel, ABC):
 
         Parameters
         ----------
-        y: Subsampled k-space data.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        sensitivity_maps: Coil sensitivity maps.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        mask: Sampling mask.
-            torch.Tensor, shape [1, 1, n_x, n_y, 1]
-        init_pred: Initial prediction.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
-        target: Target data to compute the loss.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        y : torch.Tensor
+            Subsampled k-space data. Shape [batch_size, n_coils, n_x, n_y, 2]
+        sensitivity_maps : torch.Tensor
+            Coil sensitivity maps. Shape [batch_size, n_coils, n_x, n_y, 2]
+        mask : torch.Tensor
+            Subsampling mask. Shape [1, 1, n_x, n_y, 1]
+        init_pred : torch.Tensor
+            Initial prediction. Shape [batch_size, n_x, n_y, 2]
+        target : torch.Tensor
+            Target data to compute the loss. Shape [batch_size, n_x, n_y, 2]
 
         Returns
         -------
-        pred: list of torch.Tensor, shape [batch_size, n_x, n_y, 2], or  torch.Tensor, shape [batch_size, n_x, n_y, 2]
-             If self.accumulate_loss is True, returns a list of all intermediate estimates.
-             If False, returns the final estimate.
+        torch.Tensor
+            Reconstructed image. Shape [batch_size, n_x, n_y, 2]
         """
         init_pred = torch.sum(
             utils.complex_mul(

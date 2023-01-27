@@ -6,9 +6,7 @@ from abc import ABC
 import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
-from torch.nn import L1Loss
 
-import mridc.collections.common.losses.ssim as losses
 import mridc.collections.common.parts.fft as fft
 import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.models.base as base_models
@@ -24,20 +22,15 @@ __all__ = ["LPDNet"]
 
 class LPDNet(base_models.BaseMRIReconstructionModel, ABC):
     """
-    Implementation of the Learned Primal Dual network, inspired by Adler, Jonas, and Ozan Öktem.
+    Implementation of the Learned Primal Dual network, inspired by [1].
 
     References
     ----------
-
-    ..
-
-        Adler, Jonas, and Ozan Öktem. “Learned Primal-Dual Reconstruction.” IEEE Transactions on Medical Imaging, \
+    .. [1] Adler, Jonas, and Ozan Öktem. “Learned Primal-Dual Reconstruction.” IEEE Transactions on Medical Imaging,
         vol. 37, no. 6, June 2018, pp. 1322–32. arXiv.org, https://doi.org/10.1109/TMI.2018.2799231.
-
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
-        # init superclass
         super().__init__(cfg=cfg, trainer=trainer)
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
@@ -52,21 +45,25 @@ class LPDNet(base_models.BaseMRIReconstructionModel, ABC):
             primal_model = torch.nn.Sequential(
                 *[
                     mwcnn_.MWCNN(
-                        input_channels=2 * (self.num_primal + 1),
+                        input_channels=cfg_dict.get("primal_in_channels") * (self.num_primal + 1),
                         first_conv_hidden_channels=cfg_dict.get("primal_mwcnn_hidden_channels"),
                         num_scales=cfg_dict.get("primal_mwcnn_num_scales"),
                         bias=cfg_dict.get("primal_mwcnn_bias"),
                         batchnorm=cfg_dict.get("primal_mwcnn_batchnorm"),
                     ),
-                    torch.nn.Conv2d(2 * (self.num_primal + 1), 2 * self.num_primal, kernel_size=1),
+                    torch.nn.Conv2d(
+                        cfg_dict.get("primal_out_channels") * (self.num_primal + 1),
+                        cfg_dict.get("primal_out_channels") * self.num_primal,
+                        kernel_size=1,
+                    ),
                 ]
             )
         elif primal_model_architecture in ["UNET", "NORMUNET"]:
             primal_model = unet_block.NormUnet(
                 cfg_dict.get("primal_unet_num_filters"),
                 cfg_dict.get("primal_unet_num_pool_layers"),
-                in_chans=2 * (self.num_primal + 1),
-                out_chans=2 * self.num_primal,
+                in_chans=cfg_dict.get("primal_in_channels") * (self.num_primal + 1),
+                out_chans=cfg_dict.get("primal_out_channels") * self.num_primal,
                 drop_prob=cfg_dict.get("primal_unet_dropout_probability"),
                 padding_size=cfg_dict.get("primal_unet_padding_size"),
                 normalize=cfg_dict.get("primal_unet_normalize"),
@@ -81,16 +78,16 @@ class LPDNet(base_models.BaseMRIReconstructionModel, ABC):
 
         if dual_model_architecture == "CONV":
             dual_model = conv2d.Conv2d(
-                in_channels=2 * (self.num_dual + 2),
-                out_channels=2 * self.num_dual,
+                in_channels=cfg_dict.get("dual_in_channels") * (self.num_dual + 2),
+                out_channels=cfg_dict.get("dual_out_channels") * self.num_dual,
                 hidden_channels=cfg_dict.get("kspace_conv_hidden_channels"),
                 n_convs=cfg_dict.get("kspace_conv_n_convs"),
                 batchnorm=cfg_dict.get("kspace_conv_batchnorm"),
             )
         elif dual_model_architecture == "DIDN":
             dual_model = didn_.DIDN(
-                in_channels=2 * (self.num_dual + 2),
-                out_channels=2 * self.num_dual,
+                in_channels=cfg_dict.get("dual_in_channels") * (self.num_dual + 2),
+                out_channels=cfg_dict.get("dual_out_channels") * self.num_dual,
                 hidden_channels=cfg_dict.get("kspace_didn_hidden_channels"),
                 num_dubs=cfg_dict.get("kspace_didn_num_dubs"),
                 num_convs_recon=cfg_dict.get("kspace_didn_num_convs_recon"),
@@ -99,8 +96,8 @@ class LPDNet(base_models.BaseMRIReconstructionModel, ABC):
             dual_model = unet_block.NormUnet(
                 cfg_dict.get("dual_unet_num_filters"),
                 cfg_dict.get("dual_unet_num_pool_layers"),
-                in_chans=2 * (self.num_dual + 2),
-                out_chans=2 * self.num_dual,
+                in_chans=cfg_dict.get("dual_in_channels") * (self.num_dual + 2),
+                out_chans=cfg_dict.get("dual_out_channels") * self.num_dual,
                 drop_prob=cfg_dict.get("dual_unet_dropout_probability"),
                 padding_size=cfg_dict.get("dual_unet_padding_size"),
                 normalize=cfg_dict.get("dual_unet_normalize"),
@@ -118,29 +115,6 @@ class LPDNet(base_models.BaseMRIReconstructionModel, ABC):
             [pd.DualNet(self.num_dual, dual_architecture=dual_model) for _ in range(self.num_iter)]
         )
 
-        self.fft_centered = cfg_dict.get("fft_centered")
-        self.fft_normalization = cfg_dict.get("fft_normalization")
-        self.spatial_dims = cfg_dict.get("spatial_dims")
-        self.coil_dim = cfg_dict.get("coil_dim")
-
-        if cfg_dict.get("train_loss_fn") == "ssim":
-            self.train_loss_fn = losses.SSIMLoss()
-        elif cfg_dict.get("train_loss_fn") == "l1":
-            self.train_loss_fn = L1Loss()
-        elif cfg_dict.get("train_loss_fn") == "mse":
-            self.train_loss_fn = torch.nn.MSELoss()
-        else:
-            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("train_loss_fn")))
-        if cfg_dict.get("val_loss_fn") == "ssim":
-            self.val_loss_fn = losses.SSIMLoss()
-        elif cfg_dict.get("val_loss_fn") == "l1":
-            self.val_loss_fn = L1Loss()
-        elif cfg_dict.get("val_loss_fn") == "mse":
-            self.val_loss_fn = torch.nn.MSELoss()
-        else:
-            raise ValueError("Unknown loss function: {}".format(cfg_dict.get("val_loss_fn")))
-        self.accumulate_estimates = False
-
     @common_classes.typecheck()
     def forward(
         self,
@@ -155,22 +129,21 @@ class LPDNet(base_models.BaseMRIReconstructionModel, ABC):
 
         Parameters
         ----------
-        y: Subsampled k-space data.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        sensitivity_maps: Coil sensitivity maps.
-            torch.Tensor, shape [batch_size, n_coils, n_x, n_y, 2]
-        mask: Sampling mask.
-            torch.Tensor, shape [1, 1, n_x, n_y, 1]
-        init_pred: Initial prediction.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
-        target: Target data to compute the loss.
-            torch.Tensor, shape [batch_size, n_x, n_y, 2]
+        y : torch.Tensor
+            Subsampled k-space data. Shape [batch_size, n_coils, n_x, n_y, 2]
+        sensitivity_maps : torch.Tensor
+            Coil sensitivity maps. Shape [batch_size, n_coils, n_x, n_y, 2]
+        mask : torch.Tensor
+            Subsampling mask. Shape [1, 1, n_x, n_y, 1]
+        init_pred : torch.Tensor
+            Initial prediction. Shape [batch_size, n_x, n_y, 2]
+        target : torch.Tensor
+            Target data to compute the loss. Shape [batch_size, n_x, n_y, 2]
 
         Returns
         -------
-        pred: list of torch.Tensor, shape [batch_size, n_x, n_y, 2], or  torch.Tensor, shape [batch_size, n_x, n_y, 2]
-             If self.accumulate_loss is True, returns a list of all intermediate estimates.
-             If False, returns the final estimate.
+        torch.Tensor
+            Reconstructed image. Shape [batch_size, n_x, n_y, 2]
         """
         input_image = utils.complex_mul(
             fft.ifft2(
