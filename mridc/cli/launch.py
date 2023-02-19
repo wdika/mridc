@@ -7,35 +7,33 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import DictConfig, OmegaConf
 
-from mridc.collections.multitask.rs.models.idslr import IDSLR
-from mridc.collections.multitask.rs.models.idslr_unet import IDSLRUNet
-from mridc.collections.multitask.rs.models.mtlrs import MTLRS
-from mridc.collections.multitask.rs.models.recseg_unet import RecSegUNet
-from mridc.collections.multitask.rs.models.segnet import SegNet
-from mridc.collections.multitask.rs.models.seranet import SERANet
-from mridc.collections.quantitative.models.qcirim import qCIRIM
-from mridc.collections.quantitative.models.qvn import qVarNet
-from mridc.collections.reconstruction.models.ccnn import CascadeNet
-from mridc.collections.reconstruction.models.cirim import CIRIM
-from mridc.collections.reconstruction.models.crnn import CRNNet
-from mridc.collections.reconstruction.models.dunet import DUNet
-from mridc.collections.reconstruction.models.jointicnet import JointICNet
-from mridc.collections.reconstruction.models.kikinet import KIKINet
-from mridc.collections.reconstruction.models.lpd import LPDNet
-from mridc.collections.reconstruction.models.multidomainnet import MultiDomainNet
-from mridc.collections.reconstruction.models.rvn import RecurrentVarNet
-from mridc.collections.reconstruction.models.unet import UNet
-from mridc.collections.reconstruction.models.vn import VarNet
-from mridc.collections.reconstruction.models.vsnet import VSNet
-from mridc.collections.reconstruction.models.xpdnet import XPDNet
-from mridc.collections.reconstruction.models.zf import ZF
-from mridc.collections.segmentation.models.attention_unet import SegmentationAttentionUNet
-from mridc.collections.segmentation.models.dynunet import DYNUNet
-from mridc.collections.segmentation.models.lambda_unet import SegmentationLambdaUNet
-from mridc.collections.segmentation.models.unet import SegmentationUNet
-from mridc.collections.segmentation.models.unet3d import Segmentation3DUNet
-from mridc.collections.segmentation.models.unetr import SegmentationUNetR
-from mridc.collections.segmentation.models.vnet import SegmentationVNet
+from mridc.collections.multitask.rs.models import IDSLR, IDSLRUNet, MTLRS, RecSegUNet, SegNet, SERANet
+from mridc.collections.quantitative.models import qCIRIM, qVarNet
+from mridc.collections.reconstruction.models import (
+    CIRIM,
+    CascadeNet,
+    CRNNet,
+    DUNet,
+    JointICNet,
+    KIKINet,
+    LPDNet,
+    MultiDomainNet,
+    RecurrentVarNet,
+    UNet,
+    VarNet,
+    VSNet,
+    XPDNet,
+    ZF,
+)
+from mridc.collections.segmentation.models import (
+    SegmentationAttentionUNet,
+    SegmentationDYNUNet,
+    SegmentationLambdaUNet,
+    SegmentationUNet,
+    SegmentationUNetR,
+    Segmentation3DUNet,
+    SegmentationVNet,
+)
 from mridc.core.conf.hydra_runner import hydra_runner
 from mridc.utils import logging
 from mridc.utils.exp_manager import exp_manager
@@ -84,8 +82,6 @@ def main(cfg: DictConfig) -> None:
         model = CRNNet(cfg.model, trainer=trainer)
     elif model_name == "DUNET":
         model = DUNet(cfg.model, trainer=trainer)
-    elif model_name == "DYNUNET":
-        model = DYNUNet(cfg.model, trainer=trainer)
     elif model_name in ("E2EVN", "VN"):
         model = VarNet(cfg.model, trainer=trainer)
     elif model_name == "IDSLR":
@@ -112,6 +108,8 @@ def main(cfg: DictConfig) -> None:
         model = RecurrentVarNet(cfg.model, trainer=trainer)
     elif model_name == "SEGMENTATIONATTENTIONUNET":
         model = SegmentationAttentionUNet(cfg.model, trainer=trainer)
+    elif model_name == "SEGMENTATIONDYNUNET":
+        model = SegmentationDYNUNet(cfg.model, trainer=trainer)
     elif model_name == "SEGMENTATIONLAMBDAUNET":
         model = SegmentationLambdaUNet(cfg.model, trainer=trainer)
     elif model_name == "SEGMENTATIONUNET":

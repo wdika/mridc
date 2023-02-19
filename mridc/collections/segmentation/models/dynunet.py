@@ -11,10 +11,10 @@ import mridc.collections.segmentation.models.base as base_segmentation_models
 import mridc.core.classes.common as common_classes
 from mridc.collections.segmentation.models.dynunet_base.dynunet_block import DynUNet
 
-__all__ = ["DYNUNet"]
+__all__ = ["SegmentationDYNUNet"]
 
 
-class DYNUNet(base_segmentation_models.BaseMRISegmentationModel, ABC):
+class SegmentationDYNUNet(base_segmentation_models.BaseMRISegmentationModel, ABC):
     """
     Implementation of a Dynamic UNet (DynUNet), based on [1].
 

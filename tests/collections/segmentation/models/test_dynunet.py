@@ -8,7 +8,7 @@ from omegaconf import OmegaConf
 
 from mridc.collections.common.data.subsample import RandomMaskFunc
 from mridc.collections.common.parts import utils
-from mridc.collections.segmentation.models.dynunet import DYNUNet
+from mridc.collections.segmentation.models.dynunet import SegmentationDYNUNet
 from tests.collections.reconstruction.fastmri.conftest import create_input
 
 
@@ -282,7 +282,7 @@ def test_dynunet(shape, cfg, center_fractions, accelerations, dimensionality, se
     trainer = OmegaConf.create(OmegaConf.to_container(trainer, resolve=True))
     trainer = pl.Trainer(**trainer)
 
-    dynunet = DYNUNet(cfg, trainer=trainer)
+    dynunet = SegmentationDYNUNet(cfg, trainer=trainer)
 
     with torch.no_grad():
         pred_segmentation = dynunet.forward(
