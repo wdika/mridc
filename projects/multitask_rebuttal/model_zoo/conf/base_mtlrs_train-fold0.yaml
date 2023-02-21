@@ -257,7 +257,8 @@ trainer:
   max_steps: -1
 
 exp_manager:
-  exp_dir: /data/projects/recon/other/dkarkalousos/MultiTaskLearning_rebuttal/trained_models/TECFIDERA_3D_FLAIR_Synthesized_Poisson2D_8x_fold0/Reconstruction_Segmentation/MTL_MRIRS_0.1_reconstruction_loss_0.9_segmentation_loss
+#  exp_dir: /data/projects/recon/other/dkarkalousos/MultiTaskLearning_rebuttal/trained_models/TECFIDERA_3D_FLAIR_Synthesized_Poisson2D_8x_fold0/Reconstruction_Segmentation/MTL_MRIRS_0.1_reconstruction_loss_0.9_segmentation_loss
+  exp_dir: /data/projects/recon/other/dkarkalousos/mridc/mtl
   create_tensorboard_logger: true
   create_wandb_logger: false
   wandb_logger_kwargs:

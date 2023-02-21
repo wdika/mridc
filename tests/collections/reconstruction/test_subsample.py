@@ -11,7 +11,7 @@ from mridc.collections.common.data.subsample import (
     Gaussian2DMaskFunc,
     Poisson2DMaskFunc,
     RandomMaskFunc,
-    create_mask_for_mask_type,
+    create_masker,
 )
 
 
@@ -37,7 +37,7 @@ def test_create_mask_for_random_type(
     Returns:
         None
     """
-    mask_func = create_mask_for_mask_type(mask_type, center_fractions, accelerations)
+    mask_func = create_masker(mask_type, center_fractions, accelerations)
 
     mask, acc = mask_func(x, seed, half_scan_percentage)
     mask = mask.squeeze(0).numpy()
@@ -77,7 +77,7 @@ def test_create_mask_for_equispaced1d_type(
     Returns:
         None
     """
-    mask_func = create_mask_for_mask_type(mask_type, center_fractions, accelerations)
+    mask_func = create_masker(mask_type, center_fractions, accelerations)
 
     mask, acc = mask_func(x, seed, half_scan_percentage)
     mask = mask.squeeze(0).numpy()
@@ -117,7 +117,7 @@ def test_create_mask_for_equispaced2d_type(
     Returns:
         None
     """
-    mask_func = create_mask_for_mask_type(mask_type, center_fractions, accelerations)
+    mask_func = create_masker(mask_type, center_fractions, accelerations)
 
     mask, acc = mask_func(x, seed, half_scan_percentage)
     mask = mask.numpy()
@@ -157,7 +157,7 @@ def test_create_mask_for_gaussian1d_type(
     Returns:
         None
     """
-    mask_func = create_mask_for_mask_type(mask_type, center_fractions, accelerations)
+    mask_func = create_masker(mask_type, center_fractions, accelerations)
 
     mask, acc = mask_func(x, seed, half_scan_percentage, scale)
     mask = mask.squeeze(0).numpy()
@@ -198,7 +198,7 @@ def test_create_mask_for_gaussian2d_type(
     Returns:
         None
     """
-    mask_func = create_mask_for_mask_type(mask_type, center_fractions, accelerations)
+    mask_func = create_masker(mask_type, center_fractions, accelerations)
 
     mask, acc = mask_func(x, seed, half_scan_percentage, scale)
     mask = mask.squeeze(0).squeeze(-1).numpy()
@@ -238,7 +238,7 @@ def test_create_mask_for_poisson2d_type(
     Returns:
         None
     """
-    mask_func = create_mask_for_mask_type(mask_type, center_fractions, accelerations)
+    mask_func = create_masker(mask_type, center_fractions, accelerations)
 
     mask, acc = mask_func(x, seed, half_scan_percentage, scale)
     mask = mask.squeeze(0).squeeze(-1).numpy()

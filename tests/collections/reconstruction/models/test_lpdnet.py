@@ -8,7 +8,7 @@ from omegaconf import OmegaConf
 
 from mridc.collections.common.data.subsample import RandomMaskFunc
 from mridc.collections.common.parts import utils
-from mridc.collections.reconstruction.models.lpd import LPDNet
+from mridc.collections.reconstruction.nn.lpd import LPDNet
 
 
 def create_input(shape):

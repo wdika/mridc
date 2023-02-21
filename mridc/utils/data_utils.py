@@ -7,8 +7,8 @@ __author__ = "Dimitrios Karkalousos"
 import os
 import pathlib
 
-from mridc import __version__ as MRIDC_VERSION
 from mridc import constants
+from mridc.package_info import __version__ as MRIDC_VERSION
 
 
 def resolve_cache_dir() -> pathlib.Path:

@@ -839,8 +839,8 @@ class Poisson2DMaskFunc(MaskFunc):
         return mask
 
 
-def create_mask_for_mask_type(
-    mask_type_str: str, center_fractions: Sequence[float], accelerations: Sequence[int]
+def create_masker(
+    mask_type_str: str, center_fractions: Union[Sequence[float], float], accelerations: Union[Sequence[int], int]
 ) -> MaskFunc:
     """
     Creates a MaskFunc object based on the specified mask type.
@@ -850,9 +850,9 @@ def create_mask_for_mask_type(
     mask_type_str : str
         The string representation of the mask type. Must be one of the following:
         'random1d', 'equispaced1d', 'equispaced2d', 'gaussian1d', 'gaussian2d', 'poisson2d'.
-    center_fractions : Sequence[float]
+    center_fractions : Sequence[float] or float
         The center fractions for the mask.
-    accelerations : Sequence[int]
+    accelerations : Sequence[int] or int
         The accelerations for the mask.
 
     Returns
@@ -867,17 +867,21 @@ def create_mask_for_mask_type(
 
     Examples
     --------
-    >>> create_mask_for_mask_type("random1d", [0.5], [4])
+    >>> create_masker("random1d", [0.5], [4])
     RandomMaskFunc([0.5], [4])
-    >>> create_mask_for_mask_type("equispaced2d", [0.3, 0.7], [8, 6])
+    >>> create_masker("equispaced2d", [0.3, 0.7], [8, 6])
     Equispaced2DMaskFunc([0.3, 0.7], [8, 6])
-    >>> create_mask_for_mask_type("poisson2d", [0.3, 0.7], [8, 6])
+    >>> create_masker("poisson2d", [0.3, 0.7], [8, 6])
     Poisson2DMaskFunc([0.3, 0.7], [8, 6])
-    >>> create_mask_for_mask_type("gaussian1d", [0.3, 0.7], [8, 6])
+    >>> create_masker("gaussian1d", [0.3, 0.7], [8, 6])
     Gaussian1DMaskFunc([0.3, 0.7], [8, 6])
-    >>> create_mask_for_mask_type("gaussian2d", [0.3, 0.7], [8, 6])
+    >>> create_masker("gaussian2d", [0.3, 0.7], [8, 6])
     Gaussian2DMaskFunc([0.3, 0.7], [8, 6])
     """
+    if isinstance(center_fractions, float):
+        center_fractions = [center_fractions]
+    if isinstance(accelerations, int):
+        accelerations = [accelerations]
     if mask_type_str == "random1d":
         return RandomMaskFunc(center_fractions, accelerations)
     if mask_type_str == "equispaced1d":

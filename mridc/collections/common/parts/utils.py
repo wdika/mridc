@@ -4,13 +4,11 @@ __author__ = "Dimitrios Karkalousos"
 # Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
 
 from pathlib import Path
-from typing import Any, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
 
 import h5py
 import numpy as np
 import torch
-
-from mridc.collections.common.data.subsample import MaskFunc
 
 __all__ = [
     "is_none",
@@ -524,7 +522,7 @@ def save_predictions(
 
 def apply_mask(
     x: torch.Tensor,
-    mask_func: MaskFunc,
+    mask_func: Callable,
     seed: Optional[Union[int, Tuple[int, ...]]] = None,
     padding: Optional[Sequence[int]] = None,
     shift: bool = False,
@@ -540,7 +538,7 @@ def apply_mask(
     x : torch.Tensor
         The input k-space data. This should have at least 3 dimensions, where dimensions -3 and -2 are the spatial
         dimensions, and the final dimension has size 2 (for complex values).
-    mask_func : MaskFunc
+    mask_func : Callable
         A function that takes a shape (tuple of ints) and a random number seed and returns a mask.
     seed : Optional[Union[int, Tuple[int, ...]]], optional
         Seed for the random number generator. Default is ``None``.

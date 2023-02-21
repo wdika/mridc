@@ -2,13 +2,9 @@
 __author__ = "Dimitrios Karkalousos"
 
 import os
-import shutil
-import subprocess
-import sys
 import time
 import webbrowser
 from pathlib import Path
-from sys import stdout
 
 import streamlit as st
 import yaml  # type: ignore

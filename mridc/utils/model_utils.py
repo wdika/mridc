@@ -25,7 +25,6 @@ from mridc.utils.app_state import AppState
 
 __author__ = "Dimitrios Karkalousos"
 
-
 _HAS_HYDRA = True
 
 _VAL_TEST_FASTPATH_KEY = "ds_item"

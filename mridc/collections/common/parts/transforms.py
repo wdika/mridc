@@ -2,14 +2,26 @@
 from __future__ import annotations
 
 from math import sqrt
-from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
-from torch import Tensor
+from omegaconf import DictConfig
 
+import mridc.collections.reconstruction.nn as reconstruction_nn
+from mridc.collections.common.data import subsample
 from mridc.collections.common.parts import fft as fft
 from mridc.collections.common.parts import utils as utils
+
+__all__ = [
+    "NoisePreWhitening",
+    "GeometricDecompositionCoilCompression",
+    "ZeroFilling",
+    "Cropper",
+    "Masker",
+    "Composer",
+    "MRIDataTransforms",
+]
 
 
 class NoisePreWhitening:
@@ -18,12 +30,24 @@ class NoisePreWhitening:
 
     Parameters
     ----------
+    find_patch_size : bool
+        Find optimal patch size (automatically) to calculate psi. If False, patch_size must be defined.
+        Default is ``True``.
     patch_size : list of ints
         Define patch size to calculate psi, [x_start, x_end, y_start, y_end].
     scale_factor : float
         Applied on the noise covariance matrix. Used to adjust for effective noise bandwidth and difference in
         sampling rate between noise calibration and actual measurement.
         scale_factor = (T_acq_dwell/T_noise_dwell)*NoiseReceiverBandwidthRatio
+        Default is ``1.0``.
+    fft_centered : bool
+        If True, the zero-frequency component is located at the center of the spectrum.
+        Default is ``False``.
+    fft_normalization : str
+        Normalization mode. Options are ``"backward"``, ``"ortho"``, ``"forward"``.
+        Default is ``"backward"``.
+    spatial_dims : sequence of ints
+        Spatial dimensions of the input data.
 
     Examples
     --------
@@ -33,18 +57,36 @@ class NoisePreWhitening:
     >>> data = torch.view_as_real(data)
     >>> data.mean()
     tensor(-0.0011)
-    >>> noise_prewhitening = NoisePreWhitening(patch_size=[10, 40, 10, 40], scale_factor=1.0)
+    >>> noise_prewhitening = NoisePreWhitening(find_patch_size=True, scale_factor=1.0)
     >>> noise_prewhitening(data).mean()
     tensor(-0.0023)
     """
 
-    def __init__(self, patch_size: List[int], scale_factor: float = 1.0):
+    def __init__(
+        self,
+        find_patch_size: bool = True,
+        patch_size: List[int] = None,
+        scale_factor: float = 1.0,
+        fft_centered: bool = False,
+        fft_normalization: str = "backward",
+        spatial_dims: Sequence[int] = (-2, -1),
+    ):
         super().__init__()
+        # TODO: account for multiple echo times
+        self.find_patch_size = find_patch_size
         self.patch_size = patch_size
         self.scale_factor = scale_factor
+        self.fft_centered = fft_centered
+        self.fft_normalization = fft_normalization
+        self.spatial_dims = spatial_dims
 
-    def __call__(self, data: torch.Tensor) -> torch.Tensor:
-        return self.forward(data)
+    def __call__(
+        self,
+        data: torch.Tensor,
+        apply_backward_transform: bool = False,
+        apply_forward_transform: bool = False,
+    ) -> torch.Tensor:
+        return self.forward(data, apply_backward_transform, apply_forward_transform)
 
     def __repr__(self):
         return f"Noise pre-whitening is applied with patch size {self.patch_size}."
@@ -52,33 +94,116 @@ class NoisePreWhitening:
     def __str__(self):
         return str(self.__repr__)
 
-    def forward(self, data: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        data: torch.Tensor,
+        apply_backward_transform: bool = False,
+        apply_forward_transform: bool = False,
+    ) -> torch.Tensor:
         """
         Parameters
         ----------
         data : torch.Tensor
             Input data to apply noise pre-whitening.
+        apply_backward_transform : bool
+            Apply backward transform before noise pre-whitening.
+        apply_forward_transform : bool
+            Apply forward transform before noise pre-whitening.
 
         Returns
         -------
         torch.Tensor
             Noise pre-whitened data.
         """
+        if apply_forward_transform:
+            data = fft.fft2(
+                data,
+                centered=self.fft_centered,
+                normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            )
+
         if not self.patch_size:
             raise ValueError("Patch size must be defined for noise prewhitening.")
 
         if data.shape[-1] != 2:
             data = torch.view_as_real(data)
 
-        noise = data[:, self.patch_size[0] : self.patch_size[1], self.patch_size[-2] : self.patch_size[-1]]
+        if self.find_patch_size:
+            patch = self.find_optimal_patch_size(data)
+            noise = data[:, patch[0] : patch[1], patch[2] : patch[3]]
+        elif not utils.is_none(self.patch_size):
+            noise = data[:, self.patch_size[0] : self.patch_size[1], self.patch_size[-2] : self.patch_size[-1]]
+        else:
+            raise ValueError(
+                "No patch size has been defined, while find_patch_size is False for noise prewhitening."
+                "Please define a patch size or set find_patch_size to True."
+            )
         noise_int = torch.reshape(noise, (noise.shape[0], int(torch.numel(noise) / noise.shape[0])))
 
         deformation_matrix = (1 / (float(noise_int.shape[1]) - 1)) * torch.mm(noise_int, torch.conj(noise_int).t())
+        # ensure that the matrix is positive definite
+        deformation_matrix = deformation_matrix + torch.eye(deformation_matrix.shape[0]) * 1e-6
         psi = torch.linalg.inv(torch.linalg.cholesky(deformation_matrix)) * sqrt(2) * sqrt(self.scale_factor)
 
-        return torch.reshape(
+        data = torch.reshape(
             torch.mm(psi, torch.reshape(data, (data.shape[0], int(torch.numel(data) / data.shape[0])))), data.shape
         )
+
+        if apply_forward_transform:
+            data = fft.ifft2(
+                data,
+                centered=self.fft_centered,
+                normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            )
+
+        return data.detach().clone()
+
+    @staticmethod
+    def find_optimal_patch_size(data: torch.Tensor, min_noise: float = 1e10) -> List[int]:
+        """
+        Find optimal patch size for noise pre-whitening.
+
+        Parameters
+        ----------
+        data : torch.Tensor
+            Input data to find optimal patch size.
+        min_noise : float
+            Minimum noise value. It is inversely proportional to the noise level. Default is ``1e10``.
+
+        Returns
+        -------
+        List[int]
+            Optimal patch size, [x_start, x_end, y_start, y_end].
+        """
+        if data.shape[-1] == 2:
+            data = torch.view_as_complex(data)
+        best_patch = []
+        for patch_length in [10, 20, 30, 40, 50]:
+            for patch_start_x in range(0, data.shape[-2] - patch_length, 10):
+                for patch_start_y in range(0, data.shape[-1] - patch_length, 10):
+                    patch = torch.abs(
+                        utils.rss(
+                            data[
+                                :,
+                                patch_start_x : patch_start_x + patch_length,
+                                patch_start_y : patch_start_y + patch_length,
+                            ],
+                        )
+                    )
+                    noise = torch.sqrt(
+                        torch.sum(torch.abs(patch - torch.mean(patch)) ** 2) / (len(torch.flatten(patch)) - 1)
+                    )
+                    if noise < min_noise:
+                        min_noise = noise
+                        best_patch = [
+                            patch_start_x,
+                            patch_start_x + patch_length,
+                            patch_start_y,
+                            patch_start_y + patch_length,
+                        ]
+        return best_patch
 
 
 class GeometricDecompositionCoilCompression:
@@ -127,9 +252,10 @@ class GeometricDecompositionCoilCompression:
         align_data: bool = True,
         fft_centered: bool = False,
         fft_normalization: str = "backward",
-        spatial_dims: Sequence[int] = None,
+        spatial_dims: Sequence[int] = (-2, -1),
     ):
         super().__init__()
+        # TODO: account for multiple echo times
         self.virtual_coils = virtual_coils
         self.calib_lines = calib_lines
         self.align_data = align_data
@@ -137,21 +263,37 @@ class GeometricDecompositionCoilCompression:
         self.fft_normalization = fft_normalization
         self.spatial_dims = spatial_dims
 
-    def __call__(self, data):
-        return self.forward(data)
+    def __call__(
+        self,
+        data: Union[torch.Tensor, None],
+        apply_backward_transform: bool = False,
+        apply_forward_transform: bool = False,
+    ) -> torch.Tensor:
+        if not utils.is_none(data) and data.dim() > 1 and data.mean() != 1:  # type: ignore
+            return self.forward(data, apply_backward_transform, apply_forward_transform)
+        return data
 
     def __repr__(self):
-        return f"Coil Compression is applied reducing coils from {self.coils} to {self.virtual_coils}."
+        return f"Coil Compression is applied reducing coils to {self.virtual_coils}."
 
     def __str__(self):
         return str(self.__repr__)
 
-    def forward(self, data):
+    def forward(
+        self,
+        data: torch.Tensor,
+        apply_backward_transform: bool = False,
+        apply_forward_transform: bool = False,
+    ) -> torch.Tensor:
         """
         Parameters
         ----------
         data : torch.Tensor
             Input data to apply coil compression.
+        apply_backward_transform : bool
+            Apply backward transform. Default is ``False``.
+        apply_forward_transform : bool
+            Apply forward transform. Default is ``False``.
 
         Returns
         -------
@@ -161,6 +303,14 @@ class GeometricDecompositionCoilCompression:
         if not self.virtual_coils:
             raise ValueError("Number of virtual coils must be defined for geometric decomposition coil compression.")
 
+        if apply_forward_transform:
+            data = fft.fft2(
+                data,
+                centered=self.fft_centered,
+                normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            )
+
         self.data = data
         if self.data.shape[-1] == 2:
             self.data = torch.view_as_complex(self.data)
@@ -168,7 +318,7 @@ class GeometricDecompositionCoilCompression:
         curr_num_coils = self.data.shape[0]
         if curr_num_coils < self.virtual_coils:
             raise ValueError(
-                f"Tried to compress from {curr_num_coils} to {self.virtual_coils} coils, please select less coils for."
+                f"Tried to compress from {curr_num_coils} to {self.virtual_coils} coils, please select less coils."
             )
 
         self.data = self.data.permute(1, 2, 0)
@@ -184,7 +334,6 @@ class GeometricDecompositionCoilCompression:
 
         self.crop()
         self.calculate_gcc()
-
         if self.align_data:
             self.align_compressed_coils()
             rotated_compressed_data = self.rotate_and_compress(data_to_cc=self.aligned_data)
@@ -192,13 +341,17 @@ class GeometricDecompositionCoilCompression:
             rotated_compressed_data = self.rotate_and_compress(data_to_cc=self.unaligned_data)
 
         rotated_compressed_data = torch.flip(rotated_compressed_data, dims=[1])
+        rotated_compressed_data = torch.view_as_real(rotated_compressed_data.permute(2, 0, 1))
 
-        return fft.fft2(
-            torch.view_as_real(rotated_compressed_data.permute(2, 0, 1)),
-            self.fft_centered,
-            self.fft_normalization,
-            self.spatial_dims,
-        )
+        if not apply_forward_transform:
+            rotated_compressed_data = fft.fft2(
+                rotated_compressed_data,
+                self.fft_centered,
+                self.fft_normalization,
+                self.spatial_dims,
+            )
+
+        return rotated_compressed_data.detach().clone()
 
     def crop(self):
         """Crop to the size of the calibration lines."""
@@ -344,13 +497,28 @@ class ZeroFilling:
     [1, 15, 400, 400, 2]
     """
 
-    def __init__(self, zero_filling_size: Tuple, spatial_dims: Tuple = (-2, -1)):
+    def __init__(
+        self,
+        zero_filling_size: Tuple,
+        fft_centered: bool = False,
+        fft_normalization: str = "backward",
+        spatial_dims: Sequence[int] = (-2, -1),
+    ):
         self.zero_filling_size = zero_filling_size
+        self.fft_centered = fft_centered
+        self.fft_normalization = fft_normalization
         self.spatial_dims = spatial_dims
 
-    def __call__(self, data: torch.Tensor) -> torch.Tensor:
+    def __call__(
+        self,
+        data: Union[torch.Tensor, None],
+        apply_backward_transform: bool = False,
+        apply_forward_transform: bool = False,
+    ) -> torch.Tensor:
         """Applies zero filling to data."""
-        return self.forward(data)
+        if not utils.is_none(data) and data.dim() > 1 and data.mean() != 1:  # type: ignore
+            return self.forward(data, apply_backward_transform, apply_forward_transform)
+        return data
 
     def __repr__(self) -> str:
         return f"Zero-Filling will be applied to data with size {self.zero_filling_size}."
@@ -358,8 +526,28 @@ class ZeroFilling:
     def __str__(self) -> str:
         return self.__repr__()
 
-    def forward(self, data: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        data: torch.Tensor,
+        apply_backward_transform: bool = False,
+        apply_forward_transform: bool = False,
+    ) -> torch.Tensor:
         """Applies zero filling to data."""
+        if apply_backward_transform:
+            data = fft.ifft2(
+                data,
+                centered=self.fft_centered,
+                normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            )
+        elif apply_forward_transform:
+            data = fft.fft2(
+                data,
+                centered=self.fft_centered,
+                normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            )
+
         is_complex = data.shape[-1] == 2
 
         if is_complex:
@@ -376,6 +564,21 @@ class ZeroFilling:
 
         if is_complex:
             data = torch.view_as_real(data)
+
+        if apply_backward_transform:
+            data = fft.fft2(
+                data,
+                centered=self.fft_centered,
+                normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            )
+        elif apply_forward_transform:
+            data = fft.ifft2(
+                data,
+                centered=self.fft_centered,
+                normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            )
 
         return data
 
@@ -416,15 +619,25 @@ class Cropper:
         cropping_size: Tuple,
         fft_centered: bool = False,
         fft_normalization: str = "backward",
-        spatial_dims: Tuple = (-2, -1),
+        spatial_dims: Sequence[int] = (-2, -1),
     ):
         self.cropping_size = cropping_size
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
         self.spatial_dims = spatial_dims
 
-    def __call__(self, data: torch.Tensor, kspace_crop: bool = False) -> torch.Tensor:
-        return self.forward(data, kspace_crop)
+    def __call__(
+        self,
+        data: Union[torch.Tensor, List[torch.Tensor], None],
+        apply_backward_transform: bool = False,
+        apply_forward_transform: bool = False,
+    ) -> List[torch.Tensor] | torch.Tensor:
+        if not utils.is_none(data):  # type: ignore
+            if isinstance(data, list) and len(data) > 0:  # type: ignore
+                return [self.forward(d, apply_backward_transform, apply_forward_transform) for d in data]
+            elif data.dim() > 1 and data.mean() != 1:  # type: ignore
+                return self.forward(data, apply_backward_transform, apply_forward_transform)
+        return data
 
     def __repr__(self):
         return f"Data will be cropped to size={self.cropping_size}."
@@ -432,9 +645,21 @@ class Cropper:
     def __str__(self):
         return self.__repr__()
 
-    def forward(self, data: torch.Tensor, kspace_crop: bool = False) -> torch.Tensor:
+    def forward(
+        self,
+        data: torch.Tensor,
+        apply_backward_transform: bool = False,
+        apply_forward_transform: bool = False,
+    ) -> torch.Tensor:
         """Applies cropping to data."""
-        if kspace_crop:
+        if apply_backward_transform:
+            data = fft.ifft2(
+                data,
+                centered=self.fft_centered,
+                normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            )
+        elif apply_forward_transform:
             data = fft.fft2(
                 data,
                 centered=self.fft_centered,
@@ -466,7 +691,14 @@ class Cropper:
         if is_complex:
             data = torch.view_as_real(data)
 
-        if kspace_crop:
+        if apply_backward_transform:
+            data = fft.fft2(
+                data,
+                centered=self.fft_centered,
+                normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            )
+        elif apply_forward_transform:
             data = fft.ifft2(
                 data,
                 centered=self.fft_centered,
@@ -487,8 +719,6 @@ class Masker:
         Masker function. Default is `None`.
     spatial_dims : tuple
         Spatial dimensions. Default is `(-2, -1)`.
-    padding : tuple, optional
-        Padding size. Default is `None`.
     shift_mask : bool
         Whether to shift the mask. Default is `False`.
     half_scan_percentage : float
@@ -513,8 +743,8 @@ class Masker:
     >>> from mridc.collections.common.parts.transforms import Masker
     >>> data = torch.randn(1, 15, 320, 320, 2)
     >>> mask = torch.ones(320, 320)
-    >>> masker = Masker(mask_func=None, spatial_dims=(-2, -1), padding=None, shift_mask=False, \
-     half_scan_percentage=0.0, center_scale=0.02, dimensionality=2, remask=True)
+    >>> masker = Masker(mask_func=None, spatial_dims=(-2, -1), shift_mask=False, half_scan_percentage=0.0, \
+    center_scale=0.02, dimensionality=2, remask=True)
     >>> masked_data = masker(data, mask, seed=None)
     >>> masked_data[0][0].shape  # masked data
     [1, 15, 320, 320, 2]
@@ -527,7 +757,7 @@ class Masker:
     def __init__(
         self,
         mask_func: Optional[Callable] = None,
-        spatial_dims: Tuple = (-2, -1),
+        spatial_dims: Sequence[int] = (-2, -1),
         shift_mask: bool = False,
         half_scan_percentage: float = 0.0,
         center_scale: float = 0.02,
@@ -548,15 +778,30 @@ class Masker:
         mask: Union[List, torch.Tensor, np.ndarray] = None,
         padding: Optional[Tuple] = None,
         seed: Optional[int] = None,
+        apply_backward_transform: bool = False,
+        apply_forward_transform: bool = False,
     ) -> Tuple[
         List[float | torch.Tensor | Any],
         List[torch.Tensor | Any] | List[torch.Tensor | np.ndarray | None | Any],
         List[int | torch.Tensor | Any],
     ]:
         """Applies mask to data."""
+        # Check if mask is precomputed or not.
+        if not utils.is_none(mask):
+            if isinstance(mask, list):
+                if len(mask) == 0:
+                    mask = None
+            elif mask.ndim() == 0:  # type: ignore
+                mask = None
+
         if not utils.is_none(mask) and isinstance(mask, list) and len(mask) > 0:
             self.__type__ = "Masks are precomputed and loaded."
-        elif not utils.is_none(mask) and not isinstance(mask, list) and mask.ndim != 0 and len(mask) > 0:  # type: ignore
+        elif (
+            not utils.is_none(mask)
+            and not isinstance(mask, list)
+            and mask.ndim != 0  # type: ignore
+            and len(mask) > 0  # type: ignore
+        ):
             self.__type__ = "Mask is either precomputed and loaded or data are prospectively undersampled."
         elif isinstance(self.mask_func, list):
             self.__type__ = "A number accelerations are provided and masks are generated on the fly."
@@ -608,8 +853,16 @@ class Masker:
                 masks.append(m)
                 accelerations.append(m.sum() / m.numel())
 
-        elif not utils.is_none(mask) and not isinstance(mask, list) and mask.ndim != 0 and len(mask) > 0:  # type: ignore
-            if list(mask.shape) == [data.shape[self.spatial_dims[0]], data.shape[self.spatial_dims[1]]]:  # type: ignore
+        elif (
+            not utils.is_none(mask)
+            and not isinstance(mask, list)
+            and mask.ndim != 0  # type: ignore
+            and len(mask) > 0  # type: ignore
+        ):
+            if list(mask.shape) == [  # type: ignore
+                data.shape[self.spatial_dims[0]],
+                data.shape[self.spatial_dims[1]],
+            ]:  # type: ignore
                 if isinstance(mask, np.ndarray):
                     mask = torch.from_numpy(mask)
                 mask = mask.unsqueeze(0).unsqueeze(-1)
@@ -738,17 +991,25 @@ class Normalizer:
         normalization_type: Optional[str] = None,
         fft_centered: bool = False,
         fft_normalization: str = "backward",
-        spatial_dims: Tuple = (-2, -1),
+        spatial_dims: Sequence[int] = (-2, -1),
     ):
         self.normalization_type = normalization_type
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
         self.spatial_dims = spatial_dims
 
-    def __call__(self, data: torch.Tensor, apply_backward_transform: bool = False) -> List[Tensor] | Tensor:
-        if isinstance(data, list):
-            return [self.forward(d, apply_backward_transform) for d in data]
-        return self.forward(data, apply_backward_transform)
+    def __call__(
+        self,
+        data: Union[torch.Tensor, List[torch.Tensor], None],
+        apply_backward_transform: bool = False,
+        apply_forward_transform: bool = False,
+    ) -> List[torch.Tensor] | torch.Tensor:
+        if not utils.is_none(data):
+            if isinstance(data, list) and len(data) > 0:
+                return [self.forward(d, apply_backward_transform, apply_forward_transform) for d in data]
+            elif data.dim() > 1 and data.mean() != 1:  # type: ignore
+                return self.forward(data, apply_backward_transform, apply_forward_transform)
+        return data
 
     def __repr__(self):
         return f"Normalization type is set to {self.normalization_type}."
@@ -756,9 +1017,26 @@ class Normalizer:
     def __str__(self):
         return self.__repr__()
 
-    def forward(self, data: torch.Tensor, apply_backward_transform: bool = False) -> torch.Tensor:
+    def forward(
+        self,
+        data: torch.Tensor,
+        apply_backward_transform: bool = False,
+        apply_forward_transform: bool = False,
+    ) -> torch.Tensor:
         if apply_backward_transform:
-            data = fft.ifft2(data, self.fft_centered, self.fft_normalization, self.spatial_dims)
+            data = fft.ifft2(
+                data,
+                centered=self.fft_centered,
+                normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            )
+        elif apply_forward_transform:
+            data = fft.fft2(
+                data,
+                centered=self.fft_centered,
+                normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            )
 
         if self.normalization_type == "max":
             data = data / torch.max(torch.abs(data))
@@ -770,7 +1048,19 @@ class Normalizer:
             data = (data - min_value) / (torch.max(torch.abs(data)) - min_value)
 
         if apply_backward_transform:
-            data = fft.fft2(data, self.fft_centered, self.fft_normalization, self.spatial_dims)
+            data = fft.fft2(
+                data,
+                centered=self.fft_centered,
+                normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            )
+        elif apply_forward_transform:
+            data = fft.ifft2(
+                data,
+                centered=self.fft_centered,
+                normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            )
 
         return data
 
@@ -804,12 +1094,18 @@ class Composer:
     tensor(0.) tensor(1.)
     """
 
-    def __init__(self, transforms: List[Callable]):
+    def __init__(self, transforms: Union[List[Callable], Callable, None]):
         self.transforms = transforms
 
-    def __call__(self, data: torch.Tensor) -> torch.Tensor:
-        for transform in self.transforms:
-            data = transform(data)
+    def __call__(
+        self,
+        data: Union[torch.Tensor, List[torch.Tensor], None],
+        apply_backward_transform: bool = False,
+        apply_forward_transform: bool = False,
+    ) -> List[torch.Tensor] | torch.Tensor:
+        for transform in self.transforms:  # type: ignore
+            if not utils.is_none(transform):
+                data = transform(data, apply_backward_transform, apply_forward_transform)
         return data
 
     def __repr__(self):
@@ -817,3 +1113,397 @@ class Composer:
 
     def __str__(self):
         return self.__repr__()
+
+
+class MRIDataTransforms:
+    """
+    Generic class to apply transforms for MRI data.
+
+    Parameters
+    ----------
+    apply_prewhitening : bool, optional
+        Apply prewhitening. If ``True`` then the prewhitening arguments are used. Default is ``False``.
+    find_patch_size : bool, optional
+        Find optimal patch size (automatically) to calculate psi. If False, patch_size must be defined.
+        Default is ``True``.
+    prewhitening_scale_factor : float, optional
+        Prewhitening scale factor. Default is ``1.0``.
+    prewhitening_patch_start : int, optional
+        Prewhitening patch start. Default is ``10``.
+    prewhitening_patch_length : int, optional
+        Prewhitening patch length. Default is ``30``.
+    apply_gcc : bool, optional
+        Apply Geometric Decomposition Coil Compression. If ``True`` then the GCC arguments are used.
+        Default is ``False``.
+    gcc_virtual_coils : int, optional
+        GCC virtual coils. Default is ``10``.
+    gcc_calib_lines : int, optional
+        GCC calibration lines. Default is ``24``.
+    gcc_align_data : bool, optional
+        GCC align data. Default is ``True``.
+    coil_combination_method : str, optional
+        Coil combination method. Default is ``"SENSE"``.
+    dimensionality : int, optional
+        Dimensionality. Default is ``2``.
+    mask_func : Optional[List[subsample.MaskFunc]], optional
+        Mask function to retrospectively undersample the k-space. Default is ``None``.
+    shift_mask : bool, optional
+        Whether to shift the mask. This needs to be set alongside with the ``fft_centered`` argument.
+        Default is ``False``.
+    mask_center_scale : Optional[float], optional
+        Center scale of the mask. This defines how much densely sampled will be the center of k-space.
+        Default is ``0.02``.
+    half_scan_percentage : float, optional
+        Whether to simulate a half scan. Default is ``0.0``.
+    remask : bool, optional
+        Use the same mask. Default is ``False``.
+    crop_size : Optional[Tuple[int, int]], optional
+        Center crop size. It applies cropping in image space. Default is ``None``.
+    kspace_crop : bool, optional
+        Whether to crop in k-space. Default is ``False``.
+    crop_before_masking : bool, optional
+        Whether to crop before masking. Default is ``True``.
+    kspace_zero_filling_size : Optional[Tuple], optional
+        Whether to apply zero filling in k-space. Default is ``None``.
+    normalize_inputs : bool, optional
+        Whether to normalize the inputs. Default is ``True``.
+    normalization_type : str, optional
+        Normalization type. Can be ``max`` or ``mean`` or ``minmax``. Default is ``max``.
+    fft_centered : bool, optional
+        Whether to center the FFT. Default is ``False``.
+    fft_normalization : str, optional
+        FFT normalization. Default is ``"backward"``.
+    spatial_dims : Sequence[int], optional
+        Spatial dimensions. Default is ``None``.
+    coil_dim : int, optional
+        Coil dimension. Default is ``0``, meaning that the coil dimension is the first dimension before applying batch.
+    consecutive_slices : int, optional
+        Consecutive slices. Default is ``1``.
+    use_seed : bool, optional
+        Whether to use seed. Default is ``True``.
+
+    Returns
+    -------
+    MRIDataTransforms
+        Preprocessed data.
+    """
+
+    def __init__(
+        self,
+        apply_prewhitening: bool = False,
+        find_patch_size: bool = True,
+        prewhitening_scale_factor: float = 1.0,
+        prewhitening_patch_start: int = 10,
+        prewhitening_patch_length: int = 30,
+        apply_gcc: bool = False,
+        gcc_virtual_coils: int = 10,
+        gcc_calib_lines: int = 24,
+        gcc_align_data: bool = True,
+        coil_combination_method: str = "SENSE",
+        dimensionality: int = 2,
+        mask_func: Optional[List[subsample.MaskFunc]] = None,
+        shift_mask: bool = False,
+        mask_center_scale: Optional[float] = 0.02,
+        half_scan_percentage: float = 0.0,
+        remask: bool = False,
+        crop_size: Optional[Tuple[int, int]] = None,
+        kspace_crop: bool = False,
+        crop_before_masking: bool = True,
+        kspace_zero_filling_size: Optional[Tuple] = None,
+        normalize_inputs: bool = True,
+        normalization_type: str = "max",
+        fft_centered: bool = False,
+        fft_normalization: str = "backward",
+        spatial_dims: Sequence[int] = None,
+        coil_dim: int = 0,
+        consecutive_slices: int = 1,
+        use_seed: bool = True,
+    ):
+        super().__init__()
+
+        self.coil_combination_method = coil_combination_method
+        self.kspace_crop = kspace_crop
+        self.crop_before_masking = crop_before_masking
+        self.normalize_inputs = normalize_inputs
+
+        self.fft_centered = fft_centered
+        self.fft_normalization = fft_normalization
+        self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
+        self.coil_dim = coil_dim - 1 if dimensionality == 2 else coil_dim
+
+        self.prewhitening = (
+            NoisePreWhitening(
+                find_patch_size=find_patch_size,
+                patch_size=[
+                    prewhitening_patch_start,
+                    prewhitening_patch_length + prewhitening_patch_start,
+                    prewhitening_patch_start,
+                    prewhitening_patch_length + prewhitening_patch_start,
+                ],
+                scale_factor=prewhitening_scale_factor,
+                fft_centered=self.fft_centered,
+                fft_normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            )
+            if apply_prewhitening
+            else None
+        )
+
+        self.gcc = (
+            GeometricDecompositionCoilCompression(
+                virtual_coils=gcc_virtual_coils,
+                calib_lines=gcc_calib_lines,
+                align_data=gcc_align_data,
+                fft_centered=self.fft_centered,
+                fft_normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            )
+            if apply_gcc
+            else None
+        )
+
+        self.kspace_zero_filling = (
+            ZeroFilling(
+                zero_filling_size=kspace_zero_filling_size,  # type: ignore
+                fft_centered=self.fft_centered,
+                fft_normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,  # type: ignore
+            )
+            if not utils.is_none(kspace_zero_filling_size)
+            else None
+        )
+
+        self.masking = Masker(
+            mask_func=mask_func,  # type: ignore
+            spatial_dims=self.spatial_dims,  # type: ignore
+            shift_mask=shift_mask,
+            half_scan_percentage=half_scan_percentage,
+            center_scale=mask_center_scale,  # type: ignore
+            dimensionality=dimensionality,
+            remask=remask,
+        )
+
+        self.cropping = (
+            Cropper(
+                cropping_size=crop_size,  # type: ignore
+                spatial_dims=self.spatial_dims,  # type: ignore
+            )
+            if not utils.is_none(crop_size)
+            else None
+        )
+
+        self.normalization = Normalizer(
+            normalization_type=normalization_type,
+            fft_centered=self.fft_centered,
+            fft_normalization=self.fft_normalization,
+            spatial_dims=self.spatial_dims,  # type: ignore
+        )
+
+        self.init_reconstructor = reconstruction_nn.zf.ZF(  # type: ignore
+            cfg=DictConfig(
+                {
+                    "fft_centered": self.fft_centered,
+                    "fft_normalization": self.fft_normalization,
+                    "spatial_dims": self.spatial_dims,
+                    "coil_dim": self.coil_dim,
+                    "coil_combination_method": self.coil_combination_method.upper(),
+                }
+            )
+        )
+        self.prewhitening = Composer([self.prewhitening])  # type: ignore
+        self.coils_shape_transforms = Composer(
+            [
+                self.gcc,  # type: ignore
+                self.kspace_zero_filling,  # type: ignore
+            ]
+        )
+        self.crop_normalize = Composer(
+            [
+                self.cropping,  # type: ignore
+                self.normalization,  # type: ignore
+            ]
+        )
+        self.cropping = Composer([self.cropping])  # type: ignore
+        self.normalization = Composer([self.normalization])  # type: ignore
+
+        self.use_seed = use_seed
+
+    def __call__(
+        self,
+        kspace: np.ndarray,
+        sensitivity_map: np.ndarray,
+        mask: np.ndarray,
+        prediction: np.ndarray,
+        target: np.ndarray,
+        attrs: Dict,
+        fname: str,
+        slice_idx: int,
+    ) -> Tuple[
+        torch.Tensor,
+        Union[Union[List, torch.Tensor], torch.Tensor],
+        Union[Optional[torch.Tensor], Any],
+        Union[List, Any],
+        Union[Optional[torch.Tensor], Any],
+        Union[torch.Tensor, Any],
+        str,
+        int,
+        Union[List, Any],
+    ]:
+        """
+        Apply the data transform.
+
+        Parameters
+        ----------
+        kspace: The kspace.
+        sensitivity_map: The sensitivity map.
+        mask: The mask.
+        prediction: The initial estimation.
+        target: The target.
+        attrs: The attributes.
+        fname: The file name.
+        slice_idx: The slice number.
+
+        Returns
+        -------
+        The transformed data.
+        """
+        kspace, masked_kspace, mask, acc = self.__process_kspace__(kspace, mask, attrs, fname)
+        sensitivity_map = self.__process_coil_sensitivities_map__(sensitivity_map, kspace)
+        target = self.__initialize_prediction__(target, kspace, sensitivity_map)
+        prediction = self.__initialize_prediction__(prediction, masked_kspace, sensitivity_map)
+        return kspace, masked_kspace, sensitivity_map, mask, prediction, target, fname, slice_idx, acc
+
+    def __repr__(self) -> str:
+        return (
+            f"Preprocessing transforms initialized for {self.__class__.__name__}: "
+            f"prewhitening={self.prewhitening}, "
+            f"masking={self.masking}, "
+            f"kspace_zero_filling={self.kspace_zero_filling}, "
+            f"cropping={self.cropping}, "
+            f"normalization={self.normalization}, "
+            f"init_reconstructor={self.init_reconstructor}, "
+        )
+
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    def __process_kspace__(
+        self, kspace: np.ndarray, mask: Union[np.ndarray, None], attrs: Dict, fname: str
+    ) -> Tuple[
+        torch.Tensor,
+        Union[List[torch.Tensor], torch.Tensor],
+        Union[List[torch.Tensor], torch.Tensor],
+        Union[List[Union[float, torch.Tensor, Any]]],
+    ]:
+        """
+        Apply the preprocessing transforms to the kspace.
+
+        Parameters
+        ----------
+        kspace : torch.Tensor
+            The kspace.
+        mask : torch.Tensor
+            The mask, if None, the mask is generated.
+        attrs : Dict
+            The attributes, if stored in the file.
+        fname : str
+            The file name.
+
+        Returns
+        -------
+        The preprocessed kspace.
+        """
+        kspace = utils.to_tensor(kspace)
+        kspace = utils.add_coil_dim_if_singlecoil(kspace, dim=self.coil_dim)
+
+        kspace = self.coils_shape_transforms(kspace, apply_backward_transform=True)
+        kspace = self.prewhitening(kspace)  # type: ignore
+
+        if self.crop_before_masking:
+            kspace = self.cropping(kspace, apply_backward_transform=not self.kspace_crop)  # type: ignore
+
+        masked_kspace, mask, acc = self.masking(
+            kspace,
+            mask,
+            (
+                attrs["padding_left"] if "padding_left" in attrs else 0,
+                attrs["padding_right"] if "padding_right" in attrs else 0,
+            ),
+            tuple(map(ord, fname)) if self.use_seed else None,  # type: ignore
+        )
+
+        if not self.crop_before_masking:
+            masked_kspace = self.cropping(masked_kspace, apply_backward_transform=not self.kspace_crop)  # type: ignore
+            if isinstance(mask, list):
+                mask = [self.cropping(x.squeeze(-1)).unsqueeze(-1) for x in mask]  # type: ignore
+            kspace = self.cropping(kspace, apply_backward_transform=not self.kspace_crop)  # type: ignore
+
+        kspace = self.normalization(kspace, apply_backward_transform=True)
+        masked_kspace = self.normalization(masked_kspace, apply_backward_transform=True)
+
+        return kspace, masked_kspace, mask, acc
+
+    def __process_coil_sensitivities_map__(self, sensitivity_map: np.ndarray, kspace: torch.Tensor) -> torch.Tensor:
+        """
+        Preprocesses the coil sensitivities map.
+
+        Parameters
+        ----------
+        sensitivity_map : np.ndarray
+            The coil sensitivities map.
+        kspace : torch.Tensor
+            The kspace.
+
+        Returns
+        -------
+        torch.Tensor
+            The preprocessed coil sensitivities map.
+        """
+        # This condition is necessary in case of auto estimation of sense maps.
+        if sensitivity_map is not None and sensitivity_map.size != 0:
+            sensitivity_map = utils.to_tensor(sensitivity_map)
+        else:
+            # If no sensitivity map is provided, either the data is singlecoil or the sense net is used.
+            # Initialize the sensitivity map to 1 to assure for the singlecoil case.
+            sensitivity_map = torch.ones_like(kspace)
+        sensitivity_map = self.coils_shape_transforms(sensitivity_map, apply_forward_transform=True)
+        sensitivity_map = self.crop_normalize(sensitivity_map, apply_forward_transform=self.kspace_crop)
+        return sensitivity_map
+
+    def __initialize_prediction__(
+        self, prediction: np.ndarray, kspace: torch.Tensor, sensitivity_map: torch.Tensor
+    ) -> Union[List[torch.Tensor], torch.Tensor]:
+        """
+        Predicts a coil-combined image.
+
+        Parameters
+        ----------
+        prediction : np.ndarray
+            The initial estimation, if None, the prediction is initialized.
+        kspace : torch.Tensor
+            The kspace.
+        sensitivity_map : torch.Tensor
+            The sensitivity map.
+
+        Returns
+        -------
+        Union[List[torch.Tensor], torch.Tensor]
+            The initialized prediction, either a list of coil-combined images or a single coil-combined image.
+        """
+        if utils.is_none(prediction) or prediction.ndim < 2:
+            if isinstance(kspace, list):
+                prediction = [
+                    self.crop_normalize(
+                        self.init_reconstructor(y, sensitivity_map, torch.empty([]), torch.empty([]), torch.empty([]))
+                    )
+                    for y in kspace
+                ]
+            else:
+                prediction = self.crop_normalize(
+                    self.init_reconstructor(kspace, sensitivity_map, torch.empty([]), torch.empty([]), torch.empty([]))
+                )
+        else:
+            if isinstance(prediction, np.ndarray):
+                prediction = utils.to_tensor(prediction)
+            prediction = self.crop_normalize(prediction, apply_forward_transform=self.kspace_crop)
+        return prediction

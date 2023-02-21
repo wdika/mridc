@@ -8,7 +8,7 @@ import pytest
 import torch
 import torch.nn as nn
 
-from mridc.collections.reconstruction.models.mwcnn.mwcnn import MWCNN
+from mridc.collections.reconstruction.nn.mwcnn.mwcnn import MWCNN
 
 
 def create_input(shape):

@@ -8,7 +8,7 @@ from omegaconf import OmegaConf
 
 from mridc.collections.common.data.subsample import RandomMaskFunc
 from mridc.collections.common.parts import utils
-from mridc.collections.segmentation.models.attention_unet import SegmentationAttentionUNet
+from mridc.collections.segmentation.nn.attention_unet import SegmentationAttentionUNet
 from tests.collections.reconstruction.fastmri.conftest import create_input
 
 

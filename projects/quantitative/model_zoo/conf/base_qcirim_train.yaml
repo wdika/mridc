@@ -118,10 +118,10 @@ model:
   log_images: true
 
   train_ds:
-    data_path: /data/projects/recon/data/public/ahead_preprocessing3
+    data_path: /data/projects/recon/data/public/ahead_preprocessing/train
     coil_sensitivity_maps_path: None
     mask_path: None
-    sample_rate: .1
+    sample_rate: 1
     volume_sample_rate: None
     use_dataset_cache: false
     dataset_cache_file: None
@@ -175,10 +175,10 @@ model:
     drop_last: false
 
   validation_ds:
-    data_path: /data/projects/recon/data/public/ahead_preprocessing3
+    data_path: /data/projects/recon/data/public/ahead_preprocessing/val
     coil_sensitivity_maps_path: None
     mask_path: None
-    sample_rate: .1
+    sample_rate: 1
     volume_sample_rate: None
     use_dataset_cache: false
     dataset_cache_file: None

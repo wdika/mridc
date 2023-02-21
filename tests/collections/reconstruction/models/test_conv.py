@@ -8,7 +8,7 @@ import pytest
 import torch
 import torch.nn as nn
 
-from mridc.collections.reconstruction.models.conv.conv2d import Conv2d
+from mridc.collections.reconstruction.nn.conv.conv2d import Conv2d
 
 
 def create_input(shape):

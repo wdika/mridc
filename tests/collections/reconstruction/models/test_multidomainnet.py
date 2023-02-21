@@ -8,7 +8,7 @@ from omegaconf import OmegaConf
 
 from mridc.collections.common.data.subsample import RandomMaskFunc
 from mridc.collections.common.parts import utils
-from mridc.collections.reconstruction.models.multidomainnet import MultiDomainNet
+from mridc.collections.reconstruction.nn.multidomainnet import MultiDomainNet
 
 
 def create_input(shape):

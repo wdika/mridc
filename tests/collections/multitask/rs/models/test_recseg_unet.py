@@ -8,7 +8,7 @@ from omegaconf import OmegaConf
 
 from mridc.collections.common.data.subsample import RandomMaskFunc
 from mridc.collections.common.parts import utils
-from mridc.collections.multitask.rs.models.recseg_unet import RecSegUNet
+from mridc.collections.multitask.rs.nn.recseg_unet import RecSegUNet
 from tests.collections.reconstruction.fastmri.conftest import create_input
 
 

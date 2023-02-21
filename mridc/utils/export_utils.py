@@ -3,7 +3,6 @@ __author__ = "Dimitrios Karkalousos"
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/utils/export_utils.py
 import os
-from contextlib import nullcontext
 from enum import Enum
 from typing import Callable, Dict, Optional, Type
 
@@ -12,7 +11,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from mridc.utils import CastToFloat, CastToFloatAll, logging
+from mridc.utils import CastToFloat, logging
 
 try:
     import onnxruntime

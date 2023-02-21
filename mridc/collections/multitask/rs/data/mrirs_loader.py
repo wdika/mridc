@@ -2,7 +2,6 @@
 __author__ = "Dimitrios Karkalousos"
 
 import os
-import re
 from pathlib import Path
 from typing import Callable, Optional, Tuple, Union
 

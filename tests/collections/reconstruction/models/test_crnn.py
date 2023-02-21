@@ -10,7 +10,7 @@ from omegaconf import OmegaConf
 
 from mridc.collections.common.data.subsample import RandomMaskFunc
 from mridc.collections.common.parts import utils
-from mridc.collections.reconstruction.models.crnn import CRNNet
+from mridc.collections.reconstruction.nn.crnn import CRNNet
 from tests.collections.reconstruction.fastmri.conftest import create_input
 
 

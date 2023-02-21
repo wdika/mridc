@@ -365,7 +365,6 @@ class ProcessLauncher(Launcher):
         self.hydra_context = hydra_context
 
     def launch(self, job_overrides: Sequence[Sequence[str]], initial_job_idx: int) -> Sequence[JobReturn]:
-
         return launch(launcher=self, job_overrides=job_overrides, initial_job_idx=initial_job_idx)
 
 

@@ -8,7 +8,7 @@ from omegaconf import OmegaConf
 
 from mridc.collections.common.data.subsample import RandomMaskFunc
 from mridc.collections.common.parts import utils
-from mridc.collections.multitask.rs.models.mtlrs import MTLRS
+from mridc.collections.multitask.rs.nn.mtlrs import MTLRS
 from tests.collections.reconstruction.fastmri.conftest import create_input
 
 

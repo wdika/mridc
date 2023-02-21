@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from functools import total_ordering
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/classes/common.py
 import hydra
@@ -870,7 +870,9 @@ class Model(Typing, Serialization, FileIO, ABC):  # type: ignore
         url = location_in_the_cloud.replace(filename, "")
         cache_dir = Path.joinpath(resolve_cache_dir(), f"{filename[:-5]}")
         # If either description and location in the cloud changes, this will force re-download
-        cache_subfolder = hashlib.md5((location_in_the_cloud + description).encode("utf-8")).hexdigest()  # type: ignore
+        cache_subfolder = hashlib.md5(
+            (location_in_the_cloud + description).encode("utf-8")  # type: ignore
+        ).hexdigest()  # type: ignore
         # if file exists on cache_folder/subfolder, it will be re-used, unless refresh_cache is True
         mridc_model_file_in_cache = maybe_download_from_cloud(
             url=url, filename=filename, cache_dir=cache_dir, subfolder=cache_subfolder, refresh_cache=refresh_cache

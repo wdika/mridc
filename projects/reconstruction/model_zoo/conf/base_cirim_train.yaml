@@ -59,7 +59,7 @@ model:
   log_images: true
 
   train_ds:
-    data_path: /data/projects/recon/data/public/3D_FSE_PD_Knees/h5/multicoil_train
+    data_path: /data/projects/recon/data/private/3T_T1_3D_Brains/h5/multicoil_train
     coil_sensitivity_maps_path: None
     mask_path: None
     sample_rate: 1
@@ -70,7 +70,10 @@ model:
     consecutive_slices: 1
     data_saved_per_slice: false
     apply_prewhitening: false
-    apply_gcc: false
+    apply_gcc: true
+    gcc_virtual_coils: 8
+    gcc_calib_lines: 24
+    gcc_align_data: true
     coil_combination_method: SENSE
     dimensionality: 2
     mask_args:
@@ -80,7 +83,7 @@ model:
       center_fractions:
         - 0.7
       scale: 0.02
-      shift_mask: false
+      shift_mask: true
       use_seed: true
     half_scan_percentage: 0.0
     remask: false
@@ -104,7 +107,7 @@ model:
     drop_last: false
 
   validation_ds:
-    data_path: /data/projects/recon/data/public/3D_FSE_PD_Knees/h5/multicoil_val
+    data_path: /data/projects/recon/data/private/3T_T1_3D_Brains/h5/multicoil_val
     coil_sensitivity_maps_path: None
     mask_path: None
     sample_rate: 1
@@ -115,7 +118,10 @@ model:
     consecutive_slices: 1
     data_saved_per_slice: false
     apply_prewhitening: false
-    apply_gcc: false
+    apply_gcc: true
+    gcc_virtual_coils: 8
+    gcc_calib_lines: 24
+    gcc_align_data: true
     coil_combination_method: SENSE
     dimensionality: 2
     mask_args:
@@ -125,7 +131,7 @@ model:
       center_fractions:
         - 0.7
       scale: 0.02
-      shift_mask: false
+      shift_mask: true
       use_seed: false
     half_scan_percentage: 0.0
     remask: false
@@ -162,7 +168,7 @@ model:
       warmup_ratio: 0.1
 
 trainer:
-  strategy: ddp
+  strategy: ddp_find_unused_parameters_false
   accelerator: gpu
   devices: 1
   num_nodes: 1

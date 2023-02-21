@@ -8,7 +8,7 @@ from omegaconf import OmegaConf
 
 from mridc.collections.common.data.subsample import RandomMaskFunc
 from mridc.collections.common.parts import utils
-from mridc.collections.quantitative.models.qcirim import qCIRIM
+from mridc.collections.quantitative.nn.qcirim import qCIRIM
 from tests.collections.reconstruction.fastmri.conftest import create_input
 
 

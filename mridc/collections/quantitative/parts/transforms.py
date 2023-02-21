@@ -1,19 +1,20 @@
 # coding=utf-8
 __author__ = "Dimitrios Karkalousos, Chaoping Zhang"
 
-import math
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
+from omegaconf import DictConfig
 from skimage.restoration import unwrap_phase
-from torch import Tensor
 from torch.nn import functional as F
 
 import mridc.collections.common.data.subsample as subsample
 import mridc.collections.common.parts.fft as fft
 import mridc.collections.common.parts.utils as utils
+import mridc.collections.reconstruction.nn as reconstruction_nn
 from mridc.collections.common.parts.transforms import (
+    Composer,
     Cropper,
     GeometricDecompositionCoilCompression,
     Masker,
@@ -41,6 +42,9 @@ class qMRIDataTransforms:
         Whether to shift the B0 input. Default is ``False``.
     apply_prewhitening : bool, optional
         Apply prewhitening. If ``True`` then the prewhitening arguments are used. Default is ``False``.
+    find_patch_size : bool, optional
+        Find optimal patch size (automatically) to calculate psi. If False, patch_size must be defined.
+        Default is ``True``.
     prewhitening_scale_factor : float, optional
         Prewhitening scale factor. Default is ``1.0``.
     prewhitening_patch_start : int, optional
@@ -110,6 +114,7 @@ class qMRIDataTransforms:
         qmaps_scaling_factor: float = 1.0,
         shift_B0_input: bool = False,
         apply_prewhitening: bool = False,
+        find_patch_size: bool = True,
         prewhitening_scale_factor: float = 1.0,
         prewhitening_patch_start: int = 10,
         prewhitening_patch_length: int = 30,
@@ -143,6 +148,8 @@ class qMRIDataTransforms:
             raise ValueError("Please specify echo times (TEs).")
         self.TEs = TEs
         self.precompute_quantitative_maps = precompute_quantitative_maps
+        self.qmaps_scaling_factor = qmaps_scaling_factor
+        self.shift_B0_input = shift_B0_input
 
         self.coil_combination_method = coil_combination_method
         self.kspace_crop = kspace_crop
@@ -152,14 +159,11 @@ class qMRIDataTransforms:
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
         self.spatial_dims = spatial_dims if spatial_dims is not None else [-2, -1]
-        self.coil_dim = coil_dim - 1
+        self.coil_dim = coil_dim - 1 if dimensionality == 2 else coil_dim
 
-        self.qmaps_scaling_factor = qmaps_scaling_factor
-        self.shift_B0_input = shift_B0_input
-
-        self.apply_prewhitening = apply_prewhitening
         self.prewhitening = (
             NoisePreWhitening(
+                find_patch_size=find_patch_size,
                 patch_size=[
                     prewhitening_patch_start,
                     prewhitening_patch_length + prewhitening_patch_start,
@@ -167,6 +171,9 @@ class qMRIDataTransforms:
                     prewhitening_patch_length + prewhitening_patch_start,
                 ],
                 scale_factor=prewhitening_scale_factor,
+                fft_centered=self.fft_centered,
+                fft_normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
             )
             if apply_prewhitening
             else None
@@ -188,6 +195,8 @@ class qMRIDataTransforms:
         self.kspace_zero_filling = (
             ZeroFilling(
                 zero_filling_size=kspace_zero_filling_size,  # type: ignore
+                fft_centered=self.fft_centered,
+                fft_normalization=self.fft_normalization,
                 spatial_dims=self.spatial_dims,  # type: ignore
             )
             if not utils.is_none(kspace_zero_filling_size)
@@ -220,6 +229,33 @@ class qMRIDataTransforms:
             spatial_dims=self.spatial_dims,  # type: ignore
         )
 
+        self.init_reconstructor = reconstruction_nn.zf.ZF(  # type: ignore
+            cfg=DictConfig(
+                {
+                    "fft_centered": self.fft_centered,
+                    "fft_normalization": self.fft_normalization,
+                    "spatial_dims": self.spatial_dims,
+                    "coil_dim": self.coil_dim,
+                    "coil_combination_method": self.coil_combination_method.upper(),
+                }
+            )
+        )
+        self.prewhitening = Composer([self.prewhitening])  # type: ignore
+        self.coils_shape_transforms = Composer(
+            [
+                self.gcc,  # type: ignore
+                self.kspace_zero_filling,  # type: ignore
+            ]
+        )
+        self.crop_normalize = Composer(
+            [
+                self.cropping,  # type: ignore
+                self.normalization,  # type: ignore
+            ]
+        )
+        self.cropping = Composer([self.cropping])  # type: ignore
+        self.normalization = Composer([self.normalization])  # type: ignore
+
         self.use_seed = use_seed
 
     def __call__(
@@ -234,25 +270,25 @@ class qMRIDataTransforms:
         fname: str,
         slice_idx: int,
     ) -> Tuple[
-        Union[Union[List, torch.Tensor], torch.Tensor],
-        Union[Optional[torch.Tensor], Any],
-        Union[Union[List, torch.Tensor], torch.Tensor],
-        Union[Optional[torch.Tensor], Any],
-        Union[Union[List, torch.Tensor], torch.Tensor],
-        Union[Optional[torch.Tensor], Any],
-        Union[Union[List, torch.Tensor], torch.Tensor],
-        Union[Optional[torch.Tensor], Any],
+        List[Any],
+        Any,
+        List[Any],
+        Any,
+        List[Any],
+        Any,
+        List[Any],
+        Any,
         torch.Tensor,
         torch.Tensor,
-        Union[Union[List, torch.Tensor], torch.Tensor],
-        Union[Optional[torch.Tensor], Any],
-        Union[List, Any],
+        Union[List[torch.Tensor], torch.Tensor],
         torch.Tensor,
-        Union[Optional[torch.Tensor], Any],
-        Union[torch.Tensor, Any],
+        Union[List[torch.Tensor], torch.Tensor],
+        torch.Tensor | Any,
+        Union[List[torch.Tensor], torch.Tensor],
+        Union[List[torch.Tensor], torch.Tensor],
         str,
         int,
-        Union[List, Any],
+        List[Union[float, torch.Tensor, Any]],
     ]:
         """
         Apply the data transform.
@@ -262,7 +298,7 @@ class qMRIDataTransforms:
         kspace: The kspace.
         sensitivity_map: The sensitivity map.
         qmaps: The quantitative maps.
-        mask: List, sampling mask if exists and brain mask and head mask.
+        mask: List of masks, with the undersampling, the brain, and the head mask.
         prediction: The initial estimation.
         target: The target.
         attrs: The attributes.
@@ -273,258 +309,31 @@ class qMRIDataTransforms:
         -------
         The transformed data.
         """
-        kspace = utils.to_tensor(kspace)
+        mask, mask_brain, mask_head = mask
 
-        kspace = utils.add_coil_dim_if_singlecoil(kspace, dim=self.coil_dim)
-
-        # This condition is necessary in case of auto estimation of sense maps.
-        if sensitivity_map is not None and sensitivity_map.size != 0:
-            sensitivity_map = utils.to_tensor(sensitivity_map)
-        else:
-            # If no sensitivity map is provided, either the data is singlecoil or the sense net is used.
-            # Initialize the sensitivity map to 1 to assure for the singlecoil case.
-            sensitivity_map = torch.ones_like(kspace)
-
-        mask_head = mask[2]
-        mask_brain = mask[1]
-        mask = mask[0]
-
-        if mask_brain.ndim != 0:
-            mask_brain = torch.from_numpy(mask_brain)
-
-        if mask_head.ndim != 0:
-            mask_head = torch.from_numpy(mask_head)
-
-        if mask is not None:
-            if isinstance(mask, list):
-                mask = [torch.from_numpy(m) for m in mask]
-            elif mask.ndim != 0:
-                mask = torch.from_numpy(mask)
-
-        if self.prewhitening is not None:
-            # todo: dynamic echo dim
-            kspace = torch.stack(
-                [self.prewhitening(kspace[echo]) for echo in range(kspace.shape[0])],  # type: ignore
-                dim=0,
-            )
-
-        if self.gcc is not None:
-            kspace = torch.stack([self.gcc(kspace[echo]) for echo in range(kspace.shape[0])], dim=0)
-            if isinstance(sensitivity_map, torch.Tensor):
-                sensitivity_map = fft.ifft2(
-                    self.gcc(
-                        fft.fft2(
-                            sensitivity_map,
-                            centered=self.fft_centered,
-                            normalization=self.fft_normalization,
-                            spatial_dims=self.spatial_dims,
-                        )
-                    ),
-                    centered=self.fft_centered,
-                    normalization=self.fft_normalization,
-                    spatial_dims=self.spatial_dims,
-                )
-
-        # Apply zero-filling on kspace
-        if self.kspace_zero_filling is not None:
-            kspace = self.kspace_zero_filling(kspace)
-            sensitivity_map = fft.fft2(
-                sensitivity_map,
-                centered=self.fft_centered,
-                normalization=self.fft_normalization,
-                spatial_dims=self.spatial_dims,
-            )
-            sensitivity_map = self.kspace_zero_filling(sensitivity_map)
-            sensitivity_map = fft.ifft2(
-                sensitivity_map,
-                centered=self.fft_centered,
-                normalization=self.fft_normalization,
-                spatial_dims=self.spatial_dims,
-            )
-
-        # Initial estimation
-        prediction = (
-            utils.to_tensor(prediction) if prediction is not None and prediction.size != 0 else torch.tensor([])
-        )
-
-        if target is not None and target.ndim > 1:
-            target = utils.to_tensor(target)
-        elif not utils.is_none(self.coil_combination_method.upper()):
-            if sensitivity_map is not None and sensitivity_map.size != 0:
-                target = utils.coil_combination_method(
-                    fft.ifft2(
-                        kspace,
-                        centered=self.fft_centered,
-                        normalization=self.fft_normalization,
-                        spatial_dims=self.spatial_dims,
-                    ),
-                    sensitivity_map,
-                    method=self.coil_combination_method.upper(),
-                    dim=self.coil_dim,
-                )
-        else:
-            raise ValueError("No target found, while coil combination method is not defined.")
+        kspace, masked_kspace, mask, acc = self.__process_kspace__(kspace, mask, attrs, fname)
+        sensitivity_map = self.__process_coil_sensitivities_map__(sensitivity_map, kspace)
+        target = self.__initialize_prediction__(torch.empty([]), kspace, sensitivity_map)
         if target.shape[-1] == 2:
             target = torch.view_as_complex(target)
+        prediction = self.__initialize_prediction__(prediction, masked_kspace, sensitivity_map)
 
-        seed = tuple(map(ord, fname)) if self.use_seed else None
-
-        acq_start = attrs["padding_left"] if "padding_left" in attrs else 0
-        acq_end = attrs["padding_right"] if "padding_left" in attrs else 0
-
-        if self.cropping is not None:
-            target = self.cropping(target)
-            if sensitivity_map is not None and sensitivity_map.size != 0:
-                sensitivity_map = self.cropping(sensitivity_map, self.kspace_crop)
-            if prediction is not None and prediction.ndim > 2:
-                prediction = self.cropping(prediction, self.kspace_crop)
-            if not self.kspace_crop:
-                kspace = fft.ifft2(
-                    kspace,
-                    centered=self.fft_centered,
-                    normalization=self.fft_normalization,
-                    spatial_dims=self.spatial_dims,
-                )
-            kspace = self.cropping(kspace)
-            if not self.kspace_crop:
-                kspace = fft.fft2(
-                    kspace,
-                    centered=self.fft_centered,
-                    normalization=self.fft_normalization,
-                    spatial_dims=self.spatial_dims,
-                )
-
-            if mask_brain.dim() != 0:
-                mask_brain = self.cropping(mask_brain)
-
-        if not utils.is_none(mask):
-            if isinstance(mask, list):
-                if len(mask) == 0:
-                    mask = None
-            elif mask.dim() == 0:
-                mask = None
-
-        masked_kspace, mask, acc = self.masking(kspace, mask, (acq_start, acq_end), seed)  # type: ignore
-
-        if self.cropping is not None and not self.crop_before_masking:
-            if isinstance(masked_kspace, list):
-                cropped_masked_kspace = []
-                cropped_mask = []
-                for masked_kspace_, mask_ in zip(masked_kspace, mask):
-                    if not self.kspace_crop:
-                        masked_kspace_ = fft.ifft2(
-                            masked_kspace_,
-                            centered=self.fft_centered,
-                            normalization=self.fft_normalization,
-                            spatial_dims=self.spatial_dims,
-                        )
-                    masked_kspace_ = self.cropping(masked_kspace_)
-                    if not self.kspace_crop:
-                        masked_kspace_ = fft.fft2(
-                            masked_kspace_,
-                            centered=self.fft_centered,
-                            normalization=self.fft_normalization,
-                            spatial_dims=self.spatial_dims,
-                        )
-                    cropped_masked_kspace.append(masked_kspace_)
-                    cropped_mask.append(self.cropping(mask_.squeeze(-1)).unsqueeze(-1))
-                masked_kspace = cropped_masked_kspace
-                mask = cropped_mask
-            else:
-                if not self.kspace_crop:
-                    masked_kspace = fft.ifft2(
-                        masked_kspace,  # type: ignore
-                        centered=self.fft_centered,
-                        normalization=self.fft_normalization,
-                        spatial_dims=self.spatial_dims,
-                    )
-                masked_kspace = self.cropping(masked_kspace)
-                if not self.kspace_crop:
-                    masked_kspace = fft.fft2(
-                        masked_kspace,
-                        centered=self.fft_centered,
-                        normalization=self.fft_normalization,
-                        spatial_dims=self.spatial_dims,
-                    )
-                mask = self.cropping(mask.squeeze(-1)).unsqueeze(-1)  # type: ignore
-
-        mask_head = torch.ones_like(mask_brain)
+        if mask_brain.ndim != 0:
+            mask_brain = self.crop_normalize(torch.from_numpy(mask_brain))
+            mask_head = torch.ones_like(mask_brain)
 
         if self.precompute_quantitative_maps:
-            R2star_maps_init = []
-            S0_maps_init = []
-            B0_maps_init = []
-            phi_maps_init = []
-            predictions = []
-            for y in masked_kspace:
-                prediction = utils.sense(
-                    fft.ifft2(
-                        y,
-                        centered=self.fft_centered,
-                        normalization=self.fft_normalization,
-                        spatial_dims=self.spatial_dims,
-                    ),
-                    sensitivity_map.unsqueeze(0),
-                    dim=self.coil_dim,
-                )
-
-                predictions.append(prediction)
-                R2star_map_init, S0_map_init, B0_map_init, phi_map_init = R2star_B0_S0_phi_mapping(
-                    prediction,
-                    self.TEs,  # type: ignore
-                    mask_brain,
-                    mask_head,
-                    fully_sampled=True,
-                    scaling_factor=self.qmaps_scaling_factor,
-                    shift=self.shift_B0_input,
-                    fft_centered=self.fft_centered,
-                    fft_normalization=self.fft_normalization,
-                    spatial_dims=self.spatial_dims,
-                )
-
-                R2star_maps_init.append(R2star_map_init)
-                S0_maps_init.append(S0_map_init)
-                B0_maps_init.append(B0_map_init)
-                phi_maps_init.append(phi_map_init)
-
-            R2star_map_init = R2star_maps_init
-            S0_map_init = S0_maps_init
-            B0_map_init = B0_maps_init
-            phi_map_init = phi_maps_init
-
-            mask_brain_tmp = torch.ones_like(torch.abs(mask_brain))
-            mask_brain_tmp = mask_brain_tmp.unsqueeze(0) if mask_brain.dim() == 2 else mask_brain_tmp
-            imspace = utils.sense(
-                fft.ifft2(
-                    kspace,
-                    centered=self.fft_centered,
-                    normalization=self.fft_normalization,
-                    spatial_dims=self.spatial_dims,
-                )
-                * mask_brain_tmp.unsqueeze(self.coil_dim - 1).unsqueeze(-1),
-                sensitivity_map.unsqueeze(0),
-                dim=self.coil_dim,
-            )
-
-            if qmaps[0][-1].ndim != 0:
-                B0_map, S0_map, R2star_map, phi_map = qmaps
-                B0_map_target = B0_map[-1]
-                S0_map_target = S0_map[-1]
-                R2star_map_target = R2star_map[-1]
-                phi_map_target = phi_map[-1]
-            else:
-                R2star_map_target, S0_map_target, B0_map_target, phi_map_target = R2star_B0_S0_phi_mapping(
-                    imspace,
-                    self.TEs,  # type: ignore
-                    mask_brain,
-                    mask_head,
-                    fully_sampled=True,
-                    scaling_factor=self.qmaps_scaling_factor,
-                    shift=self.shift_B0_input,
-                    fft_centered=self.fft_centered,
-                    fft_normalization=self.fft_normalization,
-                    spatial_dims=self.spatial_dims,
-                )
+            (
+                R2star_map_init,
+                R2star_map_target,
+                S0_map_init,
+                S0_map_target,
+                B0_map_init,
+                B0_map_target,
+                phi_map_init,
+                phi_map_target,
+                predictions,
+            ) = self.__compute_quantitative_maps__(kspace, masked_kspace, sensitivity_map, mask_brain, mask_head)
         else:
             if qmaps[0][0].ndim != 0:
                 B0_map, S0_map, R2star_map, phi_map = qmaps
@@ -545,35 +354,6 @@ class qMRIDataTransforms:
                     "No quantitative maps were found, while the precompute_quantitative_maps flag is set to False."
                     "Please either set the precompute_quantitative_maps flag to True or precompute and store your "
                     "quantitative maps in your input data."
-                )
-
-        if self.normalize_inputs:
-            kspace = self.normalization(kspace, apply_backward_transform=True)
-            if isinstance(masked_kspace, list):
-                masked_kspace = [self.normalization(x, apply_backward_transform=True) for x in masked_kspace]
-            else:
-                masked_kspace = self.normalization(masked_kspace, apply_backward_transform=True)
-            if sensitivity_map.size != 0:
-                sensitivity_map = self.normalization(sensitivity_map, apply_backward_transform=False)
-            target = self.normalization(target, apply_backward_transform=False)
-
-        if prediction.dim() < 2:
-            if isinstance(masked_kspace, list):
-                prediction = [
-                    utils.coil_combination_method(
-                        fft.ifft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims),
-                        sensitivity_map,
-                        self.coil_combination_method,
-                        self.coil_dim,
-                    )
-                    for y in masked_kspace
-                ]
-            else:
-                prediction = utils.coil_combination_method(
-                    fft.ifft2(masked_kspace, self.fft_centered, self.fft_normalization, self.spatial_dims),
-                    sensitivity_map,
-                    self.coil_combination_method,
-                    self.coil_dim,
                 )
 
         return (
@@ -597,6 +377,257 @@ class qMRIDataTransforms:
             slice_idx,
             acc,
         )
+
+    def __compute_quantitative_maps__(
+        self,
+        kspace: torch.Tensor,
+        masked_kspace: torch.Tensor,
+        sensitivity_map: torch.Tensor,
+        mask_brain: torch.Tensor,
+        mask_head: torch.Tensor,
+    ) -> Tuple[List[Any], Any, List[Any], Any, List[Any], Any, List[Any], Any, List[torch.Tensor]]:
+        """
+        Compute quantitative maps from the masked kspace data.
+
+        Parameters
+        ----------
+        kspace: torch.Tensor
+            Kspace data.
+        masked_kspace: torch.Tensor
+            Masked kspace data.
+        sensitivity_map: torch.Tensor
+            Sensitivity maps.
+        mask_brain: torch.Tensor
+            Brain mask.
+        mask_head: torch.Tensor
+            Head mask.
+
+        Returns
+        -------
+        R2star_maps_init: List[torch.Tensor]
+            List of R2star maps.
+        S0_maps_init: List[torch.Tensor]
+            List of S0 maps.
+        B0_maps_init: List[torch.Tensor]
+            List of B0 maps.
+        phi_maps_init: List[torch.Tensor]
+            List of phi maps.
+        """
+        R2star_maps_init = []
+        S0_maps_init = []
+        B0_maps_init = []
+        phi_maps_init = []
+        predictions = []
+        for y in masked_kspace:
+            prediction = utils.sense(
+                fft.ifft2(
+                    y,
+                    centered=self.fft_centered,
+                    normalization=self.fft_normalization,
+                    spatial_dims=self.spatial_dims,
+                ),
+                sensitivity_map.unsqueeze(0),
+                dim=self.coil_dim,
+            )
+
+            predictions.append(prediction)
+            R2star_map_init, S0_map_init, B0_map_init, phi_map_init = R2star_B0_S0_phi_mapping(
+                prediction,
+                self.TEs,  # type: ignore
+                mask_brain,
+                mask_head,
+                fully_sampled=True,
+                scaling_factor=self.qmaps_scaling_factor,
+                shift=self.shift_B0_input,
+                fft_centered=self.fft_centered,
+                fft_normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            )
+
+            R2star_maps_init.append(R2star_map_init)
+            S0_maps_init.append(S0_map_init)
+            B0_maps_init.append(B0_map_init)
+            phi_maps_init.append(phi_map_init)
+
+        R2star_map_init = R2star_maps_init
+        S0_map_init = S0_maps_init
+        B0_map_init = B0_maps_init
+        phi_map_init = phi_maps_init
+
+        mask_brain_tmp = torch.ones_like(torch.abs(mask_brain))
+        mask_brain_tmp = mask_brain_tmp.unsqueeze(0) if mask_brain.dim() == 2 else mask_brain_tmp
+
+        imspace = utils.sense(
+            fft.ifft2(
+                kspace,
+                centered=self.fft_centered,
+                normalization=self.fft_normalization,
+                spatial_dims=self.spatial_dims,
+            )
+            * mask_brain_tmp.unsqueeze(self.coil_dim - 1).unsqueeze(-1),
+            sensitivity_map.unsqueeze(0),
+            dim=self.coil_dim,
+        )
+        R2star_map_target, S0_map_target, B0_map_target, phi_map_target = R2star_B0_S0_phi_mapping(
+            imspace,
+            self.TEs,  # type: ignore
+            mask_brain,
+            mask_head,
+            fully_sampled=True,
+            scaling_factor=self.qmaps_scaling_factor,
+            shift=self.shift_B0_input,
+            fft_centered=self.fft_centered,
+            fft_normalization=self.fft_normalization,
+            spatial_dims=self.spatial_dims,
+        )
+
+        return (
+            R2star_map_init,
+            R2star_map_target,
+            S0_map_init,
+            S0_map_target,
+            B0_map_init,
+            B0_map_target,
+            phi_map_init,
+            phi_map_target,
+            predictions,
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"Preprocessing transforms initialized for {self.__class__.__name__}: "
+            f"precompute_quantitative_maps={self.precompute_quantitative_maps}, "
+            f"prewhitening={self.prewhitening}, "
+            f"masking={self.masking}, "
+            f"kspace_zero_filling={self.kspace_zero_filling}, "
+            f"cropping={self.cropping}, "
+            f"normalization={self.normalization}, "
+            f"init_reconstructor={self.init_reconstructor}, "
+        )
+
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    def __process_kspace__(
+        self, kspace: np.ndarray, mask: Union[np.ndarray, None], attrs: Dict, fname: str
+    ) -> Tuple[
+        torch.Tensor,
+        Union[List[torch.Tensor], torch.Tensor],
+        Union[List[torch.Tensor], torch.Tensor],
+        Union[List[Union[float, torch.Tensor, Any]]],
+    ]:
+        """
+        Apply the preprocessing transforms to the kspace.
+
+        Parameters
+        ----------
+        kspace : torch.Tensor
+            The kspace.
+        mask : torch.Tensor
+            The mask, if None, the mask is generated.
+        attrs : Dict
+            The attributes, if stored in the file.
+        fname : str
+            The file name.
+
+        Returns
+        -------
+        The preprocessed kspace.
+        """
+        kspace = utils.to_tensor(kspace)
+        kspace = utils.add_coil_dim_if_singlecoil(kspace, dim=self.coil_dim)
+
+        kspace = self.coils_shape_transforms(kspace, apply_backward_transform=True)
+        kspace = self.prewhitening(kspace)  # type: ignore
+
+        if self.crop_before_masking:
+            kspace = self.cropping(kspace, apply_backward_transform=not self.kspace_crop)  # type: ignore
+
+        masked_kspace, mask, acc = self.masking(
+            kspace,
+            mask,
+            (
+                attrs["padding_left"] if "padding_left" in attrs else 0,
+                attrs["padding_right"] if "padding_right" in attrs else 0,
+            ),
+            tuple(map(ord, fname)) if self.use_seed else None,  # type: ignore
+        )
+
+        if not self.crop_before_masking:
+            masked_kspace = self.cropping(masked_kspace, apply_backward_transform=not self.kspace_crop)  # type: ignore
+            if isinstance(mask, list):
+                mask = [self.cropping(x.squeeze(-1)).unsqueeze(-1) for x in mask]  # type: ignore
+            kspace = self.cropping(kspace, apply_backward_transform=not self.kspace_crop)  # type: ignore
+
+        kspace = self.normalization(kspace, apply_backward_transform=True)
+        masked_kspace = self.normalization(masked_kspace, apply_backward_transform=True)
+
+        return kspace, masked_kspace, mask, acc
+
+    def __process_coil_sensitivities_map__(self, sensitivity_map: np.ndarray, kspace: torch.Tensor) -> torch.Tensor:
+        """
+        Preprocesses the coil sensitivities map.
+
+        Parameters
+        ----------
+        sensitivity_map : np.ndarray
+            The coil sensitivities map.
+        kspace : torch.Tensor
+            The kspace.
+
+        Returns
+        -------
+        torch.Tensor
+            The preprocessed coil sensitivities map.
+        """
+        # This condition is necessary in case of auto estimation of sense maps.
+        if sensitivity_map is not None and sensitivity_map.size != 0:
+            sensitivity_map = utils.to_tensor(sensitivity_map)
+        else:
+            # If no sensitivity map is provided, either the data is singlecoil or the sense net is used.
+            # Initialize the sensitivity map to 1 to assure for the singlecoil case.
+            sensitivity_map = torch.ones_like(kspace)
+        sensitivity_map = self.coils_shape_transforms(sensitivity_map, apply_forward_transform=True)
+        sensitivity_map = self.crop_normalize(sensitivity_map, apply_forward_transform=self.kspace_crop)
+        return sensitivity_map
+
+    def __initialize_prediction__(
+        self, prediction: Union[np.ndarray, torch.Tensor, None], kspace: torch.Tensor, sensitivity_map: torch.Tensor
+    ) -> Union[List[torch.Tensor], torch.Tensor]:
+        """
+        Predicts a coil-combined image.
+
+        Parameters
+        ----------
+        prediction : np.ndarray
+            The initial estimation, if None, the prediction is initialized.
+        kspace : torch.Tensor
+            The kspace.
+        sensitivity_map : torch.Tensor
+            The sensitivity map.
+
+        Returns
+        -------
+        Union[List[torch.Tensor], torch.Tensor]
+            The initialized prediction, either a list of coil-combined images or a single coil-combined image.
+        """
+        if utils.is_none(prediction) or prediction.ndim < 2:  # type: ignore
+            if isinstance(kspace, list):
+                prediction = [
+                    self.crop_normalize(
+                        self.init_reconstructor(y, sensitivity_map, torch.empty([]), torch.empty([]), torch.empty([]))
+                    )
+                    for y in kspace
+                ]
+            else:
+                prediction = self.crop_normalize(
+                    self.init_reconstructor(kspace, sensitivity_map, torch.empty([]), torch.empty([]), torch.empty([]))
+                )
+        else:
+            if isinstance(prediction, np.ndarray):
+                prediction = utils.to_tensor(prediction)
+            prediction = self.crop_normalize(prediction, apply_forward_transform=self.kspace_crop)
+        return prediction
 
 
 class GaussianSmoothing(torch.nn.Module):
@@ -656,7 +687,8 @@ class GaussianSmoothing(torch.nn.Module):
             -0.5
             * (
                 (torch.arange(kernel_size[0])[:, None] - (kernel_size[0] - 1) / 2) ** 2 / sigma[0] ** 2  # type: ignore
-                + (torch.arange(kernel_size[1])[None, :] - (kernel_size[1] - 1) / 2) ** 2 / sigma[1] ** 2  # type: ignore
+                + (torch.arange(kernel_size[1])[None, :] - (kernel_size[1] - 1) / 2) ** 2
+                / sigma[1] ** 2  # type: ignore
             )
         )
         kernel /= kernel.sum()
@@ -888,7 +920,10 @@ def R2star_mapping(
 
     sqrt_prediction = torch.sqrt(prediction_flatten)
     b = torch.matmul(TEs, torch.log(prediction_flatten) * sqrt_prediction)
-    A = [torch.matmul(TEs, TEs.T * sqrt_prediction[:, i, None]) for i in range(prediction_flatten.shape[1])]  # type: ignore
+    A = [
+        torch.matmul(TEs, TEs.T * sqrt_prediction[:, i, None])  # type: ignore
+        for i in range(prediction_flatten.shape[1])
+    ]
 
     R2star_map = torch.empty([prediction_flatten.shape[1]])
     for i in range(prediction_flatten.shape[1]):

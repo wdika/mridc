@@ -68,7 +68,7 @@ model:
   log_images: true
 
   train_ds:
-    data_path: ???
+    data_path: /data/projects/tecfidera/data/synthesized/data/multicoil_train
     coil_sensitivity_maps_path: None
     mask_path: None
     sample_rate: 1
@@ -127,7 +127,7 @@ model:
     drop_last: false
 
   validation_ds:
-    data_path: ???
+    data_path: /data/projects/tecfidera/data/synthesized/data/multicoil_val
     coil_sensitivity_maps_path: None
     mask_path: None
     sample_rate: 1
@@ -212,7 +212,7 @@ trainer:
   max_steps: -1
 
 exp_manager:
-  exp_dir: ???
+  exp_dir: /data/projects/recon/other/dkarkalousos/mridc/seg
   create_tensorboard_logger: true
   create_wandb_logger: false
   wandb_logger_kwargs:

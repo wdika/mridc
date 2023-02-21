@@ -7,33 +7,35 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import DictConfig, OmegaConf
 
-from mridc.collections.multitask.rs.models import IDSLR, IDSLRUNet, MTLRS, RecSegUNet, SegNet, SERANet
-from mridc.collections.quantitative.models import qCIRIM, qVarNet
-from mridc.collections.reconstruction.models import (
-    CIRIM,
-    CascadeNet,
-    CRNNet,
-    DUNet,
-    JointICNet,
-    KIKINet,
-    LPDNet,
-    MultiDomainNet,
-    RecurrentVarNet,
-    UNet,
-    VarNet,
-    VSNet,
-    XPDNet,
-    ZF,
-)
-from mridc.collections.segmentation.models import (
-    SegmentationAttentionUNet,
-    SegmentationDYNUNet,
-    SegmentationLambdaUNet,
-    SegmentationUNet,
-    SegmentationUNetR,
-    Segmentation3DUNet,
-    SegmentationVNet,
-)
+from mridc.collections.multitask.rs.nn.idslr import IDSLR
+from mridc.collections.multitask.rs.nn.idslr_unet import IDSLRUNet
+from mridc.collections.multitask.rs.nn.mtlrs import MTLRS
+from mridc.collections.multitask.rs.nn.recseg_unet import RecSegUNet
+from mridc.collections.multitask.rs.nn.segnet import SegNet
+from mridc.collections.multitask.rs.nn.seranet import SERANet
+from mridc.collections.quantitative.nn.qcirim import qCIRIM
+from mridc.collections.quantitative.nn.qvn import qVarNet
+from mridc.collections.reconstruction.nn.ccnn import CascadeNet
+from mridc.collections.reconstruction.nn.cirim import CIRIM
+from mridc.collections.reconstruction.nn.crnn import CRNNet
+from mridc.collections.reconstruction.nn.dunet import DUNet
+from mridc.collections.reconstruction.nn.jointicnet import JointICNet
+from mridc.collections.reconstruction.nn.kikinet import KIKINet
+from mridc.collections.reconstruction.nn.lpd import LPDNet
+from mridc.collections.reconstruction.nn.multidomainnet import MultiDomainNet
+from mridc.collections.reconstruction.nn.rvn import RecurrentVarNet
+from mridc.collections.reconstruction.nn.unet import UNet
+from mridc.collections.reconstruction.nn.vn import VarNet
+from mridc.collections.reconstruction.nn.vsnet import VSNet
+from mridc.collections.reconstruction.nn.xpdnet import XPDNet
+from mridc.collections.reconstruction.nn.zf import ZF
+from mridc.collections.segmentation.nn.attention_unet import SegmentationAttentionUNet
+from mridc.collections.segmentation.nn.dynunet import SegmentationDYNUNet
+from mridc.collections.segmentation.nn.lambda_unet import SegmentationLambdaUNet
+from mridc.collections.segmentation.nn.unet import SegmentationUNet
+from mridc.collections.segmentation.nn.unet3d import Segmentation3DUNet
+from mridc.collections.segmentation.nn.unetr import SegmentationUNetR
+from mridc.collections.segmentation.nn.vnet import SegmentationVNet
 from mridc.core.conf.hydra_runner import hydra_runner
 from mridc.utils import logging
 from mridc.utils.exp_manager import exp_manager

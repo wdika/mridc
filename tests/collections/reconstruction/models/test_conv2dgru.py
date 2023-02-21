@@ -7,7 +7,7 @@ __author__ = "Dimitrios Karkalousos"
 import pytest
 import torch
 
-from mridc.collections.reconstruction.models.recurrentvarnet.conv2gru import Conv2dGRU
+from mridc.collections.reconstruction.nn.recurrentvarnet.conv2gru import Conv2dGRU
 
 
 def create_input(shape):

@@ -8,7 +8,7 @@ from omegaconf import OmegaConf
 
 from mridc.collections.common.data.subsample import RandomMaskFunc
 from mridc.collections.common.parts import utils
-from mridc.collections.segmentation.models.vnet import SegmentationVNet
+from mridc.collections.segmentation.nn.vnet import SegmentationVNet
 from tests.collections.reconstruction.fastmri.conftest import create_input
 
 

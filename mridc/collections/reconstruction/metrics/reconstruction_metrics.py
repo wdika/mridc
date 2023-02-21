@@ -91,7 +91,7 @@ def psnr(x: np.ndarray, y: np.ndarray, maxval: np.ndarray = None) -> float:
 
     Examples
     --------
-    >>> from mridc.collections.common.metrics.reconstruction_metrics import psnr
+    >>> from mridc.collections.reconstruction.metrics.reconstruction_metrics import psnr
     >>> import numpy as np
     >>> datax = np.random.rand(3, 100, 100)
     >>> datay = np.random.rand(3, 100, 100)

@@ -1,6 +1,6 @@
 # coding=utf-8
 
-from mridc.collections.segmentation import data, losses, models, parts
+from mridc.collections.segmentation import data, losses, nn, parts
 from mridc.package_info import __version__
 
 # Set collection version equal to MRIDC version.

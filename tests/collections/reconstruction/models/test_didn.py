@@ -7,7 +7,7 @@ __author__ = "Dimitrios Karkalousos"
 import pytest
 import torch
 
-from mridc.collections.reconstruction.models.didn.didn import DIDN
+from mridc.collections.reconstruction.nn.didn.didn import DIDN
 
 
 def create_input(shape):
