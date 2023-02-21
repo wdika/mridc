@@ -58,7 +58,7 @@ def register_parser(parser: argparse._SubParsersAction):
 
 
 @hydra_runner(config_path="..", config_name="config")
-def main(cfg: DictConfig) -> None:
+def main(cfg: DictConfig):
     """
     Main function for training and running a model
 

@@ -26,7 +26,7 @@ import mridc.utils
 from mridc.core.connectors.save_restore_connector import SaveRestoreConnector
 from mridc.core.neural_types.comparison import NeuralTypeComparisonResult
 from mridc.core.neural_types.neural_type import NeuralType
-from mridc.utils import logging
+from mridc.utils import logging, model_utils
 from mridc.utils.cloud import maybe_download_from_cloud
 from mridc.utils.data_utils import resolve_cache_dir
 
@@ -404,7 +404,7 @@ class Serialization(ABC):
                 config = OmegaConf.create(config)
                 OmegaConf.set_struct(config, True)
 
-            config = mridc.utils.model_utils.maybe_update_config_version(config)  # type: ignore
+            config = model_utils.maybe_update_config_version(config)  # type: ignore
 
         # Hydra 0.x API
         if ("cls" in config or "target" in config) and "params" in config and _HAS_HYDRA:
@@ -424,7 +424,7 @@ class Serialization(ABC):
                 imported_cls = None
                 try:
                     # try to import the target class
-                    imported_cls = mridc.utils.model_utils.import_class_by_path(target_cls)  # type: ignore
+                    imported_cls = model_utils.import_class_by_path(target_cls)  # type: ignore
                     # use subclass instead
                     if issubclass(cls, imported_cls):
                         imported_cls = cls
@@ -464,7 +464,7 @@ class Serialization(ABC):
                 config = OmegaConf.create(config)
                 OmegaConf.set_struct(config, True)
 
-                config = mridc.utils.model_utils.maybe_update_config_version(config)  # type: ignore
+                config = model_utils.maybe_update_config_version(config)  # type: ignore
 
             self._cfg = config
 
@@ -561,7 +561,7 @@ class FileIO(ABC):
         path2yaml_file: path2yaml_file: path to yaml file where model configuration will be saved.
         """
         if hasattr(self, "_cfg"):
-            self._cfg = mridc.utils.model_utils.maybe_update_config_version(self._cfg)  # type: ignore
+            self._cfg = model_utils.maybe_update_config_version(self._cfg)  # type: ignore
             with open(path2yaml_file, "w", encoding="utf-8") as fout:
                 OmegaConf.save(config=self._cfg, f=fout, resolve=True)
         else:

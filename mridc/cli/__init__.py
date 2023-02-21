@@ -3,6 +3,9 @@ __author__ = "Dimitrios Karkalousos"
 
 import argparse
 
+from mridc.app.launch import register_parser as register_app_subcommand
+from mridc.cli.launch import register_parser as register_launch_subcommand
+
 
 def main():
     """Run the CLI."""
@@ -11,9 +14,6 @@ def main():
     subparser = parser.add_subparsers(help="MRIDC commands.")
     subparser.required = True
     subparser.dest = "subcommand"
-
-    from mridc.app.launch import register_parser as register_app_subcommand
-    from mridc.cli.launch import register_parser as register_launch_subcommand
 
     register_app_subcommand(subparser)
     register_launch_subcommand(subparser)

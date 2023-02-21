@@ -62,7 +62,7 @@ model:
     data_path: /data/projects/recon/data/private/3T_T1_3D_Brains/h5/multicoil_train
     coil_sensitivity_maps_path: None
     mask_path: None
-    sample_rate: 1
+    sample_rate: .01
     volume_sample_rate: None
     use_dataset_cache: false
     dataset_cache_file: None
@@ -110,7 +110,7 @@ model:
     data_path: /data/projects/recon/data/private/3T_T1_3D_Brains/h5/multicoil_val
     coil_sensitivity_maps_path: None
     mask_path: None
-    sample_rate: 1
+    sample_rate: .01
     volume_sample_rate: None
     use_dataset_cache: false
     dataset_cache_file: None
