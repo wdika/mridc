@@ -102,7 +102,7 @@ class BaseFormatter(logging.Formatter):
             record.message = to_unicode(message)
 
         except Exception as e:
-            record.message = "Bad message (%r): %r" % (e, record.__dict__)
+            record.message = "Bad message (%r): %r" % (e, record.__dict__)  # noqa: E501
 
         record.asctime = self.formatTime(record, self.datefmt)
 

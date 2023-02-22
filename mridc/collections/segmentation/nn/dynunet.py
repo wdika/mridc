@@ -48,13 +48,13 @@ class SegmentationDYNUNet(base_segmentation_models.BaseMRISegmentationModel, ABC
         )
 
     @common_classes.typecheck()  # type: ignore
-    def forward(
+    def forward(  # noqa: R0913
         self,
-        y: torch.Tensor,
-        sensitivity_maps: torch.Tensor,
-        mask: torch.Tensor,
+        y: torch.Tensor,  # noqa: R0913
+        sensitivity_maps: torch.Tensor,  # noqa: R0913
+        mask: torch.Tensor,  # noqa: R0913
         init_reconstruction_pred: torch.Tensor,
-        target_reconstruction: torch.Tensor,
+        target_reconstruction: torch.Tensor,  # noqa: R0913
     ) -> torch.Tensor:
         """
         Forward pass of the network.
@@ -97,7 +97,7 @@ class SegmentationDYNUNet(base_segmentation_models.BaseMRISegmentationModel, ABC
                     raise ValueError("Magnitude input is not supported for 2-channel input.")
                 init_reconstruction_pred = init_reconstruction_pred.permute(0, 3, 1, 2)  # type: ignore
             else:
-                raise ValueError("The input channels must be either 1 or 2. Found: {}".format(self.input_channels))
+                raise ValueError(f"The input channels must be either 1 or 2. Found: {self.input_channels}")
         else:
             if init_reconstruction_pred.dim() == 3:
                 init_reconstruction_pred = init_reconstruction_pred.unsqueeze(1)

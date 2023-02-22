@@ -136,7 +136,7 @@ class DownTransition(nn.Module):
         See: https://github.com/black0017/MedicalZooPytorch/blob/master/lib/medzoo/Vnet.py
     """
 
-    def __init__(
+    def __init__(  # noqa: R0913
         self,
         in_channels: int,
         convs: int,
@@ -185,7 +185,7 @@ class UpTransition(nn.Module):
         See: https://github.com/black0017/MedicalZooPytorch/blob/master/lib/medzoo/Vnet.py
     """
 
-    def __init__(
+    def __init__(  # noqa: R0913
         self,
         in_channels: int,
         out_channels: int,
@@ -284,7 +284,7 @@ class VNet(nn.Module):
         See: https://github.com/black0017/MedicalZooPytorch/blob/master/lib/medzoo/Vnet.py
     """
 
-    def __init__(
+    def __init__(  # noqa: R0913
         self,
         in_chans: int = 1,
         out_chans: int = 1,

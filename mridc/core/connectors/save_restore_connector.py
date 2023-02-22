@@ -20,7 +20,6 @@ from mridc.utils.get_rank import is_global_rank_zero
 
 __author__ = "Dimitrios Karkalousos"
 
-
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/connectors/save_restore_connector.py
 
 
@@ -32,7 +31,7 @@ class SaveRestoreConnector:
         self._model_weights_ckpt = "model_weights.ckpt"
         self._model_extracted_dir = None
 
-    def save_to(self, model: "mridc.ModelPT", save_path: str):  # type: ignore
+    def save_to(self, model: "mridc.ModelPT", save_path: str):  # type: ignore  # noqa: F821
         """
         Saves model instance (weights and configuration) into .mridc file.
 
@@ -64,7 +63,7 @@ class SaveRestoreConnector:
         else:
             return
 
-    def load_config_and_state_dict(
+    def load_config_and_state_dict(  # noqa: C901
         self,
         calling_cls,
         restore_path: str,
@@ -155,7 +154,9 @@ class SaveRestoreConnector:
                 OmegaConf.set_struct(conf, True)
                 os.chdir(cwd)
                 # get the class
-                calling_cls._set_model_restore_state(is_being_restored=True, folder=tmpdir)  # type: ignore
+                calling_cls._set_model_restore_state(  # type: ignore  # noqa: WPS437
+                    is_being_restored=True, folder=tmpdir
+                )
                 instance = calling_cls.from_config_dict(config=conf, trainer=trainer)
                 instance = instance.to(map_location)
                 # add load_state_dict override
@@ -165,7 +166,7 @@ class SaveRestoreConnector:
                     self._load_state_dict_from_disk(model_weights, map_location=map_location), strict=strict
                 )
                 logging.info(f"Model {instance.__class__.__name__} was successfully restored from {restore_path}.")
-                instance._set_model_restore_state(is_being_restored=False)  # type: ignore
+                instance._set_model_restore_state(is_being_restored=False)  # type: ignore  # noqa: WPS437
             finally:
                 os.chdir(cwd)
 
@@ -175,9 +176,9 @@ class SaveRestoreConnector:
     def load_instance_with_state_dict(instance, state_dict, strict):
         """Loads the state dict into the instance."""
         instance.load_state_dict(state_dict, strict=strict)
-        instance._set_model_restore_state(is_being_restored=False)  # type: ignore
+        instance._set_model_restore_state(is_being_restored=False)  # type: ignore  # noqa: WPS437
 
-    def restore_from(
+    def restore_from(  # noqa: C901
         self,
         calling_cls,
         restore_path: str,
@@ -374,11 +375,11 @@ class SaveRestoreConnector:
         model.artifacts[config_path] = artifact_item
         # we were called by ModelPT
         if hasattr(model, "cfg"):
-            with open_dict(model._cfg):
+            with open_dict(model._cfg):  # noqa: WPS437
                 OmegaConf.update(model.cfg, config_path, return_path)
         return return_path
 
-    def _handle_artifacts(self, model, mridc_file_folder):
+    def _handle_artifacts(self, model, mridc_file_folder):  # noqa: C901
         """
         This method is called by ModelPT.save_to() and ModelPT.load_from(). It will handle all artifacts and save them
         to the mridc file.
@@ -399,7 +400,7 @@ class SaveRestoreConnector:
 
         if len(artifacts_containers) > 0 and (not hasattr(model, "artifacts") or model.artifacts is None):
             # model has no artifacts, but submodules have some
-            model.artifacts = dict()
+            model.artifacts = {}
 
         for config_path, artifacts in artifacts_containers:
             for subconf_path, artiitem in artifacts.items():
@@ -425,7 +426,7 @@ class SaveRestoreConnector:
                         model.artifacts[conf_path] = artiitem
 
                 else:
-                    raise ValueError(f"Directly referencing artifacts from other mridc files isn't supported yet")
+                    raise ValueError("Directly referencing artifacts from other mridc files isn't supported yet")
 
         # Process current tarfile artifacts by unpacking the previous tarfile and extract the artifacts
         # that are currently required.
@@ -534,12 +535,12 @@ class SaveRestoreConnector:
         # we start with an assumption of uncompressed tar, which should be true for versions 1.7.0 and above
         tar_header = "r:"
         try:
-            tar_test = tarfile.open(path2file, tar_header)
+            tar_test = tarfile.open(path2file, tar_header)  # noqa: B310
             tar_test.close()
         except tarfile.ReadError:
             # can be older checkpoint => try compressed tar
             tar_header = "r:gz"
-        tar = tarfile.open(path2file, tar_header)
+        tar = tarfile.open(path2file, tar_header)  # noqa: B310
         tar.extractall(path=out_folder)
         tar.close()
         return out_folder

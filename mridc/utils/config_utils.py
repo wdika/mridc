@@ -174,8 +174,8 @@ def _add_subconfig_keys(model_cfg: "DictConfig", update_cfg: "DictConfig", subco
 
 
 def assert_dataclass_signature_match(
-    cls: "class_type",  # type: ignore
-    datacls: "dataclass",  # type: ignore
+    cls: "class_type",  # type: ignore  # noqa: F821
+    datacls: "dataclass",  # type: ignore  # noqa: F821
     ignore_args: Optional[List[str]] = None,
     remap_args: Optional[Dict[str, str]] = None,
 ):
@@ -210,12 +210,12 @@ def assert_dataclass_signature_match(
     """
     class_sig = inspect.signature(cls.__init__)
 
-    class_params = dict(**class_sig.parameters)
+    class_params = dict(**class_sig.parameters)  # noqa: F821
     class_params.pop("self")
 
     dataclass_sig = inspect.signature(datacls)
 
-    dataclass_params = dict(**dataclass_sig.parameters)
+    dataclass_params = dict(**dataclass_sig.parameters)  # noqa: F821
     dataclass_params.pop("_target_", None)
 
     class_params = set(class_params.keys())  # type: ignore

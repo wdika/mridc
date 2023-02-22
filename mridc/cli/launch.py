@@ -58,7 +58,7 @@ def register_parser(parser: argparse._SubParsersAction):
 
 
 @hydra_runner(config_path="..", config_name="config")
-def main(cfg: DictConfig):
+def main(cfg: DictConfig):  # noqa: D103
     """
     Main function for training and running a model
 
@@ -159,4 +159,4 @@ def main(cfg: DictConfig):
 
 
 if __name__ == "__main__":
-    main()
+    main()  # noqa: WPS421

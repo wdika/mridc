@@ -14,7 +14,7 @@ import yaml  # type: ignore
 from defusedxml.ElementTree import fromstring
 from torch.utils.data import Dataset
 
-import mridc.collections.common.parts.utils as utils
+from mridc.collections.common.parts import utils
 
 
 def et_query(root: str, qlist: Sequence[str], namespace: str = "https://www.ismrm.org/ISMRMRD") -> str:
@@ -89,8 +89,8 @@ class MRIDataset(Dataset):
         Extends :class:`torch.utils.data.Dataset`.
     """
 
-    def __init__(
-        self,
+    def __init__(  # noqa: C901
+        self,  # noqa: C901
         root: Union[str, Path, os.PathLike],
         coil_sensitivity_maps_root: Union[str, Path, os.PathLike] = None,
         mask_root: Union[str, Path, os.PathLike] = None,
@@ -148,7 +148,7 @@ class MRIDataset(Dataset):
         # Check if our dataset is in the cache. If yes, use that metadata, if not, then regenerate the metadata.
         if dataset_cache.get(root) is None or not use_dataset_cache:
             if str(root).endswith(".json"):  # type: ignore
-                with open(root, "r") as f:  # type: ignore
+                with open(root, "r") as f:  # type: ignore  # noqa: C901
                     examples = json.load(f)
                 files = [Path(example) for example in examples]
             else:
@@ -161,11 +161,11 @@ class MRIDataset(Dataset):
 
             if dataset_cache.get(root) is None and use_dataset_cache:
                 dataset_cache[root] = self.examples
-                logging.info(f"Saving dataset cache to {self.dataset_cache_file}.")
+                logging.info("Saving dataset cache to %s.", self.dataset_cache_file)
                 with open(self.dataset_cache_file, "wb") as f:  # type: ignore
                     yaml.dump(dataset_cache, f)  # type: ignore
         else:
-            logging.info(f"Using dataset cache from {self.dataset_cache_file}.")
+            logging.info("Using dataset cache from %s.", self.dataset_cache_file)
             self.examples = dataset_cache[root]
 
         # subsample if desired
@@ -183,7 +183,7 @@ class MRIDataset(Dataset):
         if num_cols and not utils.is_none(num_cols):
             self.examples = [ex for ex in self.examples if ex[2]["encoding_size"][1] in num_cols]  # type: ignore
 
-    def _retrieve_metadata(self, fname: Union[str, Path]) -> Tuple[Dict, int]:
+    def _retrieve_metadata(self, fname: Union[str, Path]) -> Tuple[Dict, int]:  # noqa: C901
         """
         Retrieve metadata from a given file.
 

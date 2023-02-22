@@ -23,8 +23,8 @@ def add_memory_handlers_to_pl_logger():
         HANDLERS["memory_err"] = MemoryHandler(-1)
         HANDLERS["memory_err"].addFilter(lambda record: record.levelno > _logging.INFO)
         HANDLERS["memory_all"] = MemoryHandler(-1)
-        pl._logger.addHandler(HANDLERS["memory_err"])
-        pl._logger.addHandler(HANDLERS["memory_all"])
+        pl._logger.addHandler(HANDLERS["memory_err"])  # noqa: E501
+        pl._logger.addHandler(HANDLERS["memory_all"])  # noqa: E501
 
 
 def add_filehandlers_to_pl_logger(all_log_file, err_log_file):
@@ -35,10 +35,10 @@ def add_filehandlers_to_pl_logger(all_log_file, err_log_file):
     and all_log_file respectively, and then closed.
     """
     HANDLERS["file"] = _logging.FileHandler(all_log_file)
-    pl._logger.addHandler(HANDLERS["file"])
+    pl._logger.addHandler(HANDLERS["file"])  # noqa: E501
     HANDLERS["file_err"] = _logging.FileHandler(err_log_file)
     HANDLERS["file_err"].addFilter(lambda record: record.levelno > _logging.INFO)
-    pl._logger.addHandler(HANDLERS["file_err"])
+    pl._logger.addHandler(HANDLERS["file_err"])  # noqa: E501
 
     if HANDLERS.get("memory_all"):
         HANDLERS["memory_all"].setTarget(HANDLERS["file"])

@@ -114,7 +114,7 @@ def numba_cuda_is_supported(min_version: str) -> bool:
 
     if module_available is not True:
         return False
-    from numba import cuda
+    from numba import cuda  # noqa: F811
 
     if not hasattr(cuda, "is_supported_version"):
         # assume cuda is supported, but it may fail due to CUDA incompatibility
@@ -142,6 +142,6 @@ def skip_numba_cuda_test_if_unsupported(min_version: str):
     """
     numba_cuda_support = numba_cuda_is_supported(min_version)
     if not numba_cuda_support:
-        import pytest
+        import pytest  # noqa: F811
 
         pytest.skip(f"Numba cuda test is being skipped. Minimum version required : {min_version}")

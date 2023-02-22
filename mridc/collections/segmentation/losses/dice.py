@@ -10,7 +10,7 @@ import torch
 from torch import Tensor
 from torch.nn.modules.loss import _Loss
 
-import mridc.collections.common.parts.utils as utils
+from mridc.collections.common.parts import utils
 from mridc.collections.segmentation.losses.utils import do_metric_reduction
 
 
@@ -93,7 +93,7 @@ class Dice(_Loss):
     tensor(0.5000)
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         include_background: bool = True,
         to_onehot_y: bool = False,
@@ -129,13 +129,13 @@ class Dice(_Loss):
         self.smooth_dr = float(smooth_dr)
         self.batch = batch
 
-    def forward(self, target: torch.Tensor, input: torch.Tensor) -> Tuple[Union[Tensor, Any], Tensor]:
+    def forward(self, target: torch.Tensor, _input: torch.Tensor) -> Tuple[Union[Tensor, Any], Tensor]:  # noqa: C901
         """
         Compute Dice loss.
 
         Parameters
         ----------
-        input: torch.Tensor
+        _input: torch.Tensor
             Prediction of shape [BNHW[D]].
         target: torch.Tensor
             Ground truth of shape [BNHW[D]].
@@ -147,20 +147,20 @@ class Dice(_Loss):
         """
         if self.flatten:
             target = target.reshape(target.shape[0], 1, -1)
-            input = input.reshape(input.shape[0], 1, -1)
+            _input = _input.reshape(_input.shape[0], 1, -1)
 
         if self.sigmoid:
-            input = torch.sigmoid(input)
+            _input = torch.sigmoid(_input)
 
-        n_pred_ch = input.shape[1]
+        n_pred_ch = _input.shape[1]
         if self.softmax:
             if n_pred_ch == 1:
                 warnings.warn("single channel prediction, `softmax=True` ignored.")
             else:
-                input = torch.softmax(input, 1)
+                _input = torch.softmax(_input, 1)
 
         if self.other_act is not None:
-            input = self.other_act(input)
+            _input = self.other_act(_input)
 
         if self.to_onehot_y:
             if n_pred_ch == 1:
@@ -174,25 +174,25 @@ class Dice(_Loss):
             else:
                 # if skipping background, removing first channel
                 target = target[:, 1:]
-                input = input[:, 1:]
+                _input = _input[:, 1:]
 
-        if target.shape != input.shape:
-            raise AssertionError(f"ground truth has different shape ({target.shape}) from input ({input.shape})")
+        if target.shape != _input.shape:
+            raise AssertionError(f"ground truth has different shape ({target.shape}) from _input ({_input.shape})")
 
         # reducing only spatial dimensions (not batch nor channels)
-        reduce_axis: List[int] = torch.arange(2, len(input.shape)).tolist()
+        reduce_axis: List[int] = torch.arange(2, len(_input.shape)).tolist()
         if self.batch:
             # reducing spatial dimensions and batch
             reduce_axis = [0] + reduce_axis
 
-        intersection = torch.sum(target * input, dim=reduce_axis)
+        intersection = torch.sum(target * _input, dim=reduce_axis)
 
         if self.squared_pred:
             target = torch.pow(target, 2)
-            input = torch.pow(input, 2)
+            _input = torch.pow(_input, 2)
 
         ground_o = torch.sum(target, dim=reduce_axis)
-        pred_o = torch.sum(input, dim=reduce_axis)
+        pred_o = torch.sum(_input, dim=reduce_axis)
 
         denominator = ground_o + pred_o
 

@@ -77,7 +77,7 @@ class AppState(metaclass=Singleton):
         return self._device_id
 
     @device_id.setter
-    def device_id(self, id: int):
+    def device_id(self, id: int):  # noqa: A002
         """Property sets the device_id."""
         self._device_id = id
 
@@ -257,7 +257,7 @@ class AppState(metaclass=Singleton):
         return self._log_dir
 
     @log_dir.setter
-    def log_dir(self, dir):
+    def log_dir(self, dir):  # noqa: B902
         """Sets the log_dir property."""
         self._log_dir = dir
 
@@ -267,7 +267,7 @@ class AppState(metaclass=Singleton):
         return self._exp_dir
 
     @exp_dir.setter
-    def exp_dir(self, dir):
+    def exp_dir(self, dir):  # noqa: B902
         """Sets the log_dir property."""
         self._exp_dir = dir
 

@@ -49,7 +49,7 @@ class Adafactor(Optimizer):
     Adafactor Optimizer
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         params,
         lr=None,
@@ -69,18 +69,18 @@ class Adafactor(Optimizer):
             raise ValueError("warmup_init requires relative_step=True")
         self.min_step = min_step
 
-        defaults = dict(
-            lr=lr,
-            eps=eps,
-            clip_threshold=clip_threshold,
-            decay_rate=decay_rate,
-            beta1=beta1,
-            weight_decay=weight_decay,
-            scale_parameter=scale_parameter,
-            relative_step=relative_step,
-            warmup_init=warmup_init,
-            min_step=min_step,
-        )
+        defaults = {
+            "lr": lr,
+            "eps": eps,
+            "clip_threshold": clip_threshold,
+            "decay_rate": decay_rate,
+            "beta1": beta1,
+            "weight_decay": weight_decay,
+            "scale_parameter": scale_parameter,
+            "relative_step": relative_step,
+            "warmup_init": warmup_init,
+            "min_step": min_step,
+        }
         super().__init__(params, defaults)
 
     @property
@@ -104,7 +104,7 @@ class Adafactor(Optimizer):
             param_scale = max(param_group["eps"][1], param_state["RMS"])
         return param_scale * rel_step_sz
 
-    def step(self, closure=None):
+    def step(self, closure=None):  # noqa: C901
         """
         Performs a single optimization step.
 

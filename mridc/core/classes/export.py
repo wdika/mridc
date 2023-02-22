@@ -41,7 +41,7 @@ class Exportable(ABC):
     def output_module(self):
         return self
 
-    def export(
+    def export(  # noqa: WPS211
         self,
         output: str,
         input_example=None,
@@ -64,7 +64,6 @@ class Exportable(ABC):
         verbose: If True, print out the export process.
         do_constant_folding: If True, do constant folding.
         onnx_opset_version: The ONNX opset version to use.
-        training: Training mode for the export.
         check_trace: If True, check the trace of the exported model.
         dynamic_axes: A dictionary of input names and dynamic axes.
         check_tolerance: The tolerance for the check_trace.
@@ -76,7 +75,7 @@ class Exportable(ABC):
         for subnet_name in self.list_export_subnets():
             model = self.get_export_subnet(subnet_name)
             out_name = augment_filename(output, subnet_name)
-            out, descr, out_example = model._export(
+            out, descr, out_example = model._export(  # noqa: WPS437
                 out_name,
                 input_example=input_example,
                 verbose=verbose,
@@ -96,14 +95,14 @@ class Exportable(ABC):
             logging.info(f"Successfully exported {model.__class__.__name__} to {out_name}")
         return all_out, all_descr
 
-    def _export(
+    def _export(  # noqa: WPS211
         self,
         output: str,
         input_example=None,
         verbose=False,
         do_constant_folding=True,
         onnx_opset_version=None,
-        training=TrainingMode.EVAL,
+        training=TrainingMode.EVAL,  # noqa: WPS110
         check_trace: Union[bool, List[torch.Tensor]] = False,
         dynamic_axes=None,
         check_tolerance=0.01,
@@ -136,7 +135,7 @@ class Exportable(ABC):
 
         exportables = [m for m in self.modules() if isinstance(m, Exportable)]  # type: ignore
         qual_name = f"{self.__module__}.{self.__class__.__qualname__}"
-        format = get_export_format(output)
+        format = get_export_format(output)  # noqa: WPS110
         output_descr = f"{qual_name} exported to {format}"
 
         # Pytorch's default opset version is too low, using reasonable latest one
@@ -160,7 +159,7 @@ class Exportable(ABC):
 
                 # Run (possibly overridden) prepare methods before calling forward()
                 for ex in exportables:
-                    ex._prepare_for_export(**my_args, noreplace=True)
+                    ex._prepare_for_export(**my_args, noreplace=True)  # noqa: WPS437
                 self._prepare_for_export(output=output, input_example=input_example, **my_args)
 
                 input_list, input_dict = parse_input_example(input_example)
@@ -216,8 +215,8 @@ class Exportable(ABC):
                     raise ValueError(f"Encountered unknown export format {format}.")
         finally:
             typecheck.set_typecheck_enabled(enabled=True)
-            if forward_method:
-                type(self).forward = old_forward_method  # type: ignore
+            if forward_method:  # noqa: WPS425
+                type(self).forward = old_forward_method  # type: ignore  # noqa: WPS437
             self._export_teardown()
         return (output, output_descr, output_example)
 

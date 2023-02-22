@@ -21,7 +21,7 @@ class NeuralModule(Module, Typing, Serialization, FileIO, ABC):
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
     @staticmethod
-    def input_example(max_batch=None, max_dim=None):
+    def input_example(max_batch=None, max_dim=None):  # noqa: D102
         """
         Override this method if random inputs won't work
 

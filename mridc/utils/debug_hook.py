@@ -35,11 +35,11 @@ def get_forward_hook(name, trainer, rank, logger, dump_to_file=False):
     """
     if dump_to_file:
         os.makedirs("debug_info", exist_ok=True)
-        fp = open(f"debug_info/forward_{name}_rank{rank}.txt", "w")
+        fp = open(f"debug_info/forward_{name}_rank{rank}.txt", "w")  # noqa: P201
         header = False
 
-    def forward_hook(module, inputs, outputs):
-        """Forward hook to dump all of the module input and output norms. It is called at every time after forward()
+    def forward_hook(module, inputs, outputs):  # noqa: E306
+        """Forward hook to dump all of module inputs and output norms. It is called at every time after forward()
         has computed an output. Only float type input/output tensor norms are computed."""
         nonlocal header
         nonlocal fp
@@ -102,10 +102,10 @@ def get_backward_hook(name, trainer, rank, logger, dump_to_file=False):
     """
     if dump_to_file:
         os.makedirs("debug_info", exist_ok=True)
-        fp = open(f"debug_info/backward_{name}_rank{rank}.txt", "w")
+        fp = open(f"debug_info/backward_{name}_rank{rank}.txt", "w")  # noqa: P201
         header = False
 
-    def backward_hook(module, inputs, outputs):
+    def backward_hook(module, inputs, outputs):  # noqa: E306
         """Backward hook to dump all the module input and output grad norms. The hook will be called every time the \
         has computed an output. Only float type input/output tensor norms are computed."""
         nonlocal header
@@ -142,7 +142,7 @@ def get_backward_hook(name, trainer, rank, logger, dump_to_file=False):
     return backward_hook
 
 
-def get_tensor_hook(module, name, trainer, rank, logger, dump_to_file=False):
+def get_tensor_hook(module, name, trainer, rank, logger, dump_to_file=False):  # noqa: C901
     """
     A tensor hook to dump all of the tensor weight norms and grad norms at the end of each of the backward steps.
 
@@ -170,7 +170,7 @@ def get_tensor_hook(module, name, trainer, rank, logger, dump_to_file=False):
     """
     if dump_to_file:
         os.makedirs("debug_info", exist_ok=True)
-        fp = open(f"debug_info/tensor_{name}_rank{rank}.csv", "w")
+        fp = open(f"debug_info/tensor_{name}_rank{rank}.csv", "w")  # noqa: P201
         header = False
 
     def tensor_hook(grad):

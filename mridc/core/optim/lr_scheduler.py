@@ -12,11 +12,11 @@ from functools import partial
 from typing import Any, Dict, Optional, Union
 
 import hydra
-import torch.optim as optim
 import torch.optim.lr_scheduler as pt_scheduler
-import torch.utils.data.dataloader as dataloader
 from omegaconf import DictConfig, OmegaConf
+from torch import optim
 from torch.optim.lr_scheduler import _LRScheduler  # type: ignore
+from torch.utils.data import dataloader
 
 from mridc.core.conf.schedulers import SchedulerParams, get_scheduler_config, register_scheduler_params
 from mridc.utils import logging
@@ -88,7 +88,7 @@ class WarmupPolicy(_LRScheduler):
         lr_val = (step + 1) / (self.warmup_steps + 1)
         return [initial_lr * lr_val for initial_lr in self.base_lrs]
 
-    def _get_lr(self, step):
+    def _get_lr(self, step):  # noqa: F811
         """Simple const lr policy"""
         return self.base_lrs
 
@@ -152,7 +152,7 @@ class SquareRootConstantPolicy(_LRScheduler):
 
         return self._get_lr(step)
 
-    def _get_lr(self, step):
+    def _get_lr(self, step):  # noqa: F811
         """Simple const lr policy"""
         return self.base_lrs
 
@@ -238,7 +238,7 @@ class WarmupHoldPolicy(WarmupPolicy):
         """Get learning rate at current step."""
         if not self._get_lr_called_within_step:
             warnings.warn(
-                "To get the last learning rate computed by the scheduler, " "please use `get_last_lr()`.", UserWarning
+                "To get the last learning rate computed by the scheduler, please use `get_last_lr()`.", UserWarning
             )
 
         step = self.last_epoch
@@ -352,11 +352,11 @@ class WarmupAnnealHoldPolicy(_LRScheduler):
         lr_val = (step + 1) / (self.warmup_steps + 1)
         return [initial_lr * lr_val for initial_lr in self.base_lrs]
 
-    def _get_constant_lr(self, step):
+    def _get_constant_lr(self, step):  # noqa: D102
         """Get learning rate at constant stage."""
         return [self.min_lr for _ in self.base_lrs]
 
-    def _get_lr(self, step):
+    def _get_lr(self, step):  # noqa: D102
         """Simple const lr policy"""
         return self.base_lrs
 
@@ -410,7 +410,7 @@ def _linear_warmup_with_cosine_annealing(max_lr, warmup_steps, step, decay_steps
     return min_lr + coeff * delta_lr
 
 
-def _poly_decay(initial_lr, step, decay_steps, power, min_lr, cycle):
+def _poly_decay(initial_lr, step, decay_steps, power, min_lr, cycle):  # noqa: D102
     """Polynomial decay of learning rate."""
     if cycle:
         multiplier = 1.0 if step == 0 else math.ceil(step / decay_steps)
@@ -423,7 +423,7 @@ def _poly_decay(initial_lr, step, decay_steps, power, min_lr, cycle):
     return lr
 
 
-def _noam_hold_annealing(initial_lr, step, warmup_steps, hold_steps, decay_rate, min_lr):
+def _noam_hold_annealing(initial_lr, step, warmup_steps, hold_steps, decay_rate, min_lr):  # noqa: D102
     """Anneal learning rate by noam hold."""
     # hold_steps = total number of steps to hold the LR, not the warmup + hold steps.
     T_warmup_decay = max(1, warmup_steps**decay_rate)
@@ -606,7 +606,7 @@ class NoamHoldAnnealing(WarmupHoldPolicy):
             prolonged high LR during hold phase allows for rapid convergence.
 
         References:
-            - [Squeezeformer: An Efficient Transformer for Automatic Speech Recognition](https://arxiv.org/abs/2206.00888)
+        [Squeezeformer: An Efficient Transformer for Automatic Speech Recognition](https://arxiv.org/abs/2206.00888)
 
         Parameters
         ----------
@@ -777,7 +777,7 @@ def get_scheduler(name: str, **kwargs: Optional[Dict[str, Any]]) -> _LRScheduler
     return scheduler
 
 
-def prepare_lr_scheduler(
+def prepare_lr_scheduler(  # noqa: C901
     optimizer: optim.Optimizer,
     scheduler_config: Union[Dict[str, Any], DictConfig, None],
     train_dataloader: Optional[dataloader.DataLoader] = None,
@@ -1020,12 +1020,8 @@ def prepare_lr_scheduler(
         OmegaConf.to_yaml(OmegaConf.create(scheduler_args)),
     )
 
-    # Wrap the schedule in PTL arguments to perform stepwise computation
-    # Rather than epoch level computation
-    if isinstance(schedule, optim.lr_scheduler.ReduceLROnPlateau):
-        reduce_lr_on_plateau = True
-    else:
-        reduce_lr_on_plateau = False
+    # Wrap the schedule in PTL arguments to perform stepwise computation. Rather than epoch level computation.
+    reduce_lr_on_plateau = bool(isinstance(schedule, optim.lr_scheduler.ReduceLROnPlateau))
 
     schedule_dict = {
         "scheduler": schedule,
@@ -1037,7 +1033,7 @@ def prepare_lr_scheduler(
     return schedule_dict
 
 
-def compute_max_steps(
+def compute_max_steps(  # noqa: C901
     max_epochs, accumulate_grad_batches, limit_train_batches, num_workers, num_samples, batch_size, drop_last
 ):
     """Compute effective max_steps from the provided parameters."""

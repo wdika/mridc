@@ -10,5 +10,5 @@ from mridc.core.classes.common import Serialization, Typing
 __all__ = ["Loss"]
 
 
-class Loss(torch.nn.modules.loss._Loss, Typing, Serialization):
+class Loss(torch.nn.modules.loss._Loss, Typing, Serialization):  # noqa: WPS600
     """Inherit this class to implement custom loss."""

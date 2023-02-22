@@ -7,8 +7,8 @@ __author__ = "Dimitrios Karkalousos"
 from typing import Tuple, Union
 
 import torch
-import torch.nn as nn
 from einops.layers.torch import Rearrange
+from torch import nn
 
 SUPPORTED_DROPOUT_MODE = {"vit", "swin"}
 
@@ -41,16 +41,17 @@ class MLPBlock(nn.Module):
         https://github.com/microsoft/Swin-Transformer/blob/main/models/swin_mlp.py#L23
 
     .. note::
-        This is a wrapper for monai implementation of a multi-layer perceptron block.
-        See: https://github.com/Project-MONAI/MONAI/blob/c38d503a587f1779914bd071a1b2d66a6d9080c2/monai/networks/blocks/transformerblock.py#L18
+        This is a wrapper for monai implementation of a multi-layer perceptron block. See:
+        https://github.com/Project-MONAI/MONAI/blob/c38d503a587f1779914bd071a1b2d66a6d9080c2/monai/networks/blocks/
+        transformerblock.py#L18
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         hidden_size: int,
         mlp_dim: int,
         dropout_rate: float = 0.0,
-        act: Union[Tuple, str] = "GELU",
+        act: Union[Tuple, str] = "GELU",  # noqa: A002
         dropout_mode="vit",
     ):
         super().__init__()
@@ -100,8 +101,8 @@ class SABlock(nn.Module):
         Bias term for the qkv linear layer. Default is ``False``.
 
     .. note::
-        This is a wrapper for monai implementation of self-attention block.
-        See: https://github.com/Project-MONAI/MONAI/blob/c38d503a587f1779914bd071a1b2d66a6d9080c2/monai/networks/blocks/transformerblock.py#L18
+        This is a wrapper for monai implementation of self-attention block. See: https://github.com/Project-MONAI/
+        MONAI/blob/c38d503a587f1779914bd071a1b2d66a6d9080c2/monai/networks/blocks/transformerblock.py#L18
     """
 
     def __init__(self, hidden_size: int, num_heads: int, dropout_rate: float = 0.0, qkv_bias: bool = False):
@@ -162,11 +163,11 @@ class TransformerBlock(nn.Module):
         Number of spatial dimensions. Default is ``2``.
 
     .. note::
-        This is a wrapper for monai implementation of self-attention block.
-        See: https://github.com/Project-MONAI/MONAI/blob/c38d503a587f1779914bd071a1b2d66a6d9080c2/monai/networks/blocks/transformerblock.py#L18
+        This is a wrapper for monai implementation of self-attention block. See: https://github.com/Project-MONAI/
+        MONAI/blob/c38d503a587f1779914bd071a1b2d66a6d9080c2/monai/networks/blocks/transformerblock.py#L18
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         hidden_size: int,
         mlp_dim: int,

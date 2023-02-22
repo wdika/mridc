@@ -126,7 +126,7 @@ class Typing(ABC):
         """Define these to enable output neural type checks"""
         return None
 
-    def _validate_input_types(self, input_types=None, ignore_collections=False, **kwargs):
+    def _validate_input_types(self, input_types=None, ignore_collections=False, **kwargs):  # noqa: C901
         """
         This function does a few things.
         1) It ensures that len(self.input_types <non-optional>) <= len(kwargs) <= len(self.input_types).
@@ -282,18 +282,16 @@ class Typing(ABC):
                     )
 
         elif metadata.is_singular_container_type:
-            depth = 0 if len(out_objects) == 1 and type(out_objects) is tuple else 1
+            depth = 0 if len(out_objects) == 1 and isinstance(out_objects, tuple) else 1
             for res in out_objects:
                 self.__attach_neural_type(res, metadata, depth=depth, name=out_types_list[0][0])
         else:
-            # If more then one item is returned in a return statement, python will wrap
-            # the output with an outer tuple. Therefore there must be a 1:1 correspondence
-            # of the output_neural type (with or without nested structure) to the actual output
-            # (whether it is a single object or a nested structure of objects).
-            # Therefore in such a case, we "start" the DFS at depth 0 - since the recursion is
-            # being applied on 1 neural type : 1 output struct (single or nested output).
-            # Since we are guaranteed that the outer tuple will be built by python,
-            # assuming initial depth of 0 is appropriate.
+            # If more than one item is returned in a return statement, python will wrap the output with an outer tuple.
+            # Therefore, there must be a 1:1 correspondence of the output_neural type (with or without nested
+            # structure) to the actual output (whether it is a single object or a nested structure of objects).
+            # Therefore, in such a case, we "start" the DFS at depth 0 - since the recursion is being applied on 1
+            # neural type : 1 output struct (single or nested output). Since we are guaranteed that the outer tuple
+            # will be built by python, assuming initial depth of 0 is appropriate.
             for ind, res in enumerate(out_objects):
                 self.__attach_neural_type(res, metadata, depth=0, name=out_types_list[ind][0])
 
@@ -395,7 +393,7 @@ class Serialization(ABC):
     """Base class for serialization."""
 
     @classmethod
-    def from_config_dict(cls, config: "DictConfig", trainer: Optional[Trainer] = None):
+    def from_config_dict(cls, config: "DictConfig", trainer: Optional[Trainer] = None):  # noqa: F821
         """Instantiates object using DictConfig-based configuration"""
         # Resolve the config dict
         if _HAS_HYDRA:
@@ -428,7 +426,7 @@ class Serialization(ABC):
                     # use subclass instead
                     if issubclass(cls, imported_cls):
                         imported_cls = cls
-                    if accepts_trainer := Serialization._inspect_signature_for_trainer(imported_cls):
+                    if accepts_trainer := Serialization._inspect_signature_for_trainer(imported_cls):  # noqa: F821
                         # Create a dummy PL trainer object
                         instance = imported_cls(cfg=config, trainer=trainer)  # type: ignore
                     else:
@@ -441,7 +439,7 @@ class Serialization(ABC):
             # target class resolution was unsuccessful, fall back to current `cls`
             if instance is None:
                 try:
-                    if accepts_trainer := Serialization._inspect_signature_for_trainer(cls):
+                    if accepts_trainer := Serialization._inspect_signature_for_trainer(cls):  # noqa: F821
                         instance = cls(cfg=config, trainer=trainer)  # type: ignore
                     else:
                         instance = cls(cfg=config)  # type: ignore
@@ -452,15 +450,15 @@ class Serialization(ABC):
                     raise e from e
 
         if not hasattr(instance, "_cfg"):
-            instance._cfg = config
+            instance._cfg = config  # noqa: F821
         return instance
 
     def to_config_dict(self) -> "DictConfig":
         """Returns object's configuration to config dictionary"""
-        if hasattr(self, "_cfg") and self._cfg is not None:  # type: ignore
+        if hasattr(self, "_cfg") and self._cfg is not None:  # type: ignore  # noqa: F821
             # Resolve the config dict
-            if _HAS_HYDRA and isinstance(self._cfg, DictConfig):  # type: ignore
-                config = OmegaConf.to_container(self._cfg, resolve=True)  # type: ignore
+            if _HAS_HYDRA and isinstance(self._cfg, DictConfig):  # type: ignore  # noqa: F821
+                config = OmegaConf.to_container(self._cfg, resolve=True)  # type: ignore  # noqa: F821
                 config = OmegaConf.create(config)
                 OmegaConf.set_struct(config, True)
 
@@ -499,7 +497,7 @@ class FileIO(ABC):
         raise NotImplementedError()
 
     @classmethod
-    def restore_from(
+    def restore_from(  # noqa: C901
         cls,
         restore_path: str,
         override_config_path: Optional[str] = None,
@@ -518,10 +516,10 @@ class FileIO(ABC):
             str
         override_config_path: Path to .yaml file containing the configuration to override the one in the .mridc file.
             str
-        map_location: Device to map the instantiated model to. By default (None), it will select a GPU if available, \
-        falling back to CPU otherwise.
+        map_location: Device to map the instantiated model to. Default  is ``None``, it will select a GPU if
+        available, falling back to CPU otherwise.
             torch.device
-        strict: Passed to load_state_dict. By default True.
+        strict: Passed to load_state_dict. Default is ``True``.
             bool
         return_config: If True, returns the underlying config of the restored model as an OmegaConf DictConfig \
         object without instantiating the model.
@@ -711,7 +709,7 @@ class Model(Typing, Serialization, FileIO, ABC):  # type: ignore
             if hasattr(mfilter, "limit_results") and mfilter.limit_results is not None:
                 limit = mfilter.limit_results
 
-            results = api.list_models(
+            results = api.list_models(  # noqa: B310
                 filter=mfilter,
                 use_auth_token=is_token_available,
                 sort="lastModified",
@@ -764,7 +762,7 @@ class Model(Typing, Serialization, FileIO, ABC):  # type: ignore
         return model_filter
 
     @classmethod
-    def from_pretrained(
+    def from_pretrained(  # noqa: C901
         cls,
         model_name: str,
         refresh_cache: bool = False,
@@ -802,12 +800,12 @@ class Model(Typing, Serialization, FileIO, ABC):  # type: ignore
         # Resolve if the pretrained model name is from NGC or other sources
         # HF Hub source
         if "/" in model_name:
-            class_, mridc_model_file_in_cache = cls._get_hf_hub_pretrained_model_info(  # type: ignore
+            class_, mridc_model_file_in_cache = cls._get_hf_hub_pretrained_model_info(  # type: ignore  # noqa: C901
                 model_name=model_name, refresh_cache=refresh_cache
             )
         else:
             # NGC source
-            class_, mridc_model_file_in_cache = cls._get_ngc_pretrained_model_info(  # type: ignore
+            class_, mridc_model_file_in_cache = cls._get_ngc_pretrained_model_info(  # type: ignore  # noqa: C901
                 model_name=model_name, refresh_cache=refresh_cache
             )
 
@@ -864,7 +862,8 @@ class Model(Typing, Serialization, FileIO, ABC):  # type: ignore
 
         if location_in_the_cloud is None:
             raise FileNotFoundError(
-                f"Model {model_name} was not found. Check cls.list_available_models() for the list of all available models."
+                f"Model {model_name} was not found. "
+                "Check cls.list_available_models() for the list of all available models."
             )
         filename = location_in_the_cloud.split("/")[-1]
         url = location_in_the_cloud.replace(filename, "")

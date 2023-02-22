@@ -53,22 +53,30 @@ model:
   spatial_dims:
     - -2
     - -1
-  coil_dim: 1
+  coil_dim: 2
   use_sens_net: false
   consecutive_slices: 1
   log_images: true
 
   train_ds:
-    data_path: /data/projects/recon/data/public/ahead_preprocessing
+    data_path: /data/projects/recon/data/public/ahead_preprocessing/train
     coil_sensitivity_maps_path: None
     mask_path: None
-    sample_rate: 1
+    sample_rate: .1
     volume_sample_rate: None
     use_dataset_cache: false
     dataset_cache_file: None
     num_cols: None
     consecutive_slices: 1
     data_saved_per_slice: false
+#    TEs:
+#      - 3.0
+#      - 11.5
+#      - 20.0
+#      - 28.5
+#    precompute_quantitative_maps: true
+#    qmaps_scaling_factor: 1e-3
+#    shift_B0_input: true
     apply_prewhitening: false
     apply_gcc: false
     coil_combination_method: SENSE
@@ -76,11 +84,11 @@ model:
     mask_args:
       type: gaussian2d
       accelerations:
-        - 10
+        - 12
       center_fractions:
         - 0.7
       scale: 0.02
-      shift_mask: true
+      shift_mask: false
       use_seed: true
     half_scan_percentage: 0.0
     remask: false
@@ -95,25 +103,37 @@ model:
     spatial_dims:
       - -2
       - -1
-    coil_dim: 1
+    coil_dim: 2
     use_seed: true
+#    sequence: MEGRE
+#    init_coil_dim: -1
+#    fixed_precomputed_acceleration: None
+#    kspace_scaling_factor: 10000
     batch_size: 1
     shuffle: true
-    num_workers: 8
+    num_workers: 4
     pin_memory: false
     drop_last: false
 
   validation_ds:
-    data_path: /data/projects/recon/data/public/ahead_preprocessing
+    data_path: /data/projects/recon/data/public/ahead_preprocessing/val
     coil_sensitivity_maps_path: None
     mask_path: None
-    sample_rate: 1
+    sample_rate: .1
     volume_sample_rate: None
     use_dataset_cache: false
     dataset_cache_file: None
     num_cols: None
     consecutive_slices: 1
     data_saved_per_slice: false
+#    TEs:
+#      - 3.0
+#      - 11.5
+#      - 20.0
+#      - 28.5
+#    precompute_quantitative_maps: true
+#    qmaps_scaling_factor: 1e-3
+#    shift_B0_input: true
     apply_prewhitening: false
     apply_gcc: false
     coil_combination_method: SENSE
@@ -121,11 +141,11 @@ model:
     mask_args:
       type: gaussian2d
       accelerations:
-        - 10
+        - 12
       center_fractions:
         - 0.7
       scale: 0.02
-      shift_mask: true
+      shift_mask: false
       use_seed: false
     half_scan_percentage: 0.0
     remask: false
@@ -140,11 +160,15 @@ model:
     spatial_dims:
       - -2
       - -1
-    coil_dim: 1
+    coil_dim: 2
     use_seed: false
+#    sequence: MEGRE
+#    init_coil_dim: -1
+#    fixed_precomputed_acceleration: None
+#    kspace_scaling_factor: 10000
     batch_size: 1
     shuffle: false
-    num_workers: 8
+    num_workers: 4
     pin_memory: false
     drop_last: false
 
@@ -173,6 +197,7 @@ trainer:
   log_every_n_steps: 50
   check_val_every_n_epoch: -1
   max_steps: -1
+  auto_lr_find: true
 
 exp_manager:
   exp_dir: /data/projects/recon/other/dkarkalousos/mridc/ahead

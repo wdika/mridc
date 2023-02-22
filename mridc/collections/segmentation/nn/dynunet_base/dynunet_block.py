@@ -6,7 +6,7 @@ __author__ = "Dimitrios Karkalousos"
 from typing import List, Optional, Sequence, Tuple, Union
 
 import torch
-import torch.nn as nn
+from torch import nn
 from torch.nn.functional import interpolate
 
 from mridc.collections.segmentation.nn.unetr_base.unetr_block import (
@@ -16,7 +16,7 @@ from mridc.collections.segmentation.nn.unetr_base.unetr_block import (
     UnetUpBlock,
 )
 
-__all__ = ["DynUNet", "DynUnet", "Dynunet"]
+__all__ = ["DynUNet"]
 
 
 class DynUNetSkipLayer(nn.Module):
@@ -25,9 +25,9 @@ class DynUNetSkipLayer(nn.Module):
 
      References
      ----------
-     .. [1] Isensee F, Petersen J, Klein A, Zimmerer D, Jaeger PF, Kohl S, Wasserthal J, Koehler G, Norajitra T, Wirkert
-         S, Maier-Hein KH. nnu-net: Self-adapting framework for u-net-based medical image segmentation. arXiv preprint
-         arXiv:1809.10486. 2018 Sep 27.
+     .. [1] Isensee F, Petersen J, Klein A, Zimmerer D, Jaeger PF, Kohl S, Wasserthal J, Koehler G, Norajitra T,
+        Wirkert S, Maier-Hein KH. nnu-net: Self-adapting framework for u-net-based medical image segmentation. arXiv
+        preprint arXiv:1809.10486. 2018 Sep 27.
 
      Parameters
      ----------
@@ -59,7 +59,7 @@ class DynUNetSkipLayer(nn.Module):
 
     heads: Optional[List[torch.Tensor]]
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         index: int,
         downsample: nn.Module,
@@ -148,7 +148,7 @@ class DynUNet(nn.Module):
         See: https://github.com/Project-MONAI/MONAI/blob/dev/monai/networks/nets/dynunet.py
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         spatial_dims: int,
         in_channels: int,
@@ -307,9 +307,8 @@ class DynUNet(nn.Module):
         """Check the length of filters."""
         filters = self.filters
         if len(filters) < len(self.strides):
-            raise ValueError("length of filters should be no less than the length of strides.")
-        else:
-            self.filters = filters[: len(self.strides)]
+            raise ValueError("Length of filters should be no less than the length of strides.")
+        self.filters = filters[: len(self.strides)]
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass."""
@@ -373,7 +372,7 @@ class DynUNet(nn.Module):
             trans_bias=self.trans_bias,
         )
 
-    def get_module_list(
+    def get_module_list(  # noqa: C901
         self,
         in_channels: List[int],
         out_channels: List[int],

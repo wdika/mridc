@@ -95,7 +95,7 @@ def hydra_runner(
                     self._actions = arg_parser._actions
 
                 @staticmethod
-                def parse_args(args=None, namespace=None):
+                def parse_args(args=None, namespace=None):  # noqa: B008
                     """Parse arguments."""
                     return parsed_args
 

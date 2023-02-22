@@ -299,7 +299,7 @@ class Equispaced2DMaskFunc(MaskFunc):
         See ..class::`mridc.collections.common.data.subsample.Equispaced1DMaskFunc` for more details.
     """
 
-    def __call__(
+    def __call__(  # noqa: C901
         self,
         shape: Sequence[int],
         seed: Optional[Union[int, Tuple[int, ...]]] = None,
@@ -623,7 +623,7 @@ class Poisson2DMaskFunc(MaskFunc):
         Taken and adapted from: https://github.com/mikgroup/sigpy/blob/master/sigpy/mri/samp.py
     """
 
-    def __call__(
+    def __call__(  # noqa: C901
         self,
         shape: Union[Sequence[int], np.ndarray],
         seed: Optional[Union[int, Tuple[int, ...]]] = None,
@@ -743,7 +743,7 @@ class Poisson2DMaskFunc(MaskFunc):
 
     @staticmethod
     @nb.jit(nopython=True, cache=True)  # pragma: no cover
-    def generate_poisson_mask(
+    def generate_poisson_mask(  # noqa: C901
         nx: int,
         ny: int,
         max_attempts: int,
@@ -790,7 +790,7 @@ class Poisson2DMaskFunc(MaskFunc):
         pxs[0] = np.random.randint(0, nx)
         pys[0] = np.random.randint(0, ny)
         num_actives = 1
-        while num_actives > 0:
+        while num_actives > 0:  # noqa: C901
             i = np.random.randint(0, num_actives)
             px = pxs[i]
             py = pys[i]

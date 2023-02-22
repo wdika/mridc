@@ -12,11 +12,11 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torchmetrics.metric import Metric
 
-import mridc.collections.common.parts.utils as utils
-import mridc.collections.reconstruction.nn.unet_base.unet_block as unet_block
-import mridc.core.classes.modelPT as modelPT
-import mridc.utils.model_utils as model_utils
+from mridc.collections.common.parts import utils
 from mridc.collections.common.parts.fft import ifft2
+from mridc.collections.reconstruction.nn.unet_base import unet_block
+from mridc.core.classes import modelPT
+from mridc.utils import model_utils
 
 wandb.require("service")
 
@@ -53,7 +53,7 @@ class DistributedMetricSum(Metric):
         super().__init__(dist_sync_on_step=dist_sync_on_step)
         self.add_state("quantity", default=torch.tensor(0.0), dist_reduce_fx="sum")
 
-    def update(self, batch: torch.Tensor):  # type: ignore
+    def update(self, batch: torch.Tensor):  # type: ignore  # noqa: D102
         """Update the metric with a batch of data."""
         self.quantity += batch
 
@@ -89,7 +89,7 @@ class BaseMRIModel(modelPT.ModelPT, ABC):  # type: ignore
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
         self.log_images = cfg_dict.get("log_images", True)
 
-    def training_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
+    def training_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:  # noqa: D102
         """
         Performs a training step.
 
@@ -107,7 +107,9 @@ class BaseMRIModel(modelPT.ModelPT, ABC):  # type: ignore
         """
         raise NotImplementedError
 
-    def validation_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
+    def validation_step(  # noqa: D102
+        self, batch: Dict[float, torch.Tensor], batch_idx: int
+    ) -> Dict[str, torch.Tensor]:
         """
         Performs a validation step.
 
@@ -125,7 +127,9 @@ class BaseMRIModel(modelPT.ModelPT, ABC):  # type: ignore
         """
         raise NotImplementedError
 
-    def test_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Tuple[str, int, torch.Tensor]:
+    def test_step(  # noqa: D102
+        self, batch: Dict[float, torch.Tensor], batch_idx: int
+    ) -> Tuple[str, int, torch.Tensor]:
         """
         Performs a test step.
 
@@ -320,7 +324,7 @@ class BaseSensitivityModel(nn.Module, ABC):
     torch.Size([1, 8, 320, 320, 2])
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         chans: int = 8,
         num_pools: int = 4,

@@ -8,10 +8,11 @@ from typing import Callable, Dict, Optional, Type
 
 import onnx
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
-from mridc.utils import CastToFloat, logging
+from mridc.utils import logging
+from mridc.utils.cast_utils import CastToFloat
 
 try:
     import onnxruntime
@@ -46,7 +47,7 @@ class LinearWithBiasSkip(nn.Module):
     """
 
     def __init__(self, weight, bias, skip_bias_add):
-        super(LinearWithBiasSkip, self).__init__()
+        super().__init__()
         self.bias = bias
         self.weight = weight
         self.skip_bias_add = skip_bias_add
@@ -63,8 +64,8 @@ def get_export_format(filename: str):
     _, ext = os.path.splitext(filename)
     try:
         return _EXT_DICT[ext.lower()]
-    except KeyError:
-        raise ValueError(f"Export file {filename} extension does not correspond to any export format!")
+    except KeyError as e:
+        raise ValueError(f"Export file {filename} extension does not correspond to any export format!") from e
 
 
 def augment_filename(output: str, prepend: str):
@@ -155,7 +156,7 @@ def verify_torchscript(model, output, input_examples, check_tolerance=0.01):
     return all_good
 
 
-def verify_runtime(
+def verify_runtime(  # noqa: C901
     model,
     output,
     input_examples,
@@ -166,8 +167,7 @@ def verify_runtime(
     onnx_model = onnx.load(output)
     ort_input_names = [node.name for node in onnx_model.graph.input]
 
-    # skipcq: PYL-W0622
-    global ort_available
+    global ort_available  # noqa: W0603
     if not ort_available:
         logging.warning(f"ONNX generated at {output}, not verified - please install onnxruntime_gpu package.\n")
         onnx.checker.check_model(onnx_model, full_check=True)
@@ -260,7 +260,9 @@ def simple_replace(BaseT: Type[nn.Module], DestT: Type[nn.Module]) -> Callable[[
     return expansion_fn
 
 
-def wrap_module(BaseT: Type[nn.Module], DestT: Type[nn.Module]) -> Callable[[nn.Module], Optional[nn.Module]]:
+def wrap_module(
+    BaseT: Type[nn.Module], DestT: Type[nn.Module]  # noqa: C901
+) -> Callable[[nn.Module], Optional[nn.Module]]:
     """
     Generic function generator to replace BaseT module with DestT. BaseT and DestT should have same attributes.
     No weights are copied.

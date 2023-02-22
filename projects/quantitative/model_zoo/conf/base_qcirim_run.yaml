@@ -1,14 +1,14 @@
 pretrained: true
-checkpoint: ???
+checkpoint: /data/projects/recon/other/dkarkalousos/mridc/ahead/default/2023-02-21_21-44-42/checkpoints/default--val_loss=0.9489-epoch=15.ckpt
 mode: test
 
 model:
   model_name: qCIRIM
-  use_reconstruction_module: false
+  use_reconstruction_module: true
   reconstruction_module_recurrent_layer: IndRNN
   reconstruction_module_conv_filters:
-    - 128
-    - 128
+    - 64
+    - 64
     - 2
   reconstruction_module_conv_kernels:
     - 5
@@ -23,8 +23,8 @@ model:
     - true
     - false
   reconstruction_module_recurrent_filters:
-    - 128
-    - 128
+    - 64
+    - 64
     - 0
   reconstruction_module_recurrent_kernels:
     - 1
@@ -48,8 +48,8 @@ model:
   reconstruction_module_accumulate_predictions: true
   quantitative_module_recurrent_layer: IndRNN
   quantitative_module_conv_filters:
-    - 128
-    - 128
+    - 64
+    - 64
     - 4
   quantitative_module_conv_kernels:
     - 5
@@ -64,8 +64,8 @@ model:
     - true
     - false
   quantitative_module_recurrent_filters:
-    - 128
-    - 128
+    - 64
+    - 64
     - 0
   quantitative_module_recurrent_kernels:
     - 1
@@ -118,7 +118,7 @@ model:
   log_images: true
 
   test_ds:
-    data_path: ???
+    data_path: /data/projects/recon/data/public/ahead_preprocessing/val
     coil_sensitivity_maps_path: None
     mask_path: None
     sample_rate: 1
@@ -127,14 +127,15 @@ model:
     dataset_cache_file: None
     num_cols: None
     consecutive_slices: 1
-    data_saved_per_slice: true
+    data_saved_per_slice: false
     TEs:
       - 3.0
       - 11.5
       - 20.0
       - 28.5
-    precompute_quantitative_maps: false
-    shift_B0_input: false
+    precompute_quantitative_maps: true
+    qmaps_scaling_factor: 1e-3
+    shift_B0_input: true
     apply_prewhitening: false
     apply_gcc: false
     coil_combination_method: SENSE
@@ -142,14 +143,8 @@ model:
     mask_args:
       type: gaussian2d
       accelerations:
-        - 3
-        - 6
-        - 9
         - 12
       center_fractions:
-        - 0.7
-        - 0.7
-        - 0.7
         - 0.7
       scale: 0.02
       shift_mask: false
@@ -174,7 +169,7 @@ model:
     fixed_precomputed_acceleration: None
     kspace_scaling_factor: 10000
     batch_size: 1
-    shuffle: true
+    shuffle: false
     num_workers: 8
     pin_memory: false
     drop_last: false
@@ -206,7 +201,7 @@ trainer:
   max_steps: -1
 
 exp_manager:
-  exp_dir: ???
+  exp_dir: /data/projects/recon/other/dkarkalousos/mridc/ahead_recons
   create_tensorboard_logger: true
   create_wandb_logger: false
   wandb_logger_kwargs:

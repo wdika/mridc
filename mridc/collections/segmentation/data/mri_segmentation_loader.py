@@ -7,7 +7,6 @@ from typing import Callable, Optional, Tuple, Union
 
 import h5py
 import numpy as np
-import yaml  # type: ignore
 
 from mridc.collections.common.data.mri_loader import MRIDataset
 from mridc.collections.common.parts.utils import is_none
@@ -89,7 +88,7 @@ class SegmentationMRIDataset(MRIDataset):
         Extends :class:`mridc.collections.common.data.MRIDataset`.
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         root: Union[str, Path, os.PathLike],
         coil_sensitivity_maps_root: Union[str, Path, os.PathLike] = None,
@@ -139,7 +138,7 @@ class SegmentationMRIDataset(MRIDataset):
         self.segmentation_classes_thresholds = segmentation_classes_thresholds
         self.complex_data = complex_data
 
-    def process_segmentation_labels(self, segmentation_labels: np.ndarray) -> np.ndarray:
+    def process_segmentation_labels(self, segmentation_labels: np.ndarray) -> np.ndarray:  # noqa: C901
         """
         Process segmentation labels to remove, combine, and separate classes.
 
@@ -250,7 +249,7 @@ class SegmentationMRIDataset(MRIDataset):
 
         return segmentation_labels
 
-    def __getitem__(self, i: int):
+    def __getitem__(self, i: int):  # noqa: C901
         fname, dataslice, metadata = self.examples[i]
         with h5py.File(fname, "r") as hf:
             if self.complex_data:

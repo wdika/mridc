@@ -8,8 +8,8 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
 import mridc.collections.segmentation.nn.base as base_segmentation_models
-import mridc.collections.segmentation.nn.unet3d_base.unet3d_block as unet3d_block
 import mridc.core.classes.common as common_classes
+from mridc.collections.segmentation.nn.unet3d_base import unet3d_block
 
 __all__ = ["Segmentation3DUNet"]
 
@@ -20,9 +20,9 @@ class Segmentation3DUNet(base_segmentation_models.BaseMRISegmentationModel, ABC)
 
     References
     ----------
-    .. [1] O. Ronneberger, P. Fischer, and Thomas Brox. U-net: Convolutional networks for biomedical image segmentation. \
-         In International Conference on Medical image computing and computer-assisted intervention, pages 234–241.  \
-         Springer, 2015.
+    .. [1] O. Ronneberger, P. Fischer, and Thomas Brox. U-net: Convolutional networks for biomedical image
+        segmentation. In International Conference on Medical image computing and computer-assisted intervention, pages
+        234–241. Springer, 2015.
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
@@ -39,13 +39,13 @@ class Segmentation3DUNet(base_segmentation_models.BaseMRISegmentationModel, ABC)
         )
 
     @common_classes.typecheck()  # type: ignore
-    def forward(
+    def forward(  # noqa: R0913
         self,
-        y: torch.Tensor,
-        sensitivity_maps: torch.Tensor,
-        mask: torch.Tensor,
+        y: torch.Tensor,  # noqa: R0913
+        sensitivity_maps: torch.Tensor,  # noqa: R0913
+        mask: torch.Tensor,  # noqa: R0913
         init_reconstruction_pred: torch.Tensor,
-        target_reconstruction: torch.Tensor,
+        target_reconstruction: torch.Tensor,  # noqa: R0913
     ) -> torch.Tensor:
         """
         Forward pass of the network.
@@ -85,7 +85,7 @@ class Segmentation3DUNet(base_segmentation_models.BaseMRISegmentationModel, ABC)
                     raise ValueError("Magnitude input is not supported for 2-channel input.")
                 init_reconstruction_pred = init_reconstruction_pred.permute(0, 3, 1, 2)  # type: ignore
             else:
-                raise ValueError("The input channels must be either 1 or 2. Found: {}".format(self.input_channels))
+                raise ValueError(f"The input channels must be either 1 or 2. Found: {self.input_channels}")
 
         if init_reconstruction_pred.dim() == 3:
             init_reconstruction_pred = init_reconstruction_pred.unsqueeze(0)

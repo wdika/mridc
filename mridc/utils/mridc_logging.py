@@ -62,8 +62,8 @@ class Logger(metaclass=Singleton):
         self.once_logged = set()
         self.rank = 0 if is_global_rank_zero() else "UNK"
 
-    def _define_logger(self, capture_warnings=True):
-        """Creates the logger if not already created. Called in init"""
+    def _define_logger(self, capture_warnings=True):  # noqa: C901
+        """Creates the logger if not already created. Called in init."""
         # Use double-checked locking to avoid taking lock unnecessarily.
         if self._logger is not None:
             return self._logger
@@ -204,7 +204,7 @@ class Logger(metaclass=Singleton):
             self._handlers["memory_err"].close()  # flush and remove
             del self._handlers["memory_err"]
 
-    def getEffectiveLevel(self):
+    def getEffectiveLevel(self):  # noqa: C901
         """Return how much logging output will be produced."""
         if self._logger is not None:
             return self._logger.getEffectiveLevel()
@@ -325,7 +325,7 @@ class Logger(metaclass=Singleton):
                 warnings.showwarning = self.old_warnings_showwarning
                 self.old_warnings_showwarning = None
 
-    def _showwarning(self, message, category, filename, lineno, file=None, line=None):
+    def _showwarning(self, message, category, filename, lineno, file, line=None):  # noqa: C901
         """
         Implementation of show warnings which redirects to logging.
         It will call warnings.formatwarning and will log the resulting string with level logging.WARNING.
@@ -360,7 +360,7 @@ class Logger(metaclass=Singleton):
         logger.debug("Houston, we have %s", "thorny problem", exc_info=1)
         """
         if self._logger is not None and self._logger.isEnabledFor(Logger.DEBUG) and not self._logged_once(msg, mode):
-            self._logger._log(Logger.DEBUG, msg, args, **kwargs)
+            self._logger._log(Logger.DEBUG, msg, args, **kwargs)  # noqa: E501
 
     def info(self, msg, *args, mode=LogMode.EACH, **kwargs):
         """
@@ -369,7 +369,7 @@ class Logger(metaclass=Singleton):
         logger.info("Houston, we have %s", "interesting problem", exc_info=1)
         """
         if self._logger is not None and self._logger.isEnabledFor(Logger.INFO) and not self._logged_once(msg, mode):
-            self._logger._log(Logger.INFO, msg, args, **kwargs)
+            self._logger._log(Logger.INFO, msg, args, **kwargs)  # noqa: E501
 
     def warning(self, msg, *args, mode=LogMode.EACH, **kwargs):
         """
@@ -378,7 +378,7 @@ class Logger(metaclass=Singleton):
         logger.warning("Houston, we have %s", "bit of a problem", exc_info=1)
         """
         if self._logger is not None and self._logger.isEnabledFor(Logger.WARNING) and not self._logged_once(msg, mode):
-            self._logger._log(Logger.WARNING, msg, args, **kwargs)
+            self._logger._log(Logger.WARNING, msg, args, **kwargs)  # noqa: E501
 
     def error(self, msg, *args, mode=LogMode.EACH, **kwargs):
         """
@@ -387,7 +387,7 @@ class Logger(metaclass=Singleton):
         logger.error("Houston, we have %s", "major problem", exc_info=1)
         """
         if self._logger is not None and self._logger.isEnabledFor(Logger.ERROR) and not self._logged_once(msg, mode):
-            self._logger._log(Logger.ERROR, msg, args, **kwargs)
+            self._logger._log(Logger.ERROR, msg, args, **kwargs)  # noqa: E501
 
     def critical(self, msg, *args, mode=LogMode.EACH, **kwargs) -> None:
         """
@@ -407,4 +407,4 @@ class Logger(metaclass=Singleton):
             and self._logger.isEnabledFor(Logger.CRITICAL)
             and not self._logged_once(msg, mode)
         ):
-            self._logger._log(Logger.CRITICAL, msg, args, **kwargs)
+            self._logger._log(Logger.CRITICAL, msg, args, **kwargs)  # noqa: E501

@@ -33,7 +33,7 @@ def _multi_tensor_copy_this_to_that(this, that, overflow_buf):
     """
     if overflow_buf:
         # Scaling with factor `1.0` is equivalent to copy.
-        multi_tensor_applier(amp_C.multi_tensor_scale, overflow_buf, [this, that], 1.0)
+        multi_tensor_applier(amp_C.multi_tensor_scale, overflow_buf, [this, that], 1.0)  # noqa: F821
     else:
         # FIXME: use multi-tensor applier for bf16
         for this_, that_ in zip(this, that):
@@ -70,8 +70,8 @@ class GradBucket:
 
     def allreduce_buffer(self):
         """Synchronous buffer data allreduce"""
-        self.data.div_(get_data_parallel_world_size())
-        torch.distributed.all_reduce(self.data, group=get_data_parallel_group())  # type: ignore
+        self.data.div_(get_data_parallel_world_size())  # noqa: F821
+        torch.distributed.all_reduce(self.data, group=get_data_parallel_group())  # type: ignore  # noqa: F821
 
     def get(self, shape, start_index):
         """Return a tensor with the input `shape` as a view into the 1-D data starting at `start_index`."""
@@ -131,7 +131,7 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
     prop.
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         optimizer,
         fp32_grad_accum=False,
@@ -140,7 +140,7 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
         grad_div_ar_fusion=True,
         grad_allreduce_chunk_size_mb=0,
     ):
-        super().__init__(optimizer.param_groups)
+        super().__init__(optimizer.param_groups)  # noqa: F821
         if not HAVE_APEX:
             raise ImportError("Apex was not found. Using model parallel models will error out.")
 
@@ -156,14 +156,12 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
                     "which is supposed to be accumulated after grad op."
                 )
             if not contiguous_grad_bucket:
-                raise AssertionError(
-                    "currently async_grad_allreduce is supported only " "with contiguous_grad_bucket."
-                )
+                raise AssertionError("currently async_grad_allreduce is supported only with contiguous_grad_bucket.")
 
         self._fp32_grad_accum = fp32_grad_accum
         self._contiguous_grad_bucket = contiguous_grad_bucket
-        self._async_grad_allreduce = async_grad_allreduce and get_data_parallel_world_size() > 1
-        self._grad_divisor = 1 / get_data_parallel_world_size()
+        self._async_grad_allreduce = async_grad_allreduce and get_data_parallel_world_size() > 1  # noqa: F821
+        self._grad_divisor = 1 / get_data_parallel_world_size()  # noqa: F821
 
         if self._async_grad_allreduce:
             # use @no_sync to disable backward grad sync during gradient accumulation
@@ -220,7 +218,7 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
                         main_param = param.detach().clone().float()
 
                         # Copy tensor model parallel attributes.
-                        copy_tensor_model_parallel_attributes(main_param, param)
+                        copy_tensor_model_parallel_attributes(main_param, param)  # noqa: F821
                         if hasattr(param, "shared"):
                             main_param.shared = param.shared
 
@@ -268,7 +266,7 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
     def _make_param_hook(self, param, main_param, i, grad_chunk_info):
         """Create the grad accumulation and all-reduce hook for back prop."""
 
-        def param_hook(*unused):
+        def param_hook(*unused):  # noqa: F811
             """Gradient accumulation and all-reduce."""
             if param.grad is None:
                 return
@@ -290,30 +288,30 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
                         if self._grad_div_ar_fusion:
                             torch.distributed.all_reduce(
                                 allreduce_tensor,
-                                group=get_data_parallel_group(),
+                                group=get_data_parallel_group(),  # noqa: F821
                                 async_op=True,
-                                op=torch.distributed._make_nccl_premul_sum(self._grad_divisor),
+                                op=torch.distributed._make_nccl_premul_sum(self._grad_divisor),  # noqa: F821
                             )
                         else:
-                            allreduce_tensor.div_(get_data_parallel_world_size())
+                            allreduce_tensor.div_(get_data_parallel_world_size())  # noqa: F821
                             torch.distributed.all_reduce(
                                 allreduce_tensor,
-                                group=get_data_parallel_group(),
+                                group=get_data_parallel_group(),  # noqa: F821
                                 async_op=True,
                             )
                 else:
                     if self._grad_div_ar_fusion:
                         torch.distributed.all_reduce(
                             main_param.grad,
-                            group=get_data_parallel_group(),
+                            group=get_data_parallel_group(),  # noqa: F821
                             async_op=True,
-                            op=torch.distributed._make_nccl_premul_sum(self._grad_divisor),
+                            op=torch.distributed._make_nccl_premul_sum(self._grad_divisor),  # noqa: F821
                         )
                     else:
-                        main_param.grad.div_(get_data_parallel_world_size())
+                        main_param.grad.div_(get_data_parallel_world_size())  # noqa: F821
                         torch.distributed.all_reduce(
                             main_param.grad,
-                            group=get_data_parallel_group(),
+                            group=get_data_parallel_group(),  # noqa: F821
                             async_op=True,
                         )
 
@@ -389,7 +387,7 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
         self._copy_model_params_to_main_params()
 
     @torch.no_grad()
-    def step(self, **kwargs):
+    def step(self, **kwargs):  # noqa: F821
         """Step the optimizer."""
         # While async grad allreduce is enabled, bprop will keep moving forward without waiting for the finish of
         # async grad AR works. Hence, to guarantee the correctness of grads reduction, we cannot start weight update
@@ -413,7 +411,7 @@ class MainParamsOptimizerWrapper(torch.optim.Optimizer):
         optimizer_key = "optimizer"
         if optimizer_key not in state_dict:
             optimizer_key = "optimizer_state_dict"
-            logging.info("***WARNING*** loading optimizer from " "an old checkpoint ...")
+            logging.info("***WARNING*** loading optimizer from an old checkpoint ...")
         self.optimizer.load_state_dict(state_dict[optimizer_key])
 
         # Copy data for the main params.

@@ -115,7 +115,7 @@ with st.expander("Method", expanded=True):
 
 segmentation_dim = "2D"
 with st.expander("Hyperparameters", expanded=False):
-    if model_name == "Image domain Deep Structured Low-Rank network (IDSLR)":
+    if model_name == "Image domain Deep Structured Low-Rank network (IDSLR)":  # noqa: E501
         model_name = "IDSLR"
         use_reconstruction_module = st.selectbox("Use Reconstruction Module", [True, False])
         input_channels = st.number_input("Input Channels (Number of coils x 2)", min_value=1, max_value=999, value=64)
@@ -780,7 +780,7 @@ with st.expander("Hyperparameters", expanded=False):
         quantitative_module_gamma_regularization_factors = st.text_input(
             "Quantitative Module Gamma Regularization Factors", value="[150.0, 150.0, 1000.0, 150.0]"
         )
-        shift_B0_input = st.selectbox("Shift B0 Input", [False, True])
+        shift_B0_input = st.selectbox("Shift B0 Input", [False, True])  # noqa: F841
         use_sens_net = st.selectbox("Use Sensitivity Network", [False, True])
 
         model_args = {
@@ -952,7 +952,7 @@ with st.expander("Hyperparameters", expanded=False):
         quantitative_module_gamma_regularization_factors = st.text_input(
             "Quantitative Module Gamma Regularization Factors", value="[150.0, 150.0, 1000.0, 150.0]"
         )
-        shift_B0_input = st.selectbox("Shift B0 Input", [False, True])
+        shift_B0_input = st.selectbox("Shift B0 Input", [False, True])  # noqa: F841
         use_sens_net = st.selectbox("Use Sensitivity Network", [False, True])
 
         model_args = {
@@ -1061,7 +1061,7 @@ with st.expander("Hyperparameters", expanded=False):
         quantitative_module_gamma_regularization_factors = st.text_input(
             "Quantitative Module Gamma Regularization Factors", value="[150.0, 150.0, 1000.0, 150.0]"
         )
-        shift_B0_input = st.selectbox("Shift B0 Input", [False, True])
+        shift_B0_input = st.selectbox("Shift B0 Input", [False, True])  # noqa: F841
         use_sens_net = st.selectbox("Use Sensitivity Network", [False, True])
 
         model_args = {
@@ -2207,26 +2207,26 @@ with st.expander("Loss function", expanded=False):
     elif task == "quantitative":
         loss_fn = st.selectbox("Loss Function", ["ssim", "l1", "mse"])
         if loss_fn == "ssim":
-            loss_regularization_factors_R2star = st.number_input(
+            loss_regularization_factors_R2star = st.number_input(  # noqa: F841
                 "Loss Regularization Factor R2star", min_value=0.0, max_value=100000.0, value=3.0
             )
-            loss_regularization_factors_S0 = st.number_input(
+            loss_regularization_factors_S0 = st.number_input(  # noqa: F841
                 "Loss Regularization Factor S0", min_value=0.0, max_value=100000.0, value=1.0
             )
-            loss_regularization_factors_B0 = st.number_input(
+            loss_regularization_factors_B0 = st.number_input(  # noqa: F841
                 "Loss Regularization Factor B0", min_value=0.0, max_value=100000.0, value=1.0
             )
             loss_regularization_factors_phi = st.number_input(
                 "Loss Regularization Factor phi", min_value=0.0, max_value=100000.0, value=1.0
             )
         else:
-            loss_regularization_factors_R2star = st.number_input(
+            loss_regularization_factors_R2star = st.number_input(  # noqa: F841
                 "Loss Regularization Factor R2star", min_value=0.0, max_value=100000.0, value=300.0
             )
-            loss_regularization_factors_S0 = st.number_input(
+            loss_regularization_factors_S0 = st.number_input(  # noqa: F841
                 "Loss Regularization Factor S0", min_value=0.0, max_value=100000.0, value=500.0
             )
-            loss_regularization_factors_B0 = st.number_input(
+            loss_regularization_factors_B0 = st.number_input(  # noqa: F841
                 "Loss Regularization Factor B0", min_value=0.0, max_value=100000.0, value=20000.0
             )
             loss_regularization_factors_phi = st.number_input(
@@ -2605,9 +2605,9 @@ if mode == "train":
     base_config["model"]["train_ds"]["mask_args"]["type"] = subsampling_type
     if subsampling_type is not None:
         base_config["model"]["train_ds"]["mask_args"]["accelerations"] = {}
-        base_config["model"]["train_ds"]["mask_args"]["accelerations"] = [x for x in subsampling_accelerations]
+        base_config["model"]["train_ds"]["mask_args"]["accelerations"] = list(subsampling_accelerations)
         base_config["model"]["train_ds"]["mask_args"]["center_fractions"] = {}
-        base_config["model"]["train_ds"]["mask_args"]["center_fractions"] = [x for x in subsampling_center_fractions]
+        base_config["model"]["train_ds"]["mask_args"]["center_fractions"] = list(subsampling_center_fractions)
         base_config["model"]["train_ds"]["mask_args"]["scale"] = subsampling_center_scale
     base_config["model"]["train_ds"]["mask_args"]["shift_mask"] = subsampling_shift
     base_config["model"]["train_ds"]["mask_args"]["use_seed"] = True
@@ -2664,11 +2664,9 @@ if mode == "train":
     base_config["model"]["validation_ds"]["mask_args"]["type"] = subsampling_type
     if subsampling_type is not None:
         base_config["model"]["validation_ds"]["mask_args"]["accelerations"] = {}
-        base_config["model"]["validation_ds"]["mask_args"]["accelerations"] = [x for x in subsampling_accelerations]
+        base_config["model"]["validation_ds"]["mask_args"]["accelerations"] = list(subsampling_accelerations)
         base_config["model"]["validation_ds"]["mask_args"]["center_fractions"] = {}
-        base_config["model"]["validation_ds"]["mask_args"]["center_fractions"] = [
-            x for x in subsampling_center_fractions
-        ]
+        base_config["model"]["validation_ds"]["mask_args"]["center_fractions"] = list(subsampling_center_fractions)
         base_config["model"]["validation_ds"]["mask_args"]["scale"] = subsampling_center_scale
     base_config["model"]["validation_ds"]["mask_args"]["shift_mask"] = subsampling_shift
     base_config["model"]["validation_ds"]["mask_args"]["use_seed"] = False
@@ -2726,9 +2724,9 @@ else:
     base_config["model"]["test_ds"]["mask_args"]["type"] = subsampling_type
     if subsampling_type is not None:
         base_config["model"]["test_ds"]["mask_args"]["accelerations"] = {}
-        base_config["model"]["test_ds"]["mask_args"]["accelerations"] = [x for x in subsampling_accelerations]
+        base_config["model"]["test_ds"]["mask_args"]["accelerations"] = list(subsampling_accelerations)
         base_config["model"]["test_ds"]["mask_args"]["center_fractions"] = {}
-        base_config["model"]["test_ds"]["mask_args"]["center_fractions"] = [x for x in subsampling_center_fractions]
+        base_config["model"]["test_ds"]["mask_args"]["center_fractions"] = list(subsampling_center_fractions)
         base_config["model"]["test_ds"]["mask_args"]["scale"] = subsampling_center_scale
     base_config["model"]["test_ds"]["mask_args"]["shift_mask"] = subsampling_shift
     base_config["model"]["test_ds"]["mask_args"]["use_seed"] = False
@@ -2788,7 +2786,7 @@ base_config["exp_manager"]["ema"]["enable"] = ema
 
 # replace any empty or "None" or "none" or null or "null" values with None
 for key, value in base_config.items():
-    if value == "" or value == "None" or value == "none" or value == "null" or value == "Null":
+    if value == "" or value == "None" or value == "none" or value == "null" or value == "Null":  # noqa
         base_config[key] = None
 
 base_config_path = os.path.join(export_path, f"{export_path}/{model_name.lower()}_{mode}.yaml")
@@ -2797,7 +2795,7 @@ if st.button("Export Configuration"):
     if os.path.exists(base_config_path):
         os.remove(base_config_path)
     # log config to yaml
-    with open(base_config_path, "w") as f:
+    with open(base_config_path, "w") as f:  # noqa
         yaml.dump(base_config, f)
     # show exported path
     st.write(f"Configuration exported to {base_config_path}")
@@ -2821,7 +2819,7 @@ if st.button("Run"):
     if os.path.exists(base_config_path):
         os.remove(base_config_path)
     # log config to yaml
-    with open(base_config_path, "w") as f:
+    with open(base_config_path, "w") as f:  # noqa
         yaml.dump(base_config, f)
     # show exported path
     st.write(f"Configuration exported to {base_config_path}")

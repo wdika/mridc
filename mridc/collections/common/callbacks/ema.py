@@ -127,7 +127,7 @@ class EMA(Callback):
         checkpoint_callback = trainer.checkpoint_callback
 
         # use the connector as MRIDC calls the connector directly in the exp_manager when restoring.
-        connector = trainer._checkpoint_connector
+        connector = trainer._checkpoint_connector  # noqa: WPS437
         ckpt_path = connector.resume_checkpoint_path
 
         if ckpt_path and checkpoint_callback is not None and "MRIDC" in type(checkpoint_callback).__name__:
@@ -135,8 +135,8 @@ class EMA(Callback):
             if ckpt_path.endswith(f"-EMA{ext}"):
                 rank_zero_info(
                     "loading EMA based weights. "
-                    "The callback will treat the loaded EMA weights as the main weights and create a new EMA copy when "
-                    "training."
+                    "The callback will treat the loaded EMA weights as the main weights and create a new EMA copy "
+                    "when training."
                 )
                 return
             ema_path = ckpt_path.replace(ext, f"-EMA{ext}")
@@ -156,8 +156,8 @@ class EMA(Callback):
 @torch.no_grad()
 def ema_update(ema_model_tuple, current_model_tuple, decay):
     """Update EMA parameters."""
-    torch._foreach_mul_(ema_model_tuple, decay)
-    torch._foreach_add_(ema_model_tuple, current_model_tuple, alpha=(1.0 - decay))
+    torch._foreach_mul_(ema_model_tuple, decay)  # noqa: WPS437
+    torch._foreach_add_(ema_model_tuple, current_model_tuple, alpha=(1.0 - decay))  # noqa: WPS437
 
 
 def run_ema_update_cpu(ema_model_tuple, current_model_tuple, decay, pre_sync_stream=None):
@@ -173,7 +173,7 @@ class EMAOptimizer(torch.optim.Optimizer):
     registered in the optimizer.
 
     EMA parameters are automatically updated after every step of the optimizer with the following formula: \
-    $$ ema\_weight = ema\_weight + (1 - decay) * (training\_weight - ema\_weight) $$
+    $$ ema\_weight = ema\_weight + (1 - decay) * (training\_weight - ema\_weight) $$  # noqa: WPS323
 
     To access EMA parameters, use ``swap_ema_weights()`` context manager to perform a temporary in-place swap of
     regular parameters with EMA parameters.
@@ -206,7 +206,7 @@ class EMAOptimizer(torch.optim.Optimizer):
     >>>         ema_eval_accuracy = evaluate(model)
     """
 
-    def __init__(
+    def __init__(  # noqa: WPS211
         self,
         optimizer: torch.optim.Optimizer,
         device: torch.device,
@@ -233,7 +233,7 @@ class EMAOptimizer(torch.optim.Optimizer):
         """Returns an iterator over all parameters."""
         return (param for group in self.param_groups for param in group["params"])
 
-    def step(self, closure=None, **kwargs):
+    def step(self, closure=None, **kwargs):  # noqa: WPS211
         """Performs a single optimization step."""
         self.join()
 

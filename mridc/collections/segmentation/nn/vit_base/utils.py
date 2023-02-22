@@ -9,7 +9,7 @@ from typing import Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class Convolution(nn.Sequential):
@@ -64,26 +64,27 @@ class Convolution(nn.Sequential):
         Controls the additional size added to one side of the output shape. Default is ``None``.
 
     .. note::
-        This is a wrapper for monai implementation.
-        See: https://github.com/Project-MONAI/MONAI/blob/c38d503a587f1779914bd071a1b2d66a6d9080c2/monai/networks/layers/weight_init.py#L45
+        This is a wrapper for monai implementation. See:
+        https://github.com/Project-MONAI/MONAI/blob/c38d503a587f1779914bd071a1b2d66a6d9080c2/monai/networks/layers/\
+        weight_init.py
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         spatial_dims: int,
         in_channels: int,
         out_channels: int,
         strides: Union[Sequence[int], int] = 1,
         kernel_size: Union[Sequence[int], int] = 3,
-        adn_ordering: str = "NDA",
-        act: Optional[Union[Tuple, str]] = "PRELU",
-        norm: Optional[Union[Tuple, str]] = "INSTANCE",
-        dropout: Optional[Union[Tuple, str, float]] = None,
-        dropout_dim: Optional[int] = 1,
+        adn_ordering: str = "NDA",  # noqa: A003
+        act: Optional[Union[Tuple, str]] = "PRELU",  # noqa: A003
+        norm: Optional[Union[Tuple, str]] = "INSTANCE",  # noqa: A003
+        dropout: Optional[Union[Tuple, str, float]] = None,  # noqa: A003
+        dropout_dim: Optional[int] = 1,  # noqa: A003
         dilation: Union[Sequence[int], int] = 1,
         groups: int = 1,
         bias: bool = True,
-        conv_only: bool = False,
+        conv_only: bool = False,  # noqa: A003
         is_transposed: bool = False,
         padding: Optional[Union[Sequence[int], int]] = None,
         output_padding: Optional[Union[Sequence[int], int]] = None,
@@ -112,7 +113,7 @@ class Convolution(nn.Sequential):
             else:
                 conv_type = nn.Conv3d
         else:
-            raise ValueError("Unsupported spatial_dims: {}".format(self.spatial_dims))
+            raise ValueError(f"Unsupported spatial_dims: {self.spatial_dims}")
 
         conv: nn.Module
         if is_transposed:
@@ -266,7 +267,7 @@ def same_padding(
     return padding if len(padding) > 1 else padding[0]
 
 
-def get_conv_layer(
+def get_conv_layer(  # noqa: C901
     spatial_dims: int,
     in_channels: int,
     out_channels: int,
@@ -360,9 +361,7 @@ def _no_grad_trunc_normal_(tensor: torch.Tensor, mean: float = 0.0, std: float =
         return (1.0 + math.erf(x / math.sqrt(2.0))) / 2.0
 
     with torch.no_grad():
-        l = norm_cdf((a - mean) / std)
-        u = norm_cdf((b - mean) / std)
-        tensor.uniform_(2 * l - 1, 2 * u - 1)
+        tensor.uniform_(2 * norm_cdf((a - mean) / std) - 1, 2 * norm_cdf((b - mean) / std) - 1)
         tensor.erfinv_()
         tensor.mul_(std * math.sqrt(2.0))
         tensor.add_(mean)

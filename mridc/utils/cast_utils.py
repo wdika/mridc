@@ -12,8 +12,7 @@ def avoid_bfloat16_autocast_context():
     """If the current autocast context is bfloat16, cast it to float32."""
     if torch.is_autocast_enabled() and torch.get_autocast_gpu_dtype() == torch.bfloat16:
         return torch.cuda.amp.autocast(dtype=torch.float32)
-    else:
-        return nullcontext()
+    return nullcontext()
 
 
 def avoid_float16_autocast_context():
@@ -23,10 +22,8 @@ def avoid_float16_autocast_context():
             return torch.cuda.amp.autocast(dtype=torch.float32)
         if torch.cuda.is_bf16_supported():
             return torch.cuda.amp.autocast(dtype=torch.bfloat16)
-        else:
-            return torch.cuda.amp.autocast(dtype=torch.float32)
-    else:
-        return nullcontext()
+        return torch.cuda.amp.autocast(dtype=torch.float32)
+    return nullcontext()
 
 
 def cast_tensor(x, from_dtype=torch.float16, to_dtype=torch.float32):
@@ -34,25 +31,24 @@ def cast_tensor(x, from_dtype=torch.float16, to_dtype=torch.float32):
     return x.to(dtype=to_dtype) if x.dtype == from_dtype else x
 
 
-def cast_all(x, from_dtype=torch.float16, to_dtype=torch.float32):
+def cast_all(x, from_dtype=torch.float16, to_dtype=torch.float32):  # noqa: R504
     """Cast all tensors in a dict or tuple from one dtype to another if they are of the specified dtype."""
     if isinstance(x, torch.Tensor):
         return cast_tensor(x, from_dtype=from_dtype, to_dtype=to_dtype)
-    else:
-        if isinstance(x, dict):
-            new_dict = {}
-            for k in x.keys():
-                new_dict[k] = cast_all(x[k], from_dtype=from_dtype, to_dtype=to_dtype)
-            return new_dict
-        elif isinstance(x, tuple):
-            return tuple(cast_all(y, from_dtype=from_dtype, to_dtype=to_dtype) for y in x)
+    if isinstance(x, dict):
+        new_dict = {}
+        for k in x.keys():
+            new_dict[k] = cast_all(x[k], from_dtype=from_dtype, to_dtype=to_dtype)
+        return new_dict
+    if isinstance(x, tuple):
+        return tuple(cast_all(y, from_dtype=from_dtype, to_dtype=to_dtype) for y in x)
 
 
 class CastToFloat(torch.nn.Module):
     """Cast input to float32, run module, cast output back to original dtype."""
 
     def __init__(self, mod):
-        super(CastToFloat, self).__init__()
+        super().__init__()
         self.mod = mod
 
     def forward(self, x):
@@ -65,7 +61,7 @@ class CastToFloatAll(torch.nn.Module):
     """Cast all inputs to float32, run module, cast output back to original dtype."""
 
     def __init__(self, mod):
-        super(CastToFloatAll, self).__init__()
+        super().__init__()
         self.mod = mod
 
     def forward(self, *args):

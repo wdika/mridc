@@ -10,8 +10,7 @@ from omegaconf import DictConfig
 
 import mridc.collections.reconstruction.nn as reconstruction_nn
 from mridc.collections.common.data import subsample
-from mridc.collections.common.parts import fft as fft
-from mridc.collections.common.parts import utils as utils
+from mridc.collections.common.parts import fft, utils
 
 __all__ = [
     "NoisePreWhitening",
@@ -62,7 +61,7 @@ class NoisePreWhitening:
     tensor(-0.0023)
     """
 
-    def __init__(
+    def __init__(  # noqa: D107
         self,
         find_patch_size: bool = True,
         patch_size: List[int] = None,
@@ -97,7 +96,7 @@ class NoisePreWhitening:
     def forward(
         self,
         data: torch.Tensor,
-        apply_backward_transform: bool = False,
+        apply_backward_transform: bool = False,  # noqa: D102
         apply_forward_transform: bool = False,
     ) -> torch.Tensor:
         """
@@ -245,7 +244,7 @@ class GeometricDecompositionCoilCompression:
     torch.Size([10, 100, 100, 2])
     """
 
-    def __init__(
+    def __init__(  # noqa: D107
         self,
         virtual_coils: int = None,
         calib_lines: int = None,
@@ -282,7 +281,7 @@ class GeometricDecompositionCoilCompression:
     def forward(
         self,
         data: torch.Tensor,
-        apply_backward_transform: bool = False,
+        apply_backward_transform: bool = False,  # noqa: D102
         apply_forward_transform: bool = False,
     ) -> torch.Tensor:
         """
@@ -635,7 +634,7 @@ class Cropper:
         if not utils.is_none(data):  # type: ignore
             if isinstance(data, list) and len(data) > 0:  # type: ignore
                 return [self.forward(d, apply_backward_transform, apply_forward_transform) for d in data]
-            elif data.dim() > 1 and data.mean() != 1:  # type: ignore
+            if data.dim() > 1 and data.mean() != 1:  # type: ignore
                 return self.forward(data, apply_backward_transform, apply_forward_transform)
         return data
 
@@ -754,7 +753,7 @@ class Masker:
     10.0
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         mask_func: Optional[Callable] = None,
         spatial_dims: Sequence[int] = (-2, -1),
@@ -772,7 +771,7 @@ class Masker:
         self.dimensionality = dimensionality
         self.remask = remask
 
-    def __call__(
+    def __call__(  # noqa: C901
         self,
         data: torch.Tensor,
         mask: Union[List, torch.Tensor, np.ndarray] = None,
@@ -815,7 +814,7 @@ class Masker:
     def __str__(self) -> str:
         return self.__repr__()
 
-    def forward(
+    def forward(  # noqa: C901
         self,
         data: torch.Tensor,
         mask: Union[List, torch.Tensor, np.ndarray] = None,
@@ -830,13 +829,13 @@ class Masker:
         is_complex = data.shape[-1] == 2
 
         if is_complex:
-            self.spatial_dims = tuple([x - 1 for x in self.spatial_dims])
+            self.spatial_dims = tuple([x - 1 for x in self.spatial_dims])  # noqa: WPS515
 
         if not utils.is_none(mask) and isinstance(mask, list) and len(mask) > 0:
             masked_data = []
             masks = []
             accelerations = []
-            for i, m in enumerate(mask):
+            for m in mask:
                 if list(m.shape) == [data.shape[self.spatial_dims[0]], data.shape[self.spatial_dims[1]]]:
                     if isinstance(m, np.ndarray):
                         m = torch.from_numpy(m)
@@ -882,7 +881,7 @@ class Masker:
             masked_data = []
             masks = []
             accelerations = []
-            for i, m in enumerate(self.mask_func):
+            for m in self.mask_func:
                 if self.dimensionality == 2:
                     _masked_data, _mask, _accelerations = utils.apply_mask(
                         data,
@@ -1007,7 +1006,7 @@ class Normalizer:
         if not utils.is_none(data):
             if isinstance(data, list) and len(data) > 0:
                 return [self.forward(d, apply_backward_transform, apply_forward_transform) for d in data]
-            elif data.dim() > 1 and data.mean() != 1:  # type: ignore
+            if data.dim() > 1 and data.mean() != 1:  # type: ignore
                 return self.forward(data, apply_backward_transform, apply_forward_transform)
         return data
 
@@ -1188,7 +1187,7 @@ class MRIDataTransforms:
         Preprocessed data.
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         apply_prewhitening: bool = False,
         find_patch_size: bool = True,
@@ -1216,7 +1215,7 @@ class MRIDataTransforms:
         fft_normalization: str = "backward",
         spatial_dims: Sequence[int] = None,
         coil_dim: int = 0,
-        consecutive_slices: int = 1,
+        consecutive_slices: int = 1,  # noqa: B008
         use_seed: bool = True,
     ):
         super().__init__()
@@ -1328,7 +1327,7 @@ class MRIDataTransforms:
 
         self.use_seed = use_seed
 
-    def __call__(
+    def __call__(  # noqa: C901
         self,
         kspace: np.ndarray,
         sensitivity_map: np.ndarray,

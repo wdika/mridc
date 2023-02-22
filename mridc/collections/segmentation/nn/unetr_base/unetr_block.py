@@ -7,7 +7,7 @@ from typing import Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
-import torch.nn as nn
+from torch import nn
 
 from mridc.collections.segmentation.nn.vit_base.utils import get_conv_layer
 from mridc.collections.segmentation.nn.vit_base.vit_block import ViT
@@ -96,7 +96,7 @@ class UnetrBasicBlock(nn.Module):
         See: https://github.com/Project-MONAI/MONAI/blob/dev/monai/networks/nets/unetr.py
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         spatial_dims: int,
         in_channels: int,
@@ -170,7 +170,7 @@ class UnetrPrUpBlock(nn.Module):
         See: https://github.com/Project-MONAI/MONAI/blob/dev/monai/networks/nets/unetr.py
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         spatial_dims: int,
         in_channels: int,
@@ -302,7 +302,7 @@ class UnetrUpBlock(nn.Module):
         See: https://github.com/Project-MONAI/MONAI/blob/dev/monai/networks/nets/unetr.py
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         spatial_dims: int,
         in_channels: int,
@@ -382,15 +382,15 @@ class UnetResBlock(nn.Module):
         Dropout rate.
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         spatial_dims: int,
         in_channels: int,
         out_channels: int,
         kernel_size: Union[Sequence[int], int],
         stride: Union[Sequence[int], int],
-        norm_name: Union[Tuple, str],
-        act_name: Union[Tuple, str] = ("leakyrelu", {"inplace": True, "negative_slope": 0.01}),
+        norm_name: Union[Tuple, str],  # noqa: A002
+        act_name: Union[Tuple, str] = ("leakyrelu", {"inplace": True, "negative_slope": 0.01}),  # noqa: A002
         dropout: Optional[Union[Tuple, str, float]] = None,
     ):
         super().__init__()
@@ -497,13 +497,13 @@ class UnetUpBlock(nn.Module):
         See: https://github.com/Project-MONAI/MONAI/blob/dev/monai/networks/nets/unetr.py
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         spatial_dims: int,
         in_channels: int,
         out_channels: int,
         kernel_size: Union[Sequence[int], int],
-        stride: Union[Sequence[int], int],
+        stride: Union[Sequence[int], int],  # noqa: A002
         upsample_kernel_size: Union[Sequence[int], int],
         norm_name: Union[Tuple, str],
         act_name: Union[Tuple, str] = ("leakyrelu", {"inplace": True, "negative_slope": 0.01}),
@@ -579,15 +579,15 @@ class UnetBasicBlock(nn.Module):
         See: https://github.com/Project-MONAI/MONAI/blob/dev/monai/networks/nets/unetr.py
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         spatial_dims: int,
         in_channels: int,
         out_channels: int,
         kernel_size: Union[Sequence[int], int],
         stride: Union[Sequence[int], int],
-        norm_name: Union[Tuple, str],
-        act_name: Union[Tuple, str] = ("leakyrelu", {"inplace": True, "negative_slope": 0.01}),
+        norm_name: Union[Tuple, str],  # noqa: A002
+        act_name: Union[Tuple, str] = ("leakyrelu", {"inplace": True, "negative_slope": 0.01}),  # noqa: A002
         dropout: Optional[Union[Tuple, str, float]] = None,
     ):
         super().__init__()
@@ -678,7 +678,7 @@ class UNETR(nn.Module):
         See: https://github.com/Project-MONAI/MONAI/blob/dev/monai/networks/nets/unetr.py
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         in_channels: int,
         out_channels: int,
@@ -815,7 +815,7 @@ class UNETR(nn.Module):
         x = x.permute(self.proj_axes).contiguous()
         return x
 
-    def forward(self, x_in: torch.Tensor) -> torch.Tensor:
+    def forward(self, x_in: torch.Tensor) -> torch.Tensor:  # noqa: D102
         """Forward function for the network."""
         x, hidden_states_out = self.vit(x_in)
         enc1 = self.encoder1(x_in)

@@ -1,7 +1,7 @@
 # coding=utf-8
 __author__ = "Dimitrios Karkalousos"
 
-from mridc.package_info import (
+from mridc.package_info import (  # noqa: F401
     __contact_emails__,
     __contact_names__,
     __description__,

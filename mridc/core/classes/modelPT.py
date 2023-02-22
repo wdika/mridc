@@ -86,7 +86,7 @@ class ModelPT(LightningModule, Model):
         if "target" not in cfg:
             # This is for Jarvis service.
             OmegaConf.set_struct(cfg, False)
-            cfg.target = "{0}.{1}".format(self.__class__.__module__, self.__class__.__name__)
+            cfg.target = f"{self.__class__.__module__}.{self.__class__.__name__}"
             OmegaConf.set_struct(cfg, True)
 
         if "mridc_version" not in cfg:
@@ -96,7 +96,7 @@ class ModelPT(LightningModule, Model):
         self._cfg = cfg
 
         # init mapping submodule attribute -> config_field for nested MRIDC models
-        self._mridc_submodule_name_to_config_field: Dict = dict()
+        self._mridc_submodule_name_to_config_field: Dict = {}
 
         self.save_hyperparameters("cfg")
         self._train_dl = None
@@ -164,7 +164,9 @@ class ModelPT(LightningModule, Model):
                 )
 
         # ModelPT wrappers over subclass implementations
-        self._training_step = mridc.utils.model_utils.wrap_training_step(self.training_step)  # type: ignore
+        self._training_step = mridc.utils.model_utils.wrap_training_step(  # type: ignore  # noqa: E501
+            self.training_step
+        )
 
     def __init_subclass__(cls) -> None:
         """This method is called when a subclass is created."""
@@ -361,7 +363,7 @@ class ModelPT(LightningModule, Model):
         save_path = Path(save_path).expanduser().resolve()  # type: ignore
         app_state = AppState()
         if app_state.model_parallel_size is not None:
-            if app_state.model_parallel_size > 1 and type(self._save_restore_connector) is SaveRestoreConnector:
+            if app_state.model_parallel_size > 1 and isinstance(self._save_restore_connector, SaveRestoreConnector):
                 raise ValueError(
                     "Default mridc SaveRestoreConnector will not work in model parallel mode. You should use a "
                     "connector which supports model parallel mode. You can also use a custom one."
@@ -377,7 +379,7 @@ class ModelPT(LightningModule, Model):
             self._save_restore_connector.save_to(self, str(save_path))
 
     @classmethod
-    def restore_from(  # type: ignore
+    def restore_from(  # type: ignore  # noqa: C901
         cls,
         restore_path: str,
         override_config_path: Optional[Union[OmegaConf, str]] = None,
@@ -395,7 +397,9 @@ class ModelPT(LightningModule, Model):
         restore_path: path to .mridc file from which model should be instantiated override_config_path: path to a \
         yaml config that will override the internal config file or an OmegaConf/DictConfig object representing the \
         model config.
-        map_location: Optional torch.device() to map the instantiated model to a device. By default (None), it will \
+        override_config_path: path to a yaml config that will override the internal config file or an
+        OmegaConf/DictConfig object representing the model config.
+        map_location: Optional torch.device() to map the instantiated model to a device. Default is ``None``, it will \
         select a GPU if available, falling back to CPU otherwise.
         strict: Passed to load_state_dict. By default, True.
         return_config: If set to true, will return just the underlying config of the restored model as an \
@@ -436,7 +440,7 @@ class ModelPT(LightningModule, Model):
             cls, restore_path, override_config_path, map_location, strict, return_config, trainer
         )
         if isinstance(instance, ModelPT):
-            instance._save_restore_connector = save_restore_connector
+            instance._save_restore_connector = save_restore_connector  # noqa: WPS437
         return instance
 
     @classmethod
@@ -524,7 +528,7 @@ class ModelPT(LightningModule, Model):
         if self.test_names is None and self._test_dl is not None and type(self._test_dl) in [list, tuple]:
             self.test_names = [f"test_{idx}_" for idx in range(len(self._test_dl))]
 
-    def setup_optimization(self, optim_config: Optional[Union[DictConfig, Dict]] = None):
+    def setup_optimization(self, optim_config: Optional[Union[DictConfig, Dict]] = None):  # noqa: WPS211
         """
         Prepares an optimizer from a string name and its optional config parameters.
 
@@ -809,7 +813,7 @@ class ModelPT(LightningModule, Model):
             return {}
 
         # Case where we provide exactly 1 data loader
-        if type(outputs[0]) is dict:
+        if isinstance(outputs[0], dict):
             output_dict = self.multi_validation_epoch_end(outputs, dataloader_idx=0)  # type: ignore
 
             if output_dict is not None and "log" in output_dict:
@@ -905,7 +909,7 @@ class ModelPT(LightningModule, Model):
             return {}
 
         # Case where we provide exactly 1 data loader
-        if type(outputs[0]) is dict:
+        if isinstance(outputs[0], dict):
             output_dict = self.multi_test_epoch_end(outputs, dataloader_idx=0)  # type: ignore
 
             if output_dict is not None and "log" in output_dict:
@@ -922,7 +926,7 @@ class ModelPT(LightningModule, Model):
             self.multi_test_epoch_end(test_outputs, dataloader_idx=dataloader_idx)
 
             # If result was not provided, generate empty dict
-            dataloader_logs = dataloader_logs or {}  # type: ignore
+            dataloader_logs = dataloader_logs or {}  # type: ignore  # noqa: F821
 
             # Perform `test_loss` resolution first (if provided outside logs)
             if (
@@ -974,7 +978,7 @@ class ModelPT(LightningModule, Model):
 
     @staticmethod
     def multi_validation_epoch_end(
-        outputs: Union[object, List[Dict[str, torch.Tensor]], None], dataloader_idx: int = 0
+        outputs: Union[object, List[Dict[str, torch.Tensor]], None], dataloader_idx: int = 0  # noqa: F821
     ) -> None:
         """
         Adds support for multiple validation datasets. Should be overridden by subclass, to obtain appropriate logs for
@@ -998,7 +1002,9 @@ class ModelPT(LightningModule, Model):
         )
 
     @staticmethod
-    def multi_test_epoch_end(outputs: Union[object, List[Dict[str, torch.Tensor]]], dataloader_idx: int = 0) -> None:
+    def multi_test_epoch_end(
+        outputs: Union[object, List[Dict[str, torch.Tensor]]], dataloader_idx: int = 0  # noqa: F821
+    ) -> None:
         """
         Adds support for multiple test datasets. Should be overridden by subclass, to obtain appropriate logs for each
         of the dataloaders.
@@ -1061,7 +1067,7 @@ class ModelPT(LightningModule, Model):
                 )
 
     @rank_zero_only
-    def maybe_init_from_pretrained_checkpoint(self, cfg: OmegaConf, map_location: str = "cpu"):
+    def maybe_init_from_pretrained_checkpoint(self, cfg: OmegaConf, map_location: str = "cpu"):  # noqa: F821
         """
         Initializes a given model with the parameters obtained via specific config arguments. The state dict of the \
         provided model will be updated with `strict=False` setting to prevent requirement of exact model parameters \
@@ -1455,14 +1461,14 @@ class ModelPT(LightningModule, Model):
                 self._nsys_profile_ranks = self.cfg.nsys_profile.get("ranks", [0])
                 self._nsys_profile_gen_shape = self.cfg.nsys_profile.get("gen_shape", False)
 
-                if type(self._nsys_profile_start_step) == int:
+                if isinstance(self._nsys_profile_start_step, int):
                     logging.info(f"Nsys profiling setup with start_step: {self._nsys_profile_start_step}")
                 else:
                     raise ValueError(
                         f"Nsys start_step must be of type int. Found: {type(self._nsys_profile_start_step)}"
                     )
 
-                if type(self._nsys_profile_end_step) == int:
+                if isinstance(self._nsys_profile_end_step, int):
                     logging.info(f"Nsys profiling setup with end_step: {self._nsys_profile_end_step}")
                 else:
                     raise ValueError(f"Nsys end_step must be of type int. Found: {type(self._nsys_profile_end_step)}")
@@ -1470,9 +1476,9 @@ class ModelPT(LightningModule, Model):
                 if self._nsys_profile_end_step >= self._nsys_profile_start_step:
                     pass
                 else:
-                    raise ValueError(f"Nsys end_step must be greater than or equal to nsys start_step")
+                    raise ValueError("Nsys end_step must be greater than or equal to nsys start_step")
 
-    def on_train_batch_start(self, batch: Any, batch_idx: int, unused: int = 0):
+    def on_train_batch_start(self, batch: Any, batch_idx: int, unused: int = 0):  # noqa: D102
         """PyTorch Lightning hook:
         https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_module.html#on-train-batch-start
         We use it here to enable nsys profiling.
@@ -1484,9 +1490,9 @@ class ModelPT(LightningModule, Model):
                         logging.info("====== Start nsys profiling ======")
                         torch.cuda.cudart().cudaProfilerStart()
                         if self._nsys_profile_gen_shape:
-                            torch.autograd.profiler.emit_nvtx(record_shapes=True).__enter__()
+                            torch.autograd.profiler.emit_nvtx(record_shapes=True).__enter__()  # noqa: WPS437
 
-    def on_train_batch_end(self, outputs, batch: Any, batch_idx: int, unused: int = 0) -> None:
+    def on_train_batch_end(self, outputs, batch: Any, batch_idx: int, unused: int = 0) -> None:  # noqa: D102
         """PyTorch Lightning hook:
         https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_module.html#on-train-batch-end
         We use it here to enable nsys profiling.

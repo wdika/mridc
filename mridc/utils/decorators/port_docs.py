@@ -74,7 +74,7 @@ def add_port_docs(wrapped=None, instance=None, value=""):
         return functools.partial(add_port_docs, value=value)
 
     @wrapt.decorator
-    def wrapper(wrapped, instance=None, args=None, kwargs=None):
+    def wrapper(wrapped, instance=None, args=None, kwargs=None):  # noqa: F811
         """
         Adds port documentation to the wrapped function.
 
@@ -103,9 +103,9 @@ def add_port_docs(wrapped=None, instance=None, value=""):
             port_description += "* *" + port + "* : " + str(ntype)
             port_description += "\n\n"
 
-    __doc__ = _normalize_docstring(wrapped.__doc__) + "\n\n" + str(port_description)
+    __doc__ = _normalize_docstring(wrapped.__doc__) + "\n\n" + str(port_description)  # noqa: F811
     __doc__ = _normalize_docstring(__doc__)
 
-    wrapt.FunctionWrapper.__setattr__(decorated, "__doc__", __doc__)
+    wrapt.FunctionWrapper.__setattr__(decorated, "__doc__", __doc__)  # noqa: F811
 
     return decorated

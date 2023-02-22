@@ -29,7 +29,7 @@ class CoercionError(Exception):
 
     def __init__(self, key, value, func):
         msg = f"Unable to coerce '{key}={value}' using {func.__name__}."
-        super(CoercionError, self).__init__(msg)
+        super().__init__(msg)
 
 
 class RequiredSettingMissingError(Exception):
@@ -37,7 +37,7 @@ class RequiredSettingMissingError(Exception):
 
     def __init__(self, key):
         msg = f"Required env var '{key}' is missing."
-        super(RequiredSettingMissingError, self).__init__(msg)
+        super().__init__(msg)
 
 
 def _get_env(key, default=None, coerce=lambda x: x, required=False):

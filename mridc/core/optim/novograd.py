@@ -41,7 +41,7 @@ class Novograd(Optimizer):
         (boolean, optional), (default: False)
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         params,
         lr=1e-3,
@@ -55,20 +55,25 @@ class Novograd(Optimizer):
         luc_eps=1e-8,
     ):
         _check_valid_opt_params(lr, eps, betas)
-        defaults = dict(
-            lr=lr, betas=betas, eps=eps, weight_decay=weight_decay, grad_averaging=grad_averaging, amsgrad=amsgrad
-        )
+        defaults = {
+            "lr": lr,
+            "betas": betas,
+            "eps": eps,
+            "weight_decay": weight_decay,
+            "grad_averaging": grad_averaging,
+            "amsgrad": amsgrad,
+        }
         self.luc = luc
         self.luc_trust = luc_trust
         self.luc_eps = luc_eps
-        super(Novograd, self).__init__(params, defaults)
+        super().__init__(params, defaults)
 
     def __setstate__(self, state):
-        super(Novograd, self).__setstate__(state)
+        super().__setstate__(state)
         for group in self.param_groups:
             group.setdefault("amsgrad", False)
 
-    def step(self, closure=None):
+    def step(self, closure=None):  # noqa: C901
         """
         Performs a single optimization step.
 

@@ -8,7 +8,7 @@ from torch import nn
 class Conv3dBlock(nn.Module):
     """A 3D convolutional block."""
 
-    def __init__(self, in_chans: int, out_chans: int, drop_prob: float, **kwargs):
+    def __init__(self, in_chans: int, out_chans: int, drop_prob: float, **kwargs):  # noqa: D107
         """
         Parameters
         ----------
@@ -75,9 +75,9 @@ class UNet3D(nn.Module):
 
     References
     ----------
-    .. [1] O. Ronneberger, P. Fischer, and Thomas Brox. U-net: Convolutional networks for biomedical image segmentation. \
-         In International Conference on Medical image computing and computer-assisted intervention, pages 234–241.  \
-         Springer, 2015.
+    .. [1] O. Ronneberger, P. Fischer, and Thomas Brox. U-net: Convolutional networks for biomedical image
+        segmentation. In International Conference on Medical image computing and computer-assisted intervention, pages
+        234–241. Springer, 2015.
 
     Parameters
     ----------
@@ -95,7 +95,7 @@ class UNet3D(nn.Module):
         Convolutional block to use. Default is ``Conv3dBlock``.
     """
 
-    def __init__(
+    def __init__(  # noqa: D107
         self,
         in_chans: int,
         out_chans: int,

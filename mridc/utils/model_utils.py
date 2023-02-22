@@ -242,7 +242,7 @@ def resolve_validation_dataloaders(model: ModelPT):
     if not _HAS_HYDRA:
         logging.error("This function requires Hydra/OmegaConf and it was not installed.")
         sys.exit(1)
-    cfg = copy.deepcopy(model._cfg)
+    cfg = copy.deepcopy(model._cfg)  # noqa: E501
     dataloaders: List[Any] = []
 
     # process val_loss_idx
@@ -254,7 +254,7 @@ def resolve_validation_dataloaders(model: ModelPT):
         val_dl_idx = 0
 
     # Set val_loss_idx
-    model._val_dl_idx = val_dl_idx
+    model._val_dl_idx = val_dl_idx  # noqa: E501
 
     ds_key = resolve_dataset_name_from_cfg(cfg.validation_ds)
 
@@ -311,7 +311,7 @@ def resolve_test_dataloaders(model: "ModelPT"):
     if not _HAS_HYDRA:
         logging.error("This function requires Hydra/OmegaConf and it was not installed.")
         sys.exit(1)
-    cfg = copy.deepcopy(model._cfg)
+    cfg = copy.deepcopy(model._cfg)  # noqa: E501
     dataloaders: List[Any] = []
 
     # process test_loss_idx
@@ -323,7 +323,7 @@ def resolve_test_dataloaders(model: "ModelPT"):
         test_dl_idx = 0
 
     # Set val_loss_idx
-    model._test_dl_idx = test_dl_idx
+    model._test_dl_idx = test_dl_idx  # noqa: E501
 
     ds_key = resolve_dataset_name_from_cfg(cfg.test_ds)
 
@@ -419,7 +419,7 @@ def _convert_config(cfg: "OmegaConf"):
 
     # Get rid of cls -> _target_.
     if "cls" in cfg and "_target_" not in cfg:
-        cfg._target_ = cfg.pop("cls")  # type: ignore
+        cfg._target_ = cfg.pop("cls")  # noqa: E501, type: ignore
 
     # Get rid of params.
     if "params" in cfg:

@@ -59,7 +59,7 @@ class GlobalAverageLossMetric(Metric):
         self.add_state("num_measurements", torch.tensor(0, dtype=torch.int64), dist_reduce_fx="sum")
         self.take_avg_loss = take_avg_loss
 
-    def update(self, loss, num_measurements):
+    def update(self, loss, num_measurements):  # noqa: D102
         """
         Updates :attr:`loss_sum` and :attr:`num_measurements`.
 

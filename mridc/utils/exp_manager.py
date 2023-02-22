@@ -163,27 +163,27 @@ class TimingCallback(Callback):
         self.timer.stop(name)
         pl_module.log(name, self.timer[name], on_step=True, on_epoch=False)
 
-    def on_train_batch_start(self, trainer, pl_module, batch, batch_idx, **kwargs):
+    def on_train_batch_start(self, trainer, pl_module, batch, batch_idx, **kwargs):  # noqa: F811
         """Called at the beginning of each training batch"""
         self._on_batch_start("train_step_timing")
 
-    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, **kwargs):
+    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, **kwargs):  # noqa: F811
         """Logs the time taken by the training batch"""
         self._on_batch_end("train_step_timing", pl_module)
 
-    def on_validation_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
+    def on_validation_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):  # noqa: F811
         """Logs the time taken by the validation batch"""
         self._on_batch_start("validation_step_timing")
 
-    def on_validation_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
+    def on_validation_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):  # noqa: F811
         """Logs the time taken by the validation step"""
         self._on_batch_end("validation_step_timing", pl_module)
 
-    def on_test_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
+    def on_test_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):  # noqa: F811
         """Logs execution time of test steps"""
         self._on_batch_start("test_step_timing")
 
-    def on_test_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
+    def on_test_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):  # noqa: F811
         """Logs execution time of test steps"""
         self._on_batch_end("test_step_timing", pl_module)
 
@@ -196,7 +196,7 @@ class TimingCallback(Callback):
         self._on_batch_end("train_backward_timing", pl_module)
 
 
-def exp_manager(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None) -> Optional[Path]:
+def exp_manager(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None) -> Optional[Path]:  # noqa: F811
     """
     exp_manager is a helper function used to manage folders for experiments. It follows the pytorch lightning \
     paradigm of exp_dir/model_or_experiment_name/version. If the lightning trainer has a logger, exp_manager will \
@@ -333,7 +333,7 @@ def exp_manager(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None)
     # Cannot limit creation to global zero as all ranks write to own log file
     os.makedirs(log_dir, exist_ok=True)
     logging.info(f"Experiments will be logged at {log_dir}")
-    trainer._default_root_dir = log_dir
+    trainer._default_root_dir = log_dir  # noqa: F811
 
     if cfg.log_local_rank_0_only is True and cfg.log_global_rank_0_only is True:
         raise ValueError(
@@ -476,7 +476,7 @@ def error_checks(trainer: Trainer, cfg: Optional[Union[DictConfig, Dict]] = None
         )
 
 
-def check_resume(
+def check_resume(  # noqa: F811
     trainer: Trainer,
     log_dir: str,
     resume_past_end: bool = False,
@@ -539,7 +539,7 @@ def check_resume(
         logging.info(f"Resuming from {last_checkpoints[0]}")
         checkpoint = last_checkpoints[0]
 
-    trainer._checkpoint_connector.resume_from_checkpoint_fit_path = str(checkpoint)
+    trainer._checkpoint_connector.resume_from_checkpoint_fit_path = str(checkpoint)  # noqa: F811
 
     if is_global_rank_zero():
         if files_to_move := [child for child in Path(log_dir).iterdir() if child.is_file()]:
@@ -553,7 +553,7 @@ def check_resume(
 
 
 def check_explicit_log_dir(
-    trainer: Trainer, explicit_log_dir: List[Union[Path, str]], exp_dir: str, name: str, version: str
+    trainer: Trainer, explicit_log_dir: List[Union[Path, str]], exp_dir: str, name: str, version: str  # noqa: F811
 ) -> Tuple[Path, str, str, str]:
     """
     Checks that the passed arguments are compatible with explicit_log_dir.
@@ -591,7 +591,7 @@ def check_explicit_log_dir(
     return Path(str(explicit_log_dir)), str(explicit_log_dir), "", ""
 
 
-def get_log_dir(
+def get_log_dir(  # noqa: F811
     trainer: Trainer,
     exp_dir: str = None,
     name: str = None,
@@ -699,7 +699,7 @@ def get_git_diff():
         return f'{err.output.decode("utf-8")}\n'
 
 
-def configure_loggers(
+def configure_loggers(  # noqa: F811
     trainer: Trainer,
     exp_dir: List[Union[Path, str]],
     name: str,
@@ -754,13 +754,13 @@ def configure_loggers(
         logger_list.append(wandb_logger)
         logging.info("WandBLogger has been set up")
 
-    trainer._logger_connector.configure_logger(logger_list)
+    trainer._logger_connector.configure_logger(logger_list)  # noqa: F811
 
 
 class MRIDCModelCheckpoint(ModelCheckpoint):
     """Light wrapper around Lightning's ModelCheckpoint to force a saved checkpoint on train_end"""
 
-    def __init__(
+    def __init__(  # noqa: F811
         self,
         always_save_mridc: bool = False,
         save_mridc_on_train_end: bool = True,
@@ -869,7 +869,7 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
         pl_module: The PyTorch-Lightning module.
         checkpoint: The checkpoint object.
         """
-        output = super().on_save_checkpoint(trainer, pl_module, checkpoint)
+        output = super().on_save_checkpoint(trainer, pl_module, checkpoint)  # noqa: F811
         if not self.always_save_mridc:
             return output
         # Load the best model and then re-save it
@@ -904,7 +904,7 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
             pl_module.save_to(save_path=app_state.model_restore_path)
         return output
 
-    def on_train_end(self, trainer, pl_module):
+    def on_train_end(self, trainer, pl_module):  # noqa: F811
         """
         This is called at the end of training.
 
@@ -941,7 +941,7 @@ class MRIDCModelCheckpoint(ModelCheckpoint):
                 )
             else:
                 self.best_model_path = trainer.strategy.broadcast(self.best_model_path)
-                trainer._checkpoint_connector.restore(self.best_model_path)
+                trainer._checkpoint_connector.restore(self.best_model_path)  # noqa: F811
 
         if self.save_mridc_on_train_end:
             pl_module.save_to(save_path=os.path.join(self.dirpath, self.prefix + self.postfix))
@@ -1073,7 +1073,9 @@ def configure_checkpointing(trainer: Trainer, log_dir: Path, name: str, resume: 
             )
 
     checkpoint_callback = MRIDCModelCheckpoint(n_resume=resume, **params)
-    checkpoint_callback.last_model_path = trainer._checkpoint_connector.resume_from_checkpoint_fit_path or ""
+    checkpoint_callback.last_model_path = (
+        trainer._checkpoint_connector.resume_from_checkpoint_fit_path or ""  # noqa: F811
+    )
     if "mp_rank" in checkpoint_callback.last_model_path or "tp_rank" in checkpoint_callback.last_model_path:
         checkpoint_callback.last_model_path = mridc.utils.model_utils.uninject_model_parallel_rank(  # type: ignore
             checkpoint_callback.last_model_path
@@ -1104,7 +1106,7 @@ class StatelessTimer(Timer):
     """Extension of PTL timers to be per run."""
 
     @staticmethod
-    def state_dict() -> Dict[str, Any]:  # type: ignore
+    def state_dict() -> Dict[str, Any]:  # noqa: F811
         """Saves the state of the timer."""
         return {}
 
@@ -1114,7 +1116,7 @@ class StatelessTimer(Timer):
 
 def configure_no_restart_validation_training_loop(trainer: pytorch_lightning.Trainer) -> None:
     """Configure the training loop to skip validation when resuming from a checkpoint."""
-    if type(trainer.fit_loop.epoch_loop) != TrainingEpochLoop:
+    if type(trainer.fit_loop.epoch_loop) != TrainingEpochLoop:  # noqa: F811
         warnings.warn("Detected custom epoch loop. Skipping no validation on restart support.", UserWarning)
         return
     loop = SkipResumeTrainingValidationLoop(trainer.min_steps, trainer.max_steps)

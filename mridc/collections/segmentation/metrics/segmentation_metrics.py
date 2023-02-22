@@ -52,7 +52,7 @@ def binary_cross_entropy_with_logits_metric(x: torch.Tensor, y: torch.Tensor, re
     return torch.nn.functional.binary_cross_entropy_with_logits(x.float(), y.float(), reduction=reduction).item()
 
 
-def dice_metric(
+def dice_metric(  # noqa: C901
     x: torch.Tensor,
     y: torch.Tensor,
     include_background: bool = True,
@@ -137,7 +137,7 @@ def dice_metric(
     return dice_score.item()
 
 
-def f1_per_class_metric(
+def f1_per_class_metric(  # noqa: C901
     x: torch.Tensor,
     y: torch.Tensor,
     beta: float = 1e-5,
@@ -354,14 +354,14 @@ def iou_metric(
     y_y_o = torch.sum(y, dim=reduce_axis)
     union = y_o + y_y_o - intersection
 
-    max = 1.0 if not ignore_empty else float("nan")
-    iou_score = torch.where(union > 0, (intersection) / union, torch.tensor(max, device=y_o.device))
+    _max = 1.0 if not ignore_empty else float("nan")
+    iou_score = torch.where(union > 0, (intersection) / union, torch.tensor(_max, device=y_o.device))
     iou_score, _ = do_metric_reduction(iou_score, reduction=reduction)  # type: ignore
 
     return iou_score.item()
 
 
-def precision_metric(
+def precision_metric(  # noqa: C901
     x: torch.Tensor,
     y: torch.Tensor,
     include_background: bool = True,
@@ -440,7 +440,7 @@ def precision_metric(
     return torch.mean(torch.tensor(pr)).item()
 
 
-def recall_metric(
+def recall_metric(  # noqa: C901
     x: torch.Tensor,
     y: torch.Tensor,
     include_background: bool = True,
@@ -547,8 +547,8 @@ def asd(x, y, voxelspacing=None, connectivity=1):
     >>> asd(datax, datay)
     0.5010349308997433
     """
-    sd1 = np.mean(surface_distances(y, x, voxelspacing, connectivity))
-    sd2 = np.mean(surface_distances(x, y, voxelspacing, connectivity))
+    sd1 = np.mean(surface_distances(y, x, voxelspacing, connectivity))  # noqa: F821
+    sd2 = np.mean(surface_distances(x, y, voxelspacing, connectivity))  # noqa: F821
     return (sd1 + sd2) / 2.0
 
 
@@ -592,7 +592,7 @@ def surface_distances(x, y, voxelspacing=None, connectivity=1):
     y = np.atleast_1d(y.numpy().astype(np.bool))
 
     if voxelspacing is not None:
-        voxelspacing = _ni_support._normalize_sequence(voxelspacing, y.ndim)
+        voxelspacing = _ni_support._normalize_sequence(voxelspacing, y.ndim)  # noqa: R0913
         voxelspacing = np.asarray(voxelspacing, dtype=np.float64)
         if not voxelspacing.flags.contiguous:
             voxelspacing = voxelspacing.copy()
@@ -606,7 +606,7 @@ def surface_distances(x, y, voxelspacing=None, connectivity=1):
     if 0 == np.count_nonzero(y):
         raise RuntimeError("The second supplied array does not contain any binary object.")
 
-    # extract only 1-pixel border line of objects
+    # extract only 1-pixel borderline of objects
     x_border = x ^ binary_erosion(x, structure=footprint, iterations=1)
     y_border = y ^ binary_erosion(y, structure=footprint, iterations=1)
 
@@ -714,7 +714,7 @@ class SegmentationMetrics:
         for metric, func in self.metric_funcs.items():
             score = func(x, y)
             if isinstance(score, list):
-                for i in range(len(score)):
+                for i in enumerate(score):
                     if metric == f"F1_{i}":
                         self.metrics_scores[metric].push(score[i])
             else:
@@ -736,7 +736,7 @@ class SegmentationMetrics:
 
         res = " ".join(f"{name} = {means[name]:.4g} +/- {2 * stddevs[name]:.4g}" for name in metric_names) + "\n"
 
-        with open(f"{self.output_path}metrics.txt", "a") as output:
+        with open(f"{self.output_path}metrics.txt", "a") as output:  # noqa: WPS515
             output.write(f"{self.method}: {res}")
 
         return res

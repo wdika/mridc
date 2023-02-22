@@ -4,7 +4,7 @@ __author__ = "Dimitrios Karkalousos"
 import torch
 from torch import nn
 
-import mridc.collections.reconstruction.nn.unet_base.unet_block as unet_block
+from mridc.collections.reconstruction.nn.unet_base import unet_block
 
 
 class AttentionGate(nn.Module):
@@ -90,7 +90,7 @@ class AttentionUnet(nn.Module):
         Convolutional block to use.
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         in_chans: int,
         out_chans: int,

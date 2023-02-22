@@ -18,11 +18,11 @@ class AxisKindAbstract(Enum):
 
 
 class AxisKind(AxisKindAbstract):
-    """This Enum represents what does varying axis dimension mean. For example, does this dimension correspond to width, \
-     batch, time, etc. The "Dimension" and "Channel" kinds are the same and used to represent a general axis. "Any" \
-     axis will accept any axis kind fed to it."""
+    """This Enum represents what does varying axis dimension mean. For example, does this dimension correspond to
+    width, batch, time, etc. The "Dimension" and "Channel" kinds are the same and used to represent a general axis.
+    "Any" axis will accept any axis kind fed to it."""
 
-    # TODO (wdika): change names of the enums
+    # TODO: change names of the enums
     Batch = 0
     Time = 1
     Dimension = 2
@@ -44,7 +44,7 @@ class AxisKind(AxisKindAbstract):
 
     def t_with_string(self, text):
         """It checks if text is 't_<any string>'"""
-        return text.startswith("t_") and text.endswith("_") and text[2:-1] == self.__str__()
+        return text.startswith("t_") and text.endswith("_") and text[2:-1] == self.__str__()  # noqa
 
     @staticmethod
     def from_str(label):

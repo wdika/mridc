@@ -75,12 +75,6 @@ def main(project_dir):
                     circular_imports[module] = []
                 circular_imports[module].append(file)
 
-    # create __init__.py file with all imports from the files to abstract a general importer module
-    for module, files in circular_imports.items():
-        with open(os.path.join(project_dir, module, "__init__.py"), "w") as f:
-            for file in files:
-                f.write(f"from .{os.path.basename(file).split('.')[0]} import *\n")
-
     # dump to json
     # import json
     # with open("circular_imports.json", "w") as f:

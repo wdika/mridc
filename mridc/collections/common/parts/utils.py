@@ -484,7 +484,7 @@ def coil_combination_method(
 
 
 def save_predictions(
-    predictions: Dict[str, np.ndarray], out_dir: Path, key: str = "reconstructions", format: str = "h5"
+    predictions: Dict[str, np.ndarray], out_dir: Path, key: str = "reconstructions", format: str = "h5"  # noqa: E501
 ) -> None:
     """
     Save predictions to selected format.
@@ -520,7 +520,7 @@ def save_predictions(
             hf.create_dataset(key, data=preds)
 
 
-def apply_mask(
+def apply_mask(  # noqa: C901
     x: torch.Tensor,
     mask_func: Callable,
     seed: Optional[Union[int, Tuple[int, ...]]] = None,
@@ -939,5 +939,4 @@ def add_coil_dim_if_singlecoil(x: torch.tensor, dim: int = 0) -> torch.tensor:
     """
     if len(x.shape) >= 4:
         return x
-    else:
-        return torch.unsqueeze(x, dim=dim)
+    return torch.unsqueeze(x, dim=dim)

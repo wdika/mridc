@@ -8,8 +8,8 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
 import mridc.collections.segmentation.nn.base as base_segmentation_models
-import mridc.collections.segmentation.nn.lambda_unet_base.lambda_unet_block as lambda_unet_block
 import mridc.core.classes.common as common_classes
+from mridc.collections.segmentation.nn.lambda_unet_base import lambda_unet_block
 
 __all__ = ["SegmentationLambdaUNet"]
 
@@ -43,13 +43,13 @@ class SegmentationLambdaUNet(base_segmentation_models.BaseMRISegmentationModel, 
         )
 
     @common_classes.typecheck()  # type: ignore
-    def forward(
+    def forward(  # noqa: R0913
         self,
-        y: torch.Tensor,
-        sensitivity_maps: torch.Tensor,
-        mask: torch.Tensor,
+        y: torch.Tensor,  # noqa: R0913
+        sensitivity_maps: torch.Tensor,  # noqa: R0913
+        mask: torch.Tensor,  # noqa: R0913
         init_reconstruction_pred: torch.Tensor,
-        target_reconstruction: torch.Tensor,
+        target_reconstruction: torch.Tensor,  # noqa: R0913
     ) -> torch.Tensor:
         """
         Forward pass of the network.
@@ -90,7 +90,7 @@ class SegmentationLambdaUNet(base_segmentation_models.BaseMRISegmentationModel, 
                     raise ValueError("Magnitude input is not supported for 2-channel input.")
                 init_reconstruction_pred = init_reconstruction_pred.permute(0, 3, 1, 2)  # type: ignore
             else:
-                raise ValueError("The input channels must be either 1 or 2. Found: {}".format(self.input_channels))
+                raise ValueError(f"The input channels must be either 1 or 2. Found: {self.input_channels}")
         else:
             if init_reconstruction_pred.dim() == 3:
                 init_reconstruction_pred = init_reconstruction_pred.unsqueeze(1)

@@ -6,7 +6,7 @@ __author__ = "Dimitrios Karkalousos"
 from typing import Sequence, Union
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from mridc.collections.segmentation.nn.vit_base.patchembedding import PatchEmbeddingBlock
 from mridc.collections.segmentation.nn.vit_base.transformer_block import TransformerBlock
@@ -60,7 +60,7 @@ class ViT(nn.Module):
         See: https://github.com/Project-MONAI/MONAI/blob/dev/monai/networks/nets/vit.py
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         in_channels: int,
         img_size: Union[Sequence[int], int],

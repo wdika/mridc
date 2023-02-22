@@ -5,7 +5,7 @@ import torch
 from einops import rearrange
 from torch import einsum, nn
 
-import mridc.collections.reconstruction.nn.unet_base.unet_block as unet_block
+from mridc.collections.reconstruction.nn.unet_base import unet_block
 
 
 class LambdaLayer(nn.Module):
@@ -37,7 +37,7 @@ class LambdaLayer(nn.Module):
         Number of slices. Default is ``1``.
     """
 
-    def __init__(
+    def __init__(  # noqa: R0913
         self,
         in_channels: int,
         out_channels: int,
@@ -98,9 +98,9 @@ class LambdaLayer(nn.Module):
                 padding=(0, temporal_kernel // 2),
             )
 
-    def forward(self, input: torch.Tensor) -> torch.Tensor:
+    def forward(self, input: torch.Tensor) -> torch.Tensor:  # noqa: D102
         """Forward pass of the Lambda Layer."""
-        batch, channel, height, width = (*input.shape,)  # type: ignore
+        batch, channel, height, width = (*input.shape,)  # type: ignore  # noqa: F841
 
         q = self.to_q(input)
         k = self.to_k(input)
@@ -112,11 +112,11 @@ class LambdaLayer(nn.Module):
 
         k = k.softmax(dim=-1)
 
-        λc = einsum("b u k m, b u v m -> b k v", k, v)
+        λc = einsum("b u k m, b u v m -> b k v", k, v)  # noqa: E741
         Yc = einsum("b h k n, b k v -> b h v n", q, λc)
 
         v_p = rearrange(v, "b u v (hh ww) -> b u v hh ww", hh=height, ww=width)  # type: ignore
-        λp = self.pos_conv(v_p)
+        λp = self.pos_conv(v_p)  # noqa: E741
         Yp = einsum("b h k n, b k v n -> b h v n", q, λp.flatten(3))
 
         if self.temporal_kernel >= 3:
@@ -160,7 +160,7 @@ class LambdaBlock(nn.Module):
         Number of slices. Default is ``1``.
     """
 
-    def __init__(
+    def __init__(  # noqa: D107
         self,
         in_chans: int,
         out_chans: int,
@@ -244,7 +244,7 @@ class LambdaUNet(unet_block.Unet):
         Number of slices. Default is ``1``.
     """
 
-    def __init__(
+    def __init__(  # noqa: D107
         self,
         in_chans: int,
         out_chans: int,

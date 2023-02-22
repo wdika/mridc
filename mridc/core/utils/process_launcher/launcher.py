@@ -28,7 +28,7 @@ from mridc.utils import logging
 
 
 # monkey-patch hydra func
-def is_in_toplevel_plugins_module(*args, **kwargs) -> bool:
+def is_in_toplevel_plugins_module(*args, **kwargs) -> bool:  # noqa: F811
     return True
 
 
@@ -43,7 +43,7 @@ class ProcessLauncherConfig:
     jobs_per_gpu: int = 1
 
 
-def execute_job(
+def execute_job(  # noqa: C901
     idx: int,
     overrides: Sequence[str],
     hydra_context: HydraContext,
@@ -77,11 +77,11 @@ def execute_job(
     # Update base config with overrides to create sweep config
     sweep_config = hydra_context.config_loader.load_sweep_config(config, list(overrides))
     with open_dict(sweep_config):
-        sweep_config.hydra.job.id = "{}_{}".format(sweep_config.hydra.job.name, idx)
+        sweep_config.hydra.job.id = f"{sweep_config.hydra.job.name}_{idx}"
         sweep_config.hydra.job.num = idx
     HydraConfig.instance().set_config(sweep_config)
 
-    # Setup a directory where the config will temporarily be stored.
+    # Set up a directory where the config will temporarily be stored.
     script_path = os.path.join(os.getcwd(), sys.argv[0])
     script_path = os.path.abspath(script_path)
 
@@ -136,7 +136,7 @@ def execute_job(
     # call proc.communicate(). It should not happen in general case as stderr is filled only in case retcode != 0
     # If it does happen though, implement the code here
     # https://stackoverflow.com/questions/39607172/python-subprocess-popen-poll-seems-to-hang-but-communicate-works
-    proc = subprocess.Popen(cmd, stderr=subprocess.PIPE)
+    proc = subprocess.Popen(cmd, stderr=subprocess.PIPE)  # noqa: S603
 
     # Setup data thread for stderr
     std_error_buffer: List = []
@@ -156,7 +156,7 @@ def execute_job(
     return proc, res, (std_error_buffer, drainerthread)
 
 
-def launch(
+def launch(  # noqa: C901
     launcher,
     job_overrides: Sequence[Sequence[str]],
     initial_job_idx: int,
@@ -184,18 +184,16 @@ def launch(
     sweep_dir = Path(str(launcher.config.hydra.sweep.dir))
     sweep_dir.mkdir(parents=True, exist_ok=True)
 
-    # Extraact the runner's config (it is actually a DictConfig, but type is used for autocomplete)
+    # Extract the runner's config (it is actually a DictConfig, but type is used for autocomplete)
     runner_cfg = launcher.runner  # type: ProcessLauncherConfig
 
     logging.info(
-        "ProcessLauncher({}) is launching {} jobs".format(
-            ",".join([f"{k}={v}" for k, v in runner_cfg.items()]),  # type: ignore
-            len(job_overrides),
-        )
+        f"ProcessLauncher({','.join([f'{k}={v}' for k, v in runner_cfg.items()])}) "  # type: ignore
+        f"is launching {len(job_overrides)} jobs."
     )
-    logging.info("Launching jobs, sweep output dir : {}".format(sweep_dir))
+    logging.info(f"Launching jobs, sweep output dir : {sweep_dir}")
     for idx, overrides in enumerate(job_overrides):
-        logging.info("\t#{} : {}".format(idx, " ".join(filter_overrides(overrides))))
+        logging.info(f"\t#{idx} : {' '.join(filter_overrides(overrides))}")
 
     # Needed by Hydra
     singleton_state = Singleton.get_state()
@@ -228,7 +226,7 @@ def launch(
     std_error_threads: threading.Thread = []  # type: ignore
 
     # Run over all job combinations
-    while job_idx < num_overrides:
+    while job_idx < num_overrides:  # noqa: C901
         # Fill up subprocess buffer while its size is smaller than multiplex batch size
         while len(subprocess_list) < batch_size:
             # If we run out of jobs, stop trying to submit more jobs
@@ -296,7 +294,7 @@ def launch(
             # Process all the subprocess results
             for proc_idx, (proc, res) in enumerate(zip(subprocess_list, results)):
                 # Wait until completion of process
-                output, error = proc.communicate()
+                _ = proc.communicate()
 
                 # 0 is for successful run
                 if proc.returncode == 0:

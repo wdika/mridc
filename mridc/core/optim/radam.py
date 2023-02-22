@@ -12,7 +12,7 @@ from torch.optim.optimizer import Optimizer
 class RAdam(Optimizer):
     """RAdam optimizer"""
 
-    def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=0):
+    def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=0):  # noqa: D107
         """
         Parameters
         ----------
@@ -27,11 +27,11 @@ class RAdam(Optimizer):
         weight_decay: float, optional
             weight decay (L2 penalty) (default: 0)
         """
-        defaults = dict(lr=lr, betas=betas, eps=eps, weight_decay=weight_decay)
+        defaults = {"lr": lr, "betas": betas, "eps": eps, "weight_decay": weight_decay}
         self.buffer = [[None, None, None] for _ in range(10)]
         super().__init__(params, defaults)
 
-    def step(self, closure=None):
+    def step(self, closure=None):  # noqa: D102
         """Step through the optimizer"""
         loss = None
         if closure is not None:

@@ -9,8 +9,8 @@ from typing import Any, Dict, Optional, Union
 
 import hydra
 import torch
-import torch.optim as optim
 from omegaconf import DictConfig, OmegaConf
+from torch import optim
 from torch.optim import adadelta, adagrad, adamax, rmsprop, rprop
 from torch.optim.optimizer import Optimizer
 

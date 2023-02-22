@@ -9,9 +9,8 @@ from typing import Sequence, Type, Union
 import einops
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn import LayerNorm
+from torch import nn
 
 from mridc.collections.segmentation.nn.vit_base.utils import trunc_normal_
 
@@ -48,11 +47,11 @@ class PatchEmbeddingBlock(nn.Module):
         Number of spatial dimensions. Default is ``3``.
 
     .. note::
-        This is a wrapper for monai implementation of PatchEmbeddingBlock.
-        See: https://github.com/Project-MONAI/MONAI/blob/c38d503a587f1779914bd071a1b2d66a6d9080c2/monai/networks/blocks/patchembedding.py#L28
+        This is a wrapper for monai implementation of PatchEmbeddingBlock. See: https://github.com/Project-MONAI/MONAI/
+        blob/c38d503a587f1779914bd071a1b2d66a6d9080c2/monai/networks/blocks/patchembedding.py#L28
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         in_channels: int,
         img_size: Union[Sequence[int], int],
@@ -159,28 +158,28 @@ class PatchEmbed(nn.Module):
         Dimension of input channels. Default is ``1``.
     embed_dim : int
         Dimension of embedding. Default is ``48``.
-    norm_layer : Type[LayerNorm]
+    norm_layer : Type[nn.LayerNorm]
         Normalization layer. Default is ``nn.InstanceNorm2d``.
     spatial_dims : int, optional
         Number of spatial dimensions. Default is ``3``.
 
     .. note::
-        This is a wrapper for monai implementation of PatchEmbeddingBlock.
-        See: https://github.com/Project-MONAI/MONAI/blob/c38d503a587f1779914bd071a1b2d66a6d9080c2/monai/networks/blocks/patchembedding.py#L28
+        This is a wrapper for monai implementation of PatchEmbeddingBlock. See: https://github.com/Project-MONAI/MONAI/
+        blob/c38d503a587f1779914bd071a1b2d66a6d9080c2/monai/networks/blocks/patchembedding.py#L28
     """
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         patch_size: Union[Sequence[int], int] = 2,
         in_chans: int = 1,
         embed_dim: int = 48,
-        norm_layer: Type[LayerNorm] = nn.InstanceNorm2d,
+        norm_layer: Type[nn.LayerNorm] = nn.InstanceNorm2d,  # noqa: B008
         spatial_dims: int = 3,
     ):
         super().__init__()
 
-        if not (spatial_dims == 2 or spatial_dims == 3):
-            raise ValueError("spatial dimension should be 2 or 3.")
+        if spatial_dims not in (2, 3):
+            raise ValueError("Spatial dimension should be 2 or 3.")
 
         patch_size = (patch_size,) * spatial_dims  # type: ignore
         self.patch_size = patch_size

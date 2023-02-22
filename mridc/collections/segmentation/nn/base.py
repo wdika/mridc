@@ -14,12 +14,12 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch.utils.data import DataLoader
 
-import mridc.collections.common.data.subsample as subsample
-import mridc.collections.common.parts.utils as utils
-import mridc.collections.segmentation.data.mri_segmentation_loader as mri_segmentation_loader
 import mridc.collections.segmentation.losses as segmentation_losses
-import mridc.collections.segmentation.parts.transforms as transforms
+from mridc.collections.common.data import subsample
 from mridc.collections.common.nn.base import BaseMRIModel, DistributedMetricSum
+from mridc.collections.common.parts import utils
+from mridc.collections.segmentation.data import mri_segmentation_loader
+from mridc.collections.segmentation.parts import transforms
 
 __all__ = ["BaseMRISegmentationModel"]
 
@@ -47,9 +47,7 @@ class BaseMRISegmentationModel(BaseMRIModel, ABC):  # type: ignore
         if self.input_channels == 0:
             raise ValueError("Segmentation module input channels cannot be 0.")
         if self.input_channels > 2:
-            raise ValueError(
-                "Segmentation module input channels must be either 1 or 2. Found: {}".format(self.input_channels)
-            )
+            raise ValueError(f"Segmentation module input channels must be either 1 or 2. Found: {self.input_channels}")
 
         self.magnitude_input = cfg_dict.get("magnitude_input", True)
         self.normalize_segmentation_output = cfg_dict.get("normalize_segmentation_output", True)
@@ -155,7 +153,7 @@ class BaseMRISegmentationModel(BaseMRIModel, ABC):  # type: ignore
                 * self.cross_entropy_loss_weighting_factor
             )
         if self.segmentation_loss_fn["dice"] is not None:
-            _, loss_dict["dice_loss"] = self.segmentation_loss_fn["dice"](target, prediction)
+            _, loss_dict["dice_loss"] = self.segmentation_loss_fn["dice"](target, prediction)  # noqa: F841
             loss_dict["dice_loss"] = loss_dict["dice_loss"] * self.dice_loss_weighting_factor
         loss_dict["segmentation_loss"] = loss_dict["cross_entropy_loss"] + loss_dict["dice_loss"]
         return loss_dict
@@ -199,7 +197,7 @@ class BaseMRISegmentationModel(BaseMRIModel, ABC):  # type: ignore
             r = 0
         return y, mask, init_pred, r
 
-    def training_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
+    def training_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:  # noqa: C901
         """
         Performs a training step.
 
@@ -236,15 +234,15 @@ class BaseMRISegmentationModel(BaseMRIModel, ABC):  # type: ignore
             Dictionary of loss and log.
         """
         (
-            kspace,
+            kspace,  # noqa: F841
             y,
             sensitivity_maps,
             mask,
             init_reconstruction_pred,
             target_reconstruction,
             target_segmentation,
-            fname,
-            slice_idx,
+            fname,  # noqa: F841
+            slice_idx,  # noqa: F841
             acc,
         ) = batch
 
@@ -269,7 +267,7 @@ class BaseMRISegmentationModel(BaseMRIModel, ABC):  # type: ignore
         }
         return {"loss": train_loss, "log": tensorboard_logs}
 
-    def validation_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict:
+    def validation_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict:  # noqa: C901
         """
         Performs a validation step.
 
@@ -306,7 +304,7 @@ class BaseMRISegmentationModel(BaseMRIModel, ABC):  # type: ignore
             Dictionary of loss and log.
         """
         (
-            kspace,
+            kspace,  # noqa: F841
             y,
             sensitivity_maps,
             mask,
@@ -315,10 +313,10 @@ class BaseMRISegmentationModel(BaseMRIModel, ABC):  # type: ignore
             target_segmentation,
             fname,
             slice_idx,
-            acc,
+            acc,  # noqa: F841
         ) = batch
 
-        y, mask, init_reconstruction_pred, r = self.process_inputs(y, mask, init_reconstruction_pred)
+        y, mask, init_reconstruction_pred, r = self.process_inputs(y, mask, init_reconstruction_pred)  # noqa: F841
 
         pred_segmentation = self.forward(y, sensitivity_maps, mask, init_reconstruction_pred, target_reconstruction)
 
@@ -369,7 +367,7 @@ class BaseMRISegmentationModel(BaseMRIModel, ABC):  # type: ignore
                     torch.abs(target_image_segmentation_class - output_image_segmentation_class),
                 )
 
-        self.cross_entropy_vals[fname][slice_idx] = self.cross_entropy_metric.to(self.device)(
+        self.cross_entropy_vals[fname][slice_idx] = self.cross_entropy_metric.to(self.device)(  # noqa: F841
             target_segmentation.argmax(1), pred_segmentation  # type: ignore
         )
         dice_score, _ = self.dice_coefficient_metric(target_segmentation, pred_segmentation)
@@ -377,7 +375,9 @@ class BaseMRISegmentationModel(BaseMRIModel, ABC):  # type: ignore
 
         return {"val_loss": val_loss}
 
-    def test_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Tuple[str, int, torch.Tensor]:
+    def test_step(  # noqa: D102
+        self, batch: Dict[float, torch.Tensor], batch_idx: int
+    ) -> Tuple[str, int, torch.Tensor]:
         """
         Performs a test step.
 
@@ -414,7 +414,7 @@ class BaseMRISegmentationModel(BaseMRIModel, ABC):  # type: ignore
             Dictionary of loss and log.
         """
         (
-            kspace,
+            kspace,  # noqa: F841
             y,
             sensitivity_maps,
             mask,
@@ -423,10 +423,10 @@ class BaseMRISegmentationModel(BaseMRIModel, ABC):  # type: ignore
             target_segmentation,
             fname,
             slice_idx,
-            acc,
+            acc,  # noqa: F841
         ) = batch
 
-        y, mask, init_reconstruction_pred, r = self.process_inputs(y, mask, init_reconstruction_pred)
+        y, mask, init_reconstruction_pred, r = self.process_inputs(y, mask, init_reconstruction_pred)  # noqa: F841
 
         pred_segmentation = self.forward(y, sensitivity_maps, mask, init_reconstruction_pred, target_reconstruction)
 
@@ -477,7 +477,7 @@ class BaseMRISegmentationModel(BaseMRIModel, ABC):  # type: ignore
                     )
 
         if target_segmentation.dim() != 1:  # type: ignore
-            self.cross_entropy_vals[fname][slice_idx] = self.cross_entropy_metric.to(self.device)(
+            self.cross_entropy_vals[fname][slice_idx] = self.cross_entropy_metric.to(self.device)(  # noqa: F841
                 target_segmentation.argmax(1), pred_segmentation  # type: ignore
             )
             dice_score, _ = self.dice_coefficient_metric(target_segmentation, pred_segmentation)
@@ -527,10 +527,10 @@ class BaseMRISegmentationModel(BaseMRIModel, ABC):  # type: ignore
         cross_entropy_vals = defaultdict(dict)
         dice_vals = defaultdict(dict)
 
-        for k in self.cross_entropy_vals.keys():
-            cross_entropy_vals[k].update(self.cross_entropy_vals[k])
-        for k in self.dice_vals.keys():
-            dice_vals[k].update(self.dice_vals[k])
+        for k, v in self.cross_entropy_vals.items():
+            cross_entropy_vals[k].update(v)
+        for k, v in self.dice_vals.items():
+            dice_vals[k].update(v)
 
         metrics_segmentation = {"Cross_Entropy": 0, "DICE": 0}
 
@@ -553,7 +553,7 @@ class BaseMRISegmentationModel(BaseMRIModel, ABC):  # type: ignore
         for metric, value in metrics_segmentation.items():
             self.log(f"{metric}_Segmentation", value / tot_examples, sync_dist=True)
 
-    def test_epoch_end(self, outputs):
+    def test_epoch_end(self, outputs):  # noqa: D102
         """
         Called at the end of test epoch to aggregate outputs, log metrics and save predictions.
 
@@ -571,10 +571,10 @@ class BaseMRISegmentationModel(BaseMRIModel, ABC):  # type: ignore
         cross_entropy_vals = defaultdict(dict)
         dice_vals = defaultdict(dict)
 
-        for k in self.cross_entropy_vals.keys():
-            cross_entropy_vals[k].update(self.cross_entropy_vals[k])
-        for k in self.dice_vals.keys():
-            dice_vals[k].update(self.dice_vals[k])
+        for k, v in self.cross_entropy_vals.items():
+            cross_entropy_vals[k].update(v)
+        for k, v in self.dice_vals.items():
+            dice_vals[k].update(v)
 
         metrics_segmentation = {"Cross_Entropy": 0, "DICE": 0}
 

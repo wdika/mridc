@@ -76,4 +76,4 @@ def deprecated(wrapped=None, version=None, explanation=None):
         # Call the function.
         return _wrapped(*args, **kwargs)
 
-    return wrapper(wrapped)
+    return wrapper(wrapped)  # noqa: F811
