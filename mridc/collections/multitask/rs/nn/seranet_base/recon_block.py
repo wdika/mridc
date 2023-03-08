@@ -6,8 +6,7 @@ from typing import Optional, Tuple
 import torch
 from torch import nn
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
+from mridc.collections.common.parts import fft, utils
 
 
 class SERANetDC(nn.Module):
@@ -110,7 +109,7 @@ class SERANetReconstructionBlock(torch.nn.Module):
         The coil combination method. Default is ``"SENSE"``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         num_reconstruction_blocks: int,
         reconstruction_model: torch.nn.Module,
@@ -180,7 +179,7 @@ class SERANetReconstructionBlock(torch.nn.Module):
             pred_reconstruction.append(reconstruction)
         return pred_reconstruction
 
-    def step(
+    def step(  # noqa: W0221
         self,
         block: torch.nn.Module,
         pred: torch.Tensor,
@@ -267,7 +266,7 @@ class SERANetRecurrentBlock(torch.nn.Module):
         The dimension of the coil dimension. Default is ``1``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         num_iterations: int,
         attention_model: torch.nn.Module,
@@ -292,12 +291,12 @@ class SERANetRecurrentBlock(torch.nn.Module):
             spatial_dims=self.spatial_dims,  # type: ignore
         )
 
-    def forward(
+    def forward(  # noqa: W0221
         self,
         pred_reconstruction: torch.Tensor,
         pred_segmentation: torch.Tensor,
         ref_kspace: torch.Tensor,
-        sensitivity_maps: torch.Tensor,
+        sensitivity_maps: torch.Tensor,  # noqa: W0613
         mask: torch.Tensor,
     ) -> torch.Tensor:
         """

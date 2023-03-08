@@ -1,12 +1,11 @@
 # coding=utf-8
-__author__ = "Dimitrios Karkalousos, Chaoping Zhang"
+__author__ = "Dimitrios Karkalousos"
 
 from typing import List, Sequence
 
 import torch
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
+from mridc.collections.common.parts import fft, utils
 from mridc.collections.quantitative.nn.base import SignalForwardModel
 
 
@@ -54,7 +53,7 @@ def expand_op(x: torch.Tensor, sensitivity_maps: torch.Tensor) -> torch.Tensor:
     Examples
     --------
     >>> import torch
-    >>> from mridc.collections.quantitative.models.qrim.utils import expand_op
+    >>> from mridc.collections.quantitative.nn.qrim.utils import expand_op
     >>> data = torch.randn(2, 3, 4, 5)
     >>> coil_sensitivity_maps = torch.randn(2, 3, 4, 5, 2)
     >>> expand_op(data, coil_sensitivity_maps).shape
@@ -62,11 +61,11 @@ def expand_op(x: torch.Tensor, sensitivity_maps: torch.Tensor) -> torch.Tensor:
     """
     x = utils.complex_mul(x, sensitivity_maps)
     if torch.isnan(x).any():
-        x[x != x] = 0
+        x = torch.where(torch.isnan(x), torch.zeros_like(x), x)
     return x
 
 
-def analytical_log_likelihood_gradient(
+def analytical_log_likelihood_gradient(  # noqa: W0221
     linear_forward_model: SignalForwardModel,
     R2star_map: torch.Tensor,
     S0_map: torch.Tensor,

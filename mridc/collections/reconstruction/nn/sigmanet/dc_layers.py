@@ -8,20 +8,19 @@ from typing import Any, List, Optional, Tuple
 
 import torch
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
+from mridc.collections.common.parts import fft, utils
 
 
 class DataIDLayer(torch.nn.Module):
     """Placeholder for the data layer."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):  # noqa: W0613
         super().__init__()
 
 
 class DataGDLayer(torch.nn.Module):
     """
-    DataLayer computing the gradient on the L2 dataterm.
+    DataLayer computing the gradient on the L2 data term.
 
     Parameters
     ----------
@@ -37,7 +36,7 @@ class DataGDLayer(torch.nn.Module):
         If not None, the spatial dimensions of the FFT. Default is ``None``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         lambda_init: float,
         learnable: bool = True,
@@ -45,7 +44,7 @@ class DataGDLayer(torch.nn.Module):
         fft_normalization: str = "backward",
         spatial_dims: Optional[Tuple[int, int]] = None,
     ):
-        super(DataGDLayer, self).__init__()
+        super().__init__()
         self.lambda_init = lambda_init
         self.data_weight = torch.nn.Parameter(torch.Tensor(1))
         self.data_weight.data = torch.tensor(
@@ -111,7 +110,7 @@ class DataGDLayer(torch.nn.Module):
 
 class DataProxCGLayer(torch.nn.Module):
     """
-    Solving the prox wrt. dataterm using Conjugate Gradient as proposed in [1].
+    Solving the prox wrt. data term using Conjugate Gradient as proposed in [1].
 
     References
     ----------
@@ -136,17 +135,17 @@ class DataProxCGLayer(torch.nn.Module):
         Spatial dimensions of the FFT. Default is ``None``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         lambda_init: float,
         tol: float = 1e-6,
-        iter: int = 10,
+        iter: int = 10,  # noqa: W0622
         learnable: bool = True,
         fft_centered: bool = False,
         fft_normalization: str = "backward",
         spatial_dims: Optional[Tuple[int, int]] = None,
     ):
-        super(DataProxCGLayer, self).__init__()
+        super().__init__()
 
         self._lambda = torch.nn.Parameter(torch.Tensor(1))
         self._lambda.data = torch.tensor(lambda_init)
@@ -212,7 +211,7 @@ class ConjugateGradient(torch.autograd.Function):
         return torch.stack([torch.sum(re.view(nBatch, -1), dim=-1), torch.sum(im.view(nBatch, -1), dim=-1)], -1)
 
     @staticmethod
-    def solve(x0: torch.Tensor, M: torch.Tensor, tol: float, max_iter: int) -> torch.Tensor:
+    def solve(x0: torch.Tensor, M: torch.Tensor, tol: float, max_iter: int) -> torch.Tensor:  # noqa: W0221
         """Solve the linear system Mx=b using conjugate gradient."""
         nBatch = x0.shape[0]
         x = torch.zeros(x0.shape).to(x0.device)
@@ -242,7 +241,7 @@ class ConjugateGradient(torch.autograd.Function):
         return x
 
     @staticmethod
-    def forward(
+    def forward(  # noqa: W0221
         ctx: torch.autograd.function,
         z: torch.Tensor,
         _lambda: torch.Tensor,
@@ -326,7 +325,7 @@ class ConjugateGradient(torch.autograd.Function):
         return ConjugateGradient.solve(x0, M, ctx.tol, ctx.max_iter)  # type: ignore
 
     @staticmethod
-    def backward(
+    def backward(  # noqa: W0221
         ctx: torch.autograd.function, grad_x: torch.Tensor
     ) -> tuple[torch.Tensor, Any, None, None, None, None, None, None, None, None]:
         """
@@ -418,7 +417,7 @@ class DataVSLayer(torch.nn.Module):
         If not None, the spatial dimensions of the FFT. Default is ``None``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         alpha_init: float,
         beta_init: float,
@@ -427,7 +426,7 @@ class DataVSLayer(torch.nn.Module):
         fft_normalization: str = "backward",
         spatial_dims: Optional[Tuple[int, int]] = None,
     ):
-        super(DataVSLayer, self).__init__()
+        super().__init__()
         self.alpha = torch.nn.Parameter(torch.Tensor(1))
         self.alpha.data = torch.tensor(alpha_init, dtype=self.alpha.dtype)
 
@@ -520,7 +519,7 @@ class DCLayer(torch.nn.Module):
         If not None, the spatial dimensions of the FFT. Default is ``None``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         lambda_init: float,
         learnable: bool = True,
@@ -528,7 +527,7 @@ class DCLayer(torch.nn.Module):
         fft_normalization: str = "backward",
         spatial_dims: Optional[Tuple[int, int]] = None,
     ):
-        super(DCLayer, self).__init__()
+        super().__init__()
         self.lambda_ = torch.nn.Parameter(torch.Tensor(1))
         self.lambda_.data = torch.tensor(lambda_init, dtype=self.lambda_.dtype)
 

@@ -10,11 +10,10 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.nn.base as base_models
-import mridc.collections.reconstruction.nn.rim.rim_block as rim_block
 import mridc.core.classes.common as common_classes
+from mridc.collections.common.parts import fft, utils
+from mridc.collections.reconstruction.nn.rim import rim_block
 
 __all__ = ["CIRIM"]
 
@@ -73,7 +72,7 @@ class CIRIM(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
         self.keep_prediction = cfg_dict.get("keep_prediction")
 
     @common_classes.typecheck()  # type: ignore
-    def forward(
+    def forward(  # noqa: W0221
         self,
         y: torch.Tensor,
         sensitivity_maps: torch.Tensor,
@@ -164,13 +163,17 @@ class CIRIM(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
                 prediction, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim
             )
         prediction = torch.view_as_complex(prediction)
+        if target.shape[-1] == 2:
+            target = torch.view_as_complex(target)
         _, prediction = utils.center_crop_to_smallest(target, prediction)
         return prediction
 
-    def process_reconstruction_loss(
+    def process_reconstruction_loss(  # noqa: W0221
         self,
         target: torch.Tensor,
         prediction: Union[list, torch.Tensor],
+        sensitivity_maps: torch.Tensor,
+        mask: torch.Tensor,
         loss_func: torch.nn.Module,
     ) -> torch.Tensor:
         """
@@ -182,6 +185,12 @@ class CIRIM(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
             Target data of shape [batch_size, n_x, n_y, 2].
         prediction : Union[list, torch.Tensor]
             Prediction(s) of shape [batch_size, n_x, n_y, 2].
+        sensitivity_maps : torch.Tensor
+            Sensitivity maps of shape [batch_size, n_coils, n_x, n_y, 2]. It will be used if self.ssdu is True, to
+            expand the target and prediction to multiple coils.
+        mask : torch.Tensor
+            Mask of shape [batch_size, n_x, n_y, 2]. It will be used if self.ssdu is True, to enforce data consistency
+            on the prediction.
         loss_func : torch.nn.Module
             Loss function. Must be one of {torch.nn.L1Loss(), torch.nn.MSELoss(),
             mridc.collections.reconstruction.losses.ssim.SSIMLoss()}. Default is ``torch.nn.L1Loss()``.
@@ -192,7 +201,14 @@ class CIRIM(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
             If self.accumulate_loss is True, returns an accumulative result of all intermediate losses.
             Otherwise, returns the loss of the last intermediate loss.
         """
-        target = torch.abs(target / torch.max(torch.abs(target)))
+        if not self.kspace_reconstruction_loss:
+            target = torch.abs(target / torch.max(torch.abs(target)))
+        else:
+            if target.shape[-1] != 2:
+                target = torch.view_as_real(target)
+            if self.ssdu:
+                target = utils.expand_op(target, sensitivity_maps, self.coil_dim)
+            target = fft.fft2(target, self.fft_centered, self.fft_normalization, self.spatial_dims)
 
         if "ssim" in str(loss_func).lower():
             max_value = np.array(torch.max(torch.abs(target)).item()).astype(np.float32)
@@ -238,7 +254,16 @@ class CIRIM(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
                 loss: torch.FloatTensor
                     Loss value.
                 """
-                y = torch.abs(y / torch.max(torch.abs(y)))
+                if not self.kspace_reconstruction_loss:
+                    y = torch.abs(y / torch.max(torch.abs(y)))
+                else:
+                    if y.shape[-1] != 2:
+                        y = torch.view_as_real(y)
+                    if self.ssdu:
+                        y = utils.expand_op(y, sensitivity_maps, self.coil_dim)
+                    y = fft.fft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims)
+                    if self.ssdu:
+                        y = y * mask
                 return loss_func(x, y)
 
         if self.accumulate_predictions:
@@ -253,4 +278,4 @@ class CIRIM(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
                 cascades_loss.append(sum(sum(_loss) / self.time_steps))
             yield sum(list(cascades_loss)) / len(self.cirim)
         else:
-            return compute_reconstruction_loss(target, prediction)
+            return compute_reconstruction_loss(target, prediction) * self.loss_regularization_factor

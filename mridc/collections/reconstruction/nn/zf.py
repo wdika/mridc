@@ -7,10 +7,9 @@ import torch
 from omegaconf import DictConfig
 from pytorch_lightning import Trainer
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.nn.base as base_models
 import mridc.core.classes.common as common_classes
+from mridc.collections.common.parts import fft, utils
 
 __all__ = ["ZF"]
 
@@ -30,13 +29,13 @@ class ZF(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
         super().__init__(cfg=cfg, trainer=trainer)
 
     @common_classes.typecheck()  # type: ignore
-    def forward(
+    def forward(  # noqa: W0221
         self,
         y: torch.Tensor,
         sensitivity_maps: torch.Tensor,
-        mask: torch.Tensor,
-        init_pred: torch.Tensor,
-        target: torch.Tensor,
+        mask: torch.Tensor,  # noqa: W0613
+        init_pred: torch.Tensor,  # noqa: W0613
+        target: torch.Tensor,  # noqa: W0613
     ) -> torch.Tensor:
         """
         Forward pass of the network.

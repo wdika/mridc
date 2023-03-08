@@ -9,11 +9,10 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.nn.base as base_models
-import mridc.collections.reconstruction.nn.recurrentvarnet.recurrentvarnet as recurrentvarnet
 import mridc.core.classes.common as common_classes
+from mridc.collections.common.parts import fft, utils
+from mridc.collections.reconstruction.nn.recurrentvarnet import recurrentvarnet
 
 __all__ = ["RecurrentVarNet"]
 
@@ -94,12 +93,12 @@ class RecurrentVarNet(base_models.BaseMRIReconstructionModel, ABC):  # type: ign
             self.block_list.apply(lambda module: utils.rnn_weights_init(module, std_init_range))
 
     @common_classes.typecheck()  # type: ignore
-    def forward(
+    def forward(  # noqa: W0221
         self,
         y: torch.Tensor,
         sensitivity_maps: torch.Tensor,
         mask: torch.Tensor,
-        init_pred: torch.Tensor,
+        init_pred: torch.Tensor,  # noqa: W0613
         target: torch.Tensor,
         **kwargs,
     ) -> torch.Tensor:
@@ -189,5 +188,7 @@ class RecurrentVarNet(base_models.BaseMRIReconstructionModel, ABC):  # type: ign
             prediction, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim
         )
         prediction = torch.view_as_complex(prediction)
+        if target.shape[-1] == 2:
+            target = torch.view_as_complex(target)
         _, prediction = utils.center_crop_to_smallest(target, prediction)
         return prediction

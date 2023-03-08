@@ -23,6 +23,7 @@ from mridc.collections.reconstruction.nn.jointicnet import JointICNet
 from mridc.collections.reconstruction.nn.kikinet import KIKINet
 from mridc.collections.reconstruction.nn.lpd import LPDNet
 from mridc.collections.reconstruction.nn.multidomainnet import MultiDomainNet
+from mridc.collections.reconstruction.nn.resnet import ResNet
 from mridc.collections.reconstruction.nn.rvn import RecurrentVarNet
 from mridc.collections.reconstruction.nn.unet import UNet
 from mridc.collections.reconstruction.nn.vn import VarNet
@@ -106,6 +107,8 @@ def main(cfg: DictConfig):  # noqa: D103
         model = qVarNet(cfg.model, trainer=trainer)
     elif model_name == "RECSEGNET":
         model = RecSegUNet(cfg.model, trainer=trainer)
+    elif model_name == "RESNET":
+        model = ResNet(cfg.model, trainer=trainer)
     elif model_name == "RVN":
         model = RecurrentVarNet(cfg.model, trainer=trainer)
     elif model_name == "SEGMENTATIONATTENTIONUNET":
@@ -138,8 +141,8 @@ def main(cfg: DictConfig):  # noqa: D103
         raise NotImplementedError(
             f"{model_name} is not implemented in MRIDC. You can use one of the following methods: "
             "CASCADENET, CIRIM, CRNNET, DUNET, E2EVN, IDSLR, JOINTICNET, MTLRS, KIKINET, LPDNET, MULTIDOMAINNET, "
-            "qCIRIM, qVN, RECSEGNET, RVN, SEGMENTATIONATTENTIONUNET, SEGMENTATIONLAMBDAUNET, SEGMENTATIONUNET, "
-            "SEGMENTATION3DUNET, SEGMENTATIONVNET, SEGNET, UNET, VSNET, XPDNET, or Zero-Filled. /n"
+            "qCIRIM, qVN, RECSEGNET, RESNET, RVN, SEGMENTATIONATTENTIONUNET, SEGMENTATIONLAMBDAUNET, "
+            "SEGMENTATIONUNET, SEGMENTATION3DUNET, SEGMENTATIONVNET, SEGNET, UNET, VSNET, XPDNET, or Zero-Filled. \n"
             "If you are interested in another model, please consider opening an issue on GitHub."
         )
 

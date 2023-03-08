@@ -1,5 +1,5 @@
 # coding=utf-8
-__author__ = "Dimitrios Karkalousos, Chaoping Zhang"
+__author__ = "Dimitrios Karkalousos"
 
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
@@ -9,11 +9,11 @@ from omegaconf import DictConfig
 from skimage.restoration import unwrap_phase
 from torch.nn import functional as F
 
-import mridc.collections.common.data.subsample as subsample
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.nn as reconstruction_nn
+from mridc.collections.common.data import subsample
+from mridc.collections.common.parts import fft, utils
 from mridc.collections.common.parts.transforms import (
+    SSDU,
     Composer,
     Cropper,
     GeometricDecompositionCoilCompression,
@@ -76,6 +76,25 @@ class qMRIDataTransforms:
         Whether to simulate a half scan. Default is ``0.0``.
     remask : bool, optional
         Use the same mask. Default is ``False``.
+    ssdu : bool, optional
+        Whether to apply Self-Supervised Data Undersampling (SSDU) masks. Default is ``False``.
+    ssdu_mask_type: str, optional
+        Mask type. It can be one of the following:
+        - "Gaussian": Gaussian sampling.
+        - "Uniform": Uniform sampling.
+        Default is "Gaussian".
+    ssdu_rho: float, optional
+        Split ratio for training and loss masks. Default is ``0.4``.
+    ssdu_acs_block_size: tuple, optional
+        Keeps a small acs region fully-sampled for training masks, if there is no acs region. The small acs block
+        should be set to zero. Default is ``(4, 4)``.
+    ssdu_gaussian_std_scaling_factor: float, optional
+        Scaling factor for standard deviation of the Gaussian noise. If Uniform is select this factor is ignored.
+        Default is ``4.0``.
+    ssdu_outer_kspace_fraction: float, optional
+        Fraction of the outer k-space to be kept/unmasked. Default is ``0.05``.
+    ssdu_export_and_reuse_masks: bool, optional
+        Whether to export and reuse the masks. Default is ``False``.
     crop_size : Optional[Tuple[int, int]], optional
         Center crop size. It applies cropping in image space. Default is ``None``.
     kspace_crop : bool, optional
@@ -88,6 +107,8 @@ class qMRIDataTransforms:
         Whether to normalize the inputs. Default is ``True``.
     normalization_type : str, optional
         Normalization type. Can be ``max`` or ``mean`` or ``minmax``. Default is ``max``.
+    kspace_normalization : bool, optional
+        Whether to normalize the k-space. Default is ``False``.
     fft_centered : bool, optional
         Whether to center the FFT. Default is ``False``.
     fft_normalization : str, optional
@@ -107,7 +128,7 @@ class qMRIDataTransforms:
         Data transformed for quantitative MRI.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         TEs: Optional[List[float]],
         precompute_quantitative_maps: bool = True,
@@ -129,17 +150,25 @@ class qMRIDataTransforms:
         mask_center_scale: Optional[float] = 0.02,
         half_scan_percentage: float = 0.0,
         remask: bool = False,
+        ssdu: bool = False,
+        ssdu_mask_type: str = "Gaussian",
+        ssdu_rho: float = 0.4,
+        ssdu_acs_block_size: Sequence[int] = (4, 4),
+        ssdu_gaussian_std_scaling_factor: float = 4.0,
+        ssdu_outer_kspace_fraction: float = 0.05,
+        ssdu_export_and_reuse_masks: bool = False,
         crop_size: Optional[Tuple[int, int]] = None,
         kspace_crop: bool = False,
         crop_before_masking: bool = True,
         kspace_zero_filling_size: Optional[Tuple] = None,
         normalize_inputs: bool = True,
         normalization_type: str = "max",
+        kspace_normalization: bool = False,
         fft_centered: bool = False,
         fft_normalization: str = "backward",
         spatial_dims: Sequence[int] = None,
         coil_dim: int = 0,
-        consecutive_slices: int = 1,
+        consecutive_slices: int = 1,  # noqa: W0613
         use_seed: bool = True,
     ):
         super().__init__()
@@ -213,9 +242,25 @@ class qMRIDataTransforms:
             remask=remask,
         )
 
+        self.ssdu = ssdu
+        self.ssdu_masking = (
+            SSDU(
+                mask_type=ssdu_mask_type,
+                rho=ssdu_rho,
+                acs_block_size=ssdu_acs_block_size,
+                gaussian_std_scaling_factor=ssdu_gaussian_std_scaling_factor,
+                outer_kspace_fraction=ssdu_outer_kspace_fraction,
+                export_and_reuse_masks=ssdu_export_and_reuse_masks,
+            )
+            if self.ssdu
+            else None
+        )
+
         self.cropping = (
             Cropper(
                 cropping_size=crop_size,  # type: ignore
+                fft_centered=self.fft_centered,  # type: ignore
+                fft_normalization=self.fft_normalization,  # type: ignore
                 spatial_dims=self.spatial_dims,  # type: ignore
             )
             if not utils.is_none(crop_size)
@@ -224,6 +269,7 @@ class qMRIDataTransforms:
 
         self.normalization = Normalizer(
             normalization_type=normalization_type,
+            kspace_normalization=kspace_normalization,
             fft_centered=self.fft_centered,
             fft_normalization=self.fft_normalization,
             spatial_dims=self.spatial_dims,  # type: ignore
@@ -258,7 +304,7 @@ class qMRIDataTransforms:
 
         self.use_seed = use_seed
 
-    def __call__(
+    def __call__(  # noqa: W0221
         self,
         kspace: np.ndarray,
         sensitivity_map: np.ndarray,
@@ -332,7 +378,7 @@ class qMRIDataTransforms:
                 B0_map_target,
                 phi_map_init,
                 phi_map_target,
-                predictions,
+                prediction,
             ) = self.__compute_quantitative_maps__(kspace, masked_kspace, sensitivity_map, mask_brain, mask_head)
         else:
             if qmaps[0][0].ndim != 0:
@@ -378,7 +424,7 @@ class qMRIDataTransforms:
             acc,
         )
 
-    def __compute_quantitative_maps__(
+    def __compute_quantitative_maps__(  # noqa: W0221
         self,
         kspace: torch.Tensor,
         masked_kspace: torch.Tensor,
@@ -496,13 +542,14 @@ class qMRIDataTransforms:
     def __repr__(self) -> str:
         return (
             f"Preprocessing transforms initialized for {self.__class__.__name__}: "
-            f"precompute_quantitative_maps={self.precompute_quantitative_maps}, "
-            f"prewhitening={self.prewhitening}, "
-            f"masking={self.masking}, "
-            f"kspace_zero_filling={self.kspace_zero_filling}, "
-            f"cropping={self.cropping}, "
-            f"normalization={self.normalization}, "
-            f"init_reconstructor={self.init_reconstructor}, "
+            f"precompute_quantitative_maps = {self.precompute_quantitative_maps}, "
+            f"prewhitening = {self.prewhitening}, "
+            f"masking = {self.masking}, "
+            f"SSDU masking = {self.ssdu_masking}, "
+            f"kspace zero-filling = {self.kspace_zero_filling}, "
+            f"cropping = {self.cropping}, "
+            f"normalization = {self.normalization}, "
+            f"initial reconstructor = {self.init_reconstructor}, "
         )
 
     def __str__(self) -> str:
@@ -562,6 +609,25 @@ class qMRIDataTransforms:
         kspace = self.normalization(kspace, apply_backward_transform=True)
         masked_kspace = self.normalization(masked_kspace, apply_backward_transform=True)
 
+        if self.ssdu:
+            if isinstance(mask, list):
+                kspaces = []
+                masked_kspaces = []
+                masks = []
+                for i in range(len(mask)):  # noqa: C0200
+                    train_mask, loss_mask = self.ssdu_masking(kspace, mask[i], fname)  # type: ignore  # noqa: E1102
+                    kspaces.append(kspace * loss_mask)
+                    masked_kspaces.append(masked_kspace[i] * train_mask)  # type: ignore
+                    masks.append([train_mask, loss_mask])
+                kspace = kspaces
+                masked_kspace = masked_kspaces
+                mask = masks
+            else:
+                train_mask, loss_mask = self.ssdu_masking(kspace, mask, fname)  # type: ignore  # noqa: E1102
+                kspace = kspace * loss_mask
+                masked_kspace = masked_kspace * train_mask
+                mask = [train_mask, loss_mask]
+
         return kspace, masked_kspace, mask, acc
 
     def __process_coil_sensitivities_map__(self, sensitivity_map: np.ndarray, kspace: torch.Tensor) -> torch.Tensor:
@@ -611,7 +677,7 @@ class qMRIDataTransforms:
         Union[List[torch.Tensor], torch.Tensor]
             The initialized prediction, either a list of coil-combined images or a single coil-combined image.
         """
-        if utils.is_none(prediction) or prediction.ndim < 2:  # type: ignore
+        if utils.is_none(prediction) or prediction.ndim < 2 or isinstance(kspace, list):  # type: ignore
             if isinstance(kspace, list):
                 prediction = [
                     self.crop_normalize(
@@ -627,6 +693,8 @@ class qMRIDataTransforms:
             if isinstance(prediction, np.ndarray):
                 prediction = utils.to_tensor(prediction)
             prediction = self.crop_normalize(prediction, apply_forward_transform=self.kspace_crop)
+            if prediction.shape[-1] != 2 and prediction.type == "torch.ComplexTensor":  # type: ignore
+                prediction = torch.view_as_real(prediction)
         return prediction
 
 
@@ -636,7 +704,7 @@ class GaussianSmoothing(torch.nn.Module):
     using a depthwise convolution.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         channels: int,
         kernel_size: Union[List[int], int],
@@ -669,7 +737,7 @@ class GaussianSmoothing(torch.nn.Module):
         spatial_dims : Sequence[int]
             Spatial dimensions to keep in the FFT.
         """
-        super(GaussianSmoothing, self).__init__()
+        super().__init__()
 
         self.shift = shift
         self.fft_centered = fft_centered
@@ -709,13 +777,13 @@ class GaussianSmoothing(torch.nn.Module):
         else:
             raise RuntimeError(f"Only 1, 2 and 3 dimensions are supported. Received {dim}.")
 
-    def forward(self, input):
+    def forward(self, data: torch.Tensor) -> torch.Tensor:
         """
         Apply gaussian filter to input.
 
         Parameters
         ----------
-        input : torch.Tensor
+        data : torch.Tensor
             Input to apply gaussian filter on.
 
         Returns
@@ -724,11 +792,11 @@ class GaussianSmoothing(torch.nn.Module):
             Filtered output.
         """
         if self.shift:
-            input = input.permute(0, 2, 3, 1)
-            input = fft.ifft2(
+            data = data.permute(0, 2, 3, 1)
+            data = fft.ifft2(
                 torch.fft.fftshift(
                     fft.fft2(
-                        torch.view_as_real(input[..., 0] + 1j * input[..., 1]),
+                        torch.view_as_real(data[..., 0] + 1j * data[..., 1]),
                         self.fft_centered,
                         self.fft_normalization,
                         self.spatial_dims,
@@ -739,7 +807,7 @@ class GaussianSmoothing(torch.nn.Module):
                 self.spatial_dims,
             ).permute(0, 3, 1, 2)
 
-        x = self.conv(input, weight=self.weight.to(input), groups=self.groups).to(input).detach()
+        x = self.conv(data, weight=self.weight.to(data), groups=self.groups).to(data).detach()
 
         if self.shift:
             x = x.permute(0, 2, 3, 1)
@@ -762,7 +830,7 @@ class GaussianSmoothing(torch.nn.Module):
 
 class LeastSquaresFitting:
     def __init__(self, device):
-        super(LeastSquaresFitting, self).__init__()
+        super().__init__()
         self.device = device
 
     @staticmethod
@@ -813,7 +881,7 @@ class LeastSquaresFitting:
         )
 
 
-def R2star_B0_S0_phi_mapping(
+def R2star_B0_S0_phi_mapping(  # noqa: W0221
     prediction: torch.Tensor,
     TEs: Union[Optional[List[float]], float],
     brain_mask: torch.Tensor,
@@ -933,12 +1001,12 @@ def R2star_mapping(
     return R2star_map
 
 
-def B0_phi_mapping(
+def B0_phi_mapping(  # noqa: W0221
     prediction: torch.Tensor,
     TEs: Union[Optional[List[float]], float],
     brain_mask: torch.Tensor,
     head_mask: torch.Tensor,
-    fully_sampled: bool = True,
+    fully_sampled: bool = True,  # noqa: W0613
     scaling_factor: float = 1e-3,
     shift: bool = False,
     fft_centered: bool = False,
@@ -1060,7 +1128,7 @@ def B0_phi_mapping(
     return B0_map.to(prediction), phi_map.to(prediction)
 
 
-def S0_mapping(
+def S0_mapping(  # noqa: W0221
     prediction: torch.Tensor,
     TEs: Union[Optional[List[float]], float],
     R2star_map: torch.Tensor,

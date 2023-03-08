@@ -5,8 +5,7 @@ from typing import Optional, Tuple
 
 import torch
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
+from mridc.collections.common.parts import fft, utils
 
 
 class DataConsistencyLayer(torch.nn.Module):
@@ -67,7 +66,7 @@ class VSNetBlock(torch.nn.Module):
         The dimension of the coil. Default is ``1``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         denoiser_block: torch.nn.ModuleList,
         data_consistency_block: torch.nn.ModuleList,

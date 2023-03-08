@@ -1,5 +1,5 @@
 # coding=utf-8
-__author__ = "Dimitrios Karkalousos, Chaoping Zhang"
+__author__ = "Dimitrios Karkalousos"
 
 import math
 from abc import ABC
@@ -10,14 +10,13 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
 import mridc.collections.quantitative.nn.base as base_quantitative_models
-import mridc.collections.quantitative.nn.qrim.qrim_block as qrim_block
 import mridc.collections.quantitative.nn.qrim.utils as qrim_utils
-import mridc.collections.quantitative.parts.transforms as transforms
-import mridc.collections.reconstruction.nn.rim.rim_block as rim_block
 import mridc.core.classes.common as common_classes
+from mridc.collections.common.parts import fft, utils
+from mridc.collections.quantitative.nn.qrim import qrim_block
+from mridc.collections.quantitative.parts import transforms
+from mridc.collections.reconstruction.nn.rim import rim_block
 
 __all__ = ["qCIRIM"]
 
@@ -133,7 +132,7 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):  # type
         self.preprocessor = qrim_utils.RescaleByMax
 
     @common_classes.typecheck()  # type: ignore
-    def forward(
+    def forward(  # noqa: W0221
         self,
         R2star_map_init: torch.Tensor,
         S0_map_init: torch.Tensor,
@@ -331,7 +330,7 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):  # type
         )
         return R2star_map_pred, S0_map_pred, B0_map_pred, phi_map_pred
 
-    def process_quantitative_loss(
+    def process_quantitative_loss(  # noqa: W0221
         self,
         target: torch.Tensor,
         prediction: Union[list, torch.Tensor],
@@ -433,14 +432,16 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):  # type
         else:
             return compute_quantitative_loss(target, prediction, mask_brain)
 
-    def process_reconstruction_loss(
+    def process_reconstruction_loss(  # noqa: W0221
         self,
         target: torch.Tensor,
         prediction: Union[list, torch.Tensor],
+        sensitivity_maps: torch.Tensor,
+        mask: torch.Tensor,
         loss_func: torch.nn.Module,
     ) -> torch.Tensor:
         """
-        Processes the reconstruction loss for the qRIM and qCIRIM models.
+        Processes the reconstruction loss.
 
         Parameters
         ----------
@@ -448,6 +449,12 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):  # type
             Target data of shape [batch_size, n_x, n_y, 2].
         prediction : Union[list, torch.Tensor]
             Prediction(s) of shape [batch_size, n_x, n_y, 2].
+        sensitivity_maps : torch.Tensor
+            Sensitivity maps of shape [batch_size, n_coils, n_x, n_y, 2]. It will be used if self.ssdu is True, to
+            expand the target and prediction to multiple coils.
+        mask : torch.Tensor
+            Mask of shape [batch_size, n_x, n_y, 2]. It will be used if self.ssdu is True, to enforce data consistency
+            on the prediction.
         loss_func : torch.nn.Module
             Loss function. Must be one of {torch.nn.L1Loss(), torch.nn.MSELoss(),
             mridc.collections.reconstruction.losses.ssim.SSIMLoss()}. Default is ``torch.nn.L1Loss()``.
@@ -458,7 +465,14 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):  # type
             If self.accumulate_loss is True, returns an accumulative result of all intermediate losses.
             Otherwise, returns the loss of the last intermediate loss.
         """
-        target = torch.abs(target / torch.max(torch.abs(target)))
+        if not self.kspace_reconstruction_loss:
+            target = torch.abs(target / torch.max(torch.abs(target)))
+        else:
+            if target.shape[-1] != 2:
+                target = torch.view_as_real(target)
+            if self.ssdu:
+                target = utils.expand_op(target, sensitivity_maps, self.coil_dim)
+            target = fft.fft2(target, self.fft_centered, self.fft_normalization, self.spatial_dims)
 
         if "ssim" in str(loss_func).lower():
             max_value = np.array(torch.max(torch.abs(target)).item()).astype(np.float32)
@@ -480,7 +494,11 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):  # type
                     Loss value.
                 """
                 y = torch.abs(y / torch.max(torch.abs(y)))
-                return loss_func(x, y, data_range=torch.tensor(max_value).unsqueeze(dim=0).to(x.device))
+                return loss_func(
+                    x.unsqueeze(dim=self.coil_dim),
+                    y.unsqueeze(dim=self.coil_dim),
+                    data_range=torch.tensor(max_value).unsqueeze(dim=0).to(x.device),
+                )
 
         else:
 
@@ -500,6 +518,16 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):  # type
                 loss: torch.FloatTensor
                     Loss value.
                 """
+                if not self.kspace_reconstruction_loss:
+                    y = torch.abs(y / torch.max(torch.abs(y)))
+                else:
+                    if y.shape[-1] != 2:
+                        y = torch.view_as_real(y)
+                    if self.ssdu:
+                        y = utils.expand_op(y, sensitivity_maps, self.coil_dim)
+                    y = fft.fft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims)
+                    if self.ssdu:
+                        y = y * mask
                 return loss_func(x, y)
 
         if self.reconstruction_module_accumulate_predictions:
@@ -519,4 +547,4 @@ class qCIRIM(base_quantitative_models.BaseqMRIReconstructionModel, ABC):  # type
                 echoes_loss.append(sum(list(cascades_loss)) / len(self.cirim))
             yield sum(echoes_loss) / len(prediction)
         else:
-            return compute_reconstruction_loss(target, prediction)
+            return compute_reconstruction_loss(target, prediction) * self.loss_regularization_factor

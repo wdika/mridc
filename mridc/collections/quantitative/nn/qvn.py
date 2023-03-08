@@ -1,5 +1,5 @@
 # coding=utf-8
-__author__ = "Dimitrios Karkalousos, Chaoping Zhang"
+__author__ = "Dimitrios Karkalousos"
 
 from abc import ABC
 from typing import Any, List, Union
@@ -9,14 +9,13 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch import Tensor
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
 import mridc.collections.quantitative.nn.base as base_quantitative_models
 import mridc.collections.quantitative.nn.qrim.utils as qrim_utils
-import mridc.collections.quantitative.nn.qvarnet.qvn_block as qvn_block
-import mridc.collections.quantitative.parts.transforms as transforms
-import mridc.collections.reconstruction.nn.unet_base.unet_block as unet_block
 import mridc.core.classes.common as common_classes
+from mridc.collections.common.parts import fft, utils
+from mridc.collections.quantitative.nn.qvarnet import qvn_block
+from mridc.collections.quantitative.parts import transforms
+from mridc.collections.reconstruction.nn.unet_base import unet_block
 
 __all__ = ["qVarNet"]
 
@@ -107,7 +106,7 @@ class qVarNet(base_quantitative_models.BaseqMRIReconstructionModel, ABC):  # typ
         self.preprocessor = qrim_utils.RescaleByMax
 
     @common_classes.typecheck()  # type: ignore
-    def forward(
+    def forward(  # noqa: W0221
         self,
         R2star_map_init: torch.Tensor,
         S0_map_init: torch.Tensor,

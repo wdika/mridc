@@ -4,8 +4,8 @@ __author__ = "Dimitrios Karkalousos"
 # Taken and adapted from: https://github.com/NKI-AI/direct/blob/main/direct/nn/didn/didn.py
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 
 class Subpixel(nn.Module):
@@ -32,7 +32,7 @@ class Subpixel(nn.Module):
         Padding size. Default is ``0``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         in_channels: int,
         out_channels: int,
@@ -267,7 +267,7 @@ class DIDN(nn.Module):
         Use skip connection. Default: False.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         in_channels: int,
         out_channels: int,

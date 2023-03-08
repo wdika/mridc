@@ -99,6 +99,7 @@ model:
     kspace_zero_filling_size: None
     normalize_inputs: true
     normalization_type: max
+    kspace_normalization: false
     fft_centered: false
     fft_normalization: backward
     spatial_dims:
@@ -158,6 +159,7 @@ model:
     kspace_zero_filling_size: None
     normalize_inputs: true
     normalization_type: max
+    kspace_normalization: false
     fft_centered: false
     fft_normalization: backward
     spatial_dims:

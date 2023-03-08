@@ -20,6 +20,7 @@ from mridc.utils.get_rank import is_global_rank_zero
 
 __author__ = "Dimitrios Karkalousos"
 
+
 # Taken and adapted from: https://github.com/NVIDIA/NeMo/blob/main/nemo/core/connectors/save_restore_connector.py
 
 

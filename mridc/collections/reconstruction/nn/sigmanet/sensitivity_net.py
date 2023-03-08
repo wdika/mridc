@@ -19,14 +19,14 @@ class ComplexInstanceNorm(torch.nn.Module):
     """Motivated by 'Deep Complex Networks' (https://arxiv.org/pdf/1705.09792.pdf)"""
 
     def __init__(self):
-        super(ComplexInstanceNorm, self).__init__()
+        super().__init__()
         self.mean = 0
         self.cov_xx_half = 1 / np.sqrt(2)
         self.cov_xy_half = 0
         self.cov_yx_half = 0
         self.cov_yy_half = 1 / np.sqrt(2)
 
-    def complex_instance_norm(self, x, eps=1e-5):
+    def complex_instance_norm(self, x):
         """Operates on images x of size [nBatch, nSmaps, nFE, nPE, 2]"""
         x_combined = torch.sum(x, dim=1, keepdim=True)
         mean = x_combined.mean(dim=(1, 2, 3), keepdim=True)
@@ -34,7 +34,7 @@ class ComplexInstanceNorm(torch.nn.Module):
         self.mean = mean
         self.complex_pseudocovariance(x_m)
 
-    def complex_pseudocovariance(self, data):
+    def complex_pseudocovariance(self, data):  # noqa: W0221
         """Data variable hast to be already mean-free! Operates on images x of size [nBatch, nSmaps, nFE, nPE, 2]"""
         if data.size(-1) != 2:
             raise AssertionError
@@ -46,7 +46,7 @@ class ComplexInstanceNorm(torch.nn.Module):
         # separate real/imaginary channel
         re, im = torch.unbind(data, dim=-1)
 
-        # dimensions is now length of original shape - 1 (because channels are seperated)
+        # dimensions is now length of original shape - 1 (because channels are separated)
         dim = list(range(1, len(shape) - 1))
 
         # compute covariance entries. cxy = cyx
@@ -55,7 +55,6 @@ class ComplexInstanceNorm(torch.nn.Module):
         cxy = (re * im).sum(dim=dim, keepdim=True) / (N - 1)
 
         # Eigenvalue decomposition C = V*S*inv(V)
-        # compute eigenvalues
         s1 = (cxx + cyy) / 2 - torch.sqrt((cxx + cyy) ** 2 / 4 - cxx * cyy + cxy**2)
         s2 = (cxx + cyy) / 2 + torch.sqrt((cxx + cyy) ** 2 / 4 - cxx * cyy + cxy**2)
 
@@ -86,11 +85,11 @@ class ComplexInstanceNorm(torch.nn.Module):
         self.cov_xy_half = v1x * v2x * (s2 - s1)
         self.cov_yx_half = v1y * v2y * (s1 - s2)
 
-    def forward(self, input):
+    def forward(self, input):  # noqa: W0622
         """Operates on images x of size [nBatch, nSmaps, nFE, nPE, 2]"""
         return self.normalize(input)
 
-    def set_normalization(self, input):
+    def set_normalization(self, input):  # noqa: W0622
         """Set the normalization parameters for a given input."""
         mean = torch.tensor([torch.mean(input).item()]).to(input)
         self.complex_pseudocovariance(input - mean)
@@ -130,7 +129,7 @@ class ComplexNormWrapper(torch.nn.Module):
         self.model = model
         self.complex_instance_norm = ComplexInstanceNorm()
 
-    def forward(self, input):
+    def forward(self, input):  # noqa: W0622
         # compute complex instance norm on sample of size [nBatch, nSmaps, nFE, nPE, 2]
         self.complex_instance_norm.set_normalization(input)
         output = self.complex_instance_norm.normalize(input)
@@ -153,7 +152,7 @@ class ComplexNormWrapper(torch.nn.Module):
 class SensitivityNetwork(torch.nn.Module):
     """Sensitivity network with data term based on forward and adjoint containing the sensitivity maps"""
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         num_iter,
         model,

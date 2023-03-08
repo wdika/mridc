@@ -4,8 +4,7 @@ __author__ = "Dimitrios Karkalousos"
 from typing import Any, List, Optional, Tuple
 
 import torch
-import torch.nn as nn
-from torch import Tensor
+from torch import Tensor, nn
 
 # Taken and adapted from: https://github.com/ndrplz/ConvLSTM_pytorch/blob/master/convlstm.py
 
@@ -30,7 +29,7 @@ class ConvLSTMCell(nn.Module):
     """
 
     def __init__(self, input_dim: int, hidden_dim: int, kernel_size: Tuple[int, int], bias: bool = True):
-        super(ConvLSTMCell, self).__init__()
+        super().__init__()
 
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
@@ -47,7 +46,9 @@ class ConvLSTMCell(nn.Module):
             bias=self.bias,
         )
 
-    def forward(self, input_tensor: torch.Tensor, cur_state: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(  # noqa: W0221
+        self, input_tensor: torch.Tensor, cur_state: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Forward pass of the ConvLSTM cell.
 
@@ -128,7 +129,7 @@ class ConvLSTM(nn.Module):
         Whether to return all layers or just the last layer. Default is ``False``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         input_dim: int,
         hidden_dim: int,
@@ -138,7 +139,7 @@ class ConvLSTM(nn.Module):
         bias: bool = True,
         return_all_layers: bool = False,
     ):
-        super(ConvLSTM, self).__init__()
+        super().__init__()
 
         kernel_size = (kernel_size, kernel_size)
 
@@ -204,9 +205,9 @@ class ConvLSTM(nn.Module):
         # Implement stateful ConvLSTM
         if hidden_state is not None:
             raise NotImplementedError()
-        else:
-            # Since the init is done in forward. Can send image size here
-            hidden_state = self._init_hidden(batch_size=b, image_size=(h, w))
+
+        # Since the init is done in forward. Can send image size here
+        hidden_state = self._init_hidden(batch_size=b, image_size=(h, w))
 
         layer_output_list = []
         last_state_list = []
@@ -243,7 +244,7 @@ class ConvLSTM(nn.Module):
     def _check_kernel_size_consistency(kernel_size):
         if not (
             isinstance(kernel_size, tuple)
-            or (isinstance(kernel_size, list) and all([isinstance(elem, tuple) for elem in kernel_size]))
+            or (isinstance(kernel_size, list) and all(isinstance(elem, tuple) for elem in kernel_size))
         ):
             raise ValueError("`kernel_size` must be tuple or list of tuples")
 

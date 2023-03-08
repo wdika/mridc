@@ -160,8 +160,12 @@ class BaseMRISegmentationModel(BaseMRIModel, ABC):  # type: ignore
 
     @staticmethod
     def process_inputs(
-        y: Union[list, torch.Tensor], mask: Union[list, torch.Tensor], init_pred: Union[list, torch.Tensor]
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, int]:
+        kspace: Union[list, torch.Tensor],
+        y: Union[list, torch.Tensor],
+        mask: Union[list, torch.Tensor],
+        init_pred: Union[list, torch.Tensor],
+        target: Union[list, torch.Tensor],
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, int]:
         """
         Processes lists of inputs to torch.Tensor. In the case where multiple accelerations are used, then the inputs
         are lists. This function converts the lists to torch.Tensor by randomly selecting one acceleration. If only one
@@ -169,22 +173,29 @@ class BaseMRISegmentationModel(BaseMRIModel, ABC):  # type: ignore
 
         Parameters
         ----------
+        kspace : Union[list, torch.Tensor]
+            Full k-space data of length n_accelerations or shape [batch_size, n_echoes, n_coils, n_x, n_y, 2].
         y : Union[list, torch.Tensor]
             Subsampled k-space data of length n_accelerations or shape [batch_size, n_echoes, n_coils, n_x, n_y, 2].
         mask : Union[list, torch.Tensor]
             Sampling mask of length n_accelerations or shape [batch_size, 1, n_x, n_y, 1].
         init_pred : Union[list, torch.Tensor]
             Initial prediction of length n_accelerations or shape [batch_size, n_echoes, n_coils, n_x, n_y, 2].
-
+        target : Union[list, torch.Tensor]
+            Target data of length n_accelerations or shape [batch_size, n_x, n_y, 2].
 
         Returns
         -------
+        kspace : torch.Tensor
+            Full k-space data of shape [batch_size, n_echoes, n_coils, n_x, n_y, 2].
         y : torch.Tensor
             Subsampled k-space data of shape [batch_size, n_echoes, n_coils, n_x, n_y, 2].
         mask : torch.Tensor
             Sampling mask of shape [batch_size, 1, n_x, n_y, 1].
         init_pred : torch.Tensor
             Initial prediction of shape [batch_size, n_echoes, n_coils, n_x, n_y, 2].
+        target : torch.Tensor
+            Target data of shape [batch_size, n_x, n_y, 2].
         r : int
             Random index used to select the acceleration.
         """
@@ -195,7 +206,10 @@ class BaseMRISegmentationModel(BaseMRIModel, ABC):  # type: ignore
             init_pred = init_pred[r]
         else:
             r = 0
-        return y, mask, init_pred, r
+        if isinstance(kspace, list):
+            kspace = kspace[r]
+            target = target[r]
+        return kspace, y, mask, init_pred, target, r
 
     def training_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:  # noqa: C901
         """
@@ -246,7 +260,9 @@ class BaseMRISegmentationModel(BaseMRIModel, ABC):  # type: ignore
             acc,
         ) = batch
 
-        y, mask, init_reconstruction_pred, r = self.process_inputs(y, mask, init_reconstruction_pred)
+        kspace, y, mask, init_reconstruction_pred, _, r = self.process_inputs(
+            kspace, y, mask, init_reconstruction_pred, target_reconstruction
+        )
 
         pred_segmentation = self.forward(y, sensitivity_maps, mask, init_reconstruction_pred, target_reconstruction)
 
@@ -316,7 +332,9 @@ class BaseMRISegmentationModel(BaseMRIModel, ABC):  # type: ignore
             acc,  # noqa: F841
         ) = batch
 
-        y, mask, init_reconstruction_pred, r = self.process_inputs(y, mask, init_reconstruction_pred)  # noqa: F841
+        kspace, y, mask, init_reconstruction_pred, target_reconstruction, _ = self.process_inputs(
+            kspace, y, mask, init_reconstruction_pred, target_reconstruction
+        )
 
         pred_segmentation = self.forward(y, sensitivity_maps, mask, init_reconstruction_pred, target_reconstruction)
 
@@ -426,7 +444,9 @@ class BaseMRISegmentationModel(BaseMRIModel, ABC):  # type: ignore
             acc,  # noqa: F841
         ) = batch
 
-        y, mask, init_reconstruction_pred, r = self.process_inputs(y, mask, init_reconstruction_pred)  # noqa: F841
+        kspace, y, mask, init_reconstruction_pred, target_reconstruction, _ = self.process_inputs(
+            kspace, y, mask, init_reconstruction_pred, target_reconstruction
+        )
 
         pred_segmentation = self.forward(y, sensitivity_maps, mask, init_reconstruction_pred, target_reconstruction)
 
@@ -691,12 +711,19 @@ class BaseMRISegmentationModel(BaseMRIModel, ABC):  # type: ignore
                 shift_mask=shift_mask,
                 mask_center_scale=mask_center_scale,
                 remask=cfg.get("remask", False),
+                ssdu=cfg.get("ssdu", False),
+                ssdu_mask_type=cfg.get("ssdu_mask_type", "Gaussian"),
+                ssdu_rho=cfg.get("ssdu_rho", 0.4),
+                ssdu_acs_block_size=cfg.get("ssdu_acs_block_size", (4, 4)),
+                ssdu_gaussian_std_scaling_factor=cfg.get("ssdu_gaussian_std_scaling_factor", 4.0),
+                ssdu_export_and_reuse_masks=cfg.get("ssdu_export_and_reuse_masks", False),
                 crop_size=cfg.get("crop_size", None),
                 kspace_crop=cfg.get("kspace_crop", False),
                 crop_before_masking=cfg.get("crop_before_masking", False),
                 kspace_zero_filling_size=cfg.get("kspace_zero_filling_size", None),
                 normalize_inputs=cfg.get("normalize_inputs", True),
                 normalization_type=cfg.get("normalization_type", "max"),
+                kspace_normalization=cfg.get("kspace_normalization", False),
                 fft_centered=cfg.get("fft_centered", False),
                 fft_normalization=cfg.get("fft_normalization", "backward"),
                 spatial_dims=cfg.get("spatial_dims", None),

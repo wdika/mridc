@@ -37,7 +37,7 @@ class ConvLSTMNormUnet(torch.nn.Module):
         Number of groups to use for group normalization. Default is ``2``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         chans: int,
         num_pools: int,

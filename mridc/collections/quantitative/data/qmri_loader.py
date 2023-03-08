@@ -1,5 +1,5 @@
 # coding=utf-8
-__author__ = "Dimitrios Karkalousos, Chaoping Zhang"
+__author__ = "Dimitrios Karkalousos"
 
 import os
 import re
@@ -9,8 +9,8 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 import h5py
 import numpy as np
 
-import mridc.collections.common.parts.utils as utils
 from mridc.collections.common.data.mri_loader import MRIDataset
+from mridc.collections.common.parts import utils
 
 
 class qMRIDataset(MRIDataset):
@@ -71,7 +71,7 @@ class qMRIDataset(MRIDataset):
         Extends :class:`mridc.collections.common.data.MRIDataset`.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         root: Union[str, Path, os.PathLike],
         coil_sensitivity_maps_root: Union[str, Path, os.PathLike] = None,
@@ -155,7 +155,7 @@ class qMRIDataset(MRIDataset):
                 qdata = [qdata[0] * count]
         return qdata
 
-    def __getitem__(self, i: int):
+    def __getitem__(self, i: int):  # noqa: W0221
         fname, dataslice, metadata = self.examples[i]
         with h5py.File(fname, "r") as hf:
             kspace = self.get_consecutive_slices(hf, "kspace", dataslice).astype(np.complex64)

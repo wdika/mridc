@@ -1,0 +1,109 @@
+pretrained: true
+checkpoint: ???
+mode: test
+
+model:
+  model_name: RESNET
+  unrolled_iterations: 3
+  residual_blocks: 5
+  channels: 64
+  regularization_factor: 1.0
+  penalization_weight: 1.0
+  conjugate_gradient_dc: false
+  conjugate_gradient_iterations: 1
+  dimensionality: 2
+  loss_fn: l1
+  kspace_reconstruction_loss: false
+  reconstruction_loss_regularization_factor: 1.0
+  coil_combination_method: SENSE
+  ssdu: false
+  fft_centered: false
+  fft_normalization: backward
+  spatial_dims:
+    - -2
+    - -1
+  coil_dim: 1
+  use_sens_net: false
+  consecutive_slices: 1
+  log_images: true
+
+  test_ds:
+    data_path: ???
+    coil_sensitivity_maps_path: None
+    mask_path: None
+    sample_rate: 1
+    volume_sample_rate: None
+    use_dataset_cache: false
+    dataset_cache_file: None
+    num_cols: None
+    consecutive_slices: 1
+    data_saved_per_slice: false
+    apply_prewhitening: false
+    apply_gcc: false
+    coil_combination_method: SENSE
+    dimensionality: 2
+    mask_args:
+      type: poisson2d
+      accelerations:
+        - 10
+      center_fractions:
+        - 0.7
+      scale: 0.02
+      shift_mask: false
+      use_seed: false
+    half_scan_percentage: 0.0
+    remask: false
+    ssdu: false
+    crop_size: None
+    kspace_crop: false
+    crop_before_masking: true
+    kspace_zero_filling_size: None
+    normalize_inputs: true
+    normalization_type: max
+    kspace_normalization: false
+    fft_centered: false
+    fft_normalization: backward
+    spatial_dims:
+      - -2
+      - -1
+    coil_dim: 1
+    use_seed: false
+    batch_size: 1
+    shuffle: false
+    num_workers: 8
+    pin_memory: false
+    drop_last: false
+
+  optim:
+    name: adam
+    lr: 0.001
+    betas:
+      - 0.9
+      - 0.98
+    weight_decay: 0.0
+    sched:
+      name: InverseSquareRootAnnealing
+      min_lr: 0.0
+      last_epoch: -1
+      warmup_ratio: 0.1
+
+trainer:
+  strategy: ddp
+  accelerator: gpu
+  devices: 1
+  num_nodes: 1
+  max_epochs: 200
+  precision: 16
+  enable_checkpointing: false
+  logger: false
+  log_every_n_steps: 50
+  check_val_every_n_epoch: -1
+  max_steps: -1
+
+exp_manager:
+  exp_dir: ???
+  create_tensorboard_logger: true
+  create_wandb_logger: false
+  wandb_logger_kwargs:
+    project: ???
+  files_to_copy: [ ]

@@ -5,8 +5,7 @@ from typing import Optional, Tuple
 
 import torch
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
+from mridc.collections.common.parts import fft, utils
 
 
 class CascadeNetBlock(torch.nn.Module):
@@ -29,7 +28,7 @@ class CascadeNetBlock(torch.nn.Module):
         Flag to disable the soft data consistency. Default is ``False``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         model: torch.nn.Module,
         fft_centered: bool = False,

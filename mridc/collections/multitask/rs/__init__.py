@@ -1,6 +1,5 @@
 # coding=utf-8
 
-from mridc.collections.multitask.rs import data, nn, parts
 from mridc.package_info import __version__
 
 # Set collection version equal to MRIDC version.

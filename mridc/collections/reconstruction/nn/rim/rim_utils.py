@@ -5,10 +5,10 @@ from typing import Sequence
 
 import torch
 
-import mridc.collections.common.parts.fft as fft
+from mridc.collections.common.parts import fft
 
 
-def log_likelihood_gradient(
+def log_likelihood_gradient(  # noqa: W0221
     prediction: torch.Tensor,
     masked_kspace: torch.Tensor,
     sensitivity_maps: torch.Tensor,

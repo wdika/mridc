@@ -7,7 +7,7 @@ from typing import List, Tuple
 import torch
 from torch import Tensor, nn
 
-import mridc.collections.reconstruction.nn.unet_base.unet_block as unet_block
+from mridc.collections.reconstruction.nn.unet_base import unet_block
 
 
 class DC(nn.Module):
@@ -72,7 +72,7 @@ class UnetEncoder(nn.Module):
         Number of groups for group normalization, by default 2
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         chans: int,
         num_pools: int,
@@ -214,7 +214,7 @@ class UnetDecoder(nn.Module):
         Number of groups for group normalization, by default 2
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         chans: int,
         num_pools: int,
@@ -272,7 +272,7 @@ class UnetDecoder(nn.Module):
         input_data = x.reshape(b, self.norm_groups, -1)
         return (input_data * std + mean).reshape(b, c, h, w)
 
-    def forward(
+    def forward(  # noqa: W0221
         self,
         x_stack: List[torch.Tensor],
         iscomplex: bool = False,

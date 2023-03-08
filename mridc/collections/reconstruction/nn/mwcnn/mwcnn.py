@@ -7,8 +7,8 @@ from collections import OrderedDict
 from typing import Optional, Tuple
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 
 class DWT(nn.Module):
@@ -128,7 +128,7 @@ class ConvBlock(nn.Module):
         Scale factor for convolution. Default is ``1.0``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         in_channels: int,
         out_channels: int,
@@ -203,7 +203,7 @@ class DilatedConvBlock(nn.Module):
         Scale factor for convolution. Default is ``1.0``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         in_channels: int,
         dilations: Tuple[int, int],
@@ -290,7 +290,7 @@ class MWCNN(nn.Module):
         Activation function. Default is ``nn.ReLU(True)``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         input_channels: int,
         first_conv_hidden_channels: int,

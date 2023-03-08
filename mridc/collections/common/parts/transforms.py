@@ -1,6 +1,7 @@
 # coding=utf-8
 from __future__ import annotations
 
+import os
 from math import sqrt
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
@@ -13,13 +14,15 @@ from mridc.collections.common.data import subsample
 from mridc.collections.common.parts import fft, utils
 
 __all__ = [
-    "NoisePreWhitening",
-    "GeometricDecompositionCoilCompression",
-    "ZeroFilling",
-    "Cropper",
-    "Masker",
     "Composer",
+    "Cropper",
+    "GeometricDecompositionCoilCompression",
+    "Masker",
     "MRIDataTransforms",
+    "NoisePreWhitening",
+    "Normalizer",
+    "SSDU",
+    "ZeroFilling",
 ]
 
 
@@ -790,7 +793,7 @@ class Masker:
             if isinstance(mask, list):
                 if len(mask) == 0:
                     mask = None
-            elif mask.ndim() == 0:  # type: ignore
+            elif mask.ndim == 0:  # type: ignore
                 mask = None
 
         if not utils.is_none(mask) and isinstance(mask, list) and len(mask) > 0:
@@ -829,14 +832,16 @@ class Masker:
         is_complex = data.shape[-1] == 2
 
         if is_complex:
-            self.spatial_dims = tuple([x - 1 for x in self.spatial_dims])  # noqa: WPS515
+            spatial_dims = tuple([x - 1 for x in self.spatial_dims])  # noqa: WPS515
+        else:
+            spatial_dims = self.spatial_dims  # type: ignore
 
         if not utils.is_none(mask) and isinstance(mask, list) and len(mask) > 0:
             masked_data = []
             masks = []
             accelerations = []
             for m in mask:
-                if list(m.shape) == [data.shape[self.spatial_dims[0]], data.shape[self.spatial_dims[1]]]:
+                if list(m.shape) == [data.shape[spatial_dims[0]], data.shape[spatial_dims[1]]]:
                     if isinstance(m, np.ndarray):
                         m = torch.from_numpy(m)
                     m = m.unsqueeze(0).unsqueeze(-1)
@@ -846,7 +851,7 @@ class Masker:
                     m[:, :, padding[1] :] = 0  # type: ignore
 
                 if self.shift_mask:
-                    m = torch.fft.fftshift(m, dim=(self.spatial_dims[0], self.spatial_dims[1]))
+                    m = torch.fft.fftshift(m, dim=(spatial_dims[0], spatial_dims[1]))
 
                 masked_data.append(data * m + 0.0)
                 masks.append(m)
@@ -858,20 +863,20 @@ class Masker:
             and mask.ndim != 0  # type: ignore
             and len(mask) > 0  # type: ignore
         ):
-            if list(mask.shape) == [  # type: ignore
-                data.shape[self.spatial_dims[0]],
-                data.shape[self.spatial_dims[1]],
-            ]:  # type: ignore
-                if isinstance(mask, np.ndarray):
-                    mask = torch.from_numpy(mask)
-                mask = mask.unsqueeze(0).unsqueeze(-1)
+            # if list(mask.shape) == [  # type: ignore
+            #     data.shape[self.spatial_dims[0]],
+            #     data.shape[self.spatial_dims[1]],
+            # ]:  # type: ignore
+            if isinstance(mask, np.ndarray):
+                mask = torch.from_numpy(mask)
+            mask = mask.unsqueeze(0).unsqueeze(-1)
 
             if not utils.is_none(padding[0]) and padding[0] != 0:  # type: ignore
                 mask[:, :, : padding[0]] = 0  # type: ignore
                 mask[:, :, padding[1] :] = 0  # type: ignore
 
             if self.shift_mask:
-                mask = torch.fft.fftshift(mask, dim=(self.spatial_dims[0], self.spatial_dims[1]))
+                mask = torch.fft.fftshift(mask, dim=(spatial_dims[0], spatial_dims[1]))
 
             masked_data = [data * mask + 0.0]
             masks = [mask]
@@ -942,6 +947,256 @@ class Masker:
         return masked_data, masks, accelerations
 
 
+class SSDU:
+    """
+    Generates Self-Supervised Data Undersampling (SSDU) masks, as presented in [1].
+
+    References
+    ----------
+    [1] Yaman, B, Hosseini, SAH, Moeller, S, Ellermann, J, Uğurbil, K, Akçakaya, M. Self-supervised learning of
+        physics-guided reconstruction neural networks without fully sampled reference data. Magn Reson Med. 2020; 84:
+        3172– 3191. https://doi.org/10.1002/mrm.28378
+
+    Parameters
+    ----------
+    mask_type: str, optional
+        Mask type. It can be one of the following:
+        - "Gaussian": Gaussian sampling.
+        - "Uniform": Uniform sampling.
+        Default is "Gaussian".
+    rho: float, optional
+        Split ratio for training and loss masks. Default is ``0.4``.
+    acs_block_size: Sequence[int], optional
+        Keeps a small acs region fully-sampled for training masks, if there is no acs region. The small acs block
+        should be set to zero. Default is ``(4, 4)``.
+    gaussian_std_scaling_factor: float, optional
+        Scaling factor for standard deviation of the Gaussian noise. If Uniform is select this factor is ignored.
+        Default is ``4.0``.
+    outer_kspace_fraction: float, optional
+        Fraction of the outer k-space region to be kept/unmasked. Default is ``0.05``.
+    export_and_reuse_masks: bool, optional
+        If ``True``, the generated masks are exported to the tmp directory and reused for the next call. This
+        option is useful when the data is too large to be stored in memory. Default is ``False``.
+
+    Returns
+    -------
+    loss_mask: torch.Tensor
+        Loss mask.
+    training_mask: torch.Tensor
+        Training mask.
+    """
+
+    def __init__(  # noqa: W0221
+        self,
+        mask_type: str = "Gaussian",
+        rho: float = 0.4,
+        acs_block_size: Sequence[int] = (4, 4),
+        gaussian_std_scaling_factor: float = 4.0,
+        outer_kspace_fraction: float = 0.05,
+        export_and_reuse_masks: bool = False,
+    ):
+        if mask_type not in ["Gaussian", "Uniform"]:
+            raise ValueError(f"SSDU mask type {mask_type} is not supported.")
+        self.mask_type = mask_type
+        self.rho = rho
+        self.acs_block_size = acs_block_size
+        self.gaussian_std_scaling_factor = gaussian_std_scaling_factor
+        self.outer_kspace_fraction = outer_kspace_fraction
+        self.export_and_reuse_masks = export_and_reuse_masks
+
+    def __call__(self, data: torch.Tensor, mask: torch.Tensor, fname: str) -> Tuple[torch.Tensor, torch.Tensor]:
+        if data.shape[-1] == 2:
+            data = torch.view_as_complex(data)
+        data = data.permute(1, 2, 0)  # [nx, ny, nc]
+
+        mask = mask.squeeze(0).squeeze(-1)
+        # if mask is 1D, repeat it for nx
+        if mask.shape[0] == 1:
+            mask = mask.repeat(data.shape[0], 1)
+
+        return self.forward(data, mask, fname)
+
+    def __repr__(self):
+        return f"SSDU type is set to {self.mask_type}."
+
+    def __str__(self):
+        return self.__repr__()
+
+    def forward(self, data: torch.Tensor, mask: torch.Tensor, fname: str) -> Tuple[torch.Tensor, torch.Tensor]:
+        if self.export_and_reuse_masks:
+            # check if masks are already generated
+            precomputed_masks = self.__exists__(fname, (data.shape[0], data.shape[1]))
+            if precomputed_masks is not None:
+                return precomputed_masks[0], precomputed_masks[1]
+
+        if self.mask_type == "Gaussian":
+            train_mask, loss_mask = self.__gaussian_sampling__(data, mask)
+        else:
+            train_mask, loss_mask = self.__uniform_sampling__(data, mask)
+
+        if self.export_and_reuse_masks:
+            # save masks
+            self.__export__(torch.stack([train_mask, loss_mask], dim=0), fname)
+
+        return train_mask, loss_mask
+
+    def __gaussian_sampling__(self, data: torch.Tensor, mask: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        nrow, ncol = data.shape[0], data.shape[1]
+        center_kx = int(self.__find_center_ind__(data, dims=(1, 2)))
+        center_ky = int(self.__find_center_ind__(data, dims=(0, 2)))
+
+        tmp_mask = mask.clone()
+        tmp_mask[
+            center_kx - self.acs_block_size[0] // 2 : center_kx + self.acs_block_size[0] // 2,
+            center_ky - self.acs_block_size[1] // 2 : center_ky + self.acs_block_size[1] // 2,
+        ] = 0
+
+        loss_mask = torch.zeros_like(mask)
+        count = 0
+
+        total = int(torch.ceil(torch.sum(mask[:]) * self.rho))
+
+        while count <= total:
+            indx = int(np.round(np.random.normal(loc=center_kx, scale=(nrow - 1) / self.gaussian_std_scaling_factor)))
+            indy = int(np.round(np.random.normal(loc=center_ky, scale=(ncol - 1) / self.gaussian_std_scaling_factor)))
+
+            if 0 <= indx < nrow and 0 <= indy < ncol and tmp_mask[indx, indy] == 1 and loss_mask[indx, indy] != 1:
+                loss_mask[indx, indy] = 1
+                count += 1
+
+        loss_mask = loss_mask.unsqueeze(0).unsqueeze(-1)
+        mask = mask.unsqueeze(0).unsqueeze(-1)
+        if self.outer_kspace_fraction > 0:
+            loss_mask = self.__apply_outer_kspace_unmask__(loss_mask)
+
+        return mask - loss_mask, loss_mask
+
+    def __uniform_sampling__(  # noqa: W0221
+        self, data: torch.Tensor, mask: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        nrow, ncol = data.shape[0], data.shape[1]
+        center_kx = int(self.__find_center_ind__(data, dims=(1, 2)))
+        center_ky = int(self.__find_center_ind__(data, dims=(0, 2)))
+
+        tmp_mask = mask.clone()
+        tmp_mask[
+            center_kx - self.acs_block_size[0] // 2 : center_kx + self.acs_block_size[0] // 2,
+            center_ky - self.acs_block_size[1] // 2 : center_ky + self.acs_block_size[1] // 2,
+        ] = 0
+
+        pr = tmp_mask.flatten()
+        ind = torch.multinomial(pr, int(torch.ceil(torch.sum(mask[:]) * self.rho)), replacement=False)
+
+        shape = (nrow, ncol)
+        array = torch.zeros(torch.prod(shape))
+        array[ind] = 1
+        ind_nd = torch.nonzero(torch.reshape(array, shape))
+
+        indices = [list(ind_nd_ii) for ind_nd_ii in ind_nd]
+        ind_x, ind_y = indices[0], indices[1]
+
+        loss_mask = torch.zeros_like(mask)
+        loss_mask[ind_x, ind_y] = 1
+
+        loss_mask = loss_mask.unsqueeze(0).unsqueeze(-1)
+        mask = mask.unsqueeze(0).unsqueeze(-1)
+        if self.outer_kspace_fraction > 0:
+            loss_mask = self.__apply_outer_kspace_unmask__(loss_mask)
+
+        return mask - loss_mask, loss_mask
+
+    @staticmethod
+    def __find_center_ind__(data: torch.Tensor, dims: tuple = (1, 2, 3)) -> int:
+        """
+        Calculates the center of the k-space.
+
+        Parameters
+        ----------
+        data : torch.Tensor
+            Input data. The shape should be (nx, ny, nc).
+        dims : tuple, optional
+            Dimensions to calculate the norm. Default is ``(1, 2, 3)``.
+
+        Returns
+        -------
+        center_ind : int
+            The center of the k-space
+        """
+        for dim in dims:
+            data = torch.linalg.norm(data, dim=dim, keepdims=True)
+        return torch.argsort(data.squeeze())[-1:]
+
+    def __apply_outer_kspace_unmask__(self, mask: torch.Tensor) -> torch.Tensor:
+        """
+        Applies outer k-space (un)mask.
+
+        Parameters
+        ----------
+        mask : torch.Tensor
+            Input mask. The shape should be (1, nx, ny, 1).
+
+        Returns
+        -------
+        mask : torch.Tensor
+            Output mask. The shape should be (1, nx, ny, 1).
+        """
+        mask_out = int(mask.shape[2] * self.outer_kspace_fraction)
+        mask[:, :, 0:mask_out, :] = torch.ones((mask.shape[0], mask.shape[1], mask_out, mask.shape[3]))
+        mask[:, :, mask.shape[2] - mask_out : mask.shape[2], :] = torch.ones(
+            (mask.shape[0], mask.shape[1], mask_out, mask.shape[3])
+        )
+        return mask
+
+    @staticmethod
+    def __exists__(fname: str, shape: Tuple) -> Union[np.ndarray, None]:
+        """
+        Checks if the sampling mask exists.
+
+        Parameters
+        ----------
+        fname : str
+            Filename to save the sampling mask.
+        shape : tuple
+            Shape of the sampling mask.
+
+        Returns
+        -------
+        exists : bool
+            True if the sampling mask exists.
+        """
+        if ".h5" in fname:
+            fname = fname.replace(".h5", ".npy")
+        else:
+            fname = fname + ".npy"
+        # set path to the tmp directory of the home directory
+        path = os.path.join(os.path.expanduser("~"), "tmp", fname)
+        if os.path.exists(path):
+            masks = np.load(path)
+            if (masks.shape[2], masks.shape[3]) == shape:
+                return masks
+        return None
+
+    @staticmethod
+    def __export__(mask: torch.Tensor, fname: str) -> None:
+        """
+        Exports the sampling mask to a numpy file.
+
+        Parameters
+        ----------
+        mask : torch.Tensor
+            Sampling mask. The shape should be (1, nx, ny, 1).
+        fname : str
+            Filename to save the sampling mask.
+        """
+        if ".h5" in fname:
+            fname = fname.replace(".h5", ".npy")
+        else:
+            fname = fname + ".npy"
+        # set path to the tmp directory of the home directory
+        path = os.path.join(os.path.expanduser("~"), "tmp", fname)
+        np.save(path, mask.cpu().numpy())
+
+
 class Normalizer:
     """
     Normalizes data given a normalization type.
@@ -955,6 +1210,8 @@ class Normalizer:
         - "minmax": normalize data by its minimum and maximum values.
         - None: do not normalize data. It can be useful to verify FFT normalization.
         Default is `None`.
+    kspace_normalization: str, optional
+        Normalize in k-space.
     fft_centered: bool, optional
         If True, the FFT will be centered. Default is `False`. Should be set for complex data normalization.
     fft_normalization: str, optional
@@ -985,14 +1242,16 @@ class Normalizer:
     tensor(0.) tensor(1.)
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         normalization_type: Optional[str] = None,
+        kspace_normalization: bool = False,
         fft_centered: bool = False,
         fft_normalization: str = "backward",
         spatial_dims: Sequence[int] = (-2, -1),
     ):
         self.normalization_type = normalization_type
+        self.kspace_normalization = kspace_normalization
         self.fft_centered = fft_centered
         self.fft_normalization = fft_normalization
         self.spatial_dims = spatial_dims
@@ -1022,6 +1281,9 @@ class Normalizer:
         apply_backward_transform: bool = False,
         apply_forward_transform: bool = False,
     ) -> torch.Tensor:
+        if self.kspace_normalization and apply_backward_transform:
+            apply_backward_transform = False
+
         if apply_backward_transform:
             data = fft.ifft2(
                 data,
@@ -1045,6 +1307,8 @@ class Normalizer:
         elif self.normalization_type == "minmax":
             min_value = torch.min(torch.abs(data))
             data = (data - min_value) / (torch.max(torch.abs(data)) - min_value)
+        elif utils.is_none(self.normalization_type):  # type: ignore
+            pass
 
         if apply_backward_transform:
             data = fft.fft2(
@@ -1156,6 +1420,25 @@ class MRIDataTransforms:
         Whether to simulate a half scan. Default is ``0.0``.
     remask : bool, optional
         Use the same mask. Default is ``False``.
+    ssdu : bool, optional
+        Whether to apply Self-Supervised Data Undersampling (SSDU) masks. Default is ``False``.
+    ssdu_mask_type: str, optional
+        Mask type. It can be one of the following:
+        - "Gaussian": Gaussian sampling.
+        - "Uniform": Uniform sampling.
+        Default is "Gaussian".
+    ssdu_rho: float, optional
+        Split ratio for training and loss masks. Default is ``0.4``.
+    ssdu_acs_block_size: tuple, optional
+        Keeps a small acs region fully-sampled for training masks, if there is no acs region. The small acs block
+        should be set to zero. Default is ``(4, 4)``.
+    ssdu_gaussian_std_scaling_factor: float, optional
+        Scaling factor for standard deviation of the Gaussian noise. If Uniform is select this factor is ignored.
+        Default is ``4.0``.
+    ssdu_outer_kspace_fraction: float, optional
+        Fraction of the outer k-space to be kept/unmasked. Default is ``0.05``.
+    ssdu_export_and_reuse_masks: bool, optional
+        Whether to export and reuse the masks. Default is ``False``.
     crop_size : Optional[Tuple[int, int]], optional
         Center crop size. It applies cropping in image space. Default is ``None``.
     kspace_crop : bool, optional
@@ -1168,6 +1451,8 @@ class MRIDataTransforms:
         Whether to normalize the inputs. Default is ``True``.
     normalization_type : str, optional
         Normalization type. Can be ``max`` or ``mean`` or ``minmax``. Default is ``max``.
+    kspace_normalization : bool, optional
+        Whether to normalize the k-space. Default is ``False``.
     fft_centered : bool, optional
         Whether to center the FFT. Default is ``False``.
     fft_normalization : str, optional
@@ -1205,12 +1490,20 @@ class MRIDataTransforms:
         mask_center_scale: Optional[float] = 0.02,
         half_scan_percentage: float = 0.0,
         remask: bool = False,
+        ssdu: bool = False,
+        ssdu_mask_type: str = "Gaussian",
+        ssdu_rho: float = 0.4,
+        ssdu_acs_block_size: Sequence[int] = (4, 4),
+        ssdu_gaussian_std_scaling_factor: float = 4.0,
+        ssdu_outer_kspace_fraction: float = 0.05,
+        ssdu_export_and_reuse_masks: bool = False,
         crop_size: Optional[Tuple[int, int]] = None,
         kspace_crop: bool = False,
         crop_before_masking: bool = True,
         kspace_zero_filling_size: Optional[Tuple] = None,
         normalize_inputs: bool = True,
         normalization_type: str = "max",
+        kspace_normalization: bool = False,
         fft_centered: bool = False,
         fft_normalization: str = "backward",
         spatial_dims: Sequence[int] = None,
@@ -1282,9 +1575,25 @@ class MRIDataTransforms:
             remask=remask,
         )
 
+        self.ssdu = ssdu
+        self.ssdu_masking = (
+            SSDU(
+                mask_type=ssdu_mask_type,
+                rho=ssdu_rho,
+                acs_block_size=ssdu_acs_block_size,
+                gaussian_std_scaling_factor=ssdu_gaussian_std_scaling_factor,
+                outer_kspace_fraction=ssdu_outer_kspace_fraction,
+                export_and_reuse_masks=ssdu_export_and_reuse_masks,
+            )
+            if self.ssdu
+            else None
+        )
+
         self.cropping = (
             Cropper(
                 cropping_size=crop_size,  # type: ignore
+                fft_centered=self.fft_centered,  # type: ignore
+                fft_normalization=self.fft_normalization,  # type: ignore
                 spatial_dims=self.spatial_dims,  # type: ignore
             )
             if not utils.is_none(crop_size)
@@ -1293,6 +1602,7 @@ class MRIDataTransforms:
 
         self.normalization = Normalizer(
             normalization_type=normalization_type,
+            kspace_normalization=kspace_normalization,
             fft_centered=self.fft_centered,
             fft_normalization=self.fft_normalization,
             spatial_dims=self.spatial_dims,  # type: ignore
@@ -1375,12 +1685,13 @@ class MRIDataTransforms:
     def __repr__(self) -> str:
         return (
             f"Preprocessing transforms initialized for {self.__class__.__name__}: "
-            f"prewhitening={self.prewhitening}, "
-            f"masking={self.masking}, "
-            f"kspace_zero_filling={self.kspace_zero_filling}, "
-            f"cropping={self.cropping}, "
-            f"normalization={self.normalization}, "
-            f"init_reconstructor={self.init_reconstructor}, "
+            f"prewhitening = {self.prewhitening}, "
+            f"masking = {self.masking}, "
+            f"SSDU masking = {self.ssdu_masking}, "
+            f"kspace zero-filling = {self.kspace_zero_filling}, "
+            f"cropping = {self.cropping}, "
+            f"normalization = {self.normalization}, "
+            f"initial reconstructor = {self.init_reconstructor}, "
         )
 
     def __str__(self) -> str:
@@ -1440,6 +1751,25 @@ class MRIDataTransforms:
         kspace = self.normalization(kspace, apply_backward_transform=True)
         masked_kspace = self.normalization(masked_kspace, apply_backward_transform=True)
 
+        if self.ssdu:
+            if isinstance(mask, list):
+                kspaces = []
+                masked_kspaces = []
+                masks = []
+                for i in range(len(mask)):  # noqa: C0200
+                    train_mask, loss_mask = self.ssdu_masking(kspace, mask[i], fname)  # type: ignore  # noqa: E1102
+                    kspaces.append(kspace * loss_mask)
+                    masked_kspaces.append(masked_kspace[i] * train_mask)  # type: ignore
+                    masks.append([train_mask, loss_mask])
+                kspace = kspaces
+                masked_kspace = masked_kspaces
+                mask = masks
+            else:
+                train_mask, loss_mask = self.ssdu_masking(kspace, mask, fname)  # type: ignore  # noqa: E1102
+                kspace = kspace * loss_mask
+                masked_kspace = masked_kspace * train_mask
+                mask = [train_mask, loss_mask]
+
         return kspace, masked_kspace, mask, acc
 
     def __process_coil_sensitivities_map__(self, sensitivity_map: np.ndarray, kspace: torch.Tensor) -> torch.Tensor:
@@ -1489,7 +1819,7 @@ class MRIDataTransforms:
         Union[List[torch.Tensor], torch.Tensor]
             The initialized prediction, either a list of coil-combined images or a single coil-combined image.
         """
-        if utils.is_none(prediction) or prediction.ndim < 2:
+        if utils.is_none(prediction) or prediction.ndim < 2 or isinstance(kspace, list):
             if isinstance(kspace, list):
                 prediction = [
                     self.crop_normalize(
@@ -1497,12 +1827,18 @@ class MRIDataTransforms:
                     )
                     for y in kspace
                 ]
+                if prediction[0].shape[-1] != 2:
+                    prediction = [torch.view_as_real(x) for x in prediction]
             else:
                 prediction = self.crop_normalize(
                     self.init_reconstructor(kspace, sensitivity_map, torch.empty([]), torch.empty([]), torch.empty([]))
                 )
+                if prediction.shape[-1] != 2:
+                    prediction = torch.view_as_real(prediction)
         else:
             if isinstance(prediction, np.ndarray):
                 prediction = utils.to_tensor(prediction)
             prediction = self.crop_normalize(prediction, apply_forward_transform=self.kspace_crop)
+            if prediction.shape[-1] != 2 and prediction.type == "torch.ComplexTensor":
+                prediction = torch.view_as_real(prediction)
         return prediction

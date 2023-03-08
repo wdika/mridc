@@ -7,10 +7,11 @@ import numpy as np
 import torch
 from omegaconf import DictConfig
 
-import mridc.collections.common.data.subsample as subsample
-import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.nn as reconstruction_nn
+from mridc.collections.common.data import subsample
+from mridc.collections.common.parts import utils
 from mridc.collections.common.parts.transforms import (
+    SSDU,
     Composer,
     Cropper,
     GeometricDecompositionCoilCompression,
@@ -67,6 +68,25 @@ class RSMRIDataTransforms:
         Whether to simulate a half scan. Default is ``0.0``.
     remask : bool, optional
         Use the same mask. Default is ``False``.
+    ssdu : bool, optional
+        Whether to apply Self-Supervised Data Undersampling (SSDU) masks. Default is ``False``.
+    ssdu_mask_type: str, optional
+        Mask type. It can be one of the following:
+        - "Gaussian": Gaussian sampling.
+        - "Uniform": Uniform sampling.
+        Default is "Gaussian".
+    ssdu_rho: float, optional
+        Split ratio for training and loss masks. Default is ``0.4``.
+    ssdu_acs_block_size: tuple, optional
+        Keeps a small acs region fully-sampled for training masks, if there is no acs region. The small acs block
+        should be set to zero. Default is ``(4, 4)``.
+    ssdu_gaussian_std_scaling_factor: float, optional
+        Scaling factor for standard deviation of the Gaussian noise. If Uniform is select this factor is ignored.
+        Default is ``4.0``.
+    ssdu_outer_kspace_fraction: float, optional
+        Fraction of the outer k-space to be kept/unmasked. Default is ``0.05``.
+    ssdu_export_and_reuse_masks: bool, optional
+        Whether to export and reuse the masks. Default is ``False``.
     crop_size : Optional[Tuple[int, int]], optional
         Center crop size. It applies cropping in image space. Default is ``None``.
     kspace_crop : bool, optional
@@ -79,6 +99,8 @@ class RSMRIDataTransforms:
         Whether to normalize the inputs. Default is ``True``.
     normalization_type : str, optional
         Normalization type. Can be ``max`` or ``mean`` or ``minmax``. Default is ``max``.
+    kspace_normalization : bool, optional
+        Whether to normalize the k-space. Default is ``False``.
     fft_centered : bool, optional
         Whether to center the FFT. Default is ``False``.
     fft_normalization : str, optional
@@ -98,7 +120,7 @@ class RSMRIDataTransforms:
         Data transformed for accelerated-MRI reconstruction and MRI segmentation.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         complex_data: bool = True,
         apply_prewhitening: bool = False,
@@ -117,17 +139,25 @@ class RSMRIDataTransforms:
         mask_center_scale: Optional[float] = 0.02,
         half_scan_percentage: float = 0.0,
         remask: bool = False,
+        ssdu: bool = False,
+        ssdu_mask_type: str = "Gaussian",
+        ssdu_rho: float = 0.4,
+        ssdu_acs_block_size: Sequence[int] = (4, 4),
+        ssdu_gaussian_std_scaling_factor: float = 4.0,
+        ssdu_outer_kspace_fraction: float = 0.05,
+        ssdu_export_and_reuse_masks: bool = False,
         crop_size: Optional[Tuple[int, int]] = None,
         kspace_crop: bool = False,
         crop_before_masking: bool = True,
         kspace_zero_filling_size: Optional[Tuple] = None,
         normalize_inputs: bool = True,
         normalization_type: str = "max",
+        kspace_normalization: bool = False,
         fft_centered: bool = False,
         fft_normalization: str = "backward",
         spatial_dims: Sequence[int] = None,
         coil_dim: int = 0,
-        consecutive_slices: int = 1,
+        consecutive_slices: int = 1,  # noqa: W0613
         use_seed: bool = True,
     ):
         self.complex_data = complex_data
@@ -206,6 +236,20 @@ class RSMRIDataTransforms:
                 remask=remask,
             )
 
+            self.ssdu = ssdu
+            self.ssdu_masking = (
+                SSDU(
+                    mask_type=ssdu_mask_type,
+                    rho=ssdu_rho,
+                    acs_block_size=ssdu_acs_block_size,
+                    gaussian_std_scaling_factor=ssdu_gaussian_std_scaling_factor,
+                    outer_kspace_fraction=ssdu_outer_kspace_fraction,
+                    export_and_reuse_masks=ssdu_export_and_reuse_masks,
+                )
+                if self.ssdu
+                else None
+            )
+
             self.kspace_crop = kspace_crop
             self.crop_before_masking = crop_before_masking
 
@@ -234,6 +278,8 @@ class RSMRIDataTransforms:
         self.cropping = (
             Cropper(
                 cropping_size=crop_size,  # type: ignore
+                fft_centered=self.fft_centered,  # type: ignore
+                fft_normalization=self.fft_normalization,  # type: ignore
                 spatial_dims=self.spatial_dims,  # type: ignore
             )
             if not utils.is_none(crop_size)
@@ -242,6 +288,7 @@ class RSMRIDataTransforms:
 
         self.normalization = Normalizer(
             normalization_type=normalization_type,
+            kspace_normalization=kspace_normalization,
             fft_centered=self.fft_centered,
             fft_normalization=self.fft_normalization,
             spatial_dims=self.spatial_dims,  # type: ignore
@@ -259,7 +306,7 @@ class RSMRIDataTransforms:
 
         self.use_seed = use_seed
 
-    def __call__(
+    def __call__(  # noqa: W0221
         self,
         kspace: np.ndarray,
         imspace: np.ndarray,
@@ -352,12 +399,13 @@ class RSMRIDataTransforms:
     def __repr__(self) -> str:
         return (
             f"Preprocessing transforms initialized for {self.__class__.__name__}: "
-            f"prewhitening={self.prewhitening}, "
-            f"masking={self.masking}, "
-            f"kspace_zero_filling={self.kspace_zero_filling}, "
-            f"cropping={self.cropping}, "
-            f"normalization={self.normalization}, "
-            f"init_reconstructor={self.init_reconstructor}, "
+            f"prewhitening = {self.prewhitening}, "
+            f"masking = {self.masking}, "
+            f"SSDU masking = {self.ssdu_masking}, "
+            f"kspace zero-filling = {self.kspace_zero_filling}, "
+            f"cropping = {self.cropping}, "
+            f"normalization = {self.normalization}, "
+            f"initial reconstructor = {self.init_reconstructor}, "
         )
 
     def __str__(self) -> str:
@@ -417,6 +465,25 @@ class RSMRIDataTransforms:
         kspace = self.normalization(kspace, apply_backward_transform=True)
         masked_kspace = self.normalization(masked_kspace, apply_backward_transform=True)
 
+        if self.ssdu:
+            if isinstance(mask, list):
+                kspaces = []
+                masked_kspaces = []
+                masks = []
+                for i in range(len(mask)):  # noqa: C0200
+                    train_mask, loss_mask = self.ssdu_masking(kspace, mask[i], fname)  # type: ignore  # noqa: E1102
+                    kspaces.append(kspace * loss_mask)
+                    masked_kspaces.append(masked_kspace[i] * train_mask)  # type: ignore
+                    masks.append([train_mask, loss_mask])
+                kspace = kspaces
+                masked_kspace = masked_kspaces
+                mask = masks
+            else:
+                train_mask, loss_mask = self.ssdu_masking(kspace, mask, fname)  # type: ignore  # noqa: E1102
+                kspace = kspace * loss_mask
+                masked_kspace = masked_kspace * train_mask
+                mask = [train_mask, loss_mask]
+
         return kspace, masked_kspace, mask, acc
 
     def __process_coil_sensitivities_map__(self, sensitivity_map: np.ndarray, kspace: torch.Tensor) -> torch.Tensor:
@@ -466,7 +533,7 @@ class RSMRIDataTransforms:
         Union[List[torch.Tensor], torch.Tensor]
             The initialized prediction, either a list of coil-combined images or a single coil-combined image.
         """
-        if utils.is_none(prediction) or prediction.ndim < 2:  # type: ignore
+        if utils.is_none(prediction) or prediction.ndim < 2 or isinstance(kspace, list):  # type: ignore
             if isinstance(kspace, list):
                 prediction = [
                     self.crop_normalize(
@@ -482,4 +549,6 @@ class RSMRIDataTransforms:
             if isinstance(prediction, np.ndarray):
                 prediction = utils.to_tensor(prediction)
             prediction = self.crop_normalize(prediction, apply_forward_transform=self.kspace_crop)
+            if prediction.shape[-1] != 2 and prediction.type == "torch.ComplexTensor":  # type: ignore
+                prediction = torch.view_as_real(prediction)
         return prediction

@@ -9,9 +9,11 @@ model:
   num_pool_layers: 2
   dropout_probability: 0.0
   dimensionality: 2
-  train_loss_fn: l1
-  val_loss_fn: l1
+  loss_fn: l1
+  kspace_reconstruction_loss: false
+  reconstruction_loss_regularization_factor: 1.0
   coil_combination_method: SENSE
+  ssdu: false
   fft_centered: false
   fft_normalization: backward
   spatial_dims:
@@ -48,12 +50,14 @@ model:
       use_seed: false
     half_scan_percentage: 0.0
     remask: false
+    ssdu: false
     crop_size: None
     kspace_crop: false
     crop_before_masking: true
     kspace_zero_filling_size: None
     normalize_inputs: true
     normalization_type: max
+    kspace_normalization: false
     fft_centered: false
     fft_normalization: backward
     spatial_dims:
@@ -93,12 +97,14 @@ model:
       use_seed: true
     half_scan_percentage: 0.0
     remask: false
+    ssdu: false
     crop_size: None
     kspace_crop: false
     crop_before_masking: true
     kspace_zero_filling_size: None
     normalize_inputs: true
     normalization_type: max
+    kspace_normalization: false
     fft_centered: false
     fft_normalization: backward
     spatial_dims:

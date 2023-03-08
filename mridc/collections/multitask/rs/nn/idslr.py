@@ -8,10 +8,9 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
 import mridc.collections.multitask.rs.nn.base as base_rs_models
 import mridc.core.classes.common as common_classes
+from mridc.collections.common.parts import fft, utils
 from mridc.collections.multitask.rs.nn.idslr_base import idslr_block
 
 __all__ = ["IDSLR"]
@@ -85,15 +84,15 @@ class IDSLR(base_rs_models.BaseMRIReconstructionSegmentationModel, ABC):  # type
         self.dc = idslr_block.DC()
 
     @common_classes.typecheck()  # type: ignore
-    def forward(
+    def forward(  # noqa: W0221
         self,
         y: torch.Tensor,
         sensitivity_maps: torch.Tensor,
         mask: torch.Tensor,
         init_reconstruction_pred: torch.Tensor,
         target_reconstruction: torch.Tensor,
-        hx: torch.Tensor = None,
-        sigma: float = 1.0,
+        hx: torch.Tensor = None,  # noqa: W0613
+        sigma: float = 1.0,  # noqa: W0613
     ) -> Tuple[Union[List, torch.Tensor], torch.Tensor]:
         """
         Forward pass of the network.
@@ -144,7 +143,7 @@ class IDSLR(base_rs_models.BaseMRIReconstructionSegmentationModel, ABC):  # type
                 y_prediction, self.fft_centered, self.fft_normalization, self.spatial_dims
             )
             output = self.reconstruction_encoder(init_reconstruction_pred)
-            reconstruction_encoder_prediction, iscomplex, padding_size, _, _ = (
+            reconstruction_encoder_prediction, iscomplex, padding_size, _, _ = (  # noqa: W0613
                 output[0].copy(),
                 output[1],
                 output[2],

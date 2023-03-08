@@ -7,12 +7,11 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.nn.base as base_models
-import mridc.collections.reconstruction.nn.unet_base.unet_block as unet_block
-import mridc.collections.reconstruction.nn.varnet.vn_block as vn_block
 import mridc.core.classes.common as common_classes
+from mridc.collections.common.parts import fft, utils
+from mridc.collections.reconstruction.nn.unet_base import unet_block
+from mridc.collections.reconstruction.nn.varnet import vn_block
 
 __all__ = ["VarNet"]
 
@@ -57,12 +56,12 @@ class VarNet(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
         )
 
     @common_classes.typecheck()  # type: ignore
-    def forward(
+    def forward(  # noqa: W0221
         self,
         y: torch.Tensor,
         sensitivity_maps: torch.Tensor,
         mask: torch.Tensor,
-        init_pred: torch.Tensor,
+        init_pred: torch.Tensor,  # noqa: W0613
         target: torch.Tensor,
     ) -> torch.Tensor:
         """
@@ -86,21 +85,20 @@ class VarNet(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
         torch.Tensor
             Reconstructed image. Shape [batch_size, n_x, n_y, 2]
         """
-        estimation = y.clone()
-
+        prediction = y.clone()
         for cascade in self.cascades:
-            # Forward pass through the cascades
-            estimation = cascade(estimation, y, sensitivity_maps, mask)
-
-        estimation = fft.ifft2(
-            estimation,
+            prediction = cascade(prediction, y, sensitivity_maps, mask)
+        prediction = fft.ifft2(
+            prediction,
             centered=self.fft_centered,
             normalization=self.fft_normalization,
             spatial_dims=self.spatial_dims,
         )
-        estimation = utils.coil_combination_method(
-            estimation, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim
+        prediction = utils.coil_combination_method(
+            prediction, sensitivity_maps, method=self.coil_combination_method, dim=self.coil_dim
         )
-        estimation = torch.view_as_complex(estimation)
-        _, estimation = utils.center_crop_to_smallest(target, estimation)
-        return estimation
+        prediction = torch.view_as_complex(prediction)
+        if target.shape[-1] == 2:
+            target = torch.view_as_complex(target)
+        _, prediction = utils.center_crop_to_smallest(target, prediction)
+        return prediction

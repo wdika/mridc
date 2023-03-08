@@ -35,7 +35,7 @@ class NormUnet(torch.nn.Module):
         Number of groups to use for group normalization. Default is ``2``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         chans: int,
         num_pools: int,
@@ -166,7 +166,7 @@ class Unet(torch.nn.Module):
         Dropout probability. Default is ``0.0``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self, in_chans: int, out_chans: int, chans: int = 32, num_pool_layers: int = 4, drop_prob: float = 0.0
     ):
         super().__init__()

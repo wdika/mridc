@@ -35,9 +35,7 @@ class RecSegUNet(base_rs_models.BaseMRIReconstructionSegmentationModel, ABC):  #
         if self.input_channels == 0:
             raise ValueError("Segmentation module input channels cannot be 0.")
         if self.input_channels > 2:
-            raise ValueError(
-                "Segmentation module input channels must be either 1 or 2. Found: {}".format(self.input_channels)
-            )
+            raise ValueError(f"Segmentation module input channels must be either 1 or 2. Found: {self.input_channels}")
 
         reconstruction_module_output_channels = cfg_dict.get("reconstruction_module_output_channels", 1)
 
@@ -62,15 +60,15 @@ class RecSegUNet(base_rs_models.BaseMRIReconstructionSegmentationModel, ABC):  #
         self.normalize_segmentation_output = cfg_dict.get("normalize_segmentation_output", True)
 
     @common_classes.typecheck()  # type: ignore
-    def forward(
+    def forward(  # noqa: W0221
         self,
-        y: torch.Tensor,
-        sensitivity_maps: torch.Tensor,
-        mask: torch.Tensor,
+        y: torch.Tensor,  # noqa: W0613
+        sensitivity_maps: torch.Tensor,  # noqa: W0613
+        mask: torch.Tensor,  # noqa: W0613
         init_reconstruction_pred: torch.Tensor,
-        target_reconstruction: torch.Tensor,
-        hx: torch.Tensor = None,
-        sigma: float = 1.0,
+        target_reconstruction: torch.Tensor,  # noqa: W0613
+        hx: torch.Tensor = None,  # noqa: W0613
+        sigma: float = 1.0,  # noqa: W0613
     ) -> Tuple[Union[List, torch.Tensor], torch.Tensor]:
         """
         Forward pass of the network.
@@ -114,7 +112,7 @@ class RecSegUNet(base_rs_models.BaseMRIReconstructionSegmentationModel, ABC):  #
                     raise ValueError("Magnitude input is not supported for 2-channel input.")
                 init_reconstruction_pred = init_reconstruction_pred.permute(0, 3, 1, 2)  # type: ignore
             else:
-                raise ValueError("The input channels must be either 1 or 2. Found: {}".format(self.input_channels))
+                raise ValueError(f"The input channels must be either 1 or 2. Found: {self.input_channels}")
         else:
             if init_reconstruction_pred.dim() == 3:
                 init_reconstruction_pred = init_reconstruction_pred.unsqueeze(1)

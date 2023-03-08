@@ -4,7 +4,7 @@ __author__ = "Dimitrios Karkalousos"
 # Taken and adapted from: https://github.com/NKI-AI/direct/blob/main/direct/nn/crossdomain/multicoil.py
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class MultiCoil(nn.Module):

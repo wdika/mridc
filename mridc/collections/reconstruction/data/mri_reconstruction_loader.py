@@ -10,7 +10,7 @@ from typing import Callable, Optional, Tuple, Union
 
 import h5py
 import numpy as np
-import yaml  # type: ignore
+import yaml  # type: ignore  # noqa: W0611
 
 from mridc.collections.common.data.mri_loader import MRIDataset
 
@@ -68,7 +68,7 @@ class ReconstructionMRIDataset(MRIDataset):
         Extends :class:`mridc.collections.common.data.MRIDataset`.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         root: Union[str, Path, os.PathLike],
         coil_sensitivity_maps_root: Union[str, Path, os.PathLike] = None,
@@ -100,7 +100,7 @@ class ReconstructionMRIDataset(MRIDataset):
             **kwargs,
         )
 
-    def __getitem__(self, i: int):
+    def __getitem__(self, i: int):  # noqa: W0221
         fname, dataslice, metadata = self.examples[i]
         with h5py.File(fname, "r") as hf:
             kspace = self.get_consecutive_slices(hf, "kspace", dataslice).astype(np.complex64)

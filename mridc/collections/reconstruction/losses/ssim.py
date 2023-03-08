@@ -4,8 +4,8 @@ __author__ = "Dimitrios Karkalousos"
 # Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 
 class SSIMLoss(nn.Module):
@@ -43,7 +43,7 @@ class SSIMLoss(nn.Module):
         NP = win_size**2
         self.cov_norm = NP / (NP - 1)
 
-    def forward(self, X: torch.Tensor, Y: torch.Tensor, data_range: torch.Tensor):
+    def forward(self, X: torch.Tensor, Y: torch.Tensor, data_range: torch.Tensor):  # noqa: W0221
         """
         Parameters
         ----------
@@ -54,7 +54,7 @@ class SSIMLoss(nn.Module):
         data_range : torch.Tensor
             Data range of the input tensors.
         """
-        if not isinstance(self.w, torch.Tensor):  # type: ignore
+        if not isinstance(self.w, torch.Tensor):  # type: ignore  # noqa: W0238
             raise AssertionError
 
         if X.shape[-1] == 2:

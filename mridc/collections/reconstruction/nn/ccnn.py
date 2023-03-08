@@ -7,12 +7,11 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.nn.base as models_base
-import mridc.collections.reconstruction.nn.cascadenet.ccnn_block as ccnn_block
-import mridc.collections.reconstruction.nn.conv.conv2d as conv2d
 import mridc.core.classes.common as common_classes
+from mridc.collections.common.parts import fft, utils
+from mridc.collections.reconstruction.nn.cascadenet import ccnn_block
+from mridc.collections.reconstruction.nn.conv import conv2d
 
 __all__ = ["CascadeNet"]
 
@@ -54,12 +53,12 @@ class CascadeNet(models_base.BaseMRIReconstructionModel, ABC):  # type: ignore
         )
 
     @common_classes.typecheck()  # type: ignore
-    def forward(
+    def forward(  # noqa: W0221
         self,
         y: torch.Tensor,
         sensitivity_maps: torch.Tensor,
         mask: torch.Tensor,
-        init_pred: torch.Tensor,
+        init_pred: torch.Tensor,  # noqa: W0613
         target: torch.Tensor,
     ) -> torch.Tensor:
         """
@@ -83,13 +82,13 @@ class CascadeNet(models_base.BaseMRIReconstructionModel, ABC):  # type: ignore
         torch.Tensor
             Reconstructed image. Shape [batch_size, n_x, n_y, 2]
         """
-        pred = y.clone()
+        prediction = y.clone()
         for cascade in self.cascades:
-            pred = cascade(pred, y, sensitivity_maps, mask)
-        pred = torch.view_as_complex(
+            prediction = cascade(prediction, y, sensitivity_maps, mask)
+        prediction = torch.view_as_complex(
             utils.coil_combination_method(
                 fft.ifft2(
-                    pred,
+                    prediction,
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,
@@ -99,5 +98,7 @@ class CascadeNet(models_base.BaseMRIReconstructionModel, ABC):  # type: ignore
                 dim=self.coil_dim,
             )
         )
-        _, pred = utils.center_crop_to_smallest(target, pred)
-        return pred
+        if target.shape[-1] == 2:
+            target = torch.view_as_complex(target)
+        _, prediction = utils.center_crop_to_smallest(target, prediction)
+        return prediction

@@ -7,12 +7,11 @@ from typing import Optional, Tuple, Union
 
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
-import mridc.collections.reconstruction.nn.recurrentvarnet.conv2gru as conv2gru
+from mridc.collections.common.parts import fft, utils
+from mridc.collections.reconstruction.nn.recurrentvarnet import conv2gru
 
 
 class RecurrentInit(nn.Module):
@@ -42,7 +41,7 @@ class RecurrentInit(nn.Module):
         Default is ``1``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         in_channels: int,
         out_channels: int,
@@ -126,7 +125,7 @@ class RecurrentVarNetBlock(nn.Module):
         Coil dimension of the input. Default is ``1``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         in_channels: int = 2,
         hidden_channels: int = 64,
@@ -150,7 +149,7 @@ class RecurrentVarNetBlock(nn.Module):
             replication_padding=True,
         )  # Recurrent Unit of RecurrentVarNet Block :math:`\mathcal{H}_{\theta_t}`
 
-    def forward(
+    def forward(  # noqa: W0221
         self,
         current_kspace: torch.Tensor,
         masked_kspace: torch.Tensor,

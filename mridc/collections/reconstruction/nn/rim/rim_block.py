@@ -5,11 +5,8 @@ from typing import Any, Optional, Tuple, Union
 
 import torch
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
-import mridc.collections.reconstruction.nn.rim.conv_layers as conv_layers
-import mridc.collections.reconstruction.nn.rim.rim_utils as rim_utils
-import mridc.collections.reconstruction.nn.rim.rnn_cells as rnn_cells
+from mridc.collections.common.parts import fft, utils
+from mridc.collections.reconstruction.nn.rim import conv_layers, rim_utils, rnn_cells
 
 
 class RIMBlock(torch.nn.Module):
@@ -63,7 +60,7 @@ class RIMBlock(torch.nn.Module):
         Number of consecutive slices. Default is ``1``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         recurrent_layer=None,
         conv_filters=None,
@@ -85,7 +82,7 @@ class RIMBlock(torch.nn.Module):
         dimensionality: int = 2,
         consecutive_slices: int = 1,
     ):
-        super(RIMBlock, self).__init__()
+        super().__init__()
 
         self.input_size = depth * 2
         self.time_steps = time_steps
@@ -159,7 +156,7 @@ class RIMBlock(torch.nn.Module):
         self.dimensionality = dimensionality
         self.consecutive_slices = consecutive_slices
 
-    def forward(
+    def forward(  # noqa: W0221
         self,
         pred: torch.Tensor,
         masked_kspace: torch.Tensor,
@@ -278,7 +275,7 @@ class RIMBlock(torch.nn.Module):
                 grad_prediction = grad_prediction.permute(0, 2, 3, 1)
             elif self.dimensionality == 3:
                 grad_prediction = grad_prediction.permute(1, 2, 3, 0)
-                for h in range(len(hx)):
+                for h in range(len(hx)):  # type: ignore  # noqa: C0200
                     hx[h] = hx[h].permute(1, 0, 2, 3)
 
             prediction = prediction + grad_prediction

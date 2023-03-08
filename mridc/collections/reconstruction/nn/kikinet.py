@@ -7,15 +7,14 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.nn.base as base_models
-import mridc.collections.reconstruction.nn.conv.conv2d as conv2d
 import mridc.collections.reconstruction.nn.crossdomain.multicoil as crossdomain
 import mridc.collections.reconstruction.nn.didn.didn as didn_
 import mridc.collections.reconstruction.nn.mwcnn.mwcnn as mwcnn_
-import mridc.collections.reconstruction.nn.unet_base.unet_block as unet_block
 import mridc.core.classes.common as common_classes
+from mridc.collections.common.parts import fft, utils
+from mridc.collections.reconstruction.nn.conv import conv2d
+from mridc.collections.reconstruction.nn.unet_base import unet_block
 
 __all__ = ["KIKINet"]
 
@@ -105,12 +104,12 @@ class KIKINet(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
         self.dc_weight = torch.nn.Parameter(torch.ones(1))
 
     @common_classes.typecheck()  # type: ignore
-    def forward(
+    def forward(  # noqa: W0221
         self,
         y: torch.Tensor,
         sensitivity_maps: torch.Tensor,
         mask: torch.Tensor,
-        init_pred: torch.Tensor,
+        init_pred: torch.Tensor,  # noqa: W0613
         target: torch.Tensor,
     ) -> torch.Tensor:
         """
@@ -184,5 +183,7 @@ class KIKINet(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
                 ).type(image.type())
 
         image = torch.view_as_complex(image)
+        if target.shape[-1] == 2:
+            target = torch.view_as_complex(target)
         _, image = utils.center_crop_to_smallest(target, image)
         return image

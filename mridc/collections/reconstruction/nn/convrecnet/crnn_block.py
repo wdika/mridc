@@ -5,8 +5,7 @@ from typing import Any, List, Optional, Tuple, Union
 
 import torch
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
+from mridc.collections.common.parts import fft, utils
 
 
 class DataConsistencyLayer(torch.nn.Module):
@@ -59,7 +58,7 @@ class RecurrentConvolutionalNetBlock(torch.nn.Module):
         Whether to remove the DC component. Default is ``False``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         model: torch.nn.Module,
         num_iterations: int = 10,

@@ -15,15 +15,14 @@ from pytorch_lightning import Trainer
 from torch.nn import L1Loss, MSELoss
 from torch.utils.data import DataLoader
 
-import mridc.collections.common.data.subsample as subsample
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
-import mridc.collections.multitask.rs.data.mrirs_loader as mrirs_loader
 import mridc.collections.reconstruction.losses as reconstruction_losses
-import mridc.collections.reconstruction.metrics.reconstruction_metrics as reconstruction_metrics
 import mridc.collections.segmentation.losses as segmentation_losses
+from mridc.collections.common.data import subsample
 from mridc.collections.common.nn.base import BaseMRIModel, BaseSensitivityModel, DistributedMetricSum
+from mridc.collections.common.parts import fft, utils
+from mridc.collections.multitask.rs.data import mrirs_loader
 from mridc.collections.multitask.rs.parts.transforms import RSMRIDataTransforms
+from mridc.collections.reconstruction.metrics import reconstruction_metrics
 
 __all__ = ["BaseMRIReconstructionSegmentationModel"]
 
@@ -40,7 +39,7 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
         The PyTorch Lightning trainer.
     """
 
-    def __init__(self, cfg: DictConfig, trainer: Trainer = None):
+    def __init__(self, cfg: DictConfig, trainer: Trainer = None):  # noqa: W0221
         super().__init__(cfg=cfg, trainer=trainer)
 
         self.acc = 1  # fixed acceleration factor to ensure acc is not None
@@ -148,11 +147,15 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
         self.DICE = DistributedMetricSum()
         self.dice_vals: Dict = defaultdict(dict)
 
+        self.ssdu = cfg_dict.get("ssdu", False)
+
         self.use_reconstruction_module = cfg_dict.get("use_reconstruction_module")
         if self.use_reconstruction_module:
             self.total_reconstruction_loss_weight = cfg_dict.get("total_reconstruction_loss_weight", 1.0)
             reconstruction_loss_fn = cfg_dict.get("reconstruction_loss_fn")
             if reconstruction_loss_fn == "ssim":
+                if self.ssdu:
+                    raise ValueError("SSIM loss is not supported for SSDU.")
                 self.train_loss_fn = reconstruction_losses.ssim.SSIMLoss()
                 self.val_loss_fn = reconstruction_losses.ssim.SSIMLoss()
             elif reconstruction_loss_fn == "l1":
@@ -165,6 +168,15 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
                 self.train_loss_fn = L1Loss()
                 self.val_loss_fn = L1Loss()
 
+            if self.ssdu:
+                self.kspace_reconstruction_loss = True
+            else:
+                self.kspace_reconstruction_loss = cfg_dict.get("kspace_reconstruction_loss", False)
+
+            self.reconstruction_loss_regularization_factor = cfg_dict.get(
+                "reconstruction_loss_regularization_factor", 1.0
+            )
+
             self.MSE = DistributedMetricSum()
             self.NMSE = DistributedMetricSum()
             self.SSIM = DistributedMetricSum()
@@ -176,10 +188,12 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
             self.ssim_vals_reconstruction: Dict = defaultdict(dict)
             self.psnr_vals_reconstruction: Dict = defaultdict(dict)
 
-    def process_reconstruction_loss(
+    def process_reconstruction_loss(  # noqa: W0221
         self,
         target: torch.Tensor,
         prediction: Union[list, torch.Tensor],
+        sensitivity_maps: torch.Tensor,
+        mask: torch.Tensor,
         loss_func: torch.nn.Module,
     ) -> torch.Tensor:
         """
@@ -191,6 +205,12 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
             Target data of shape [batch_size, n_x, n_y, 2].
         prediction : Union[list, torch.Tensor]
             Prediction(s) of shape [batch_size, n_x, n_y, 2].
+        sensitivity_maps : torch.Tensor
+            Sensitivity maps of shape [batch_size, n_coils, n_x, n_y, 2]. It will be used if self.ssdu is True, to
+            expand the target and prediction to multiple coils.
+        mask : torch.Tensor
+            Mask of shape [batch_size, n_x, n_y, 2]. It will be used if self.ssdu is True, to enforce data consistency
+            on the prediction.
         loss_func : torch.nn.Module
             Loss function. Must be one of {torch.nn.L1Loss(), torch.nn.MSELoss(),
             mridc.collections.reconstruction.losses.ssim.SSIMLoss()}. Default is ``torch.nn.L1Loss()``.
@@ -202,7 +222,14 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
             Otherwise, returns the loss of the last intermediate loss.
         """
         target = target.to(self.device)
-        target = torch.abs(target / torch.max(torch.abs(target)))
+        if not self.kspace_reconstruction_loss:
+            target = torch.abs(target / torch.max(torch.abs(target)))
+        else:
+            if target.shape[-1] != 2:
+                target = torch.view_as_real(target)
+            if self.ssdu:
+                target = utils.expand_op(target, sensitivity_maps, self.coil_dim)
+            target = fft.fft2(target, self.fft_centered, self.fft_normalization, self.spatial_dims)
 
         if "ssim" in str(loss_func).lower():
             max_value = np.array(torch.max(torch.abs(target)).item()).astype(np.float32)
@@ -248,10 +275,19 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
                 loss: torch.FloatTensor
                     Loss value.
                 """
-                y = torch.abs(y / torch.max(torch.abs(y)))
+                if not self.kspace_reconstruction_loss:
+                    y = torch.abs(y / torch.max(torch.abs(y)))
+                else:
+                    if y.shape[-1] != 2:
+                        y = torch.view_as_real(y)
+                    if self.ssdu:
+                        y = utils.expand_op(y, sensitivity_maps, self.coil_dim)
+                    y = fft.fft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims)
+                    if self.ssdu:
+                        y = y * mask
                 return loss_func(x, y)
 
-        return compute_reconstruction_loss(target, prediction)
+        return compute_reconstruction_loss(target, prediction) * self.reconstruction_loss_regularization_factor
 
     def process_segmentation_loss(self, target: torch.Tensor, prediction: torch.Tensor) -> Dict:
         """
@@ -280,15 +316,19 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
                 * self.cross_entropy_loss_weighting_factor
             )
         if self.segmentation_loss_fn["dice"] is not None:
-            _, loss_dict["dice_loss"] = self.segmentation_loss_fn["dice"](target, prediction)
+            _, loss_dict["dice_loss"] = self.segmentation_loss_fn["dice"](target, prediction)  # noqa: E1102
             loss_dict["dice_loss"] = loss_dict["dice_loss"] * self.dice_loss_weighting_factor
         loss_dict["segmentation_loss"] = loss_dict["cross_entropy_loss"] + loss_dict["dice_loss"]
         return loss_dict
 
     @staticmethod
     def process_inputs(
-        y: Union[list, torch.Tensor], mask: Union[list, torch.Tensor], init_pred: Union[list, torch.Tensor]
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, int]:
+        kspace: Union[list, torch.Tensor],
+        y: Union[list, torch.Tensor],
+        mask: Union[list, torch.Tensor],
+        init_pred: Union[list, torch.Tensor],
+        target: Union[list, torch.Tensor],
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, int]:
         """
         Processes lists of inputs to torch.Tensor. In the case where multiple accelerations are used, then the inputs
         are lists. This function converts the lists to torch.Tensor by randomly selecting one acceleration. If only one
@@ -296,22 +336,29 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
 
         Parameters
         ----------
+        kspace : Union[list, torch.Tensor]
+            Full k-space data of length n_accelerations or shape [batch_size, n_echoes, n_coils, n_x, n_y, 2].
         y : Union[list, torch.Tensor]
             Subsampled k-space data of length n_accelerations or shape [batch_size, n_echoes, n_coils, n_x, n_y, 2].
         mask : Union[list, torch.Tensor]
             Sampling mask of length n_accelerations or shape [batch_size, 1, n_x, n_y, 1].
         init_pred : Union[list, torch.Tensor]
             Initial prediction of length n_accelerations or shape [batch_size, n_echoes, n_coils, n_x, n_y, 2].
-
+        target : Union[list, torch.Tensor]
+            Target data of length n_accelerations or shape [batch_size, n_x, n_y, 2].
 
         Returns
         -------
+        kspace : torch.Tensor
+            Full k-space data of shape [batch_size, n_echoes, n_coils, n_x, n_y, 2].
         y : torch.Tensor
             Subsampled k-space data of shape [batch_size, n_echoes, n_coils, n_x, n_y, 2].
         mask : torch.Tensor
             Sampling mask of shape [batch_size, 1, n_x, n_y, 1].
         init_pred : torch.Tensor
             Initial prediction of shape [batch_size, n_echoes, n_coils, n_x, n_y, 2].
+        target : torch.Tensor
+            Target data of shape [batch_size, n_x, n_y, 2].
         r : int
             Random index used to select the acceleration.
         """
@@ -322,9 +369,14 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
             init_pred = init_pred[r]
         else:
             r = 0
-        return y, mask, init_pred, r
+        if isinstance(kspace, list):
+            kspace = kspace[r]
+            target = target[r]
+        return kspace, y, mask, init_pred, target, r
 
-    def training_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
+    def training_step(  # noqa: W0613
+        self, batch: Dict[float, torch.Tensor], batch_idx: int
+    ) -> Dict[str, torch.Tensor]:
         """
         Performs a training step.
 
@@ -368,14 +420,19 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
             init_reconstruction_pred,
             target_reconstruction,
             target_segmentation,
-            fname,
-            slice_idx,
+            _,
+            _,
             acc,
         ) = batch
 
-        y, mask, init_reconstruction_pred, r = self.process_inputs(y, mask, init_reconstruction_pred)
+        kspace, y, mask, init_reconstruction_pred, target_reconstruction, r = self.process_inputs(
+            kspace, y, mask, init_reconstruction_pred, target_reconstruction
+        )
 
-        target_reconstruction = target_reconstruction / torch.max(torch.abs(target_reconstruction))  # type: ignore
+        if self.ssdu:
+            mask, loss_mask = mask  # type: ignore
+        else:
+            loss_mask = torch.ones_like(mask)
 
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, mask)
@@ -400,7 +457,7 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
 
         if self.use_reconstruction_module:
             reconstruction_loss = self.process_reconstruction_loss(
-                target_reconstruction, pred_reconstruction, self.val_loss_fn
+                target_reconstruction, pred_reconstruction, sensitivity_maps, loss_mask, self.train_loss_fn
             )
             train_loss = (
                 self.total_segmentation_loss_weight * segmentation_loss
@@ -416,7 +473,7 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
         }
         return {"loss": train_loss, "log": tensorboard_logs}
 
-    def validation_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict:
+    def validation_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict:  # noqa: W0221
         """
         Performs a validation step.
 
@@ -462,14 +519,17 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
             target_segmentation,
             fname,
             slice_idx,
-            acc,
+            _,
         ) = batch
 
-        y, mask, init_reconstruction_pred, r = self.process_inputs(y, mask, init_reconstruction_pred)
-
-        target_reconstruction = (
-            torch.abs(target_reconstruction / torch.max(torch.abs(target_reconstruction))).detach().cpu()
+        kspace, y, mask, init_reconstruction_pred, target_reconstruction, _ = self.process_inputs(
+            kspace, y, mask, init_reconstruction_pred, target_reconstruction
         )
+
+        if self.ssdu:
+            mask, loss_mask = mask  # type: ignore
+        else:
+            loss_mask = torch.ones_like(mask)
 
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, mask)
@@ -506,7 +566,7 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
 
         if self.use_reconstruction_module:
             reconstruction_loss = self.process_reconstruction_loss(
-                target_reconstruction, pred_reconstruction, self.val_loss_fn
+                target_reconstruction, pred_reconstruction, sensitivity_maps, loss_mask, self.val_loss_fn
             )
             val_loss = (
                 self.total_segmentation_loss_weight * segmentation_loss
@@ -525,6 +585,9 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
                     pred_reconstruction.shape[0] * pred_reconstruction.shape[1], *pred_reconstruction.shape[2:]
                 )
 
+            target_reconstruction = (
+                torch.abs(target_reconstruction / torch.max(torch.abs(target_reconstruction))).detach().cpu()
+            )
             output_reconstruction = (
                 torch.abs(pred_reconstruction / torch.max(torch.abs(pred_reconstruction))).detach().cpu()
             )
@@ -584,7 +647,7 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
                     torch.abs(target_image_segmentation_class - output_image_segmentation_class),
                 )
 
-        self.cross_entropy_vals[fname][slice_idx] = self.cross_entropy_metric.to(self.device)(
+        self.cross_entropy_vals[fname][slice_idx] = self.cross_entropy_metric.to(self.device)(  # noqa: E1102
             target_segmentation.argmax(1), pred_segmentation  # type: ignore
         )
         dice_score, _ = self.dice_coefficient_metric(target_segmentation, pred_segmentation)
@@ -592,7 +655,9 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
 
         return {"val_loss": val_loss}
 
-    def test_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Tuple[str, int, torch.Tensor]:
+    def test_step(  # noqa: W0221
+        self, batch: Dict[float, torch.Tensor], batch_idx: int
+    ) -> Tuple[str, int, torch.Tensor]:
         """
         Performs a test step.
 
@@ -638,14 +703,15 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
             target_segmentation,
             fname,
             slice_idx,
-            acc,
+            _,
         ) = batch
 
-        y, mask, init_reconstruction_pred, r = self.process_inputs(y, mask, init_reconstruction_pred)
-
-        target_reconstruction = (
-            torch.abs(target_reconstruction / torch.max(torch.abs(target_reconstruction))).detach().cpu()
+        kspace, y, mask, init_reconstruction_pred, target_reconstruction, _ = self.process_inputs(
+            kspace, y, mask, init_reconstruction_pred, target_reconstruction
         )
+
+        if self.ssdu:
+            mask, _ = mask  # type: ignore
 
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, mask)
@@ -695,6 +761,9 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
                     pred_reconstruction.shape[0] * pred_reconstruction.shape[1], *pred_reconstruction.shape[2:]
                 )
 
+            target_reconstruction = (
+                torch.abs(target_reconstruction / torch.max(torch.abs(target_reconstruction))).detach().cpu()
+            )
             output_reconstruction = (
                 torch.abs(pred_reconstruction / torch.max(torch.abs(pred_reconstruction))).detach().cpu()
             )
@@ -756,7 +825,7 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
                     )
 
         if target_segmentation.dim() != 1:  # type: ignore
-            self.cross_entropy_vals[fname][slice_idx] = self.cross_entropy_metric.to(self.device)(
+            self.cross_entropy_vals[fname][slice_idx] = self.cross_entropy_metric.to(self.device)(  # noqa: E1102
                 target_segmentation.argmax(1), pred_segmentation  # type: ignore
             )
             dice_score, _ = self.dice_coefficient_metric(target_segmentation, pred_segmentation)
@@ -792,7 +861,7 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
         )
         self.log("lr", torch.stack([x["lr"] for x in outputs]).mean(), sync_dist=True)
 
-    def validation_epoch_end(self, outputs):
+    def validation_epoch_end(self, outputs):  # noqa: W0221, MC0001
         """
         Called at the end of validation epoch to aggregate outputs.
 
@@ -812,10 +881,10 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
         cross_entropy_vals = defaultdict(dict)
         dice_vals = defaultdict(dict)
 
-        for k in self.cross_entropy_vals.keys():
-            cross_entropy_vals[k].update(self.cross_entropy_vals[k])
-        for k in self.dice_vals.keys():
-            dice_vals[k].update(self.dice_vals[k])
+        for k, v in self.cross_entropy_vals.items():
+            cross_entropy_vals[k].update(v)
+        for k, v in self.dice_vals.items():
+            dice_vals[k].update(v)
 
         metrics_segmentation = {"Cross_Entropy": 0, "DICE": 0}
 
@@ -825,14 +894,14 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
             ssim_vals_reconstruction = defaultdict(dict)
             psnr_vals_reconstruction = defaultdict(dict)
 
-            for k in self.mse_vals_reconstruction.keys():
-                mse_vals_reconstruction[k].update(self.mse_vals_reconstruction[k])
-            for k in self.nmse_vals_reconstruction.keys():
-                nmse_vals_reconstruction[k].update(self.nmse_vals_reconstruction[k])
-            for k in self.ssim_vals_reconstruction.keys():
-                ssim_vals_reconstruction[k].update(self.ssim_vals_reconstruction[k])
-            for k in self.psnr_vals_reconstruction.keys():
-                psnr_vals_reconstruction[k].update(self.psnr_vals_reconstruction[k])
+            for k, v in self.mse_vals_reconstruction.items():
+                mse_vals_reconstruction[k].update(v)
+            for k, v in self.nmse_vals_reconstruction.items():
+                nmse_vals_reconstruction[k].update(v)
+            for k, v in self.ssim_vals_reconstruction.items():
+                ssim_vals_reconstruction[k].update(v)
+            for k, v in self.psnr_vals_reconstruction.items():
+                psnr_vals_reconstruction[k].update(v)
 
             metrics_reconstruction = {"MSE": 0, "NMSE": 0, "SSIM": 0, "PSNR": 0}
 
@@ -878,7 +947,7 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
             for metric, value in metrics_reconstruction.items():
                 self.log(f"{metric}_Reconstruction", value / tot_examples, sync_dist=True)
 
-    def test_epoch_end(self, outputs):
+    def test_epoch_end(self, outputs):  # noqa: MC0001
         """
         Called at the end of test epoch to aggregate outputs, log metrics and save predictions.
 
@@ -896,10 +965,10 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
         cross_entropy_vals = defaultdict(dict)
         dice_vals = defaultdict(dict)
 
-        for k in self.cross_entropy_vals.keys():
-            cross_entropy_vals[k].update(self.cross_entropy_vals[k])
-        for k in self.dice_vals.keys():
-            dice_vals[k].update(self.dice_vals[k])
+        for k, v in self.cross_entropy_vals.items():
+            cross_entropy_vals[k].update(v)
+        for k, v in self.dice_vals.items():
+            dice_vals[k].update(v)
 
         metrics_segmentation = {"Cross_Entropy": 0, "DICE": 0}
 
@@ -909,14 +978,14 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
             ssim_vals_reconstruction = defaultdict(dict)
             psnr_vals_reconstruction = defaultdict(dict)
 
-            for k in self.mse_vals_reconstruction.keys():
-                mse_vals_reconstruction[k].update(self.mse_vals_reconstruction[k])
-            for k in self.nmse_vals_reconstruction.keys():
-                nmse_vals_reconstruction[k].update(self.nmse_vals_reconstruction[k])
-            for k in self.ssim_vals_reconstruction.keys():
-                ssim_vals_reconstruction[k].update(self.ssim_vals_reconstruction[k])
-            for k in self.psnr_vals_reconstruction.keys():
-                psnr_vals_reconstruction[k].update(self.psnr_vals_reconstruction[k])
+            for k, v in self.mse_vals_reconstruction.items():
+                mse_vals_reconstruction[k].update(v)
+            for k, v in self.nmse_vals_reconstruction.items():
+                nmse_vals_reconstruction[k].update(v)
+            for k, v in self.ssim_vals_reconstruction.items():
+                ssim_vals_reconstruction[k].update(v)
+            for k, v in self.psnr_vals_reconstruction.items():
+                psnr_vals_reconstruction[k].update(v)
 
             metrics_reconstruction = {"MSE": 0, "NMSE": 0, "SSIM": 0, "PSNR": 0}
 
@@ -982,7 +1051,7 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
                         segmentations_slices.append(segmentations[fname][i][self.consecutive_slices // 2])
                 segmentations[fname] = np.stack(segmentations_slices)
 
-        if self.use_reconstruction_module:
+        if self.use_reconstruction_module:  # noqa: R1792
             reconstructions = defaultdict(list)
             for fname, slice_num, output in outputs:
                 _, reconstructions_pred = output
@@ -1088,12 +1157,19 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
                 shift_mask=shift_mask,
                 mask_center_scale=mask_center_scale,
                 remask=cfg.get("remask", False),
+                ssdu=cfg.get("ssdu", False),
+                ssdu_mask_type=cfg.get("ssdu_mask_type", "Gaussian"),
+                ssdu_rho=cfg.get("ssdu_rho", 0.4),
+                ssdu_acs_block_size=cfg.get("ssdu_acs_block_size", (4, 4)),
+                ssdu_gaussian_std_scaling_factor=cfg.get("ssdu_gaussian_std_scaling_factor", 4.0),
+                ssdu_export_and_reuse_masks=cfg.get("ssdu_export_and_reuse_masks", False),
                 crop_size=cfg.get("crop_size", None),
                 kspace_crop=cfg.get("kspace_crop", False),
                 crop_before_masking=cfg.get("crop_before_masking", False),
                 kspace_zero_filling_size=cfg.get("kspace_zero_filling_size", None),
                 normalize_inputs=cfg.get("normalize_inputs", True),
                 normalization_type=cfg.get("normalization_type", "max"),
+                kspace_normalization=cfg.get("kspace_normalization", False),
                 fft_centered=cfg.get("fft_centered", False),
                 fft_normalization=cfg.get("fft_normalization", "backward"),
                 spatial_dims=cfg.get("spatial_dims", None),

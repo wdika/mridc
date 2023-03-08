@@ -7,15 +7,15 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.nn.base as base_models
-import mridc.collections.reconstruction.nn.conv.conv2d as conv2d
-import mridc.collections.reconstruction.nn.crossdomain.crossdomain as crossdomain
 import mridc.collections.reconstruction.nn.crossdomain.multicoil as crossdomain_multicoil
 import mridc.collections.reconstruction.nn.didn.didn as didn_
 import mridc.collections.reconstruction.nn.mwcnn.mwcnn as mwcnn_
-import mridc.collections.reconstruction.nn.unet_base.unet_block as unet_block
 import mridc.core.classes.common as common_classes
+from mridc.collections.common.parts import utils
+from mridc.collections.reconstruction.nn.conv import conv2d
+from mridc.collections.reconstruction.nn.crossdomain import crossdomain
+from mridc.collections.reconstruction.nn.unet_base import unet_block
 
 __all__ = ["XPDNet"]
 
@@ -30,7 +30,7 @@ class XPDNet(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
         ArXiv:2010.07290 [Physics, Stat], July 2021. arXiv.org, http://arxiv.org/abs/2010.07290.
     """
 
-    def __init__(self, cfg: DictConfig, trainer: Trainer = None):
+    def __init__(self, cfg: DictConfig, trainer: Trainer = None):  # noqa: W0221
         super().__init__(cfg=cfg, trainer=trainer)
 
         cfg_dict = OmegaConf.to_container(cfg, resolve=True)
@@ -160,12 +160,12 @@ class XPDNet(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
         )
 
     @common_classes.typecheck()  # type: ignore
-    def forward(
+    def forward(  # noqa: W0221
         self,
         y: torch.Tensor,
         sensitivity_maps: torch.Tensor,
         mask: torch.Tensor,
-        init_pred: torch.Tensor,
+        init_pred: torch.Tensor,  # noqa: W0613
         target: torch.Tensor,
     ) -> torch.Tensor:
         """
@@ -191,5 +191,7 @@ class XPDNet(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
         """
         prediction = self.xpdnet(y, sensitivity_maps, mask)
         prediction = (prediction**2).sqrt().sum(-1)
+        if target.shape[-1] == 2:
+            target = torch.view_as_complex(target)
         _, prediction = utils.center_crop_to_smallest(target, prediction)
         return prediction

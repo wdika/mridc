@@ -2,7 +2,7 @@
 __author__ = "Dimitrios Karkalousos"
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class ConvGRUCellBase(nn.Module):
@@ -25,7 +25,7 @@ class ConvGRUCellBase(nn.Module):
         Whether to use bias. Default is ``True``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         input_size: int,
         hidden_size: int,
@@ -34,7 +34,7 @@ class ConvGRUCellBase(nn.Module):
         dilation: int,
         bias: bool = True,
     ):
-        super(ConvGRUCellBase, self).__init__()
+        super().__init__()
 
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -132,7 +132,7 @@ class ConvGRUCell(ConvGRUCellBase):
         Whether to use bias. Default is ``True``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         input_size: int,
         hidden_size: int,
@@ -141,7 +141,7 @@ class ConvGRUCell(ConvGRUCellBase):
         dilation: int,
         bias: bool = True,
     ):
-        super(ConvGRUCell, self).__init__(input_size, hidden_size, conv_dim, kernel_size, dilation, bias)
+        super().__init__(input_size, hidden_size, conv_dim, kernel_size, dilation, bias)
         self.conv_dim = conv_dim
 
     def forward(self, _input: torch.Tensor, hx: torch.Tensor) -> torch.Tensor:
@@ -187,7 +187,7 @@ class ConvMGUCellBase(nn.Module):
         Whether to use bias. Default is ``True``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         input_size: int,
         hidden_size: int,
@@ -196,7 +196,7 @@ class ConvMGUCellBase(nn.Module):
         dilation: int,
         bias: bool = True,
     ):
-        super(ConvMGUCellBase, self).__init__()
+        super().__init__()
 
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -302,7 +302,7 @@ class ConvMGUCell(ConvMGUCellBase):
         Whether to use bias. Default is ``True``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         input_size: int,
         hidden_size: int,
@@ -311,7 +311,7 @@ class ConvMGUCell(ConvMGUCellBase):
         dilation: int,
         bias: bool = True,
     ):
-        super(ConvMGUCell, self).__init__(input_size, hidden_size, conv_dim, kernel_size, dilation, bias)
+        super().__init__(input_size, hidden_size, conv_dim, kernel_size, dilation, bias)
         self.conv_dim = conv_dim
 
     def forward(self, _input: torch.Tensor, hx: torch.Tensor) -> torch.Tensor:
@@ -355,7 +355,7 @@ class IndRNNCellBase(nn.Module):
         Whether to use bias. Default is ``True``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         input_size: int,
         hidden_size: int,
@@ -364,7 +364,7 @@ class IndRNNCellBase(nn.Module):
         dilation: int,
         bias: bool = True,
     ):
-        super(IndRNNCellBase, self).__init__()
+        super().__init__()
 
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -471,7 +471,7 @@ class IndRNNCell(IndRNNCellBase):
         Whether to use bias. Default is ``True``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         input_size: int,
         hidden_size: int,
@@ -480,7 +480,7 @@ class IndRNNCell(IndRNNCellBase):
         dilation: int,
         bias: bool = True,
     ):
-        super(IndRNNCell, self).__init__(input_size, hidden_size, conv_dim, kernel_size, dilation, bias)
+        super().__init__(input_size, hidden_size, conv_dim, kernel_size, dilation, bias)
         self.conv_dim = conv_dim
 
     def forward(self, _input: torch.Tensor, hx: torch.Tensor) -> torch.Tensor:

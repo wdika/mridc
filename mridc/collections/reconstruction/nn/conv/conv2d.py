@@ -4,7 +4,7 @@ __author__ = "Dimitrios Karkalousos"
 # Taken and adapted from: https://github.com/NKI-AI/direct/blob/main/direct/nn/conv/conv.py
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class Conv2d(nn.Module):
@@ -28,7 +28,7 @@ class Conv2d(nn.Module):
         If True a batch normalization layer is applied after every convolution. Default is ``False``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         in_channels: int,
         out_channels: int,

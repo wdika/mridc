@@ -7,14 +7,13 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.nn.base as base_models
-import mridc.collections.reconstruction.nn.conv.conv2d as conv2d
 import mridc.collections.reconstruction.nn.mwcnn.mwcnn as mwcnn_
-import mridc.collections.reconstruction.nn.unet_base.unet_block as unet_block
-import mridc.collections.reconstruction.nn.variablesplittingnet.vsnet_block as vsnet_block
 import mridc.core.classes.common as common_classes
+from mridc.collections.common.parts import fft, utils
+from mridc.collections.reconstruction.nn.conv import conv2d
+from mridc.collections.reconstruction.nn.unet_base import unet_block
+from mridc.collections.reconstruction.nn.variablesplittingnet import vsnet_block
 
 __all__ = ["VSNet"]
 
@@ -87,12 +86,12 @@ class VSNet(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
         )
 
     @common_classes.typecheck()  # type: ignore
-    def forward(
+    def forward(  # noqa: W0221
         self,
         y: torch.Tensor,
         sensitivity_maps: torch.Tensor,
         mask: torch.Tensor,
-        init_pred: torch.Tensor,
+        init_pred: torch.Tensor,  # noqa: W0613
         target: torch.Tensor,
     ) -> torch.Tensor:
         """
@@ -117,11 +116,11 @@ class VSNet(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
             Reconstructed image. Shape [batch_size, n_x, n_y, 2]
         """
         sensitivity_maps = self.sens_net(y, mask) if self.use_sens_net else sensitivity_maps
-        image = self.model(y, sensitivity_maps, mask)
-        image = torch.view_as_complex(
+        prediction = self.model(y, sensitivity_maps, mask)
+        prediction = torch.view_as_complex(
             utils.coil_combination_method(
                 fft.ifft2(
-                    image,
+                    prediction,
                     centered=self.fft_centered,
                     normalization=self.fft_normalization,
                     spatial_dims=self.spatial_dims,
@@ -131,5 +130,7 @@ class VSNet(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
                 dim=self.coil_dim,
             )
         )
-        _, image = utils.center_crop_to_smallest(target, image)
-        return image
+        if target.shape[-1] == 2:
+            target = torch.view_as_complex(target)
+        _, prediction = utils.center_crop_to_smallest(target, prediction)
+        return prediction

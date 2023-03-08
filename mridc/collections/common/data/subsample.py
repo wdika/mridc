@@ -104,7 +104,9 @@ class MaskFunc:
         self,
         shape: Sequence[int],
         seed: Optional[Union[int, Tuple[int, ...]]] = None,
-        half_scan_percentage: Optional[float] = 0.0,
+        half_scan_percentage: Optional[
+            float
+        ] = 0.0,  # TODO: replace with partial Fourier - half scan is only for Philips
         scale: Optional[float] = 0.02,
     ) -> Tuple[torch.Tensor, int]:
         """

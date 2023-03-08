@@ -4,7 +4,7 @@ __author__ = "Dimitrios Karkalousos"
 from typing import Union
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class ConvRNNStack(nn.Module):
@@ -20,7 +20,7 @@ class ConvRNNStack(nn.Module):
     """
 
     def __init__(self, convs, rnn):
-        super(ConvRNNStack, self).__init__()
+        super().__init__()
         self.convs = convs
         self.rnn = rnn
 
@@ -63,7 +63,7 @@ class ConvNonlinear(nn.Module):
         Nonlinearity of the convolutional layer. Default is ``"ReLU"``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         input_size: int,
         features: int,
@@ -73,7 +73,7 @@ class ConvNonlinear(nn.Module):
         bias: bool,
         nonlinear: Union[str, None] = "ReLU",
     ):
-        super(ConvNonlinear, self).__init__()
+        super().__init__()
 
         self.input_size = input_size
         self.features = features

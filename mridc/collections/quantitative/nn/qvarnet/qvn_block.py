@@ -1,11 +1,11 @@
 # coding=utf-8
-__author__ = "Dimitrios Karkalousos, Chaoping Zhang"
+__author__ = "Dimitrios Karkalousos"
 
 from typing import List, Optional, Tuple
 
 import torch
 
-import mridc.collections.common.parts.utils as utils
+from mridc.collections.common.parts import utils
 from mridc.collections.common.parts.fft import fft2, ifft2
 from mridc.collections.quantitative.nn.base import SignalForwardModel
 
@@ -38,7 +38,7 @@ class qVarNetBlock(torch.nn.Module):
         Linear forward model. Default is ``None``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         model: torch.nn.Module,
         fft_centered: bool = False,
@@ -104,7 +104,7 @@ class qVarNetBlock(torch.nn.Module):
         x = ifft2(x, centered=self.fft_centered, normalization=self.fft_normalization, spatial_dims=self.spatial_dims)
         return utils.complex_mul(x, utils.complex_conj(sens_maps)).sum(dim=self.coil_dim)
 
-    def forward(
+    def forward(  # noqa: W0221
         self,
         masked_kspace: torch.Tensor,
         R2star_map_init: torch.Tensor,

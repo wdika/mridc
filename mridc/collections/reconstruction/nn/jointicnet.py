@@ -7,12 +7,11 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.nn.base as base_models
-import mridc.collections.reconstruction.nn.unet_base.unet_block as unet_block
 import mridc.core.classes.common as common_classes
 from mridc.collections.common.nn.base import BaseSensitivityModel
+from mridc.collections.common.parts import fft, utils
+from mridc.collections.reconstruction.nn.unet_base import unet_block
 
 __all__ = ["JointICNet"]
 
@@ -79,7 +78,7 @@ class JointICNet(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
         self.lr_image = torch.nn.Parameter(torch.ones(self.num_iter))
         self.lr_sens = torch.nn.Parameter(torch.ones(self.num_iter))
 
-    def update_C(
+    def update_C(  # noqa: W0221
         self,
         idx: int,
         DC_sens: torch.Tensor,
@@ -151,7 +150,7 @@ class JointICNet(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
         sensitivity_maps = sense_term_1 + sense_term_2 - sense_term_3
         return sensitivity_maps
 
-    def update_X(
+    def update_X(  # noqa: W0221
         self,
         idx: int,
         image: torch.Tensor,
@@ -239,12 +238,12 @@ class JointICNet(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
         return image
 
     @common_classes.typecheck()
-    def forward(
+    def forward(  # noqa: W0221
         self,
         y: torch.Tensor,
         sensitivity_maps: torch.Tensor,
         mask: torch.Tensor,
-        init_pred: torch.Tensor,
+        init_pred: torch.Tensor,  # noqa: W0613
         target: torch.Tensor,
     ) -> torch.Tensor:
         """
@@ -280,5 +279,7 @@ class JointICNet(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
             sensitivity_maps = self.update_C(idx, DC_sens, image, sensitivity_maps, y, mask)
             image = self.update_X(idx, image, sensitivity_maps, y, mask)
         image = torch.view_as_complex(image)
+        if target.shape[-1] == 2:
+            target = torch.view_as_complex(target)
         _, image = utils.center_crop_to_smallest(target, image)
         return image

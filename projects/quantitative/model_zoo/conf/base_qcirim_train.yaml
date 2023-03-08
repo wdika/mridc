@@ -94,6 +94,9 @@ model:
     - 1000.0
     - 150.0
   loss_fn: ssim
+  kspace_reconstruction_loss: false
+  reconstruction_loss_regularization_factor: 1.0
+  ssdu: false
   loss_regularization_factors:
     - R2star: 3.0
     - S0: 1.0
@@ -151,12 +154,14 @@ model:
       use_seed: true
     half_scan_percentage: 0.0
     remask: false
+    ssdu: false
     crop_size: None
     kspace_crop: false
     crop_before_masking: true
     kspace_zero_filling_size: None
     normalize_inputs: true
     normalization_type: max
+    kspace_normalization: false
     fft_centered: false
     fft_normalization: backward
     spatial_dims:
@@ -208,12 +213,14 @@ model:
       use_seed: false
     half_scan_percentage: 0.0
     remask: false
+    ssdu: false
     crop_size: None
     kspace_crop: false
     crop_before_masking: true
     kspace_zero_filling_size: None
     normalize_inputs: true
     normalization_type: max
+    kspace_normalization: false
     fft_centered: false
     fft_normalization: backward
     spatial_dims:

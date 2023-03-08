@@ -157,7 +157,7 @@ def ssim(x: np.ndarray, y: np.ndarray, maxval: np.ndarray = None) -> float:
     return ssim_score / x.shape[0]
 
 
-METRIC_FUNCS = dict(MSE=mse, NMSE=nmse, PSNR=psnr, SSIM=ssim)
+METRIC_FUNCS = {"MSE": mse, "NMSE": nmse, "PSNR": psnr, "SSIM": ssim}
 
 
 class ReconstructionMetrics:
@@ -229,6 +229,6 @@ class ReconstructionMetrics:
         metric_names = sorted(list(means))
 
         res = " ".join(f"{name} = {means[name]:.4g} +/- {2 * stddevs[name]:.4g}" for name in metric_names) + "\n"
-        with open(f"{self.output_path}metrics.txt", "a") as output:
+        with open(f"{self.output_path}metrics.txt", "a", encoding="utf-8") as output:
             output.write(f"{self.method}: {res}")
         return res

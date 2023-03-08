@@ -7,11 +7,10 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.nn.base as base_models
-import mridc.collections.reconstruction.nn.unet_base.unet_block as unet_block
 import mridc.core.classes.common as common_classes
+from mridc.collections.common.parts import fft, utils
+from mridc.collections.reconstruction.nn.unet_base import unet_block
 
 __all__ = ["UNet"]
 
@@ -44,12 +43,12 @@ class UNet(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
         )
 
     @common_classes.typecheck()  # type: ignore
-    def forward(
+    def forward(  # noqa: W0221
         self,
         y: torch.Tensor,
         sensitivity_maps: torch.Tensor,
-        mask: torch.Tensor,
-        init_pred: torch.Tensor,
+        mask: torch.Tensor,  # noqa: W0613
+        init_pred: torch.Tensor,  # noqa: W0613
         target: torch.Tensor,
     ) -> torch.Tensor:
         """
@@ -83,7 +82,10 @@ class UNet(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
                 dim=self.coil_dim,
             )
         )
-        _, prediction = utils.center_crop_to_smallest(target, prediction)
-        return torch.view_as_complex(self.unet(torch.view_as_real(prediction.unsqueeze(self.coil_dim)))).squeeze(
+        prediction = torch.view_as_complex(self.unet(torch.view_as_real(prediction.unsqueeze(self.coil_dim)))).squeeze(
             self.coil_dim
         )
+        if target.shape[-1] == 2:
+            target = torch.view_as_complex(target)
+        _, prediction = utils.center_crop_to_smallest(target, prediction)
+        return prediction

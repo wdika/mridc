@@ -1,14 +1,13 @@
 # coding=utf-8
-__author__ = "Dimitrios Karkalousos, Chaoping Zhang"
+__author__ = "Dimitrios Karkalousos"
 
 from typing import Any, List, Optional, Tuple, Union
 
 import torch
 
 import mridc.collections.quantitative.nn.qrim.utils as qrim_utils
-import mridc.collections.reconstruction.nn.rim.conv_layers as conv_layers
-import mridc.collections.reconstruction.nn.rim.rnn_cells as rnn_cells
 from mridc.collections.quantitative.nn.base import SignalForwardModel
+from mridc.collections.reconstruction.nn.rim import conv_layers, rnn_cells
 
 
 class qRIMBlock(torch.nn.Module):
@@ -63,7 +62,7 @@ class qRIMBlock(torch.nn.Module):
         Dimensionality of the input. Default is ``2``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         recurrent_layer=None,
         conv_filters=None,
@@ -83,9 +82,9 @@ class qRIMBlock(torch.nn.Module):
         spatial_dims: Optional[Tuple[int, int]] = None,
         coil_dim: int = 1,
         coil_combination_method: str = "SENSE",
-        dimensionality: int = 2,
+        dimensionality: int = 2,  # noqa: W0613
     ):
-        super(qRIMBlock, self).__init__()
+        super().__init__()
 
         self.linear_forward_model = (
             SignalForwardModel(sequence="MEGRE") if linear_forward_model is None else linear_forward_model
@@ -155,7 +154,7 @@ class qRIMBlock(torch.nn.Module):
         self.coil_dim = coil_dim
         self.coil_combination_method = coil_combination_method
 
-    def forward(
+    def forward(  # noqa: W0221
         self,
         masked_kspace: torch.Tensor,
         R2star_map_init: torch.Tensor,
@@ -243,7 +242,9 @@ class qRIMBlock(torch.nn.Module):
                     coil_combination_method=self.coil_combination_method,
                 ).contiguous()
                 grad_prediction[idx] = idx_grad_prediction / 100
-                grad_prediction[grad_prediction != grad_prediction] = 0.0
+                grad_prediction = torch.where(
+                    torch.isnan(grad_prediction), torch.zeros_like(grad_prediction), grad_prediction
+                )
 
             grad_prediction = torch.cat([grad_prediction, prediction], dim=self.coil_dim - 1).to(masked_kspace)
 

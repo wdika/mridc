@@ -6,14 +6,13 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
-import mridc.collections.reconstruction.nn.rim.rim_block as rim_block
-import mridc.collections.reconstruction.nn.unet_base.unet_block as unet_block
-import mridc.collections.segmentation.nn.attention_unet_base.attention_unet_block as attention_unet_block
-import mridc.collections.segmentation.nn.lambda_unet_base.lambda_unet_block as lambda_unet_block
-import mridc.collections.segmentation.nn.vnet_base.vnet_block as vnet_block
+from mridc.collections.common.parts import fft, utils
+from mridc.collections.reconstruction.nn.rim import rim_block
 from mridc.collections.reconstruction.nn.rim.conv_layers import ConvNonlinear
+from mridc.collections.reconstruction.nn.unet_base import unet_block
+from mridc.collections.segmentation.nn.attention_unet_base import attention_unet_block
+from mridc.collections.segmentation.nn.lambda_unet_base import lambda_unet_block
+from mridc.collections.segmentation.nn.vnet_base import vnet_block
 
 __all__ = ["MTLRSBlock"]
 
@@ -55,7 +54,7 @@ class MTLRSBlock(torch.nn.Module):
         Whether to normalize the segmentation output. Default is ``True``   .
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         reconstruction_module_params: Dict,
         segmentation_module_params: Dict,
@@ -184,7 +183,7 @@ class MTLRSBlock(torch.nn.Module):
 
         self.normalize_segmentation_output = normalize_segmentation_output
 
-    def forward(
+    def forward(  # noqa: W0221
         self,
         y: torch.Tensor,
         sensitivity_maps: torch.Tensor,
@@ -313,7 +312,7 @@ class MTLRSBlock(torch.nn.Module):
                     raise ValueError("Magnitude input is not supported for 2-channel input.")
                 _pred_reconstruction = _pred_reconstruction.permute(0, 3, 1, 2)  # type: ignore
             else:
-                raise ValueError("The input channels must be either 1 or 2. Found: {}".format(self.input_channels))
+                raise ValueError(f"The input channels must be either 1 or 2. Found: {self.input_channels}")
         else:
             _pred_reconstruction = _pred_reconstruction.unsqueeze(1)
 

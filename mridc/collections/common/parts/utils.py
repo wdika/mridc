@@ -21,6 +21,7 @@ __all__ = [
     "rss_complex",
     "sense",
     "coil_combination_method",
+    "expand_op",
     "save_predictions",
     "check_stacked_complex",
     "apply_mask",
@@ -940,3 +941,33 @@ def add_coil_dim_if_singlecoil(x: torch.tensor, dim: int = 0) -> torch.tensor:
     if len(x.shape) >= 4:
         return x
     return torch.unsqueeze(x, dim=dim)
+
+
+def expand_op(x: torch.Tensor, sensitivity_maps: torch.Tensor, dim: int = 1) -> torch.Tensor:
+    """
+    Expand a coil-combined image to a multi-coil image.
+
+    Parameters
+    ----------
+    x : torch.Tensor
+        The coil-combined image.
+    sensitivity_maps : torch.Tensor
+        The sensitivity maps.
+    dim : int
+        The coil dimension to expand. Default is ``1``.
+
+    Returns
+    -------
+    torch.Tensor
+        The multi-coil image.
+
+    Examples
+    --------
+    >>> import torch
+    >>> from mridc.collections.common.parts.utils import expand_op
+    >>> data = torch.rand(1, 200, 200, 2)
+    >>> sens = torch.rand(1, 30, 200, 200, 2)
+    >>> expand_op(data, sens).shape
+    (1, 30, 200, 200, 2)
+    """
+    return torch.unsqueeze(x, dim=dim) * sensitivity_maps

@@ -7,14 +7,12 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
 import mridc.collections.reconstruction.nn.base as base_models
 import mridc.collections.reconstruction.nn.didn.didn as didn_
-import mridc.collections.reconstruction.nn.sigmanet.dc_layers as dc_layers
-import mridc.collections.reconstruction.nn.sigmanet.sensitivity_net as sensitivity_net
-import mridc.collections.reconstruction.nn.unet_base.unet_block as unet_block
 import mridc.core.classes.common as common_classes
+from mridc.collections.common.parts import fft, utils
+from mridc.collections.reconstruction.nn.sigmanet import dc_layers, sensitivity_net
+from mridc.collections.reconstruction.nn.unet_base import unet_block
 
 __all__ = ["DUNet"]
 
@@ -98,7 +96,7 @@ class DUNet(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
         )
 
     @common_classes.typecheck()  # type: ignore
-    def forward(
+    def forward(  # noqa: W0221
         self,
         y: torch.Tensor,
         sensitivity_maps: torch.Tensor,
@@ -139,5 +137,7 @@ class DUNet(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
         image = self.model(init_pred, y, sensitivity_maps, mask)
         image = torch.sum(utils.complex_mul(image, utils.complex_conj(sensitivity_maps)), self.coil_dim)
         image = torch.view_as_complex(image)
+        if target.shape[-1] == 2:
+            target = torch.view_as_complex(target)
         _, image = utils.center_crop_to_smallest(target, image)
         return image

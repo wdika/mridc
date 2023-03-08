@@ -6,10 +6,9 @@ __author__ = "Dimitrios Karkalousos"
 from typing import Optional, Tuple, Union
 
 import torch
-import torch.nn as nn
+from torch import nn
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
+from mridc.collections.common.parts import fft, utils
 
 
 class CrossDomainNetwork(nn.Module):
@@ -48,14 +47,14 @@ class CrossDomainNetwork(nn.Module):
         Coil dimension. Default is ``1``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         image_model_list: nn.Module,
         kspace_model_list: Optional[Union[nn.Module, None]] = None,
         domain_sequence: str = "KIKI",
         image_buffer_size: int = 1,
         kspace_buffer_size: int = 1,
-        normalize_image: bool = False,
+        normalize_image: bool = False,  # noqa: W0613
         fft_centered: bool = False,
         fft_normalization: str = "backward",
         spatial_dims: Optional[Tuple[int, int]] = None,
@@ -86,7 +85,7 @@ class CrossDomainNetwork(nn.Module):
         self.image_model_list = image_model_list
         self.image_buffer_size = image_buffer_size
 
-    def kspace_correction(
+    def kspace_correction(  # noqa: W0221
         self,
         block_idx: int,
         image_buffer: torch.Tensor,
@@ -135,7 +134,7 @@ class CrossDomainNetwork(nn.Module):
 
         return kspace_buffer
 
-    def image_correction(
+    def image_correction(  # noqa: W0221
         self,
         block_idx: int,
         image_buffer: torch.Tensor,

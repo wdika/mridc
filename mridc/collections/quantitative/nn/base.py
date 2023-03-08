@@ -1,5 +1,5 @@
 # coding=utf-8
-__author__ = "Dimitrios Karkalousos, Chaoping Zhang"
+__author__ = "Dimitrios Karkalousos"
 
 import os
 from abc import ABC
@@ -17,14 +17,14 @@ from torch import Tensor
 from torch.nn import L1Loss, MSELoss
 from torch.utils.data import DataLoader
 
-import mridc.collections.common.data.subsample as subsample
-import mridc.collections.common.parts.utils as utils
-import mridc.collections.quantitative.data.qmri_loader as qmri_loader
 import mridc.collections.quantitative.parts.transforms as quantitative_transforms
 import mridc.collections.reconstruction.losses as reconstruction_losses
-import mridc.collections.reconstruction.metrics.reconstruction_metrics as reconstruction_metrics
 import mridc.collections.reconstruction.nn.base as base_reconstruction_models
+from mridc.collections.common.data import subsample
 from mridc.collections.common.nn.base import BaseMRIModel, BaseSensitivityModel
+from mridc.collections.common.parts import fft, utils
+from mridc.collections.quantitative.data import qmri_loader
+from mridc.collections.reconstruction.metrics import reconstruction_metrics
 
 __all__ = ["BaseqMRIReconstructionModel", "SignalForwardModel"]
 
@@ -55,6 +55,8 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
 
         self.coil_combination_method = cfg_dict.get("coil_combination_method", "SENSE")
 
+        self.ssdu = cfg_dict.get("ssdu", False)
+
         # Initialize the sensitivity network if cfg_dict.get("use_sens_net") is True
         self.use_sens_net = cfg_dict.get("use_sens_net", False)
         if self.use_sens_net:
@@ -71,6 +73,8 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             )
 
         if cfg_dict.get("loss_fn") == "ssim":
+            if self.ssdu:
+                raise ValueError("SSIM loss is not supported for SSDU.")
             self.train_loss_fn = reconstruction_losses.ssim.SSIMLoss()
             self.val_loss_fn = reconstruction_losses.ssim.SSIMLoss()
         elif cfg_dict.get("loss_fn") == "mse":
@@ -79,6 +83,13 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
         elif cfg_dict.get("loss_fn") == "l1":
             self.train_loss_fn = L1Loss()
             self.val_loss_fn = L1Loss()
+
+        if self.ssdu:
+            self.kspace_reconstruction_loss = True
+        else:
+            self.kspace_reconstruction_loss = cfg_dict.get("kspace_reconstruction_loss", False)
+
+        self.reconstruction_loss_regularization_factor = cfg_dict.get("reconstruction_loss_regularization_factor", 1.0)
 
         loss_regularization_factors = cfg_dict.get("loss_regularization_factors")
         self.loss_regularization_factors = {
@@ -120,7 +131,7 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
         self.ssim_vals_phi: Dict = defaultdict(dict)
         self.psnr_vals_phi: Dict = defaultdict(dict)
 
-    def process_quantitative_loss(
+    def process_quantitative_loss(  # noqa: W0221
         self,
         target: torch.Tensor,
         prediction: Union[list, torch.Tensor],
@@ -213,10 +224,12 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
 
         return compute_quantitative_loss(target, prediction, mask_brain)
 
-    def process_reconstruction_loss(
+    def process_reconstruction_loss(  # noqa: W0221
         self,
         target: torch.Tensor,
         prediction: Union[list, torch.Tensor],
+        sensitivity_maps: torch.Tensor,
+        mask: torch.Tensor,
         loss_func: torch.nn.Module,
     ) -> torch.Tensor:
         """
@@ -228,6 +241,12 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             Target data of shape [batch_size, n_x, n_y, 2].
         prediction : Union[list, torch.Tensor]
             Prediction(s) of shape [batch_size, n_x, n_y, 2].
+        sensitivity_maps : torch.Tensor
+            Sensitivity maps of shape [batch_size, n_coils, n_x, n_y, 2]. It will be used if self.ssdu is True, to
+            expand the target and prediction to multiple coils.
+        mask : torch.Tensor
+            Mask of shape [batch_size, n_x, n_y, 2]. It will be used if self.ssdu is True, to enforce data consistency
+            on the prediction.
         loss_func : torch.nn.Module
             Loss function. Must be one of {torch.nn.L1Loss(), torch.nn.MSELoss(),
             mridc.collections.reconstruction.losses.ssim.SSIMLoss()}. Default is ``torch.nn.L1Loss()``.
@@ -238,8 +257,14 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             If self.accumulate_loss is True, returns an accumulative result of all intermediate losses.
             Otherwise, returns the loss of the last intermediate loss.
         """
-        target = torch.abs(target / torch.max(torch.abs(target)))
-        prediction = torch.abs(prediction / torch.max(torch.abs(prediction)))
+        if not self.kspace_reconstruction_loss:
+            target = torch.abs(target / torch.max(torch.abs(target)))
+        else:
+            if target.shape[-1] != 2:
+                target = torch.view_as_real(target)
+            if self.ssdu:
+                target = utils.expand_op(target, sensitivity_maps, self.coil_dim)
+            target = fft.fft2(target, self.fft_centered, self.fft_normalization, self.spatial_dims)
 
         if "ssim" in str(loss_func).lower():
             max_value = np.array(torch.max(torch.abs(target)).item()).astype(np.float32)
@@ -260,6 +285,7 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                 loss: torch.FloatTensor
                     Loss value.
                 """
+                y = torch.abs(y / torch.max(torch.abs(y)))
                 return loss_func(
                     x.unsqueeze(dim=self.coil_dim),
                     y.unsqueeze(dim=self.coil_dim),
@@ -284,16 +310,28 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                 loss: torch.FloatTensor
                     Loss value.
                 """
+                if not self.kspace_reconstruction_loss:
+                    y = torch.abs(y / torch.max(torch.abs(y)))
+                else:
+                    if y.shape[-1] != 2:
+                        y = torch.view_as_real(y)
+                    if self.ssdu:
+                        y = utils.expand_op(y, sensitivity_maps, self.coil_dim)
+                    y = fft.fft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims)
+                    if self.ssdu:
+                        y = y * mask
                 return loss_func(x, y)
 
-        return compute_reconstruction_loss(target, prediction)
+        return compute_reconstruction_loss(target, prediction) * self.reconstruction_loss_regularization_factor
 
     @staticmethod
-    def process_inputs(
+    def process_inputs(  # noqa: W0221
         R2star_map_init: Union[list, torch.Tensor],
         S0_map_init: Union[list, torch.Tensor],
         B0_map_init: Union[list, torch.Tensor],
         phi_map_init: Union[list, torch.Tensor],
+        kspace: Union[list, torch.Tensor],
+        target: Union[list, torch.Tensor],
         y: Union[list, torch.Tensor],
         mask: Union[list, torch.Tensor],
     ) -> tuple[
@@ -301,6 +339,8 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
         Union[Union[list, Tensor], Any],
         Union[Union[list, Tensor], Any],
         Union[Union[list, Tensor], Any],
+        Union[Tensor, Any],
+        Union[Tensor, Any],
         Union[Tensor, Any],
         Union[Union[list, Tensor], Any],
         Union[int, ndarray[int]],
@@ -320,6 +360,10 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             B0 map of length n_accelerations or shape [batch_size, n_x, n_y].
         phi_map_init : Union[list, torch.Tensor]
             Phi map of length n_accelerations or shape [batch_size, n_x, n_y].
+        kspace : Union[list, torch.Tensor]
+            Full k-space data of length n_accelerations or shape [batch_size, n_echoes, n_coils, n_x, n_y, 2].
+        target : Union[list, torch.Tensor]
+            Target data of length n_accelerations or shape [batch_size, n_x, n_y, 2].
         y : Union[list, torch.Tensor]
             Subsampled k-space data of length n_accelerations or shape [batch_size, n_echoes, n_coils, n_x, n_y, 2].
         mask : Union[list, torch.Tensor]
@@ -335,6 +379,10 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             B0 map of shape [batch_size, n_x, n_y].
         phi_map_init : torch.Tensor
             Phi map of shape [batch_size, n_x, n_y].
+        kspace : torch.Tensor
+            Full k-space data of shape [batch_size, n_echoes, n_coils, n_x, n_y, 2].
+        target : torch.Tensor
+            Target data of shape [batch_size, n_x, n_y, 2].
         y : torch.Tensor
             Subsampled k-space data of shape [batch_size, n_echoes, n_coils, n_x, n_y, 2].
         mask : torch.Tensor
@@ -352,11 +400,16 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             mask = mask[r]
         else:
             r = 0
+        if isinstance(kspace, list):
+            kspace = kspace[r]
+            target = target[r]
         return (
             R2star_map_init,
             S0_map_init,
             B0_map_init,
             phi_map_init,
+            kspace,
+            target,
             y,
             mask,
             r,
@@ -371,7 +424,9 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             x = x[-1]
         return x
 
-    def training_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict[str, torch.Tensor]:
+    def training_step(  # noqa: W0221
+        self, batch: Dict[float, torch.Tensor], batch_idx: int
+    ) -> Dict[str, torch.Tensor]:
         """
         Performs a training step.
 
@@ -397,6 +452,8 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                 Phi target map. Shape [batch_size,  n_x, n_y].
             'TEs' : List of float
                 Echo times.
+            'kspace' : List of torch.Tensor
+                Full k-space data. Shape [batch_size, n_echoes, n_coils, n_x, n_y, 2].
             'y' : List of torch.Tensor
                 Subsampled k-space data. Shape [batch_size, n_echoes, n_coils, n_x, n_y, 2].
             'sensitivity_maps' : torch.Tensor
@@ -438,10 +495,10 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             sensitivity_maps,
             mask,
             mask_brain,
-            prediction,
+            _,
             target,
-            fname,
-            slice_num,
+            _,
+            _,
             acc,
         ) = batch
 
@@ -450,6 +507,8 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             S0_map_init,
             B0_map_init,
             phi_map_init,
+            kspace,
+            target,
             y,
             sampling_mask,
             r,
@@ -458,9 +517,16 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             S0_map_init,
             B0_map_init,
             phi_map_init,
+            kspace,
+            target,
             y,
             mask,
         )
+
+        if self.ssdu:
+            mask, loss_mask = mask  # type: ignore
+        else:
+            loss_mask = torch.ones_like(mask)
 
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, sampling_mask)
@@ -492,7 +558,11 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             )
 
             if self.use_reconstruction_module:
-                lossrecon = sum(self.process_reconstruction_loss(target, recon_pred, self.train_loss_fn))
+                lossrecon = sum(
+                    self.process_reconstruction_loss(
+                        target, recon_pred, sensitivity_maps, loss_mask, self.train_loss_fn
+                    )
+                )
             else:
                 lossrecon = torch.tensor([0.0])
 
@@ -520,7 +590,9 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             )
 
             if self.use_reconstruction_module:
-                lossrecon = self.process_reconstruction_loss(target, recon_pred, self.train_loss_fn).mean()
+                lossrecon = self.process_reconstruction_loss(
+                    target, recon_pred, sensitivity_maps, loss_mask, self.train_loss_fn
+                ).mean()
             else:
                 lossrecon = torch.tensor([0.0])
 
@@ -555,7 +627,7 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
         }
         return {"loss": train_loss, "log": tensorboard_logs}
 
-    def validation_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict:
+    def validation_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict:  # noqa: W0221
         """
         Performs a validation step.
 
@@ -622,11 +694,11 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             sensitivity_maps,
             mask,
             mask_brain,
-            prediction,
+            _,
             target,
             fname,
             slice_num,
-            acc,
+            _,
         ) = batch
 
         (
@@ -634,17 +706,26 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             S0_map_init,
             B0_map_init,
             phi_map_init,
+            kspace,
+            target,
             y,
             sampling_mask,
-            r,
+            _,
         ) = self.process_inputs(  # type: ignore
             R2star_map_init,
             S0_map_init,
             B0_map_init,
             phi_map_init,
+            kspace,
+            target,
             y,
             mask,
         )
+
+        if self.ssdu:
+            mask, loss_mask = mask  # type: ignore
+        else:
+            loss_mask = torch.ones_like(mask)
 
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, sampling_mask)
@@ -676,7 +757,9 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             )
 
             if self.use_reconstruction_module:
-                lossrecon = sum(self.process_reconstruction_loss(target, recon_pred, self.val_loss_fn))
+                lossrecon = sum(
+                    self.process_reconstruction_loss(target, recon_pred, sensitivity_maps, loss_mask, self.val_loss_fn)
+                )
             else:
                 lossrecon = torch.tensor([0.0])
 
@@ -704,7 +787,9 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             )
 
             if self.use_reconstruction_module:
-                lossrecon = self.process_reconstruction_loss(target, recon_pred, self.val_loss_fn).mean()
+                lossrecon = self.process_reconstruction_loss(
+                    target, recon_pred, sensitivity_maps, loss_mask, self.val_loss_fn
+                ).mean()
             else:
                 lossrecon = torch.tensor([0.0])
 
@@ -923,7 +1008,9 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
 
         return {"val_loss": val_loss}
 
-    def test_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Tuple[str, int, torch.Tensor]:
+    def test_step(  # noqa: W0221
+        self, batch: Dict[float, torch.Tensor], batch_idx: int
+    ) -> Tuple[str, int, torch.Tensor]:
         """
         Performs a test step.
 
@@ -994,11 +1081,11 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             sensitivity_maps,
             mask,
             mask_brain,
-            prediction,
+            _,
             target,
             fname,
             slice_num,
-            acc,
+            _,
         ) = batch
 
         (
@@ -1006,17 +1093,24 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             S0_map_init,
             B0_map_init,
             phi_map_init,
+            kspace,
+            target,
             y,
             sampling_mask,
-            r,
+            _,
         ) = self.process_inputs(  # type: ignore
             R2star_map_init,
             S0_map_init,
             B0_map_init,
             phi_map_init,
+            kspace,
+            target,
             y,
             mask,
         )
+
+        if self.ssdu:
+            mask, _ = mask  # type: ignore
 
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, sampling_mask)
@@ -1264,7 +1358,7 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
         self.log(f"loss_B0_{self.acc}x", torch.stack([x[f"loss_B0_{self.acc}x"] for x in outputs]).mean())
         self.log(f"loss_phi_{self.acc}x", torch.stack([x[f"loss_phi_{self.acc}x"] for x in outputs]).mean())
 
-    def validation_epoch_end(self, outputs):
+    def validation_epoch_end(self, outputs):  # noqa: MC0001
         """
         Called at the end of validation epoch to aggregate outputs.
 
@@ -1307,50 +1401,50 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
         ssim_vals_phi = defaultdict(dict)
         psnr_vals_phi = defaultdict(dict)
 
-        for k in self.mse_vals_reconstruction.keys():
-            mse_vals_reconstruction[k].update(self.mse_vals_reconstruction[k])
-        for k in self.nmse_vals_reconstruction.keys():
-            nmse_vals_reconstruction[k].update(self.nmse_vals_reconstruction[k])
-        for k in self.ssim_vals_reconstruction.keys():
-            ssim_vals_reconstruction[k].update(self.ssim_vals_reconstruction[k])
-        for k in self.psnr_vals_R2star.keys():
-            psnr_vals_reconstruction[k].update(self.psnr_vals_reconstruction[k])
+        for k, v in self.mse_vals_reconstruction.items():
+            mse_vals_reconstruction[k].update(v)
+        for k, v in self.nmse_vals_reconstruction.items():
+            nmse_vals_reconstruction[k].update(v)
+        for k, v in self.ssim_vals_reconstruction.items():
+            ssim_vals_reconstruction[k].update(v)
+        for k, v in self.psnr_vals_reconstruction.items():
+            psnr_vals_reconstruction[k].update(v)
 
-        for k in self.mse_vals_R2star.keys():
-            mse_vals_R2star[k].update(self.mse_vals_R2star[k])
-        for k in self.nmse_vals_R2star.keys():
-            nmse_vals_R2star[k].update(self.nmse_vals_R2star[k])
-        for k in self.ssim_vals_R2star.keys():
-            ssim_vals_R2star[k].update(self.ssim_vals_R2star[k])
-        for k in self.psnr_vals_R2star.keys():
-            psnr_vals_R2star[k].update(self.psnr_vals_R2star[k])
+        for k, v in self.mse_vals_R2star.items():
+            mse_vals_R2star[k].update(v)
+        for k, v in self.nmse_vals_R2star.items():
+            nmse_vals_R2star[k].update(v)
+        for k, v in self.ssim_vals_R2star.items():
+            ssim_vals_R2star[k].update(v)
+        for k, v in self.psnr_vals_R2star.items():
+            psnr_vals_R2star[k].update(v)
 
-        for k in self.mse_vals_S0.keys():
-            mse_vals_S0[k].update(self.mse_vals_S0[k])
-        for k in self.nmse_vals_S0.keys():
-            nmse_vals_S0[k].update(self.nmse_vals_S0[k])
-        for k in self.ssim_vals_S0.keys():
-            ssim_vals_S0[k].update(self.ssim_vals_S0[k])
-        for k in self.psnr_vals_S0.keys():
-            psnr_vals_S0[k].update(self.psnr_vals_S0[k])
+        for k, v in self.mse_vals_S0.items():
+            mse_vals_S0[k].update(v)
+        for k, v in self.nmse_vals_S0.items():
+            nmse_vals_S0[k].update(v)
+        for k, v in self.ssim_vals_S0.items():
+            ssim_vals_S0[k].update(v)
+        for k, v in self.psnr_vals_S0.items():
+            psnr_vals_S0[k].update(v)
 
-        for k in self.mse_vals_B0.keys():
-            mse_vals_B0[k].update(self.mse_vals_B0[k])
-        for k in self.nmse_vals_B0.keys():
-            nmse_vals_B0[k].update(self.nmse_vals_B0[k])
-        for k in self.ssim_vals_B0.keys():
-            ssim_vals_B0[k].update(self.ssim_vals_B0[k])
-        for k in self.psnr_vals_B0.keys():
-            psnr_vals_B0[k].update(self.psnr_vals_B0[k])
+        for k, v in self.mse_vals_B0.items():
+            mse_vals_B0[k].update(v)
+        for k, v in self.nmse_vals_B0.items():
+            nmse_vals_B0[k].update(v)
+        for k, v in self.ssim_vals_B0.items():
+            ssim_vals_B0[k].update(v)
+        for k, v in self.psnr_vals_B0.items():
+            psnr_vals_B0[k].update(v)
 
-        for k in self.mse_vals_phi.keys():
-            mse_vals_phi[k].update(self.mse_vals_phi[k])
-        for k in self.nmse_vals_phi.keys():
-            nmse_vals_phi[k].update(self.nmse_vals_phi[k])
-        for k in self.ssim_vals_phi.keys():
-            ssim_vals_phi[k].update(self.ssim_vals_phi[k])
-        for k in self.psnr_vals_phi.keys():
-            psnr_vals_phi[k].update(self.psnr_vals_phi[k])
+        for k, v in self.mse_vals_phi.items():
+            mse_vals_phi[k].update(v)
+        for k, v in self.nmse_vals_phi.items():
+            nmse_vals_phi[k].update(v)
+        for k, v in self.ssim_vals_phi.items():
+            ssim_vals_phi[k].update(v)
+        for k, v in self.psnr_vals_phi.items():
+            psnr_vals_phi[k].update(v)
 
         # apply means across image volumes
         metrics = {
@@ -1485,7 +1579,7 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             self.log(f"{metric}_B0", value["B0"] / tot_examples, sync_dist=True)
             self.log(f"{metric}_phi", value["phi"] / tot_examples, sync_dist=True)
 
-    def test_epoch_end(self, outputs):
+    def test_epoch_end(self, outputs):  # noqa: MC0001
         """
         Called at the end of test epoch to aggregate outputs, log metrics and save predictions.
 
@@ -1526,50 +1620,50 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
         ssim_vals_phi = defaultdict(dict)
         psnr_vals_phi = defaultdict(dict)
 
-        for k in self.mse_vals_reconstruction.keys():
-            mse_vals_reconstruction[k].update(self.mse_vals_reconstruction[k])
-        for k in self.nmse_vals_reconstruction.keys():
-            nmse_vals_reconstruction[k].update(self.nmse_vals_reconstruction[k])
-        for k in self.ssim_vals_reconstruction.keys():
-            ssim_vals_reconstruction[k].update(self.ssim_vals_reconstruction[k])
-        for k in self.psnr_vals_R2star.keys():
-            psnr_vals_reconstruction[k].update(self.psnr_vals_reconstruction[k])
+        for k, v in self.mse_vals_reconstruction.items():
+            mse_vals_reconstruction[k].update(v)
+        for k, v in self.nmse_vals_reconstruction.items():
+            nmse_vals_reconstruction[k].update(v)
+        for k, v in self.ssim_vals_reconstruction.items():
+            ssim_vals_reconstruction[k].update(v)
+        for k, v in self.psnr_vals_reconstruction.items():
+            psnr_vals_reconstruction[k].update(v)
 
-        for k in self.mse_vals_R2star.keys():
-            mse_vals_R2star[k].update(self.mse_vals_R2star[k])
-        for k in self.nmse_vals_R2star.keys():
-            nmse_vals_R2star[k].update(self.nmse_vals_R2star[k])
-        for k in self.ssim_vals_R2star.keys():
-            ssim_vals_R2star[k].update(self.ssim_vals_R2star[k])
-        for k in self.psnr_vals_R2star.keys():
-            psnr_vals_R2star[k].update(self.psnr_vals_R2star[k])
+        for k, v in self.mse_vals_R2star.items():
+            mse_vals_R2star[k].update(v)
+        for k, v in self.nmse_vals_R2star.items():
+            nmse_vals_R2star[k].update(v)
+        for k, v in self.ssim_vals_R2star.items():
+            ssim_vals_R2star[k].update(v)
+        for k, v in self.psnr_vals_R2star.items():
+            psnr_vals_R2star[k].update(v)
 
-        for k in self.mse_vals_S0.keys():
-            mse_vals_S0[k].update(self.mse_vals_S0[k])
-        for k in self.nmse_vals_S0.keys():
-            nmse_vals_S0[k].update(self.nmse_vals_S0[k])
-        for k in self.ssim_vals_S0.keys():
-            ssim_vals_S0[k].update(self.ssim_vals_S0[k])
-        for k in self.psnr_vals_S0.keys():
-            psnr_vals_S0[k].update(self.psnr_vals_S0[k])
+        for k, v in self.mse_vals_S0.items():
+            mse_vals_S0[k].update(v)
+        for k, v in self.nmse_vals_S0.items():
+            nmse_vals_S0[k].update(v)
+        for k, v in self.ssim_vals_S0.items():
+            ssim_vals_S0[k].update(v)
+        for k, v in self.psnr_vals_S0.items():
+            psnr_vals_S0[k].update(v)
 
-        for k in self.mse_vals_B0.keys():
-            mse_vals_B0[k].update(self.mse_vals_B0[k])
-        for k in self.nmse_vals_B0.keys():
-            nmse_vals_B0[k].update(self.nmse_vals_B0[k])
-        for k in self.ssim_vals_B0.keys():
-            ssim_vals_B0[k].update(self.ssim_vals_B0[k])
-        for k in self.psnr_vals_B0.keys():
-            psnr_vals_B0[k].update(self.psnr_vals_B0[k])
+        for k, v in self.mse_vals_B0.items():
+            mse_vals_B0[k].update(v)
+        for k, v in self.nmse_vals_B0.items():
+            nmse_vals_B0[k].update(v)
+        for k, v in self.ssim_vals_B0.items():
+            ssim_vals_B0[k].update(v)
+        for k, v in self.psnr_vals_B0.items():
+            psnr_vals_B0[k].update(v)
 
-        for k in self.mse_vals_phi.keys():
-            mse_vals_phi[k].update(self.mse_vals_phi[k])
-        for k in self.nmse_vals_phi.keys():
-            nmse_vals_phi[k].update(self.nmse_vals_phi[k])
-        for k in self.ssim_vals_phi.keys():
-            ssim_vals_phi[k].update(self.ssim_vals_phi[k])
-        for k in self.psnr_vals_phi.keys():
-            psnr_vals_phi[k].update(self.psnr_vals_phi[k])
+        for k, v in self.mse_vals_phi.items():
+            mse_vals_phi[k].update(v)
+        for k, v in self.nmse_vals_phi.items():
+            nmse_vals_phi[k].update(v)
+        for k, v in self.ssim_vals_phi.items():
+            ssim_vals_phi[k].update(v)
+        for k, v in self.psnr_vals_phi.items():
+            psnr_vals_phi[k].update(v)
 
         # apply means across image volumes
         metrics = {
@@ -1786,12 +1880,19 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                 shift_mask=shift_mask,
                 mask_center_scale=mask_center_scale,
                 remask=cfg.get("remask", False),
+                ssdu=cfg.get("ssdu", False),
+                ssdu_mask_type=cfg.get("ssdu_mask_type", "Gaussian"),
+                ssdu_rho=cfg.get("ssdu_rho", 0.4),
+                ssdu_acs_block_size=cfg.get("ssdu_acs_block_size", (4, 4)),
+                ssdu_gaussian_std_scaling_factor=cfg.get("ssdu_gaussian_std_scaling_factor", 4.0),
+                ssdu_export_and_reuse_masks=cfg.get("ssdu_export_and_reuse_masks", False),
                 crop_size=cfg.get("crop_size", None),
                 kspace_crop=cfg.get("kspace_crop", False),
                 crop_before_masking=cfg.get("crop_before_masking", False),
                 kspace_zero_filling_size=cfg.get("kspace_zero_filling_size", None),
                 normalize_inputs=cfg.get("normalize_inputs", True),
                 normalization_type=cfg.get("normalization_type", "max"),
+                kspace_normalization=cfg.get("kspace_normalization", False),
                 fft_centered=cfg.get("fft_centered", False),
                 fft_normalization=cfg.get("fft_normalization", "backward"),
                 spatial_dims=cfg.get("spatial_dims", None),
@@ -1829,11 +1930,11 @@ class SignalForwardModel:
     """
 
     def __init__(self, sequence: Union[str, None] = None):
-        super(SignalForwardModel, self).__init__()
+        super().__init__()
         self.sequence = sequence.lower() if isinstance(sequence, str) else None
         self.scaling = 1e-3
 
-    def __call__(
+    def __call__(  # noqa: W0221
         self,
         R2star_map: torch.Tensor,
         S0_map: torch.Tensor,
@@ -1866,7 +1967,7 @@ class SignalForwardModel:
             f"Found {self.sequence}"
         )
 
-    def MEGRESignalModel(
+    def MEGRESignalModel(  # noqa: W0221
         self,
         R2star_map: torch.Tensor,
         S0_map: torch.Tensor,
@@ -1915,7 +2016,7 @@ class SignalForwardModel:
             ],
             1,
         )
-        pred[pred != pred] = 0.0
+        pred = torch.where(torch.isnan(pred), torch.zeros_like(pred), pred)
         return torch.view_as_real(pred[..., 0] + 1j * pred[..., 1])
 
     def MEGRENoPhaseSignalModel(
@@ -1949,5 +2050,5 @@ class SignalForwardModel:
             ],
             1,
         )
-        pred[pred != pred] = 0.0
+        pred = torch.where(torch.isnan(pred), torch.zeros_like(pred), pred)
         return torch.view_as_real(pred[..., 0] + 1j * pred[..., 1])

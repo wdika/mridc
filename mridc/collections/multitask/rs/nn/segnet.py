@@ -9,11 +9,10 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from torch import nn
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
 import mridc.collections.multitask.rs.nn.base as base_rs_models
-import mridc.collections.multitask.rs.nn.idslr_base.idslr_block as idslr_block
 import mridc.core.classes.common as common_classes
+from mridc.collections.common.parts import fft, utils
+from mridc.collections.multitask.rs.nn.idslr_base import idslr_block
 from mridc.collections.reconstruction.nn.rim import conv_layers
 
 __all__ = ["SegNet"]
@@ -118,7 +117,7 @@ class SegNet(base_rs_models.BaseMRIReconstructionSegmentationModel, ABC):  # typ
         self.dc = idslr_block.DC()
 
     @common_classes.typecheck()  # type: ignore
-    def forward(
+    def forward(  # noqa: W0221
         self,
         y: torch.Tensor,
         sensitivity_maps: torch.Tensor,
@@ -231,7 +230,7 @@ class SegNet(base_rs_models.BaseMRIReconstructionSegmentationModel, ABC):  # typ
         loss_dict = {"cross_entropy_loss": 0.0, "dice_loss": 0.0}
         cross_entropy_loss = []  # type: ignore
         dice_loss = []  # type: ignore
-        for i in range(len(prediction)):
+        for i in range(len(prediction)):  # noqa: C0200
             if self.segmentation_loss_fn["cross_entropy"] is not None:
                 cross_entropy_loss.append(
                     self.segmentation_loss_fn["cross_entropy"].cpu()(
@@ -239,7 +238,7 @@ class SegNet(base_rs_models.BaseMRIReconstructionSegmentationModel, ABC):  # typ
                     )
                 )
             if self.segmentation_loss_fn["dice"] is not None:
-                _, loss_dice = self.segmentation_loss_fn["dice"](target, prediction[i])
+                _, loss_dice = self.segmentation_loss_fn["dice"](target, prediction[i])  # noqa: E1102
                 dice_loss.append(loss_dice)
         if self.segmentation_loss_fn["cross_entropy"] is not None:
             loss_dict["cross_entropy_loss"] = (

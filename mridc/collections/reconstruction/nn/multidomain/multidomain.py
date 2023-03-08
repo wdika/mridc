@@ -6,11 +6,10 @@ __author__ = "Dimitrios Karkalousos"
 from typing import Optional, Sequence, Tuple
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
-import mridc.collections.common.parts.fft as fft
-import mridc.collections.common.parts.utils as utils
+from mridc.collections.common.parts import fft, utils
 
 
 class MultiDomainConv2d(nn.Module):
@@ -33,12 +32,12 @@ class MultiDomainConv2d(nn.Module):
         Number of output channels. Default is ``4``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         fft_centered: bool = False,
         fft_normalization: str = "backward",
         spatial_dims: Sequence[int] = None,
-        coil_dim: int = 1,
+        coil_dim: int = 1,  # noqa: W0613
         in_channels: int = 4,
         out_channels: int = 4,
         **kwargs,
@@ -100,12 +99,12 @@ class MultiDomainConvTranspose2d(nn.Module):
         Number of output channels. Default is ``4``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         fft_centered: bool = False,
         fft_normalization: str = "backward",
         spatial_dims: Sequence[int] = None,
-        coil_dim: int = 1,
+        coil_dim: int = 1,  # noqa: W0613
         in_channels: int = 4,
         out_channels: int = 4,
         **kwargs,
@@ -166,7 +165,7 @@ class MultiDomainConvBlock(nn.Module):
         Number of output channels. Default is ``4``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         fft_centered: bool = False,
         fft_normalization: str = "backwar",
@@ -250,7 +249,7 @@ class TransposeMultiDomainConvBlock(nn.Module):
         Number of output channels. Default is ``4``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         fft_centered: bool = False,
         fft_normalization: str = "backward",
@@ -361,7 +360,7 @@ class MultiDomainUnet2d(nn.Module):
         Coil dimension. Default is ``1``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         in_channels: int,
         out_channels: int,

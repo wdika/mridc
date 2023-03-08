@@ -13,6 +13,7 @@ from mridc.collections.common.parts.utils import (  # noqa: F401
     complex_center_crop,
     complex_conj,
     complex_mul,
+    expand_op,
     is_none,
     mask_center,
     rnn_weights_init,

@@ -163,6 +163,9 @@ class BaseMRIModel(modelPT.ModelPT, ABC):  # type: ignore
         elif image.shape[0] != 1:
             image = image[0].unsqueeze(0)
 
+        if ".h5" in name:
+            name = name.replace(".h5", "")
+
         if "wandb" in self.logger.__module__.lower():
             if image.is_cuda:
                 image = image.detach().cpu()
@@ -315,7 +318,7 @@ class BaseSensitivityModel(nn.Module, ABC):
 
     Examples
     --------
-    >>> from mridc.collections.common.models.base import BaseSensitivityModel
+    >>> from mridc.collections.common.nn.base import BaseSensitivityModel
     >>> import torch
     >>> model = BaseSensitivityModel()
     >>> kspace = torch.randn([1, 8, 320, 320, 2], dtype=torch.float32)

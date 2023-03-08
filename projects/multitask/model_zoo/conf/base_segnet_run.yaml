@@ -23,6 +23,9 @@ model:
   segmentation_final_layer_nonlinear: relu
   total_reconstruction_loss_weight: 1.0
   reconstruction_loss_fn: l1
+  kspace_reconstruction_loss: false
+  reconstruction_loss_regularization_factor: 1.0
+  ssdu: false
   total_segmentation_loss_weight: 0.01
   segmentation_loss_fn:
     - cross_entropy
@@ -106,12 +109,14 @@ model:
       use_seed: false
     half_scan_percentage: 0.0
     remask: false
+    ssdu: false
     crop_size: None
     kspace_crop: false
     crop_before_masking: true
     kspace_zero_filling_size: None
     normalize_inputs: true
     normalization_type: max
+    kspace_normalization: false
     fft_centered: false
     fft_normalization: backward
     spatial_dims:

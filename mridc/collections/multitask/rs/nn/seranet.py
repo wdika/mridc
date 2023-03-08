@@ -9,8 +9,6 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
 import mridc.collections.multitask.rs.nn.base as base_rs_models
-import mridc.collections.reconstruction.nn.cascadenet.ccnn_block as ccnn_block
-import mridc.collections.reconstruction.nn.conv.conv2d as conv2d
 import mridc.core.classes.common as common_classes
 from mridc.collections.common.parts import center_crop_to_smallest, coil_combination_method
 from mridc.collections.multitask.rs.nn.seranet_base.convlstm_unet import ConvLSTMNormUnet
@@ -18,6 +16,8 @@ from mridc.collections.multitask.rs.nn.seranet_base.recon_block import (
     SERANetReconstructionBlock,
     SERANetRecurrentBlock,
 )
+from mridc.collections.reconstruction.nn.cascadenet import ccnn_block
+from mridc.collections.reconstruction.nn.conv import conv2d
 from mridc.collections.reconstruction.nn.unet_base import unet_block
 from mridc.collections.segmentation.nn.attention_unet_base.attention_unet_block import AttentionGate
 
@@ -45,9 +45,7 @@ class SERANet(base_rs_models.BaseMRIReconstructionSegmentationModel, ABC):  # ty
         if self.input_channels == 0:
             raise ValueError("Segmentation module input channels cannot be 0.")
         if self.input_channels > 2:
-            raise ValueError(
-                "Segmentation module input channels must be either 1 or 2. Found: {}".format(self.input_channels)
-            )
+            raise ValueError(f"Segmentation module input channels must be either 1 or 2. Found: {self.input_channels}")
         self.consecutive_slices = cfg_dict.get("consecutive_slices", 1)
 
         reconstruction_module = cfg_dict.get("reconstruction_module", "unet")
@@ -81,7 +79,7 @@ class SERANet(base_rs_models.BaseMRIReconstructionSegmentationModel, ABC):  # ty
                 ]
             )
         else:
-            raise ValueError("Unknown reconstruction module: {} for SERANet".format(reconstruction_module))
+            raise ValueError(f"Unknown reconstruction module: {reconstruction_module} for SERANet")
 
         self.reconstruction_module = SERANetReconstructionBlock(
             num_reconstruction_blocks=cfg_dict.get("reconstruction_module_num_blocks", 3),
@@ -124,15 +122,15 @@ class SERANet(base_rs_models.BaseMRIReconstructionSegmentationModel, ABC):  # ty
         self.normalize_segmentation_output = cfg_dict.get("normalize_segmentation_output", True)
 
     @common_classes.typecheck()  # type: ignore
-    def forward(
+    def forward(  # noqa: W0221
         self,
         y: torch.Tensor,
         sensitivity_maps: torch.Tensor,
         mask: torch.Tensor,
         init_reconstruction_pred: torch.Tensor,
         target_reconstruction: torch.Tensor,
-        hx: torch.Tensor = None,
-        sigma: float = 1.0,
+        hx: torch.Tensor = None,  # noqa: W0613
+        sigma: float = 1.0,  # noqa: W0613
     ) -> Tuple[Union[List, torch.Tensor], torch.Tensor]:
         """
         Forward pass of the network.
@@ -181,7 +179,7 @@ class SERANet(base_rs_models.BaseMRIReconstructionSegmentationModel, ABC):  # ty
                     raise ValueError("Magnitude input is not supported for 2-channel input.")
                 init_reconstruction_pred = init_reconstruction_pred.permute(0, 3, 1, 2)  # type: ignore
             else:
-                raise ValueError("The input channels must be either 1 or 2. Found: {}".format(self.input_channels))
+                raise ValueError(f"The input channels must be either 1 or 2. Found: {self.input_channels}")
         else:
             if init_reconstruction_pred.dim() == 3:
                 init_reconstruction_pred = init_reconstruction_pred.unsqueeze(1)

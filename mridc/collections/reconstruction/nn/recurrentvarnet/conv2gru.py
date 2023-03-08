@@ -6,8 +6,8 @@ __author__ = "Dimitrios Karkalousos"
 from typing import List, Optional, Tuple
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 
 class Conv2dGRU(nn.Module):
@@ -36,7 +36,7 @@ class Conv2dGRU(nn.Module):
         If set to true replication padding is applied. Default is ``True``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         in_channels: int,
         hidden_channels: int,

@@ -3,11 +3,9 @@ __author__ = "Dimitrios Karkalousos"
 
 from typing import Optional
 
-import torch.nn as nn
-from torch import Tensor
+from torch import Tensor, nn
 
-import mridc.collections.reconstruction.nn.rim.conv_layers as conv_layers
-import mridc.collections.reconstruction.nn.rim.rnn_cells as rnn_cells
+from mridc.collections.reconstruction.nn.rim import conv_layers, rnn_cells
 
 
 class GRUConv2d(nn.Module):
@@ -36,14 +34,14 @@ class GRUConv2d(nn.Module):
         If True a batch normalization layer is applied after every convolution. Default is ``False``.
     """
 
-    def __init__(
+    def __init__(  # noqa: W0221
         self,
         in_channels,
         out_channels,
         hidden_channels,
         n_convs=3,
         activation="ReLU",
-        batchnorm=False,
+        batchnorm=False,  # noqa: W0613
     ):
         super().__init__()
 
