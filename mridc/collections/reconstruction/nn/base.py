@@ -51,6 +51,7 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
         self.coil_combination_method = cfg_dict.get("coil_combination_method", "SENSE")
 
         self.ssdu = cfg_dict.get("ssdu", False)
+        self.n2r = cfg_dict.get("n2r", False)
 
         # Initialize the sensitivity network if cfg_dict.get("use_sens_net") is True
         self.use_sens_net = cfg_dict.get("use_sens_net", False)
@@ -82,12 +83,10 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             self.train_loss_fn = L1Loss()
             self.val_loss_fn = L1Loss()
 
-        if self.ssdu:
-            self.kspace_reconstruction_loss = True
-        else:
-            self.kspace_reconstruction_loss = cfg_dict.get("kspace_reconstruction_loss", False)
-
+        self.kspace_reconstruction_loss = cfg_dict.get("kspace_reconstruction_loss", False)
         self.reconstruction_loss_regularization_factor = cfg_dict.get("reconstruction_loss_regularization_factor", 1.0)
+        if self.n2r:
+            self.n2r_loss_regularization_factor = cfg_dict.get("n2r_loss_regularization_factor", 1.0)
 
         self.accumulate_predictions = cfg_dict.get("accumulate_predictions", False)
 
@@ -110,6 +109,7 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
         sensitivity_maps: torch.Tensor,
         mask: torch.Tensor,
         loss_func: torch.nn.Module,
+        kspace_reconstruction_loss: bool = False,
     ) -> torch.Tensor:
         """
         Processes the reconstruction loss.
@@ -129,6 +129,10 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
         loss_func : torch.nn.Module
             Loss function. Must be one of {torch.nn.L1Loss(), torch.nn.MSELoss(),
             mridc.collections.reconstruction.losses.ssim.SSIMLoss()}. Default is ``torch.nn.L1Loss()``.
+        kspace_reconstruction_loss : bool
+            If True, the loss will be computed on the k-space data. Otherwise, the loss will be computed on the
+            image space data. Default is ``False``. Note that this is different from
+            ``self.kspace_reconstruction_loss``, so it can be used with multiple losses.
 
         Returns
         -------
@@ -136,12 +140,12 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             If self.accumulate_loss is True, returns an accumulative result of all intermediate losses.
             Otherwise, returns the loss of the last intermediate loss.
         """
-        if not self.kspace_reconstruction_loss:
+        if not self.kspace_reconstruction_loss and not kspace_reconstruction_loss:
             target = torch.abs(target / torch.max(torch.abs(target)))
         else:
             if target.shape[-1] != 2:
                 target = torch.view_as_real(target)
-            if self.ssdu:
+            if self.ssdu or kspace_reconstruction_loss:
                 target = utils.expand_op(target, sensitivity_maps, self.coil_dim)
             target = fft.fft2(target, self.fft_centered, self.fft_normalization, self.spatial_dims)
 
@@ -189,15 +193,15 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                 loss: torch.FloatTensor
                     Loss value.
                 """
-                if not self.kspace_reconstruction_loss:
+                if not self.kspace_reconstruction_loss and not kspace_reconstruction_loss:
                     y = torch.abs(y / torch.max(torch.abs(y)))
                 else:
                     if y.shape[-1] != 2:
                         y = torch.view_as_real(y)
-                    if self.ssdu:
+                    if self.ssdu or kspace_reconstruction_loss:
                         y = utils.expand_op(y, sensitivity_maps, self.coil_dim)
                     y = fft.fft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims)
-                    if self.ssdu:
+                    if self.ssdu or kspace_reconstruction_loss:
                         y = y * mask
                 return loss_func(x, y)
 
@@ -290,49 +294,147 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
         Dict[str, torch.Tensor]
             Dictionary of loss and log.
         """
-        kspace, y, sensitivity_maps, mask, init_pred, target, _, _, acc = batch
+        kspace, y, sensitivity_maps, mask, init_pred, target, _, _, acc, attrs = batch
+
+        if self.n2r and (not attrs["n2r_supervised"].all() or self.ssdu):  # type: ignore
+            y, n2r_y = y  # type: ignore
+            mask, n2r_mask = mask  # type: ignore
+            init_pred, n2r_init_pred = init_pred  # type: ignore
 
         kspace, y, mask, init_pred, target, r = self.process_inputs(kspace, y, mask, init_pred, target)
 
-        if self.ssdu:
+        if self.n2r and (not attrs["n2r_supervised"].all() or self.ssdu):  # type: ignore
+            if isinstance(n2r_y, list):  # type: ignore
+                n2r_y = n2r_y[r]  # type: ignore
+                n2r_mask = n2r_mask[r]  # type: ignore
+                n2r_init_pred = n2r_init_pred[r]  # type: ignore
+            if self.ssdu:
+                mask, loss_mask = mask  # type: ignore
+            else:
+                loss_mask = torch.ones_like(mask)
+            if n2r_mask.dim() < mask.dim():  # type: ignore
+                n2r_mask = None
+        elif self.ssdu and not self.n2r:
             mask, loss_mask = mask  # type: ignore
+            n2r_mask = None
         else:
             loss_mask = torch.ones_like(mask)
+            n2r_mask = None
 
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, mask)
 
         preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
 
-        if target.shape[-1] == 2:  # type: ignore
-            target = target[..., 0] + 1j * target[..., 1]  # type: ignore
+        preds_n2r = None
+        if self.n2r and n2r_mask is not None:
+            preds_n2r = self.forward(n2r_y, sensitivity_maps, n2r_mask, n2r_init_pred, target)
+
+        target = utils.real_to_complex_tensor_or_list(target)  # type: ignore
 
         if self.accumulate_predictions:
             try:
                 preds = next(preds)
+                if preds_n2r is not None:
+                    preds_n2r = next(preds_n2r)
             except StopIteration:
                 pass
 
-            if preds.shape[-1] == 2:
-                preds = [x[..., 0] + 1j * x[..., 1] for x in preds]
+            preds = utils.real_to_complex_tensor_or_list(preds)
 
-            train_loss = sum(
-                self.process_reconstruction_loss(
-                    target, preds, sensitivity_maps, loss_mask, loss_func=self.train_loss_fn
+            if preds_n2r is not None:
+                preds_n2r = utils.real_to_complex_tensor_or_list(preds_n2r)
+                if self.ssdu or attrs["n2r_supervised"]:  # type: ignore
+                    train_loss = self.n2r_loss_regularization_factor * sum(
+                        self.process_reconstruction_loss(
+                            preds,
+                            preds_n2r,
+                            sensitivity_maps,
+                            loss_mask,
+                            loss_func=self.train_loss_fn,
+                            kspace_reconstruction_loss=self.kspace_reconstruction_loss,
+                        )
+                    ) + sum(
+                        self.process_reconstruction_loss(
+                            target,
+                            preds,
+                            sensitivity_maps,
+                            loss_mask,
+                            loss_func=self.train_loss_fn,
+                            # in case of fully unsupervised n2r, we want to use the ssdu loss as pseudo-supervised loss
+                            kspace_reconstruction_loss=self.ssdu,
+                        )
+                    )
+                elif not attrs["n2r_supervised"]:  # type: ignore
+                    train_loss = self.n2r_loss_regularization_factor * sum(
+                        self.process_reconstruction_loss(
+                            preds,
+                            preds_n2r,
+                            sensitivity_maps,
+                            loss_mask,
+                            loss_func=self.train_loss_fn,
+                            kspace_reconstruction_loss=self.kspace_reconstruction_loss,
+                        )
+                    )
+            else:
+                preds = utils.real_to_complex_tensor_or_list(preds)
+                train_loss = sum(
+                    self.process_reconstruction_loss(
+                        target,
+                        preds,
+                        sensitivity_maps,
+                        loss_mask,
+                        loss_func=self.train_loss_fn,
+                        kspace_reconstruction_loss=self.kspace_reconstruction_loss,
+                    )
                 )
-            )
+
         else:
-            if preds.shape[-1] == 2:
-                preds = preds[..., 0] + 1j * preds[..., 1]
-            train_loss = self.process_reconstruction_loss(
-                target, preds, sensitivity_maps, loss_mask, loss_func=self.train_loss_fn
-            )
+            if preds_n2r is not None:
+                preds_n2r = utils.real_to_complex_tensor_or_list(preds_n2r)
+                if self.ssdu or attrs["n2r_supervised"]:  # type: ignore
+                    train_loss = self.n2r_loss_regularization_factor * self.process_reconstruction_loss(
+                        preds,
+                        preds_n2r,
+                        sensitivity_maps,
+                        loss_mask,
+                        loss_func=self.train_loss_fn,
+                        kspace_reconstruction_loss=self.kspace_reconstruction_loss,
+                    ) + self.process_reconstruction_loss(
+                        target,
+                        preds,
+                        sensitivity_maps,
+                        loss_mask,
+                        loss_func=self.train_loss_fn,
+                        # in case of fully unsupervised n2r, we want to use the ssdu loss as pseudo-supervised loss
+                        kspace_reconstruction_loss=self.ssdu,
+                    )
+                elif not attrs["n2r_supervised"]:  # type: ignore
+                    train_loss = self.n2r_loss_regularization_factor * self.process_reconstruction_loss(
+                        preds,
+                        preds_n2r,
+                        sensitivity_maps,
+                        loss_mask,
+                        loss_func=self.train_loss_fn,
+                        kspace_reconstruction_loss=self.kspace_reconstruction_loss,
+                    )
+            else:
+                preds = utils.real_to_complex_tensor_or_list(preds)
+                train_loss = self.process_reconstruction_loss(
+                    target,
+                    preds,
+                    sensitivity_maps,
+                    loss_mask,
+                    loss_func=self.train_loss_fn,
+                    kspace_reconstruction_loss=self.kspace_reconstruction_loss,
+                )
 
         acc = r if r != 0 else acc
         tensorboard_logs = {
             f"train_loss_{acc}x": train_loss.item(),  # type: ignore
             "lr": self._optimizer.param_groups[0]["lr"],  # type: ignore
         }
+
         return {"loss": train_loss, "log": tensorboard_logs}
 
     def validation_step(self, batch: Dict[float, torch.Tensor], batch_idx: int) -> Dict:  # noqa: W0221
@@ -359,8 +461,10 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                 File name.
             'slice_num' : int
                 Slice number.
-            'acc' : float
+            'attrs' : float
                 Acceleration factor of the sampling mask.
+            'attrs' : dict
+                Attributes.
         batch_idx : int
             Batch index.
 
@@ -369,69 +473,182 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
         Dict[str, torch.Tensor]
             Dictionary of loss and log.
         """
-        kspace, y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
+        kspace, y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _, attrs = batch
 
-        kspace, y, mask, init_pred, target, _ = self.process_inputs(kspace, y, mask, init_pred, target)
+        if self.n2r and (not attrs["n2r_supervised"].all() or self.ssdu):  # type: ignore
+            y, n2r_y = y  # type: ignore
+            mask, n2r_mask = mask  # type: ignore
+            init_pred, n2r_init_pred = init_pred  # type: ignore
 
-        if self.ssdu:
+        kspace, y, mask, init_pred, target, r = self.process_inputs(kspace, y, mask, init_pred, target)
+
+        if self.n2r and (not attrs["n2r_supervised"].all() or self.ssdu):  # type: ignore
+            if isinstance(n2r_y, list):  # type: ignore
+                n2r_y = n2r_y[r]  # type: ignore
+                n2r_mask = n2r_mask[r]  # type: ignore
+                n2r_init_pred = n2r_init_pred[r]  # type: ignore
+            if self.ssdu:
+                mask, loss_mask = mask  # type: ignore
+            else:
+                loss_mask = torch.ones_like(mask)
+            if n2r_mask.dim() < mask.dim():  # type: ignore
+                n2r_mask = None
+        elif self.ssdu and not self.n2r:
             mask, loss_mask = mask  # type: ignore
+            n2r_mask = None
         else:
             loss_mask = torch.ones_like(mask)
+            n2r_mask = None
 
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, mask)
 
         preds = self.forward(y, sensitivity_maps, mask, init_pred, target)
 
+        preds_n2r = None
+        if self.n2r and n2r_mask is not None:
+            preds_n2r = self.forward(n2r_y, sensitivity_maps, n2r_mask, n2r_init_pred, target)
+
+        target = utils.real_to_complex_tensor_or_list(target)  # type: ignore
+
         if self.accumulate_predictions:
             try:
                 preds = next(preds)
+                if preds_n2r is not None:
+                    preds_n2r = next(preds_n2r)
             except StopIteration:
                 pass
-            val_loss = sum(
-                self.process_reconstruction_loss(
-                    target, preds, sensitivity_maps, loss_mask, loss_func=self.val_loss_fn
+
+            preds = utils.real_to_complex_tensor_or_list(preds)
+
+            if preds_n2r is not None:
+                preds_n2r = utils.real_to_complex_tensor_or_list(preds_n2r)
+                if self.ssdu or attrs["n2r_supervised"]:  # type: ignore
+                    val_loss = self.n2r_loss_regularization_factor * sum(
+                        self.process_reconstruction_loss(
+                            preds,
+                            preds_n2r,
+                            sensitivity_maps,
+                            loss_mask,
+                            loss_func=self.train_loss_fn,
+                            kspace_reconstruction_loss=self.kspace_reconstruction_loss,
+                        )
+                    ) + sum(
+                        self.process_reconstruction_loss(
+                            target,
+                            preds,
+                            sensitivity_maps,
+                            loss_mask,
+                            loss_func=self.train_loss_fn,
+                            # in case of fully unsupervised n2r, we want to use the ssdu loss as pseudo-supervised loss
+                            kspace_reconstruction_loss=self.ssdu,
+                        )
+                    )
+                elif not attrs["n2r_supervised"]:  # type: ignore
+                    val_loss = self.n2r_loss_regularization_factor * sum(
+                        self.process_reconstruction_loss(
+                            preds,
+                            preds_n2r,
+                            sensitivity_maps,
+                            loss_mask,
+                            loss_func=self.train_loss_fn,
+                            kspace_reconstruction_loss=self.kspace_reconstruction_loss,
+                        )
+                    )
+            else:
+                preds = utils.real_to_complex_tensor_or_list(preds)
+                val_loss = sum(
+                    self.process_reconstruction_loss(
+                        target,
+                        preds,
+                        sensitivity_maps,
+                        loss_mask,
+                        loss_func=self.train_loss_fn,
+                        kspace_reconstruction_loss=self.kspace_reconstruction_loss,
+                    )
                 )
-            )
+
         else:
-            val_loss = self.process_reconstruction_loss(
-                target, preds, sensitivity_maps, loss_mask, loss_func=self.val_loss_fn
-            )
+            if preds_n2r is not None:
+                preds_n2r = utils.real_to_complex_tensor_or_list(preds_n2r)
+                if self.ssdu or attrs["n2r_supervised"]:  # type: ignore
+                    val_loss = self.n2r_loss_regularization_factor * self.process_reconstruction_loss(
+                        preds,
+                        preds_n2r,
+                        sensitivity_maps,
+                        loss_mask,
+                        loss_func=self.train_loss_fn,
+                        kspace_reconstruction_loss=self.kspace_reconstruction_loss,
+                    ) + self.process_reconstruction_loss(
+                        target,
+                        preds,
+                        sensitivity_maps,
+                        loss_mask,
+                        loss_func=self.train_loss_fn,
+                        # in case of fully unsupervised n2r, we want to use the ssdu loss as pseudo-supervised loss
+                        kspace_reconstruction_loss=self.ssdu,
+                    )
+                elif not attrs["n2r_supervised"]:  # type: ignore
+                    val_loss = self.n2r_loss_regularization_factor * self.process_reconstruction_loss(
+                        preds,
+                        preds_n2r,
+                        sensitivity_maps,
+                        loss_mask,
+                        loss_func=self.train_loss_fn,
+                        kspace_reconstruction_loss=self.kspace_reconstruction_loss,
+                    )
+            else:
+                preds = utils.real_to_complex_tensor_or_list(preds)
+                val_loss = self.process_reconstruction_loss(
+                    target,
+                    preds,
+                    sensitivity_maps,
+                    loss_mask,
+                    loss_func=self.train_loss_fn,
+                    kspace_reconstruction_loss=self.kspace_reconstruction_loss,
+                )
 
-        # Cascades
+        preds = utils.real_to_complex_tensor_or_list(preds)
+        if isinstance(preds, list):
+            preds = preds[-1]
         if isinstance(preds, list):
             preds = preds[-1]
 
-        # Time-steps
-        if isinstance(preds, list):
-            preds = preds[-1]
+        # if preds_n2r is not None and not attrs["n2r_supervised"].all():  # type: ignore
+        #     target = utils.real_to_complex_tensor_or_list(preds_n2r)  # type: ignore
+        #     if isinstance(target, list):
+        #         target = target[-1]
+        #     if isinstance(target, list):
+        #         target = target[-1]
+        # else:
+        target = utils.real_to_complex_tensor_or_list(target)  # type: ignore
 
-        key = f"{fname[0]}_images_idx_{int(slice_num)}"  # type: ignore
-        if preds.shape[-1] == 2:
-            preds = preds[..., 0] + 1j * preds[..., 1]
-        if target.shape[-1] == 2:  # type: ignore
-            target = target[..., 0] + 1j * target[..., 1]  # type: ignore
-        output = torch.abs(preds).detach().cpu()
-        target = torch.abs(target).detach().cpu()
-        output = output / output.max()  # type: ignore
-        target = target / target.max()  # type: ignore
+        target = target.unsqueeze(1)  # type: ignore
+        preds = preds.unsqueeze(1)  # type: ignore
+        for batch_idx in range(target.shape[0]):  # type: ignore
+            output = torch.abs(preds[batch_idx]).detach().cpu()
+            _target = torch.abs(target[batch_idx]).detach().cpu()  # type: ignore
+            output = output / output.max()  # type: ignore
+            _target = _target / _target.max()  # type: ignore
 
-        if self.log_images:
-            error = torch.abs(target - output)
-            self.log_image(f"{key}/target", target)
-            self.log_image(f"{key}/reconstruction", output)
-            self.log_image(f"{key}/error", error)
+            key = f"{fname[batch_idx]}_images_idx_{int(slice_num[batch_idx])}"  # type: ignore
 
-        target = target.numpy()  # type: ignore
-        output = output.numpy()  # type: ignore
-        self.mse_vals[fname][slice_num] = torch.tensor(reconstruction_metrics.mse(target, output)).view(1)
-        self.nmse_vals[fname][slice_num] = torch.tensor(reconstruction_metrics.nmse(target, output)).view(1)
-        self.ssim_vals[fname][slice_num] = torch.tensor(
-            reconstruction_metrics.ssim(target, output, maxval=output.max() - output.min())
-        ).view(1)
-        self.psnr_vals[fname][slice_num] = torch.tensor(
-            reconstruction_metrics.psnr(target, output, maxval=output.max() - output.min())
-        ).view(1)
+            if self.log_images:
+                error = torch.abs(_target - output)
+                self.log_image(f"{key}/target", _target)
+                self.log_image(f"{key}/reconstruction", output)
+                self.log_image(f"{key}/error", error)
+
+            _target = _target.numpy()  # type: ignore
+            output = output.numpy()  # type: ignore
+            self.mse_vals[fname][slice_num] = torch.tensor(reconstruction_metrics.mse(_target, output)).view(1)
+            self.nmse_vals[fname][slice_num] = torch.tensor(reconstruction_metrics.nmse(_target, output)).view(1)
+            self.ssim_vals[fname][slice_num] = torch.tensor(
+                reconstruction_metrics.ssim(_target, output, maxval=output.max() - output.min())
+            ).view(1)
+            self.psnr_vals[fname][slice_num] = torch.tensor(
+                reconstruction_metrics.psnr(_target, output, maxval=output.max() - output.min())
+            ).view(1)
 
         return {"val_loss": val_loss}
 
@@ -471,9 +688,14 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
         Dict[str, torch.Tensor]
             Dictionary of loss and log.
         """
-        kspace, y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
+        kspace, y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _, attrs = batch
 
-        kspace, y, mask, init_pred, target, _ = self.process_inputs(kspace, y, mask, init_pred, target)
+        if self.n2r and (not attrs["n2r_supervised"].all() or self.ssdu):  # type: ignore
+            y, n2r_y = y  # type: ignore
+            mask, n2r_mask = mask  # type: ignore
+            init_pred, n2r_init_pred = init_pred  # type: ignore
+
+        kspace, y, mask, init_pred, target, r = self.process_inputs(kspace, y, mask, init_pred, target)
 
         if self.ssdu:
             mask, _ = mask  # type: ignore
@@ -489,45 +711,44 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             except StopIteration:
                 pass
 
-        # Cascades
+        preds = utils.real_to_complex_tensor_or_list(preds)
+        if isinstance(preds, list):
+            preds = preds[-1]
         if isinstance(preds, list):
             preds = preds[-1]
 
-        # Time-steps
-        if isinstance(preds, list):
-            preds = preds[-1]
+        target = utils.real_to_complex_tensor_or_list(target)  # type: ignore
 
-        slice_num = int(slice_num)
-        name = str(fname[0])  # type: ignore
-        key = f"{name}_images_idx_{slice_num}"  # type: ignore
+        target = target.unsqueeze(1)  # type: ignore
+        preds = preds.unsqueeze(1)  # type: ignore
+        for batch_idx in range(target.shape[0]):  # type: ignore
+            output = torch.abs(preds[batch_idx]).detach().cpu()
+            _target = torch.abs(target[batch_idx]).detach().cpu()  # type: ignore
+            output = output / output.max()  # type: ignore
+            _target = _target / _target.max()  # type: ignore
 
-        if preds.shape[-1] == 2:
-            preds = preds[..., 0] + 1j * preds[..., 1]
-        if target.shape[-1] == 2:  # type: ignore
-            target = target[..., 0] + 1j * target[..., 1]  # type: ignore
-        output = torch.abs(preds).detach().cpu()
-        target = torch.abs(target).detach().cpu()
-        output = output / output.max()  # type: ignore
-        target = target / target.max()  # type: ignore
+            name = str(fname[batch_idx])  # type: ignore
+            slice_num = int(slice_num[batch_idx])  # type: ignore
+            key = f"{name}_images_idx_{slice_num}"  # type: ignore
 
-        if self.log_images:
-            error = torch.abs(target - output)
-            self.log_image(f"{key}/target", target)
-            self.log_image(f"{key}/reconstruction", output)
-            self.log_image(f"{key}/error", error)
+            if self.log_images:
+                error = torch.abs(_target - output)
+                self.log_image(f"{key}/target", _target)
+                self.log_image(f"{key}/reconstruction", output)
+                self.log_image(f"{key}/error", error)
 
-        target = target.numpy()  # type: ignore
-        output = output.numpy()  # type: ignore
-        self.mse_vals[fname][slice_num] = torch.tensor(reconstruction_metrics.mse(target, output)).view(1)
-        self.nmse_vals[fname][slice_num] = torch.tensor(reconstruction_metrics.nmse(target, output)).view(1)
-        self.ssim_vals[fname][slice_num] = torch.tensor(
-            reconstruction_metrics.ssim(target, output, maxval=output.max() - output.min())
-        ).view(1)
-        self.psnr_vals[fname][slice_num] = torch.tensor(
-            reconstruction_metrics.psnr(target, output, maxval=output.max() - output.min())
-        ).view(1)
+            _target = _target.numpy()  # type: ignore
+            output = output.numpy()  # type: ignore
+            self.mse_vals[fname][slice_num] = torch.tensor(reconstruction_metrics.mse(_target, output)).view(1)
+            self.nmse_vals[fname][slice_num] = torch.tensor(reconstruction_metrics.nmse(_target, output)).view(1)
+            self.ssim_vals[fname][slice_num] = torch.tensor(
+                reconstruction_metrics.ssim(_target, output, maxval=output.max() - output.min())
+            ).view(1)
+            self.psnr_vals[fname][slice_num] = torch.tensor(
+                reconstruction_metrics.psnr(_target, output, maxval=output.max() - output.min())
+            ).view(1)
 
-        return name, slice_num, preds.detach().cpu().numpy()
+        return name, slice_num, preds.detach().cpu().numpy()  # type: ignore
 
     def validation_epoch_end(self, outputs):
         """
@@ -705,6 +926,7 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             num_cols=cfg.get("num_cols", None),
             consecutive_slices=cfg.get("consecutive_slices", 1),
             data_saved_per_slice=cfg.get("data_saved_per_slice", False),
+            n2r_supervised_rate=cfg.get("n2r_supervised_rate", 0.0),
             transform=reconstruction_transforms.ReconstructionMRIDataTransforms(
                 apply_prewhitening=cfg.get("apply_prewhitening", False),
                 find_patch_size=cfg.get("find_patch_size", False),
@@ -726,7 +948,14 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                 ssdu_rho=cfg.get("ssdu_rho", 0.4),
                 ssdu_acs_block_size=cfg.get("ssdu_acs_block_size", (4, 4)),
                 ssdu_gaussian_std_scaling_factor=cfg.get("ssdu_gaussian_std_scaling_factor", 4.0),
+                ssdu_outer_kspace_fraction=cfg.get("ssdu_outer_kspace_fraction", 0.0),
                 ssdu_export_and_reuse_masks=cfg.get("ssdu_export_and_reuse_masks", False),
+                n2r=cfg.get("n2r", False),
+                n2r_supervised_rate=cfg.get("n2r_supervised_rate", 0.0),
+                n2r_probability=cfg.get("n2r_probability", 0.5),
+                n2r_std_devs=cfg.get("n2r_std_devs", (0.0, 0.0)),
+                n2r_rhos=cfg.get("n2r_rhos", (0.4, 0.4)),
+                n2r_use_mask=cfg.get("n2r_use_mask", True),
                 crop_size=cfg.get("crop_size", None),
                 kspace_crop=cfg.get("kspace_crop", False),
                 crop_before_masking=cfg.get("crop_before_masking", False),

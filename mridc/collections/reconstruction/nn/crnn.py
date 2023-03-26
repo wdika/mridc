@@ -131,25 +131,30 @@ class CRNNet(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
         sensitivity_maps: torch.Tensor,
         mask: torch.Tensor,
         loss_func: torch.nn.Module,
+        kspace_reconstruction_loss: bool = False,
     ) -> torch.Tensor:
         """
-        Processes the reconstruction loss.
+            Processes the reconstruction loss.
 
-        Parameters
-        ----------
-        target : torch.Tensor
-            Target data of shape [batch_size, n_x, n_y, 2].
-        prediction : Union[list, torch.Tensor]
-            Prediction(s) of shape [batch_size, n_x, n_y, 2].
-        sensitivity_maps : torch.Tensor
-            Sensitivity maps of shape [batch_size, n_coils, n_x, n_y, 2]. It will be used if self.ssdu is True, to
-            expand the target and prediction to multiple coils.
-        mask : torch.Tensor
-            Mask of shape [batch_size, n_x, n_y, 2]. It will be used if self.ssdu is True, to enforce data consistency
-            on the prediction.
-        loss_func : torch.nn.Module
-            Loss function. Must be one of {torch.nn.L1Loss(), torch.nn.MSELoss(),
-            mridc.collections.reconstruction.losses.ssim.SSIMLoss()}. Default is ``torch.nn.L1Loss()``.
+            Parameters
+            ----------
+            target : torch.Tensor
+                Target data of shape [batch_size, n_x, n_y, 2].
+            prediction : Union[list, torch.Tensor]
+                Prediction(s) of shape [batch_size, n_x, n_y, 2].
+            sensitivity_maps : torch.Tensor
+                Sensitivity maps of shape [batch_size, n_coils, n_x, n_y, 2]. It will be used if self.ssdu is True, to
+                expand the target and prediction to multiple coils.
+            mask : torch.Tensor
+                Mask of shape [batch_size, n_x, n_y, 2]. It will be used if self.ssdu is True, to enforce data consistency
+                on the prediction.
+            loss_func : torch.nn.Module
+                Loss function. Must be one of {torch.nn.L1Loss(), torch.nn.MSELoss(),
+                mridc.collections.reconstruction.losses.ssim.SSIMLoss()}. Default is ``torch.nn.L1Loss()``.
+            kspace_reconstruction_loss : bool
+                If True, the loss will be computed on the k-space data. Otherwise, the loss will be computed on the
+                image space data. Default is ``False``. Note that this is different from
+                ``self.kspace_reconstruction_loss``, so it can be used with multiple losses.
 
         Returns
         -------
@@ -157,6 +162,11 @@ class CRNNet(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
             If self.accumulate_loss is True, returns an accumulative result of all intermediate losses.
             Otherwise, returns the loss of the last intermediate loss.
         """
+        if isinstance(target, list):
+            target = target[-1]
+        if isinstance(target, list):
+            target = target[-1]
+
         if not self.kspace_reconstruction_loss:
             target = torch.abs(target / torch.max(torch.abs(target)))
         else:

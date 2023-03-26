@@ -44,6 +44,9 @@ class qMRIDataset(MRIDataset):
         Default is ``1``, loading single slices.
     data_saved_per_slice : bool, optional
         Whether the data is saved per slice or per volume.
+    n2r_supervised_rate : Optional[float], optional
+        A float between 0 and 1. This controls what fraction of the subjects should be loaded for Noise to
+        Reconstruction (N2R) supervised loss, if N2R is enabled. Default is ``0.0``.
     transform : Optional[Callable], optional
         A sequence of callable objects that preprocesses the raw data into appropriate form. The transform function
         should take ``kspace``, ``coil sensitivity maps``, ``quantitative maps``, ``mask``, ``initial prediction``,
@@ -84,6 +87,7 @@ class qMRIDataset(MRIDataset):
         num_cols: Optional[Tuple[int]] = None,
         consecutive_slices: int = 1,
         data_saved_per_slice: bool = False,
+        n2r_supervised_rate: Optional[float] = 0.0,
         transform: Optional[Callable] = None,
         sequence: str = None,
         fixed_precomputed_acceleration: Optional[int] = None,
@@ -102,6 +106,7 @@ class qMRIDataset(MRIDataset):
             num_cols,
             consecutive_slices,
             data_saved_per_slice,
+            n2r_supervised_rate,
             transform,
             **kwargs,
         )

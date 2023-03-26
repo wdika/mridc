@@ -18,11 +18,14 @@ from mridc.collections.quantitative.nn.qvn import qVarNet
 from mridc.collections.reconstruction.nn.ccnn import CascadeNet
 from mridc.collections.reconstruction.nn.cirim import CIRIM
 from mridc.collections.reconstruction.nn.crnn import CRNNet
+from mridc.collections.reconstruction.nn.cs import CS
 from mridc.collections.reconstruction.nn.dunet import DUNet
 from mridc.collections.reconstruction.nn.jointicnet import JointICNet
 from mridc.collections.reconstruction.nn.kikinet import KIKINet
 from mridc.collections.reconstruction.nn.lpd import LPDNet
 from mridc.collections.reconstruction.nn.multidomainnet import MultiDomainNet
+from mridc.collections.reconstruction.nn.pics import PICS
+from mridc.collections.reconstruction.nn.proximal_gradient import ProximalGradient
 from mridc.collections.reconstruction.nn.resnet import ResNet
 from mridc.collections.reconstruction.nn.rvn import RecurrentVarNet
 from mridc.collections.reconstruction.nn.unet import UNet
@@ -83,6 +86,8 @@ def main(cfg: DictConfig):  # noqa: D103
         model = CIRIM(cfg.model, trainer=trainer)
     elif model_name == "CRNNET":
         model = CRNNet(cfg.model, trainer=trainer)
+    elif model_name == "CS":
+        model = CS(cfg.model, trainer=trainer)
     elif model_name == "DUNET":
         model = DUNet(cfg.model, trainer=trainer)
     elif model_name in ("E2EVN", "VN"):
@@ -103,6 +108,10 @@ def main(cfg: DictConfig):  # noqa: D103
         model = MultiDomainNet(cfg.model, trainer=trainer)
     elif model_name == "QCIRIM":
         model = qCIRIM(cfg.model, trainer=trainer)
+    elif model_name == "PG":
+        model = ProximalGradient(cfg.model, trainer=trainer)
+    elif model_name == "PICS":
+        model = PICS(cfg.model, trainer=trainer)
     elif model_name == "QVN":
         model = qVarNet(cfg.model, trainer=trainer)
     elif model_name == "RECSEGNET":

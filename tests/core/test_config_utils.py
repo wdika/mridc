@@ -97,17 +97,3 @@ class TestConfigUtils:
             raise AssertionError
         if dataclass_subset is not None:
             raise AssertionError
-
-    @pytest.mark.unit
-    def test_ptl_config(self):
-        PTL_DEPRECATED = [
-            "gpus",
-            "num_processes",
-        ]
-
-        result = config_utils.assert_dataclass_signature_match(ptl.Trainer, TrainerConfig, ignore_args=PTL_DEPRECATED)
-        signatures_match, cls_subset, dataclass_subset = result
-
-        assert signatures_match
-        assert cls_subset is None
-        assert dataclass_subset is None

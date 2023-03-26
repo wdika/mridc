@@ -4,7 +4,7 @@ __author__ = "Dimitrios Karkalousos"
 # Parts of the code have been taken from https://github.com/facebookresearch/fastMRI
 
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import h5py
 import numpy as np
@@ -31,6 +31,7 @@ __all__ = [
     "complex_center_crop",
     "center_crop_to_smallest",
     "rnn_weights_init",
+    "real_to_complex_tensor_or_list",
 ]
 
 
@@ -196,6 +197,50 @@ def complex_conj(x: torch.Tensor) -> torch.Tensor:
     if x.shape[-1] != 2:
         raise ValueError("Tensor does not have separate complex dim.")
     return torch.stack((x[..., 0], -x[..., 1]), dim=-1)
+
+
+def real_to_complex_tensor_or_list(x: torch.Tensor) -> Union[List, torch.Tensor]:  # type: ignore
+    """
+    Converts a real valued tensor to a complex valued tensor.
+
+    Parameters
+    ----------
+    x : torch.Tensor
+        Real valued tensor.
+
+    Returns
+    -------
+    torch.Tensor
+        Complex valued tensor.
+
+    Examples
+    --------
+    >>> from mridc.collections.common.parts.utils import real_to_complex_tensor_or_list
+    >>> import torch
+    >>> data = torch.tensor([1, 2, 3])
+    >>> real_to_complex_tensor_or_list(data)
+    tensor([1.+0.j, 2.+0.j, 3.+0.j])
+    >>> data = [[torch.tensor([1, 2, 3]), torch.tensor([1, 2, 3])]]
+    >>> real_to_complex_tensor_or_list(data)
+    tensor([[[1.+0.j, 2.+0.j, 3.+0.j],
+            [1.+0.j, 2.+0.j, 3.+0.j]]])
+    """
+
+    def return_complex(x):  # pragma: no cover
+        if x.shape[-1] == 2:
+            return x[..., 0] + 1j * x[..., 1]
+        return x
+
+    def _is_iterable(x):  # pragma: no cover
+        return isinstance(x, list)
+
+    if not _is_iterable(x):
+        return return_complex(x)
+
+    if _is_iterable(x):
+        if _is_iterable(x[-1]):
+            return [[real_to_complex_tensor_or_list(y)] for x_ in x for y in x_]
+        return [return_complex(x_) for x_ in x]
 
 
 def complex_abs(x: torch.Tensor) -> torch.Tensor:

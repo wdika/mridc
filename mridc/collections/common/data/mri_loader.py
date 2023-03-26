@@ -77,6 +77,9 @@ class MRIDataset(Dataset):
         Default is ``1``, loading single slices.
     data_saved_per_slice : bool, optional
         Whether the data is saved per slice or per volume.
+    n2r_supervised_rate : Optional[float], optional
+        A float between 0 and 1. This controls what fraction of the subjects should be loaded for Noise to
+        Reconstruction (N2R) supervised loss, if N2R is enabled. Default is ``0.0``.
     transform : Optional[Callable], optional
         A sequence of callable objects that preprocesses the raw data into appropriate form. The transform function
         should take ``kspace``, ``coil sensitivity maps``, ``quantitative maps``, ``mask``, ``initial prediction``,
@@ -102,6 +105,7 @@ class MRIDataset(Dataset):
         num_cols: Optional[Tuple[int]] = None,
         consecutive_slices: int = 1,
         data_saved_per_slice: bool = False,
+        n2r_supervised_rate: Optional[float] = 0.0,
         transform: Optional[Callable] = None,
         **kwargs,
     ):
@@ -153,8 +157,22 @@ class MRIDataset(Dataset):
                 files = [Path(example) for example in examples]
             else:
                 files = list(Path(root).iterdir())
+
+            if n2r_supervised_rate != 0.0:
+                # randomly select a subset of files for N2R supervised loss based on n2r_supervised_rate
+                n2r_supervised_files = random.sample(
+                    files, int(np.round(n2r_supervised_rate * len(files)))  # type: ignore
+                )
+
             for fname in sorted(files):
                 metadata, num_slices = self._retrieve_metadata(fname)
+
+                if n2r_supervised_rate != 0.0:
+                    metadata["n2r_supervised"] = True if fname in n2r_supervised_files else False
+                    logging.info(f"{n2r_supervised_files} files are selected for N2R supervised loss.")
+                else:
+                    metadata["n2r_supervised"] = False
+
                 if not utils.is_none(num_slices) and not utils.is_none(consecutive_slices):
                     num_slices = num_slices - (consecutive_slices - 1)
                 self.examples += [(fname, slice_ind, metadata) for slice_ind in range(num_slices)]

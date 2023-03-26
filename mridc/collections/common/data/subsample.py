@@ -416,7 +416,8 @@ class Gaussian1DMaskFunc(MaskFunc):
         """
         dims = [1 for _ in shape]
         self.shape = tuple(shape[-3:-1])
-        dims[-2] = self.shape[-1]
+        self.shape = (self.shape[1], self.shape[0])
+        dims[-2] = self.shape[-2]
 
         full_width_half_maximum, acceleration = self.choose_acceleration()
         if not isinstance(full_width_half_maximum, list):
@@ -434,7 +435,7 @@ class Gaussian1DMaskFunc(MaskFunc):
         if half_scan_percentage != 0:
             mask[: int(np.round(mask.shape[0] * half_scan_percentage)), :] = 0.0
 
-        return torch.from_numpy(mask[0].reshape(dims).astype(np.float32)), acceleration
+        return torch.from_numpy(np.transpose(mask, (1, 0))[0].reshape(*dims).astype(np.float32)), acceleration
 
     def gaussian_kspace(self):
         """
@@ -685,7 +686,7 @@ class Poisson2DMaskFunc(MaskFunc):
 
         r = np.hypot(x, y)
 
-        slope_max = max(nx, ny)
+        slope_max = 40
         slope_min = 0
 
         d = max(nx, ny)
@@ -706,9 +707,9 @@ class Poisson2DMaskFunc(MaskFunc):
             if abs(actual_acceleration - self.acceleration) < tol:
                 break
             if actual_acceleration < self.acceleration:
-                slope_min = slope
+                slope_min = slope  # type: ignore
             else:
-                slope_max = slope
+                slope_max = slope  # type: ignore
 
         pattern1 = mask
         pattern2 = self.centered_circle()

@@ -213,6 +213,11 @@ class MTLRS(base_rs_models.BaseMRIReconstructionSegmentationModel, ABC):  # type
             If self.accumulate_loss is True, returns an accumulative result of all intermediate losses.
             Otherwise, returns the loss of the last intermediate loss.
         """
+        if isinstance(target, list):
+            target = target[-1]
+        if isinstance(target, list):
+            target = target[-1]
+
         if not self.kspace_reconstruction_loss:
             target = torch.abs(target / torch.max(torch.abs(target)))
         else:
