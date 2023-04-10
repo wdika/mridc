@@ -194,7 +194,10 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
         prediction: Union[list, torch.Tensor],
         sensitivity_maps: torch.Tensor,
         mask: torch.Tensor,
+        attrs: Dict,
+        r: int,
         loss_func: torch.nn.Module,
+        kspace_reconstruction_loss: bool = False,
     ) -> torch.Tensor:
         """
         Processes the reconstruction loss.
@@ -211,9 +214,17 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
         mask : torch.Tensor
             Mask of shape [batch_size, n_x, n_y, 2]. It will be used if self.ssdu is True, to enforce data consistency
             on the prediction.
+        attrs : Dict
+            Attributes of the data with pre normalization values.
+        r : int
+            The selected acceleration factor.
         loss_func : torch.nn.Module
             Loss function. Must be one of {torch.nn.L1Loss(), torch.nn.MSELoss(),
             mridc.collections.reconstruction.losses.ssim.SSIMLoss()}. Default is ``torch.nn.L1Loss()``.
+        kspace_reconstruction_loss : bool
+            If True, the loss will be computed on the k-space data. Otherwise, the loss will be computed on the
+            image space data. Default is ``False``. Note that this is different from
+            ``self.kspace_reconstruction_loss``, so it can be used with multiple losses.
 
         Returns
         -------
@@ -221,13 +232,79 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
             If self.accumulate_loss is True, returns an accumulative result of all intermediate losses.
             Otherwise, returns the loss of the last intermediate loss.
         """
-        target = target.to(self.device)
-        if not self.kspace_reconstruction_loss:
+        if self.unnormalize_loss_inputs:
+            if self.n2r and not attrs["n2r_supervised"]:
+                target = utils.unnormalize(
+                    target,
+                    {
+                        "min": attrs["prediction_min"] if "prediction_min" in attrs else attrs[f"prediction_min_{r}"],
+                        "max": attrs["prediction_max"] if "prediction_max" in attrs else attrs[f"prediction_max_{r}"],
+                        "mean": attrs["prediction_mean"]
+                        if "prediction_mean" in attrs
+                        else attrs[f"prediction_mean_{r}"],
+                        "std": attrs["prediction_std"] if "prediction_std" in attrs else attrs[f"prediction_std_{r}"],
+                    },
+                    self.normalization_type,
+                )
+                prediction = utils.unnormalize(
+                    prediction,
+                    {
+                        "min": attrs["noise_prediction_min"]
+                        if "noise_prediction_min" in attrs
+                        else attrs[f"noise_prediction_min_{r}"],
+                        "max": attrs["noise_prediction_max"]
+                        if "noise_prediction_max" in attrs
+                        else attrs[f"noise_prediction_max_{r}"],
+                        attrs["noise_prediction_mean"]
+                        if "noise_prediction_mean" in attrs
+                        else "mean": attrs[f"noise_prediction_mean_{r}"],
+                        attrs["noise_prediction_std"]
+                        if "noise_prediction_std" in attrs
+                        else "std": attrs[f"noise_prediction_std_{r}"],
+                    },
+                    self.normalization_type,
+                )
+            else:
+                target = utils.unnormalize(
+                    target,
+                    {
+                        "min": attrs["target_min"],
+                        "max": attrs["target_max"],
+                        "mean": attrs["target_mean"],
+                        "std": attrs["target_std"],
+                    },
+                    self.normalization_type,
+                )
+                prediction = utils.unnormalize(
+                    prediction,
+                    {
+                        "min": attrs["prediction_min"] if "prediction_min" in attrs else attrs[f"prediction_min_{r}"],
+                        "max": attrs["prediction_max"] if "prediction_max" in attrs else attrs[f"prediction_max_{r}"],
+                        "mean": attrs["prediction_mean"]
+                        if "prediction_mean" in attrs
+                        else attrs[f"prediction_mean_{r}"],
+                        "std": attrs["prediction_std"] if "prediction_std" in attrs else attrs[f"prediction_std_{r}"],
+                    },
+                    self.normalization_type,
+                )
+
+            sensitivity_maps = utils.unnormalize(
+                sensitivity_maps,
+                {
+                    "min": attrs["sensitivity_maps_min"],
+                    "max": attrs["sensitivity_maps_max"],
+                    "mean": attrs["sensitivity_maps_mean"],
+                    "std": attrs["sensitivity_maps_std"],
+                },
+                self.normalization_type,
+            )
+
+        if not self.kspace_reconstruction_loss and not kspace_reconstruction_loss and not self.unnormalize_loss_inputs:
             target = torch.abs(target / torch.max(torch.abs(target)))
         else:
             if target.shape[-1] != 2:
                 target = torch.view_as_real(target)
-            if self.ssdu:
+            if self.ssdu or kspace_reconstruction_loss:
                 target = utils.expand_op(target, sensitivity_maps, self.coil_dim)
             target = fft.fft2(target, self.fft_centered, self.fft_normalization, self.spatial_dims)
 
@@ -275,15 +352,19 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
                 loss: torch.FloatTensor
                     Loss value.
                 """
-                if not self.kspace_reconstruction_loss:
+                if (
+                    not self.kspace_reconstruction_loss
+                    and not kspace_reconstruction_loss
+                    and not self.unnormalize_loss_inputs
+                ):
                     y = torch.abs(y / torch.max(torch.abs(y)))
                 else:
                     if y.shape[-1] != 2:
                         y = torch.view_as_real(y)
-                    if self.ssdu:
+                    if self.ssdu or kspace_reconstruction_loss:
                         y = utils.expand_op(y, sensitivity_maps, self.coil_dim)
                     y = fft.fft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims)
-                    if self.ssdu:
+                    if self.ssdu or kspace_reconstruction_loss:
                         y = y * mask
                 return loss_func(x, y)
 
@@ -404,6 +485,8 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
                 Slice number.
             'acc' : float
                 Acceleration factor of the sampling mask.
+            'attrs' : dict
+                Attributes dictionary.
         batch_idx : int
             Batch index.
 
@@ -423,30 +506,52 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
             _,
             _,
             acc,
+            attrs,
         ) = batch
+
+        if self.n2r and (not attrs["n2r_supervised"].all() or self.ssdu):  # type: ignore
+            y, n2r_y = y  # type: ignore
+            mask, n2r_mask = mask  # type: ignore
+            init_reconstruction_pred, n2r_init_reconstruction_pred = init_reconstruction_pred  # type: ignore
 
         kspace, y, mask, init_reconstruction_pred, target_reconstruction, r = self.process_inputs(
             kspace, y, mask, init_reconstruction_pred, target_reconstruction
         )
 
-        if self.ssdu:
+        if self.n2r and (not attrs["n2r_supervised"].all() or self.ssdu):  # type: ignore
+            if isinstance(n2r_y, list):  # type: ignore
+                n2r_y = n2r_y[r]  # type: ignore
+                n2r_mask = n2r_mask[r]  # type: ignore
+                n2r_init_reconstruction_pred = n2r_init_reconstruction_pred[r]  # type: ignore
+            if self.ssdu:
+                mask, loss_mask = mask  # type: ignore
+            else:
+                loss_mask = torch.ones_like(mask)
+            if n2r_mask.dim() < mask.dim():  # type: ignore
+                n2r_mask = None
+        elif self.ssdu and not self.n2r:
             mask, loss_mask = mask  # type: ignore
+            n2r_mask = None
         else:
             loss_mask = torch.ones_like(mask)
+            n2r_mask = None
 
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, mask)
 
-            if self.coil_combination_method == "SENSE":
-                init_reconstruction_pred = utils.sense(
-                    fft.ifft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims),
-                    sensitivity_maps,
-                    self.coil_dim,
-                )
-
         pred_reconstruction, pred_segmentation = self.forward(
             y, sensitivity_maps, mask, init_reconstruction_pred, target_reconstruction
         )
+
+        pred_reconstruction_n2r = None
+        if self.n2r and n2r_mask is not None:
+            pred_reconstruction_n2r, _ = self.forward(
+                n2r_y, sensitivity_maps, n2r_mask, n2r_init_reconstruction_pred, target_reconstruction
+            )
+            pred_reconstruction_n2r = utils.real_to_complex_tensor_or_list(pred_reconstruction_n2r)
+
+        pred_reconstruction = utils.real_to_complex_tensor_or_list(pred_reconstruction)
+        target_reconstruction = utils.real_to_complex_tensor_or_list(target_reconstruction)  # type: ignore
 
         if self.consecutive_slices > 1:
             batch_size, slices = target_segmentation.shape[:2]  # type: ignore
@@ -456,9 +561,45 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
         segmentation_loss = self.process_segmentation_loss(target_segmentation, pred_segmentation)["segmentation_loss"]
 
         if self.use_reconstruction_module:
-            reconstruction_loss = self.process_reconstruction_loss(
-                target_reconstruction, pred_reconstruction, sensitivity_maps, loss_mask, self.train_loss_fn
-            )
+            if pred_reconstruction_n2r is not None:
+                if self.ssdu or attrs["n2r_supervised"]:  # type: ignore
+                    reconstruction_loss = sum(
+                        self.process_reconstruction_loss(
+                            target_reconstruction,
+                            pred_reconstruction,
+                            sensitivity_maps,
+                            loss_mask,
+                            attrs,  # type: ignore
+                            r,
+                            loss_func=self.train_loss_fn,
+                            # in case of fully unsupervised n2r, we want to use the ssdu loss as pseudo-supervised loss
+                            kspace_reconstruction_loss=self.ssdu,
+                        )
+                    )
+                elif not attrs["n2r_supervised"]:  # type: ignore
+                    reconstruction_loss = self.n2r_loss_regularization_factor * sum(
+                        self.process_reconstruction_loss(
+                            pred_reconstruction,
+                            pred_reconstruction_n2r,
+                            sensitivity_maps,
+                            loss_mask,
+                            attrs,  # type: ignore
+                            r,
+                            loss_func=self.train_loss_fn,
+                            kspace_reconstruction_loss=self.kspace_reconstruction_loss,
+                        )
+                    )
+            else:
+                reconstruction_loss = self.process_reconstruction_loss(
+                    target_reconstruction,
+                    pred_reconstruction,
+                    sensitivity_maps,
+                    loss_mask,
+                    attrs,  # type: ignore
+                    r,
+                    loss_func=self.train_loss_fn,
+                    kspace_reconstruction_loss=self.kspace_reconstruction_loss,
+                )
             train_loss = (
                 self.total_segmentation_loss_weight * segmentation_loss
                 + self.total_reconstruction_loss_weight * reconstruction_loss
@@ -501,6 +642,8 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
                 Slice number.
             'acc' : float
                 Acceleration factor of the sampling mask.
+            'attrs' : dict
+                Attributes dictionary.
         batch_idx : int
             Batch index.
 
@@ -520,30 +663,54 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
             fname,
             slice_idx,
             _,
+            attrs,
         ) = batch
 
-        kspace, y, mask, init_reconstruction_pred, target_reconstruction, _ = self.process_inputs(
+        if self.n2r and (not attrs["n2r_supervised"].all() or self.ssdu):  # type: ignore
+            y, n2r_y = y  # type: ignore
+            mask, n2r_mask = mask  # type: ignore
+            init_reconstruction_pred, n2r_init_reconstruction_pred = init_reconstruction_pred  # type: ignore
+
+        kspace, y, mask, init_reconstruction_pred, target_reconstruction, r = self.process_inputs(
             kspace, y, mask, init_reconstruction_pred, target_reconstruction
         )
 
-        if self.ssdu:
+        if self.n2r and (not attrs["n2r_supervised"].all() or self.ssdu):  # type: ignore
+            if isinstance(n2r_y, list):  # type: ignore
+                n2r_y = n2r_y[r]  # type: ignore
+                n2r_mask = n2r_mask[r]  # type: ignore
+                n2r_init_reconstruction_pred = n2r_init_reconstruction_pred[r]  # type: ignore
+            if self.ssdu:
+                mask, loss_mask = mask  # type: ignore
+            else:
+                loss_mask = torch.ones_like(mask)
+            if n2r_mask.dim() < mask.dim():  # type: ignore
+                n2r_mask = None
+        elif self.ssdu and not self.n2r:
             mask, loss_mask = mask  # type: ignore
+            n2r_mask = None
         else:
             loss_mask = torch.ones_like(mask)
+            n2r_mask = None
 
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, mask)
 
-            if self.coil_combination_method == "SENSE":
-                init_reconstruction_pred = utils.sense(
-                    fft.ifft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims),
-                    sensitivity_maps,
-                    self.coil_dim,
-                )
-
         pred_reconstruction, pred_segmentation = self.forward(
             y, sensitivity_maps, mask, init_reconstruction_pred, target_reconstruction
         )
+
+        pred_reconstruction_n2r = None
+        if self.n2r and n2r_mask is not None:
+            pred_reconstruction_n2r, _ = self.forward(
+                n2r_y, sensitivity_maps, n2r_mask, n2r_init_reconstruction_pred, target_reconstruction
+            )
+            pred_reconstruction_n2r = utils.real_to_complex_tensor_or_list(pred_reconstruction_n2r)
+
+        if isinstance(pred_reconstruction, list):
+            pred_reconstruction = pred_reconstruction[-1]
+        pred_reconstruction = utils.real_to_complex_tensor_or_list(pred_reconstruction)
+        target_reconstruction = utils.real_to_complex_tensor_or_list(target_reconstruction)  # type: ignore
 
         if self.consecutive_slices > 1:
             batch_size, slices = target_segmentation.shape[:2]  # type: ignore
@@ -553,6 +720,10 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
             target_reconstruction = target_reconstruction.reshape(  # type: ignore
                 batch_size * slices, *target_reconstruction.shape[2:]  # type: ignore
             )
+            if self.n2r and n2r_mask is not None:
+                pred_reconstruction_n2r = pred_reconstruction_n2r.reshape(  # type: ignore
+                    batch_size * slices, *pred_reconstruction_n2r.shape[2:]  # type: ignore
+                )
 
         if self.log_images:
             slice_idx = int(slice_idx)
@@ -565,20 +736,51 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
             pred_segmentation = pred_segmentation[-1]
 
         if self.use_reconstruction_module:
-            reconstruction_loss = self.process_reconstruction_loss(
-                target_reconstruction, pred_reconstruction, sensitivity_maps, loss_mask, self.val_loss_fn
-            )
+            if pred_reconstruction_n2r is not None:
+                if self.ssdu or attrs["n2r_supervised"]:  # type: ignore
+                    reconstruction_loss = sum(
+                        self.process_reconstruction_loss(
+                            target_reconstruction,
+                            pred_reconstruction,
+                            sensitivity_maps,
+                            loss_mask,
+                            attrs,  # type: ignore
+                            r,
+                            loss_func=self.val_loss_fn,
+                            # in case of fully unsupervised n2r, we want to use the ssdu loss as pseudo-supervised loss
+                            kspace_reconstruction_loss=self.ssdu,
+                        )
+                    )
+                elif not attrs["n2r_supervised"]:  # type: ignore
+                    reconstruction_loss = self.n2r_loss_regularization_factor * sum(
+                        self.process_reconstruction_loss(
+                            pred_reconstruction,
+                            pred_reconstruction_n2r,
+                            sensitivity_maps,
+                            loss_mask,
+                            attrs,  # type: ignore
+                            r,
+                            loss_func=self.val_loss_fn,
+                            kspace_reconstruction_loss=self.kspace_reconstruction_loss,
+                        )
+                    )
+            else:
+                reconstruction_loss = self.process_reconstruction_loss(
+                    target_reconstruction,
+                    pred_reconstruction,
+                    sensitivity_maps,
+                    loss_mask,
+                    attrs,  # type: ignore
+                    r,
+                    loss_func=self.val_loss_fn,
+                    kspace_reconstruction_loss=self.kspace_reconstruction_loss,
+                )
             val_loss = (
                 self.total_segmentation_loss_weight * segmentation_loss
                 + self.total_reconstruction_loss_weight * reconstruction_loss
             )
 
-            if isinstance(pred_reconstruction, list):
-                pred_reconstruction = pred_reconstruction[-1]
-            if isinstance(pred_reconstruction, list):
-                pred_reconstruction = pred_reconstruction[-1]
-            if isinstance(pred_reconstruction, list):
-                pred_reconstruction = pred_reconstruction[-1]
+            pred_reconstruction = utils.real_to_complex_tensor_or_list(pred_reconstruction)
 
             if self.consecutive_slices > 1:
                 pred_reconstruction = pred_reconstruction.reshape(
@@ -685,6 +887,8 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
                 Slice number.
             'acc' : float
                 Acceleration factor of the sampling mask.
+            'attrs' : dict
+                Attributes dictionary.
         batch_idx : int
             Batch index.
 
@@ -704,24 +908,38 @@ class BaseMRIReconstructionSegmentationModel(BaseMRIModel, ABC):  # type: ignore
             fname,
             slice_idx,
             _,
+            attrs,
         ) = batch
 
-        kspace, y, mask, init_reconstruction_pred, target_reconstruction, _ = self.process_inputs(
+        if self.n2r and (not attrs["n2r_supervised"].all() or self.ssdu):  # type: ignore
+            y, n2r_y = y  # type: ignore
+            mask, n2r_mask = mask  # type: ignore
+            init_reconstruction_pred, n2r_init_reconstruction_pred = init_reconstruction_pred  # type: ignore
+
+        kspace, y, mask, init_reconstruction_pred, target_reconstruction, r = self.process_inputs(
             kspace, y, mask, init_reconstruction_pred, target_reconstruction
         )
 
-        if self.ssdu:
-            mask, _ = mask  # type: ignore
+        if self.n2r and (not attrs["n2r_supervised"].all() or self.ssdu):  # type: ignore
+            if isinstance(n2r_y, list):  # type: ignore
+                n2r_y = n2r_y[r]  # type: ignore
+                n2r_mask = n2r_mask[r]  # type: ignore
+                n2r_init_reconstruction_pred = n2r_init_reconstruction_pred[r]  # type: ignore
+            if self.ssdu:
+                mask, loss_mask = mask  # type: ignore
+            else:
+                loss_mask = torch.ones_like(mask)
+            if n2r_mask.dim() < mask.dim():  # type: ignore
+                n2r_mask = None
+        elif self.ssdu and not self.n2r:
+            mask, loss_mask = mask  # type: ignore
+            n2r_mask = None
+        else:
+            loss_mask = torch.ones_like(mask)
+            n2r_mask = None
 
         if self.use_sens_net:
             sensitivity_maps = self.sens_net(kspace, mask)
-
-            if self.coil_combination_method == "SENSE":
-                init_reconstruction_pred = utils.sense(
-                    fft.ifft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims),
-                    sensitivity_maps,
-                    self.coil_dim,
-                )
 
         pred_reconstruction, pred_segmentation = self.forward(
             y, sensitivity_maps, mask, init_reconstruction_pred, target_reconstruction

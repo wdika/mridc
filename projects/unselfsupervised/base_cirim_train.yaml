@@ -6,8 +6,8 @@ model:
   model_name: CIRIM
   recurrent_layer: IndRNN
   conv_filters:
-    - 64
-    - 64
+    - 128
+    - 128
     - 2
   conv_kernels:
     - 5
@@ -22,8 +22,8 @@ model:
     - true
     - false
   recurrent_filters:
-    - 64
-    - 64
+    - 128
+    - 128
     - 0
   recurrent_kernels:
     - 1
@@ -50,6 +50,7 @@ model:
   reconstruction_loss_regularization_factor: 1.0
   coil_combination_method: SENSE
   ssdu: false
+  n2r: false
   fft_centered: false
   fft_normalization: backward
   spatial_dims:
@@ -61,7 +62,7 @@ model:
   log_images: true
 
   train_ds:
-    data_path: /data/projects/recon/data/public/3D_FSE_PD_Knees/train.json
+    data_path: /data/projects/recon/data/private/3T_T1_3D_Brains/h5/multicoil_train
     coil_sensitivity_maps_path: None
     mask_path: None
     sample_rate: 1
@@ -73,13 +74,10 @@ model:
     data_saved_per_slice: false
     apply_prewhitening: false
     apply_gcc: false
-    gcc_virtual_coils: 8
-    gcc_calib_lines: 24
-    gcc_align_data: true
     coil_combination_method: SENSE
     dimensionality: 2
     mask_args:
-      type: poisson2d
+      type: gaussian2d
       accelerations:
       - 12
       center_fractions:
@@ -89,7 +87,7 @@ model:
       use_seed: true
     half_scan_percentage: 0.0
     remask: false
-    ssdu: false
+    n2r: false
     crop_size: None
     kspace_crop: false
     crop_before_masking: true
@@ -106,12 +104,12 @@ model:
     use_seed: true
     batch_size: 1
     shuffle: true
-    num_workers: 8
+    num_workers: 4
     pin_memory: false
     drop_last: false
 
   validation_ds:
-    data_path: /data/projects/recon/data/public/3D_FSE_PD_Knees/val.json
+    data_path: /data/projects/recon/data/private/3T_T1_3D_Brains/h5/multicoil_val
     coil_sensitivity_maps_path: None
     mask_path: None
     sample_rate: 1
@@ -123,13 +121,10 @@ model:
     data_saved_per_slice: false
     apply_prewhitening: false
     apply_gcc: false
-    gcc_virtual_coils: 8
-    gcc_calib_lines: 24
-    gcc_align_data: true
     coil_combination_method: SENSE
     dimensionality: 2
     mask_args:
-      type: poisson2d
+      type: gaussian2d
       accelerations:
       - 12
       center_fractions:
@@ -139,7 +134,7 @@ model:
       use_seed: false
     half_scan_percentage: 0.0
     remask: false
-    ssdu: false
+    n2r: false
     crop_size: None
     kspace_crop: false
     crop_before_masking: true
@@ -156,16 +151,16 @@ model:
     use_seed: false
     batch_size: 1
     shuffle: false
-    num_workers: 8
+    num_workers: 4
     pin_memory: false
-    drop_last: false
+
   optim:
     name: adam
-    lr: 0.001
+    lr: 0.0001
     betas:
     - 0.9
-    - 0.98
-    weight_decay: 0.0
+    - 0.999
+    weight_decay: 0.001
     sched:
       name: InverseSquareRootAnnealing
       min_lr: 0.0
@@ -186,7 +181,7 @@ trainer:
   max_steps: -1
 
 exp_manager:
-  exp_dir: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/trained_models/CIRIM_5C_3D_FSE_Knees_Poisson2D_12x
+  exp_dir: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/trained_models/CIRIM_128F5C_3T_T1_3D_Brains_Gaussian2D_12x
   create_tensorboard_logger: true
   create_wandb_logger: false
   wandb_logger_kwargs:

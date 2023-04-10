@@ -8,7 +8,7 @@ model:
   use_sens_net: false
   dimensionality: 2
   consecutive_slices: 1
-  coil_combination_method: RSS
+  coil_combination_method: SENSE
   fft_centered: true
   fft_normalization: ortho
   spatial_dims:
@@ -19,9 +19,10 @@ model:
   log_images: true
 
   test_ds:
-    data_path: /data/projects/recon/data/public/fastmri/brain/data/FLAIR/multicoil_val
+    data_path: /scratch/iskylitsis/data/mridata_knee_2019/test
     coil_sensitivity_maps_path: None
     mask_path: None
+    dataset_format: stanford_knees
     sample_rate: 1
     volume_sample_rate: None
     use_dataset_cache: false
@@ -31,10 +32,7 @@ model:
     data_saved_per_slice: false
     apply_prewhitening: false
     apply_gcc: false
-    gcc_virtual_coils: 8
-    gcc_calib_lines: 24
-    gcc_align_data: true
-    coil_combination_method: RSS
+    coil_combination_method: SENSE
     dimensionality: 2
     mask_args:
       type: none
@@ -42,7 +40,7 @@ model:
     half_scan_percentage: 0.0
     remask: false
     ssdu: false
-    crop_size: [320, 320]
+    crop_size: None
     kspace_crop: false
     crop_before_masking: true
     kspace_zero_filling_size: None
@@ -76,7 +74,7 @@ trainer:
   max_steps: -1
 
 exp_manager:
-  exp_dir: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/reconstructions/targets_RSS_fastmri_brain_FLAIR/
+  exp_dir: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/reconstructions_stanford_knees_poisson2d_12x/targets_SENSE/
   create_tensorboard_logger: true
   create_wandb_logger: false
   wandb_logger_kwargs:

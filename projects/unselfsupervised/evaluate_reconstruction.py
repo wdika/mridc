@@ -77,7 +77,7 @@ def main(args):
         targets = list(Path(args.targets_dir).iterdir())
 
     scores = Metrics(METRIC_FUNCS)
-
+    ssims = []
     for target in targets:
         reconstruction = h5py.File(Path(args.reconstructions_dir) / str(target).split("/")[-1], "r")["reconstruction"][
             ()
@@ -91,25 +91,27 @@ def main(args):
         else:
             target = h5py.File(target, "r")["target"][()].squeeze()
 
-        crop_size = [320, 320]
-        crop_size[0] = target.shape[-2] if target.shape[-2] < int(crop_size[0]) else int(crop_size[0])
-        crop_size[1] = target.shape[-1] if target.shape[-1] < int(crop_size[1]) else int(crop_size[1])
-        crop_size[0] = reconstruction.shape[-2] if reconstruction.shape[-2] < int(crop_size[0]) else int(crop_size[0])
-        crop_size[1] = reconstruction.shape[-1] if reconstruction.shape[-1] < int(crop_size[1]) else int(crop_size[1])
+        # crop_size = [320, 320]
+        # crop_size[0] = target.shape[-2] if target.shape[-2] < int(crop_size[0]) else int(crop_size[0])
+        # crop_size[1] = target.shape[-1] if target.shape[-1] < int(crop_size[1]) else int(crop_size[1])
+        # crop_size[0] = reconstruction.shape[-2] if reconstruction.shape[-2] < int(crop_size[0]) else int(crop_size[0])
+        # crop_size[1] = reconstruction.shape[-1] if reconstruction.shape[-1] < int(crop_size[1]) else int(crop_size[1])
+        #
+        # target = center_crop(target, crop_size)
+        # reconstruction = center_crop(reconstruction, crop_size)
 
-        target = center_crop(target, crop_size)
-        reconstruction = center_crop(reconstruction, crop_size)
+        # for sl in range(target.shape[0]):
+        #     target[sl] = target[sl] / np.max(np.abs(target[sl]))
+        #     reconstruction[sl] = reconstruction[sl] / np.max(np.abs(reconstruction[sl]))
 
-        for sl in range(target.shape[0]):
-            # for sl in range(11):
-            target[sl] = target[sl] / np.max(np.abs(target[sl]))
-            reconstruction[sl] = reconstruction[sl] / np.max(np.abs(reconstruction[sl]))
+        target = target / np.max(np.abs(target))
+        reconstruction = reconstruction / np.max(np.abs(reconstruction))
 
         target = np.abs(target)
         reconstruction = np.abs(reconstruction)
 
-        target = target / np.max(np.abs(target))
-        reconstruction = reconstruction / np.max(np.abs(reconstruction))
+        target = np.clip(target, 0, 1)
+        reconstruction = np.clip(reconstruction, 0, 1)
 
         scores.push(target, reconstruction)
 
@@ -120,6 +122,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
+
     parser.add_argument("targets_dir", type=str)
     parser.add_argument("reconstructions_dir", type=str)
     args = parser.parse_args()

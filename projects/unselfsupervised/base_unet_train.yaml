@@ -15,12 +15,14 @@ model:
   dimensionality: 2
   loss_fn: l1
   kspace_reconstruction_loss: false
-  reconstruction_loss_regularization_factor: 1.0
+  reconstruction_loss_regularization_factor: .9
+  unnormalize_loss_inputs: false
   coil_combination_method: SENSE
   ssdu: false
   n2r: false
-  fft_centered: false
-  fft_normalization: backward
+  n2r_loss_regularization_factor: .1
+  fft_centered: true
+  fft_normalization: ortho
   spatial_dims:
   - -2
   - -1
@@ -30,9 +32,10 @@ model:
   log_images: true
 
   train_ds:
-    data_path: /data/projects/recon/data/public/3D_FSE_PD_Knees/train.json
+    data_path: /scratch/iskylitsis/data/mridata_knee_2019/train
     coil_sensitivity_maps_path: None
     mask_path: None
+    dataset_format: stanford_knees
     sample_rate: 1
     volume_sample_rate: None
     use_dataset_cache: false
@@ -42,9 +45,6 @@ model:
     data_saved_per_slice: false
     apply_prewhitening: false
     apply_gcc: false
-    gcc_virtual_coils: 8
-    gcc_calib_lines: 24
-    gcc_align_data: true
     coil_combination_method: SENSE
     dimensionality: 2
     mask_args:
@@ -54,10 +54,11 @@ model:
       center_fractions:
       - 0.7
       scale: 0.02
-      shift_mask: true
+      shift_mask: false
       use_seed: true
     half_scan_percentage: 0.0
     remask: false
+    ssdu: false
     n2r: false
     crop_size: None
     kspace_crop: false
@@ -66,8 +67,8 @@ model:
     normalize_inputs: true
     normalization_type: max
     kspace_normalization: false
-    fft_centered: false
-    fft_normalization: backward
+    fft_centered: true
+    fft_normalization: ortho
     spatial_dims:
     - -2
     - -1
@@ -80,9 +81,10 @@ model:
     drop_last: false
 
   validation_ds:
-    data_path: /data/projects/recon/data/public/3D_FSE_PD_Knees/val.json
+    data_path: /scratch/iskylitsis/data/mridata_knee_2019/val
     coil_sensitivity_maps_path: None
     mask_path: None
+    dataset_format: stanford_knees
     sample_rate: 1
     volume_sample_rate: None
     use_dataset_cache: false
@@ -92,9 +94,6 @@ model:
     data_saved_per_slice: false
     apply_prewhitening: false
     apply_gcc: false
-    gcc_virtual_coils: 8
-    gcc_calib_lines: 24
-    gcc_align_data: true
     coil_combination_method: SENSE
     dimensionality: 2
     mask_args:
@@ -104,10 +103,11 @@ model:
       center_fractions:
       - 0.7
       scale: 0.02
-      shift_mask: true
+      shift_mask: false
       use_seed: false
     half_scan_percentage: 0.0
     remask: false
+    ssdu: false
     n2r: false
     crop_size: None
     kspace_crop: false
@@ -116,8 +116,8 @@ model:
     normalize_inputs: true
     normalization_type: max
     kspace_normalization: false
-    fft_centered: false
-    fft_normalization: backward
+    fft_centered: true
+    fft_normalization: ortho
     spatial_dims:
     - -2
     - -1
@@ -130,11 +130,11 @@ model:
 
   optim:
     name: adam
-    lr: 0.0001
+    lr: 1e-4
     betas:
     - 0.9
     - 0.999
-    weight_decay: 0.001
+    weight_decay: 0.0
     sched:
       name: InverseSquareRootAnnealing
       min_lr: 0.0
@@ -146,7 +146,7 @@ trainer:
   accelerator: gpu
   devices: 1
   num_nodes: 1
-  max_epochs: 200
+  max_epochs: 20
   precision: 16
   enable_checkpointing: false
   logger: false
@@ -155,7 +155,7 @@ trainer:
   max_steps: -1
 
 exp_manager:
-  exp_dir: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/trained_models/UNET_3D_FSE_Knees_Poisson2D_12x
+  exp_dir: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/trained_models/UNET_stanford_knees_Poisson2d_12x
   create_tensorboard_logger: true
   create_wandb_logger: false
   wandb_logger_kwargs:

@@ -1,5 +1,5 @@
 pretrained: true
-checkpoint: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/trained_models/RESNET_5UI5RB10CGITER_fastmri_brain_FLAIR_Equispaced1d_4x/default/2023-03-29_01-48-32/checkpoints/default--val_loss=0.0165-epoch=73.ckpt
+checkpoint: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/trained_models/RESNET_5UI5RB10CGITER_stanford_knees_Poisson2d_12x/default/2023-04-17_10-40-23/checkpoints/default--val_loss=0.0035-epoch=12.ckpt
 mode: test
 
 model:
@@ -7,16 +7,17 @@ model:
   unrolled_iterations: 5
   residual_blocks: 5
   channels: 64
-  regularization_factor: 0.1
-  penalization_weight: 0.05
+  regularization_factor: 1.0
+  penalization_weight: 0.0
   conjugate_gradient_dc: true
   conjugate_gradient_iterations: 10
   dimensionality: 2
   loss_fn: l1
-  kspace_reconstruction_loss: false
+  kspace_reconstruction_loss: true
   reconstruction_loss_regularization_factor: 1.0
   coil_combination_method: SENSE
   ssdu: false
+  n2r: false
   fft_centered: true
   fft_normalization: ortho
   spatial_dims:
@@ -28,9 +29,10 @@ model:
   log_images: true
 
   test_ds:
-    data_path: /data/projects/recon/data/public/fastmri/brain/data/FLAIR/multicoil_val
-    coil_sensitivity_maps_path: /data/projects/recon/data/public/fastmri/brain/sensitivities_maps/FLAIR
+    data_path: /scratch/iskylitsis/data/mridata_knee_2019/test
+    coil_sensitivity_maps_path: None
     mask_path: None
+    dataset_format: stanford_knees
     sample_rate: 1
     volume_sample_rate: None
     use_dataset_cache: false
@@ -40,24 +42,30 @@ model:
     data_saved_per_slice: false
     apply_prewhitening: false
     apply_gcc: false
-    gcc_virtual_coils: 8
-    gcc_calib_lines: 24
-    gcc_align_data: true
     coil_combination_method: SENSE
     dimensionality: 2
     mask_args:
-      type: equispaced1d
+      type: poisson2d
       accelerations:
-      - 4
+      - 12
       center_fractions:
-      - 0.08
+      - 0.7
       scale: 0.02
       shift_mask: false
       use_seed: false
     half_scan_percentage: 0.0
     remask: false
     ssdu: false
-    crop_size: [320, 320]
+    ssdu_mask_type: Uniform
+    ssdu_rho: 0.4
+    ssdu_acs_block_size:
+    - 4
+    - 4
+    ssdu_gaussian_std_scaling_factor: 4.0
+    ssdu_max_iterations: 1
+    ssdu_outer_kspace_fraction: 0.0
+    ssdu_export_and_reuse_masks: false
+    crop_size: None
     kspace_crop: false
     crop_before_masking: true
     kspace_zero_filling_size: None
@@ -79,11 +87,11 @@ model:
 
   optim:
     name: adam
-    lr: 1e-4
+    lr: 0.001
     betas:
     - 0.9
     - 0.999
-    weight_decay: 0.0001
+    weight_decay: 0.0
     sched:
       name: InverseSquareRootAnnealing
       min_lr: 0.0
@@ -95,7 +103,7 @@ trainer:
   accelerator: gpu
   devices: 1
   num_nodes: 1
-  max_epochs: 200
+  max_epochs: 20
   precision: 16
   enable_checkpointing: false
   logger: false
@@ -104,7 +112,7 @@ trainer:
   max_steps: -1
 
 exp_manager:
-  exp_dir: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/reconstructions/RESNET_5UI5RB10CGITER_fastmri_brain_FLAIR_Equispaced1d_4x
+  exp_dir: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/reconstructions_stanford_knees_poisson2d_12x/RESNET_5UI5RB10CGITER_stanford_knees_Poisson2d_12x
   create_tensorboard_logger: true
   create_wandb_logger: false
   wandb_logger_kwargs:

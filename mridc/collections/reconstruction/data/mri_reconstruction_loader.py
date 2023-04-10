@@ -115,6 +115,8 @@ class ReconstructionMRIDataset(MRIDataset):
 
             if "sensitivity_map" in hf:
                 sensitivity_map = self.get_consecutive_slices(hf, "sensitivity_map", dataslice).astype(np.complex64)
+            elif "maps" in hf:
+                sensitivity_map = self.get_consecutive_slices(hf, "maps", dataslice).astype(np.complex64)
             elif self.coil_sensitivity_maps_root is not None and self.coil_sensitivity_maps_root != "None":
                 with h5py.File(
                     Path(self.coil_sensitivity_maps_root) / Path(str(fname).split("/")[-2]) / fname.name, "r"
@@ -156,11 +158,15 @@ class ReconstructionMRIDataset(MRIDataset):
             elif "reconstruction_sense" in hf:
                 self.recons_key = "reconstruction_sense"
 
-            # target = self.get_consecutive_slices(hf, self.recons_key, dataslice) if self.recons_key in hf else None
-            target = None
+            target = self.get_consecutive_slices(hf, self.recons_key, dataslice) if self.recons_key in hf else None
 
             attrs = dict(hf.attrs)
             attrs.update(metadata)
+
+        if str(self.dataset_format).lower() == "stanford_knees":
+            kspace = np.transpose(kspace, (2, 0, 1))
+            sensitivity_map = np.transpose(sensitivity_map.squeeze(), (2, 0, 1))
+            target = target.squeeze()
 
         if sensitivity_map.shape != kspace.shape and sensitivity_map.ndim > 1:
             if sensitivity_map.ndim == 3:

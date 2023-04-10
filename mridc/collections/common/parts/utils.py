@@ -1016,3 +1016,39 @@ def expand_op(x: torch.Tensor, sensitivity_maps: torch.Tensor, dim: int = 1) -> 
     (1, 30, 200, 200, 2)
     """
     return torch.unsqueeze(x, dim=dim) * sensitivity_maps
+
+
+def unnormalize(x: torch.Tensor, attrs: Dict, normalization_type: str = "max") -> torch.Tensor:
+    """
+    Unnormalize the input data.
+
+    Parameters
+    ----------
+    x : torch.Tensor
+        The input data.
+    attrs : Dict
+        The attributes of the input data.
+    normalization_type : str
+        The normalization type. Default is ``"max"``.
+
+    Returns
+    -------
+    torch.Tensor
+        The unnormalized data.
+
+    Examples
+    --------
+    >>> import torch
+    >>> from mridc.collections.common.parts.utils import unnormalize
+    >>> data = torch.rand(1, 200, 200, 2)
+    >>> attrs = {"max": 1.0, "min": 0.0}
+    >>> unnormalize(data, attrs).shape
+    (1, 200, 200, 2)
+    """
+    if normalization_type == "max":
+        return x * attrs["max"]
+    if normalization_type == "mean":
+        return x * (attrs["mean"] - attrs["std"]) + attrs["std"]
+    if normalization_type == "minmax":
+        return x * (attrs["max"] - attrs["min"]) + attrs["min"]
+    return x

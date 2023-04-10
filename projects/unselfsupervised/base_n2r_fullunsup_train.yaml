@@ -4,8 +4,8 @@ mode: train
 
 model:
   model_name: UNET
-  channels: 64
-  pooling_layers: 2
+  channels: 32
+  pooling_layers: 4
   in_channels: 2
   out_channels: 2
   padding_size: 11
@@ -14,12 +14,13 @@ model:
   norm_groups: 2
   dimensionality: 2
   loss_fn: l1
-  kspace_reconstruction_loss: true
-  reconstruction_loss_regularization_factor: 0.1
+  kspace_reconstruction_loss: false
+  reconstruction_loss_regularization_factor: .9
+  unnormalize_loss_inputs: false
   coil_combination_method: SENSE
   ssdu: true
   n2r: true
-  n2r_loss_regularization_factor: 1.0
+  n2r_loss_regularization_factor: .1
   fft_centered: true
   fft_normalization: ortho
   spatial_dims:
@@ -31,9 +32,10 @@ model:
   log_images: true
 
   train_ds:
-    data_path: /data/projects/recon/data/public/fastmri/brain/data/FLAIR/multicoil_train
-    coil_sensitivity_maps_path: /data/projects/recon/data/public/fastmri/brain/sensitivities_maps/FLAIR
+    data_path: /scratch/iskylitsis/data/mridata_knee_2019/train
+    coil_sensitivity_maps_path: None
     mask_path: None
+    dataset_format: stanford_knees
     sample_rate: 1
     volume_sample_rate: None
     use_dataset_cache: false
@@ -43,100 +45,28 @@ model:
     data_saved_per_slice: false
     apply_prewhitening: false
     apply_gcc: false
-    gcc_virtual_coils: 8
-    gcc_calib_lines: 24
-    gcc_align_data: true
     coil_combination_method: SENSE
     dimensionality: 2
     mask_args:
-      type: equispaced1d
+      type: poisson2d
       accelerations:
-      - 4
+      - 12
       center_fractions:
-      - 0.08
+      - 0.7
       scale: 0.02
       shift_mask: false
       use_seed: true
     half_scan_percentage: 0.0
     remask: false
     ssdu: true
-    ssdu_mask_type: Gaussian
+    ssdu_mask_type: Uniform
     ssdu_rho: 0.4
     ssdu_acs_block_size:
     - 4
     - 4
     ssdu_gaussian_std_scaling_factor: 4.0
     ssdu_max_iterations: 1
-    ssdu_outer_kspace_fraction: 0.05
-    ssdu_export_and_reuse_masks: false
-    n2r: true
-    n2r_supervised_rate: 0.1
-    n2r_probability: 0.2
-    n2r_std_devs:
-    - 0.2
-    - 0.5
-    n2r_rhos:
-    - 1.0
-    - 1.0
-    n2r_use_mask: true
-    crop_size: [320, 320]
-    kspace_crop: false
-    crop_before_masking: true
-    kspace_zero_filling_size: None
-    normalize_inputs: true
-    normalization_type: max
-    kspace_normalization: true
-    fft_centered: true
-    fft_normalization: ortho
-    spatial_dims:
-    - -2
-    - -1
-    coil_dim: 1
-    use_seed: true
-    batch_size: 1
-    shuffle: false
-    num_workers: 8
-    pin_memory: false
-    drop_last: false
-
-  validation_ds:
-    data_path: /data/projects/recon/data/public/fastmri/brain/data/FLAIR/multicoil_val
-    coil_sensitivity_maps_path: /data/projects/recon/data/public/fastmri/brain/sensitivities_maps/FLAIR
-    mask_path: None
-    sample_rate: 1
-    volume_sample_rate: None
-    use_dataset_cache: false
-    dataset_cache_file: None
-    num_cols: None
-    consecutive_slices: 1
-    data_saved_per_slice: false
-    apply_prewhitening: false
-    apply_gcc: false
-    gcc_virtual_coils: 8
-    gcc_calib_lines: 24
-    gcc_align_data: true
-    coil_combination_method: SENSE
-    dimensionality: 2
-    mask_args:
-      type: equispaced1d
-      accelerations:
-      - 4
-      center_fractions:
-      - 0.08
-      scale: 0.02
-      shift_mask: false
-      use_seed: false
-    half_scan_percentage: 0.0
-    remask: false
-    ssdu: true
-    ssdu_mask_type: Gaussian
-    ssdu_rho: 0.4
-    ssdu_acs_block_size:
-    - 4
-    - 4
-    ssdu_gaussian_std_scaling_factor: 4.0
-    ssdu_max_iterations: 1
-    ssdu_outer_kspace_fraction: 0.05
+    ssdu_outer_kspace_fraction: 0.0
     ssdu_export_and_reuse_masks: false
     n2r: true
     n2r_supervised_rate: 0.0
@@ -148,13 +78,80 @@ model:
     - 1.0
     - 1.0
     n2r_use_mask: true
-    crop_size: [320, 320]
+    crop_size: None
     kspace_crop: false
     crop_before_masking: true
     kspace_zero_filling_size: None
     normalize_inputs: true
     normalization_type: max
-    kspace_normalization: true
+    kspace_normalization: false
+    fft_centered: true
+    fft_normalization: ortho
+    spatial_dims:
+    - -2
+    - -1
+    coil_dim: 1
+    use_seed: true
+    batch_size: 1
+    shuffle: true
+    num_workers: 4
+    pin_memory: false
+    drop_last: false
+
+  validation_ds:
+    data_path: /scratch/iskylitsis/data/mridata_knee_2019/val
+    coil_sensitivity_maps_path: None
+    mask_path: None
+    dataset_format: stanford_knees
+    sample_rate: 1
+    volume_sample_rate: None
+    use_dataset_cache: false
+    dataset_cache_file: None
+    num_cols: None
+    consecutive_slices: 1
+    data_saved_per_slice: false
+    apply_prewhitening: false
+    apply_gcc: false
+    coil_combination_method: SENSE
+    dimensionality: 2
+    mask_args:
+      type: poisson2d
+      accelerations:
+      - 12
+      center_fractions:
+      - 0.7
+      scale: 0.02
+      shift_mask: false
+      use_seed: false
+    half_scan_percentage: 0.0
+    remask: false
+    ssdu: true
+    ssdu_mask_type: Uniform
+    ssdu_rho: 0.4
+    ssdu_acs_block_size:
+    - 4
+    - 4
+    ssdu_gaussian_std_scaling_factor: 4.0
+    ssdu_max_iterations: 1
+    ssdu_outer_kspace_fraction: 0.0
+    ssdu_export_and_reuse_masks: false
+    n2r: true
+    n2r_supervised_rate: 0.0
+    n2r_probability: 0.2
+    n2r_std_devs:
+    - 0.2
+    - 0.5
+    n2r_rhos:
+    - 1.0
+    - 1.0
+    n2r_use_mask: true
+    crop_size: None
+    kspace_crop: false
+    crop_before_masking: true
+    kspace_zero_filling_size: None
+    normalize_inputs: true
+    normalization_type: max
+    kspace_normalization: false
     fft_centered: true
     fft_normalization: ortho
     spatial_dims:
@@ -164,13 +161,12 @@ model:
     use_seed: false
     batch_size: 1
     shuffle: false
-    num_workers: 8
+    num_workers: 4
     pin_memory: false
-    drop_last: false
 
   optim:
     name: adam
-    lr: 1e-4
+    lr: 0.001
     betas:
     - 0.9
     - 0.999
@@ -195,9 +191,11 @@ trainer:
   max_steps: -1
 
 exp_manager:
-  exp_dir: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/trained_models/N2R_FULLUNSUP_UNET_fastmri_brain_FLAIR_Equispaced1d_4x
+  exp_dir: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/trained_models/N2R_FULLUNSUPSUP_stanford_knees_Poisson2d_12x
   create_tensorboard_logger: true
   create_wandb_logger: false
   wandb_logger_kwargs:
     project: ???
   files_to_copy: [ ]
+  checkpoint_callback_params:
+    save_top_k: -1

@@ -230,7 +230,10 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
         prediction: Union[list, torch.Tensor],
         sensitivity_maps: torch.Tensor,
         mask: torch.Tensor,
+        attrs: Dict,
+        r: int,
         loss_func: torch.nn.Module,
+        kspace_reconstruction_loss: bool = False,
     ) -> torch.Tensor:
         """
         Processes the reconstruction loss.
@@ -247,9 +250,17 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
         mask : torch.Tensor
             Mask of shape [batch_size, n_x, n_y, 2]. It will be used if self.ssdu is True, to enforce data consistency
             on the prediction.
+        attrs : Dict
+            Attributes of the data with pre normalization values.
+        r : int
+            The selected acceleration factor.
         loss_func : torch.nn.Module
             Loss function. Must be one of {torch.nn.L1Loss(), torch.nn.MSELoss(),
             mridc.collections.reconstruction.losses.ssim.SSIMLoss()}. Default is ``torch.nn.L1Loss()``.
+        kspace_reconstruction_loss : bool
+            If True, the loss will be computed on the k-space data. Otherwise, the loss will be computed on the
+            image space data. Default is ``False``. Note that this is different from
+            ``self.kspace_reconstruction_loss``, so it can be used with multiple losses.
 
         Returns
         -------
@@ -257,12 +268,79 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             If self.accumulate_loss is True, returns an accumulative result of all intermediate losses.
             Otherwise, returns the loss of the last intermediate loss.
         """
-        if not self.kspace_reconstruction_loss:
+        if self.unnormalize_loss_inputs:
+            if self.n2r and not attrs["n2r_supervised"]:
+                target = utils.unnormalize(
+                    target,
+                    {
+                        "min": attrs["prediction_min"] if "prediction_min" in attrs else attrs[f"prediction_min_{r}"],
+                        "max": attrs["prediction_max"] if "prediction_max" in attrs else attrs[f"prediction_max_{r}"],
+                        "mean": attrs["prediction_mean"]
+                        if "prediction_mean" in attrs
+                        else attrs[f"prediction_mean_{r}"],
+                        "std": attrs["prediction_std"] if "prediction_std" in attrs else attrs[f"prediction_std_{r}"],
+                    },
+                    self.normalization_type,
+                )
+                prediction = utils.unnormalize(
+                    prediction,
+                    {
+                        "min": attrs["noise_prediction_min"]
+                        if "noise_prediction_min" in attrs
+                        else attrs[f"noise_prediction_min_{r}"],
+                        "max": attrs["noise_prediction_max"]
+                        if "noise_prediction_max" in attrs
+                        else attrs[f"noise_prediction_max_{r}"],
+                        attrs["noise_prediction_mean"]
+                        if "noise_prediction_mean" in attrs
+                        else "mean": attrs[f"noise_prediction_mean_{r}"],
+                        attrs["noise_prediction_std"]
+                        if "noise_prediction_std" in attrs
+                        else "std": attrs[f"noise_prediction_std_{r}"],
+                    },
+                    self.normalization_type,
+                )
+            else:
+                target = utils.unnormalize(
+                    target,
+                    {
+                        "min": attrs["target_min"],
+                        "max": attrs["target_max"],
+                        "mean": attrs["target_mean"],
+                        "std": attrs["target_std"],
+                    },
+                    self.normalization_type,
+                )
+                prediction = utils.unnormalize(
+                    prediction,
+                    {
+                        "min": attrs["prediction_min"] if "prediction_min" in attrs else attrs[f"prediction_min_{r}"],
+                        "max": attrs["prediction_max"] if "prediction_max" in attrs else attrs[f"prediction_max_{r}"],
+                        "mean": attrs["prediction_mean"]
+                        if "prediction_mean" in attrs
+                        else attrs[f"prediction_mean_{r}"],
+                        "std": attrs["prediction_std"] if "prediction_std" in attrs else attrs[f"prediction_std_{r}"],
+                    },
+                    self.normalization_type,
+                )
+
+            sensitivity_maps = utils.unnormalize(
+                sensitivity_maps,
+                {
+                    "min": attrs["sensitivity_maps_min"],
+                    "max": attrs["sensitivity_maps_max"],
+                    "mean": attrs["sensitivity_maps_mean"],
+                    "std": attrs["sensitivity_maps_std"],
+                },
+                self.normalization_type,
+            )
+
+        if not self.kspace_reconstruction_loss and not kspace_reconstruction_loss and not self.unnormalize_loss_inputs:
             target = torch.abs(target / torch.max(torch.abs(target)))
         else:
             if target.shape[-1] != 2:
                 target = torch.view_as_real(target)
-            if self.ssdu:
+            if self.ssdu or kspace_reconstruction_loss:
                 target = utils.expand_op(target, sensitivity_maps, self.coil_dim)
             target = fft.fft2(target, self.fft_centered, self.fft_normalization, self.spatial_dims)
 
@@ -310,15 +388,19 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                 loss: torch.FloatTensor
                     Loss value.
                 """
-                if not self.kspace_reconstruction_loss:
+                if (
+                    not self.kspace_reconstruction_loss
+                    and not kspace_reconstruction_loss
+                    and not self.unnormalize_loss_inputs
+                ):
                     y = torch.abs(y / torch.max(torch.abs(y)))
                 else:
                     if y.shape[-1] != 2:
                         y = torch.view_as_real(y)
-                    if self.ssdu:
+                    if self.ssdu or kspace_reconstruction_loss:
                         y = utils.expand_op(y, sensitivity_maps, self.coil_dim)
                     y = fft.fft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims)
-                    if self.ssdu:
+                    if self.ssdu or kspace_reconstruction_loss:
                         y = y * mask
                 return loss_func(x, y)
 
@@ -472,6 +554,8 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                 Slice number.
             'acc' : float
                 Acceleration factor of the sampling mask.
+            'attrs' : dict
+                Attributes dictionary.
         batch_idx : int
             Batch index.
 
@@ -500,6 +584,7 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             _,
             _,
             acc,
+            attrs,
         ) = batch
 
         (
@@ -560,7 +645,7 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             if self.use_reconstruction_module:
                 lossrecon = sum(
                     self.process_reconstruction_loss(
-                        target, recon_pred, sensitivity_maps, loss_mask, self.train_loss_fn
+                        target, recon_pred, sensitivity_maps, loss_mask, attrs, r, self.train_loss_fn  # type: ignore
                     )
                 )
             else:
@@ -591,7 +676,7 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
 
             if self.use_reconstruction_module:
                 lossrecon = self.process_reconstruction_loss(
-                    target, recon_pred, sensitivity_maps, loss_mask, self.train_loss_fn
+                    target, recon_pred, sensitivity_maps, loss_mask, attrs, r, self.train_loss_fn  # type: ignore
                 ).mean()
             else:
                 lossrecon = torch.tensor([0.0])
@@ -671,6 +756,8 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                 Slice number.
             'acc' : float
                 Acceleration factor of the sampling mask.
+            'attrs' : dict
+                Attributes dictionary.
         batch_idx : int
             Batch index.
 
@@ -699,6 +786,7 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             fname,
             slice_num,
             _,
+            attrs,
         ) = batch
 
         (
@@ -710,7 +798,7 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             target,
             y,
             sampling_mask,
-            _,
+            r,
         ) = self.process_inputs(  # type: ignore
             R2star_map_init,
             S0_map_init,
@@ -758,7 +846,9 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
 
             if self.use_reconstruction_module:
                 lossrecon = sum(
-                    self.process_reconstruction_loss(target, recon_pred, sensitivity_maps, loss_mask, self.val_loss_fn)
+                    self.process_reconstruction_loss(
+                        target, recon_pred, sensitivity_maps, loss_mask, attrs, r, self.val_loss_fn  # type: ignore
+                    )
                 )
             else:
                 lossrecon = torch.tensor([0.0])
@@ -788,7 +878,7 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
 
             if self.use_reconstruction_module:
                 lossrecon = self.process_reconstruction_loss(
-                    target, recon_pred, sensitivity_maps, loss_mask, self.val_loss_fn
+                    target, recon_pred, sensitivity_maps, loss_mask, attrs, r, self.val_loss_fn  # type: ignore
                 ).mean()
             else:
                 lossrecon = torch.tensor([0.0])
@@ -1054,6 +1144,8 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                 Slice number.
             'acc' : float
                 Acceleration factor of the sampling mask.
+            'attrs' : dict
+                Attributes dictionary.
         batch_idx : int
             Batch index.
 
@@ -1086,6 +1178,7 @@ class BaseqMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             fname,
             slice_num,
             _,
+            attrs,
         ) = batch
 
         (

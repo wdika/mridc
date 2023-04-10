@@ -5,18 +5,18 @@ mode: test
 model:
   model_name: CS
   cs_type: l1_wavelet
-  reg_wt: 1.2
+  reg_wt: 0.05
   num_iters: 60
   center_kspace: false
-  center_sensitivity_maps: true
+  center_sensitivity_maps: false
   center_mask: false
-  center_reconstruction: true
+  center_reconstruction: false
   use_sens_net: false
   dimensionality: 2
   consecutive_slices: 1
   coil_combination_method: SENSE
-  fft_centered: false
-  fft_normalization: backward
+  fft_centered: true
+  fft_normalization: ortho
   spatial_dims:
     - -2
     - -1
@@ -25,7 +25,7 @@ model:
   log_images: true
 
   test_ds:
-    data_path: /data/projects/recon/data/public/3D_FSE_PD_Knees/test.json
+    data_path: /scratch/iskylitsis/data/mridata_knee_2019/test
     sense_path: None
     mask_path: None
     initial_predictions_path: None
@@ -50,7 +50,7 @@ model:
       center_fractions:
         - 0.7
       scale: 0.02
-      shift_mask: true
+      shift_mask: false
       use_seed: false
     half_scan_percentage: 0.0
     remask: false
@@ -58,11 +58,11 @@ model:
     kspace_crop: false
     crop_before_masking: true
     kspace_zero_filling_size: None
-    normalize_inputs: false
+    normalize_inputs: true
     normalization_type: max
     kspace_normalization: false
-    fft_centered: false
-    fft_normalization: backward
+    fft_centered: true
+    fft_normalization: ortho
     spatial_dims:
       - -2
       - -1
@@ -87,7 +87,7 @@ trainer:
   max_steps: -1
 
 exp_manager:
-  exp_dir: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/reconstructions/CS/
+  exp_dir: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/reconstructions_stanford_knees_poisson2d_12x/CS/
   create_tensorboard_logger: true
   create_wandb_logger: false
   wandb_logger_kwargs:

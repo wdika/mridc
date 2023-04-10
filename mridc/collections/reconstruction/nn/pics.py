@@ -6,7 +6,6 @@ import sys
 from abc import ABC
 from typing import Any, Dict, Tuple, Union
 
-import bart
 import torch
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
@@ -20,7 +19,10 @@ os.environ["TOOLBOX_PATH"] = "/opt/amc/bart-0.8.00/bin/"
 os.environ["PYTHONPATH"] = "/opt/amc/bart-0.8.00/python"
 sys.path.append(os.environ["TOOLBOX_PATH"])
 sys.path.append(os.environ["PYTHONPATH"])
-
+try:
+    import bart
+except ImportError:
+    print("BART is not installed")
 __all__ = ["PICS"]
 
 
@@ -97,7 +99,8 @@ class PICS(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
         pred: Predicted data.
             torch.Tensor, shape [batch_size, n_x, n_y, 2]
         """
-        kspace, y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _ = batch
+        kspace, y, sensitivity_maps, mask, init_pred, target, fname, slice_num, _, attrs = batch
+
         kspace, y, mask, init_pred, target, r = self.process_inputs(kspace, y, mask, init_pred, target)
 
         if self.use_sens_net:

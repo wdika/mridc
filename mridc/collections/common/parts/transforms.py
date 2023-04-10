@@ -1470,13 +1470,13 @@ class Normalizer:
         data: Union[torch.Tensor, List[torch.Tensor], None],
         apply_backward_transform: bool = False,
         apply_forward_transform: bool = False,
-    ) -> List[torch.Tensor] | torch.Tensor:
+    ) -> List[Union[List[torch.Tensor], torch.Tensor], Union[Dict, None]]:  # type: ignore
         if not utils.is_none(data):
             if isinstance(data, list) and len(data) > 0:
                 return [self.forward(d, apply_backward_transform, apply_forward_transform) for d in data]
             if data.dim() > 1 and data.mean() != 1:  # type: ignore
                 return self.forward(data, apply_backward_transform, apply_forward_transform)
-        return data
+        return data, None  # type: ignore
 
     def __repr__(self):
         return f"Normalization type is set to {self.normalization_type}."
@@ -1489,7 +1489,7 @@ class Normalizer:
         data: torch.Tensor,
         apply_backward_transform: bool = False,
         apply_forward_transform: bool = False,
-    ) -> torch.Tensor:
+    ) -> List[torch.Tensor, Dict]:  # type: ignore
         if self.kspace_normalization and apply_backward_transform:
             apply_backward_transform = False
 
@@ -1507,6 +1507,13 @@ class Normalizer:
                 normalization=self.fft_normalization,
                 spatial_dims=self.spatial_dims,
             )
+
+        attrs = {
+            "max": torch.max(torch.abs(data)),
+            "mean": torch.mean(torch.abs(data)),
+            "std": torch.std(torch.abs(data)),
+            "min": torch.min(torch.abs(data)),
+        }
 
         if self.normalization_type == "max":
             data = data / torch.max(torch.abs(data))
@@ -1534,7 +1541,7 @@ class Normalizer:
                 spatial_dims=self.spatial_dims,
             )
 
-        return data
+        return data, attrs  # type: ignore
 
 
 class Composer:
@@ -1871,12 +1878,6 @@ class MRIDataTransforms:
                 self.kspace_zero_filling,  # type: ignore
             ]
         )
-        self.crop_normalize = Composer(
-            [
-                self.cropping,  # type: ignore
-                self.normalization,  # type: ignore
-            ]
-        )
         self.cropping = Composer([self.cropping])  # type: ignore
         self.normalization = Composer([self.normalization])  # type: ignore
 
@@ -1922,18 +1923,43 @@ class MRIDataTransforms:
         -------
         The transformed data.
         """
-        kspace, masked_kspace, mask, acc = self.__process_kspace__(kspace, mask, attrs, fname)
-        sensitivity_map = self.__process_coil_sensitivities_map__(sensitivity_map, kspace)
+        kspace, masked_kspace, mask, kspace_pre_normalization_vars, acc = self.__process_kspace__(
+            kspace, mask, attrs, fname
+        )
+        sensitivity_map, sensitivity_pre_normalization_vars = self.__process_coil_sensitivities_map__(
+            sensitivity_map, kspace
+        )
         if self.n2r and len(masked_kspace) > 1:
-            prediction = [
-                self.__initialize_prediction__(prediction, masked_kspace[0], sensitivity_map),
-                self.__initialize_prediction__(None, masked_kspace[1], sensitivity_map)
-                if isinstance(masked_kspace, list) and not masked_kspace[1][0].dim() < 2
-                else torch.tensor([]),
-            ]
+            prediction, prediction_pre_normalization_vars = self.__initialize_prediction__(
+                prediction, masked_kspace[0], sensitivity_map
+            )
+            if isinstance(masked_kspace, list) and not masked_kspace[1][0].dim() < 2:
+                noise_prediction, noise_prediction_pre_normalization_vars = self.__initialize_prediction__(
+                    None, masked_kspace[1], sensitivity_map
+                )
+            else:
+                noise_prediction = torch.tensor([])
+                noise_prediction_pre_normalization_vars = None
+            prediction = [prediction, noise_prediction]
         else:
-            prediction = self.__initialize_prediction__(prediction, masked_kspace, sensitivity_map)
-        target = self.__initialize_prediction__(None if self.ssdu else target, kspace, sensitivity_map)
+            prediction, prediction_pre_normalization_vars = self.__initialize_prediction__(
+                prediction, masked_kspace, sensitivity_map
+            )
+            noise_prediction_pre_normalization_vars = None
+        target, target_pre_normalization_vars = self.__initialize_prediction__(
+            None if self.ssdu else target, kspace, sensitivity_map
+        )
+
+        attrs.update(
+            self.__parse_normalization_vars__(
+                kspace_pre_normalization_vars,
+                sensitivity_pre_normalization_vars,
+                prediction_pre_normalization_vars,
+                noise_prediction_pre_normalization_vars,
+                target_pre_normalization_vars,
+            )
+        )
+
         return kspace, masked_kspace, sensitivity_map, mask, prediction, target, fname, slice_idx, acc, attrs
 
     def __repr__(self) -> str:
@@ -1957,6 +1983,7 @@ class MRIDataTransforms:
         torch.Tensor,
         Union[List[torch.Tensor], torch.Tensor],
         Union[List[torch.Tensor], torch.Tensor],
+        Dict,
         Union[List[Union[float, torch.Tensor, Any]]],
     ]:
         """
@@ -1975,7 +2002,14 @@ class MRIDataTransforms:
 
         Returns
         -------
-        The preprocessed kspace.
+        List[
+        Union[List[torch.Tensor], torch.Tensor],
+        Union[List[torch.Tensor], torch.Tensor],
+        Union[List[torch.Tensor], torch.Tensor],
+        Dict,
+        Union[List[Union[float, torch.Tensor, Any]]]
+        ]
+            The transformed kspace, the masked kspace, the mask, the attributes and the acceleration factor.
         """
         kspace = utils.to_tensor(kspace)
         kspace = utils.add_coil_dim_if_singlecoil(kspace, dim=self.coil_dim)
@@ -2002,19 +2036,48 @@ class MRIDataTransforms:
                 mask = [self.cropping(x.squeeze(-1)).unsqueeze(-1) for x in mask]  # type: ignore
             kspace = self.cropping(kspace, apply_backward_transform=not self.kspace_crop)  # type: ignore
 
-        kspace = self.normalization(kspace, apply_backward_transform=True)  # type: ignore
-        masked_kspace = self.normalization(masked_kspace, apply_backward_transform=True)  # type: ignore
-
         init_kspace = kspace
         init_masked_kspace = masked_kspace
         init_mask = mask
 
-        # TODO: check normalization after ssdu and n2r
+        if "None" not in self.normalization.__repr__():
+            if isinstance(kspace, list):
+                kspaces = []
+                pre_normalization_vars = []
+                for i in range(len(kspace)):
+                    _kspace, _pre_normalization_vars = self.normalization(  # type: ignore
+                        kspace[i], apply_backward_transform=True
+                    )
+                    kspaces.append(_kspace)
+                    pre_normalization_vars.append(_pre_normalization_vars)
+                kspace = kspaces
+            else:
+                kspace, pre_normalization_vars = self.normalization(kspace, apply_backward_transform=True)  # type: ignore
+
+            if isinstance(masked_kspace, list):
+                masked_kspaces = []
+                masked_pre_normalization_vars = []
+                for i in range(len(masked_kspace)):
+                    _masked_kspace, _masked_pre_normalization_vars = self.normalization(  # type: ignore
+                        masked_kspace[i], apply_backward_transform=True
+                    )
+                    masked_kspaces.append(_masked_kspace)
+                    masked_pre_normalization_vars.append(_masked_pre_normalization_vars)
+                masked_kspace = masked_kspaces
+            else:
+                masked_kspace, masked_pre_normalization_vars = self.normalization(
+                    masked_kspace, apply_backward_transform=True
+                )
+        else:
+            pre_normalization_vars = None
+            masked_pre_normalization_vars = None
+
         if self.ssdu:
             kspace, masked_kspace, mask = self.__self_supervised_data_undersampling__(  # type: ignore
                 kspace, masked_kspace, mask, fname
             )
 
+        n2r_pre_normalization_vars = None
         if self.n2r and (not attrs["n2r_supervised"] or self.ssdu):
             n2r_masked_kspace, n2r_mask = self.__noise_to_reconstruction__(init_kspace, init_masked_kspace, init_mask)
 
@@ -2039,10 +2102,49 @@ class MRIDataTransforms:
                     masked_kspace = init_masked_kspace
                     mask[0] = init_mask
 
+            if "None" not in self.normalization.__repr__():
+                if isinstance(masked_kspace, list):
+                    masked_kspaces = []
+                    masked_pre_normalization_vars = []
+                    for i in range(len(masked_kspace)):
+                        _masked_kspace, _masked_pre_normalization_vars = self.normalization(  # type: ignore
+                            masked_kspace[i], apply_backward_transform=True
+                        )
+                        masked_kspaces.append(_masked_kspace)
+                        masked_pre_normalization_vars.append(_masked_pre_normalization_vars)
+                    masked_kspace = masked_kspaces
+                else:
+                    masked_kspace, masked_pre_normalization_vars = self.normalization(  # type: ignore
+                        masked_kspace, apply_backward_transform=True
+                    )
+                if isinstance(n2r_masked_kspace, list):
+                    n2r_masked_kspaces = []
+                    n2r_pre_normalization_vars = []
+                    for i in range(len(n2r_masked_kspace)):
+                        _n2r_masked_kspace, _n2r_pre_normalization_vars = self.normalization(  # type: ignore
+                            n2r_masked_kspace[i], apply_backward_transform=True
+                        )
+                        n2r_masked_kspaces.append(_n2r_masked_kspace)
+                        n2r_pre_normalization_vars.append(_n2r_pre_normalization_vars)
+                    n2r_masked_kspace = n2r_masked_kspaces
+                else:
+                    n2r_masked_kspace, n2r_pre_normalization_vars = self.normalization(  # type: ignore
+                        n2r_masked_kspace, apply_backward_transform=True
+                    )
+            else:
+                masked_pre_normalization_vars = None
+                n2r_pre_normalization_vars = None  # type: ignore
+
             masked_kspace = [masked_kspace, n2r_masked_kspace]
             mask = [mask, n2r_mask]
 
-        return kspace, masked_kspace, mask, acc
+        pre_normalization_vars = {  # type: ignore
+            "kspace_pre_normalization_vars": pre_normalization_vars,
+            "masked_kspace_pre_normalization_vars": masked_pre_normalization_vars,
+            "noise_masked_kspace_pre_normalization_vars": n2r_pre_normalization_vars,
+        }
+
+        return kspace, masked_kspace, mask, pre_normalization_vars, acc  # type: ignore
 
     def __noise_to_reconstruction__(
         self,
@@ -2142,6 +2244,13 @@ class MRIDataTransforms:
                     for d in dims:
                         train_mask = train_mask.unsqueeze(d)
                         loss_mask = loss_mask.unsqueeze(d)
+                if train_mask.dim() != kspace.dim():
+                    # find dims != to any train_mask dim
+                    dims = [i for i, x in enumerate(kspace.shape) if x not in train_mask.shape]
+                    # unsqueeze to broadcast
+                    for d in dims:
+                        train_mask = train_mask.unsqueeze(d)
+                        loss_mask = loss_mask.unsqueeze(d)
                 kspaces.append(kspace * loss_mask + 0.0)
                 masked_kspaces.append(masked_kspace[i] * train_mask + 0.0)  # type: ignore
                 masks.append([train_mask, loss_mask])
@@ -2169,12 +2278,21 @@ class MRIDataTransforms:
                 for d in dims:
                     train_mask = train_mask.unsqueeze(d)
                     loss_mask = loss_mask.unsqueeze(d)
+            if train_mask.dim() != kspace.dim():
+                # find dims != to any train_mask dim
+                dims = [i for i, x in enumerate(kspace.shape) if x not in train_mask.shape]
+                # unsqueeze to broadcast
+                for d in dims:
+                    train_mask = train_mask.unsqueeze(d)
+                    loss_mask = loss_mask.unsqueeze(d)
             kspace = kspace * loss_mask + 0.0
             masked_kspace = masked_kspace * train_mask + 0.0
             mask = [train_mask, loss_mask]
         return kspace, masked_kspace, mask
 
-    def __process_coil_sensitivities_map__(self, sensitivity_map: np.ndarray, kspace: torch.Tensor) -> torch.Tensor:
+    def __process_coil_sensitivities_map__(
+        self, sensitivity_map: np.ndarray, kspace: torch.Tensor
+    ) -> Union[torch.Tensor, Dict]:
         """
         Preprocesses the coil sensitivities map.
 
@@ -2187,8 +2305,8 @@ class MRIDataTransforms:
 
         Returns
         -------
-        torch.Tensor
-            The preprocessed coil sensitivities map.
+        List[torch.Tensor, Dict]
+            The preprocessed coil sensitivities map and the normalization variables.
         """
         # This condition is necessary in case of auto estimation of sense maps.
         if sensitivity_map is not None and sensitivity_map.size != 0:
@@ -2198,12 +2316,18 @@ class MRIDataTransforms:
             # Initialize the sensitivity map to 1 to assure for the singlecoil case.
             sensitivity_map = torch.ones_like(kspace)
         sensitivity_map = self.coils_shape_transforms(sensitivity_map, apply_forward_transform=True)
-        sensitivity_map = self.crop_normalize(sensitivity_map, apply_forward_transform=self.kspace_crop)
-        return sensitivity_map
+        sensitivity_map = self.cropping(sensitivity_map, apply_forward_transform=self.kspace_crop)  # type: ignore
+        if "None" not in self.normalization.__repr__():
+            sensitivity_map, pre_normalization_vars = self.normalization(  # type: ignore
+                sensitivity_map, apply_forward_transform=self.kspace_crop
+            )
+        else:
+            pre_normalization_vars = None
+        return sensitivity_map, pre_normalization_vars
 
     def __initialize_prediction__(
         self, prediction: Union[np.ndarray, None], kspace: torch.Tensor, sensitivity_map: torch.Tensor
-    ) -> Union[List[torch.Tensor], torch.Tensor]:
+    ) -> List[Union[List[torch.Tensor], torch.Tensor], Dict]:  # type: ignore
         """
         Predicts a coil-combined image.
 
@@ -2218,29 +2342,165 @@ class MRIDataTransforms:
 
         Returns
         -------
-        Union[List[torch.Tensor], torch.Tensor]
-            The initialized prediction, either a list of coil-combined images or a single coil-combined image.
+        List[Union[List[torch.Tensor], torch.Tensor], Dict]
+            The initialized prediction, either a list of coil-combined images or a single coil-combined image and the
+            pre-normalization variables (min, max, mean, std).
         """
         if utils.is_none(prediction) or prediction.ndim < 2 or isinstance(kspace, list):  # type: ignore
             if isinstance(kspace, list):
-                prediction = [
-                    self.crop_normalize(
-                        self.init_reconstructor(y, sensitivity_map, torch.empty([]), torch.empty([]), torch.empty([]))
+                prediction = []
+                pre_normalization_vars = []
+                for y in kspace:
+                    pred = self.init_reconstructor(
+                        y, sensitivity_map, torch.empty([]), torch.empty([]), torch.empty([])
                     )
-                    for y in kspace
-                ]
+                    pred = self.cropping(pred, apply_forward_transform=self.kspace_crop)  # type: ignore
+                    if "None" not in self.normalization.__repr__():
+                        pred, _pre_normalization_vars = self.normalization(  # type: ignore
+                            pred, apply_forward_transform=self.kspace_crop
+                        )
+                    else:
+                        _pre_normalization_vars = None
+                    prediction.append(pred)
+                    pre_normalization_vars.append(_pre_normalization_vars)
                 if prediction[0].shape[-1] != 2:
                     prediction = [torch.view_as_real(x) for x in prediction]
             else:
-                prediction = self.crop_normalize(
-                    self.init_reconstructor(kspace, sensitivity_map, torch.empty([]), torch.empty([]), torch.empty([]))
+                prediction = self.init_reconstructor(
+                    kspace, sensitivity_map, torch.empty([]), torch.empty([]), torch.empty([])
                 )
+                prediction = self.cropping(prediction, apply_forward_transform=self.kspace_crop)  # type: ignore
+                if "None" not in self.normalization.__repr__():
+                    prediction, pre_normalization_vars = self.normalization(  # type: ignore
+                        prediction, apply_forward_transform=self.kspace_crop
+                    )
+                else:
+                    pre_normalization_vars = None
                 if prediction.shape[-1] != 2:  # type: ignore
                     prediction = torch.view_as_real(prediction)
         else:
             if isinstance(prediction, np.ndarray):
                 prediction = utils.to_tensor(prediction)
-            prediction = self.crop_normalize(prediction, apply_forward_transform=self.kspace_crop)
+            prediction = self.cropping(prediction, apply_forward_transform=self.kspace_crop)  # type: ignore
+            if "None" not in self.normalization.__repr__():
+                prediction, pre_normalization_vars = self.normalization(  # type: ignore
+                    prediction, apply_forward_transform=self.kspace_crop
+                )
+            else:
+                pre_normalization_vars = None
             if prediction.shape[-1] != 2 and prediction.type == "torch.ComplexTensor":  # type: ignore
                 prediction = torch.view_as_real(prediction)
-        return prediction
+        return prediction, pre_normalization_vars  # type: ignore
+
+    def __parse_normalization_vars__(
+        self, kspace_vars, sensitivity_vars, prediction_vars, noise_prediction_vars, target_vars
+    ) -> Dict:
+        """
+        Parses the normalization variables and returns a unified dictionary.
+
+        Parameters
+        ----------
+        kspace_vars : Dict
+            The kspace normalization variables.
+        sensitivity_vars : Dict
+            The sensitivity map normalization variables.
+        prediction_vars : Dict
+            The prediction normalization variables.
+        noise_prediction_vars : Union[Dict, None]
+            The noise prediction normalization variables.
+        target_vars : Dict
+            The target normalization variables.
+
+        Returns
+        -------
+        Dict
+            The normalization variables.
+        """
+        normalization_vars = {}
+        masked_kspace_vars = kspace_vars["masked_kspace_pre_normalization_vars"]
+        if isinstance(masked_kspace_vars, list):
+            if masked_kspace_vars[0] is not None:
+                for i, masked_kspace_var in enumerate(masked_kspace_vars):
+                    normalization_vars[f"masked_kspace_min_{i}"] = masked_kspace_var["min"]
+                    normalization_vars[f"masked_kspace_max_{i}"] = masked_kspace_var["max"]
+                    normalization_vars[f"masked_kspace_mean_{i}"] = masked_kspace_var["mean"]
+                    normalization_vars[f"masked_kspace_std_{i}"] = masked_kspace_var["std"]
+        else:
+            if masked_kspace_vars is not None:
+                normalization_vars["masked_kspace_min"] = masked_kspace_vars["min"]
+                normalization_vars["masked_kspace_max"] = masked_kspace_vars["max"]
+                normalization_vars["masked_kspace_mean"] = masked_kspace_vars["mean"]
+                normalization_vars["masked_kspace_std"] = masked_kspace_vars["std"]
+        noise_masked_kspace_vars = kspace_vars["noise_masked_kspace_pre_normalization_vars"]
+        if noise_masked_kspace_vars is not None:
+            if isinstance(noise_masked_kspace_vars, list):
+                if noise_masked_kspace_vars[0] is not None:
+                    for i, noise_masked_kspace_var in enumerate(noise_masked_kspace_vars):
+                        normalization_vars[f"noise_masked_kspace_min_{i}"] = noise_masked_kspace_var["min"]
+                        normalization_vars[f"noise_masked_kspace_max_{i}"] = noise_masked_kspace_var["max"]
+                        normalization_vars[f"noise_masked_kspace_mean_{i}"] = noise_masked_kspace_var["mean"]
+                        normalization_vars[f"noise_masked_kspace_std_{i}"] = noise_masked_kspace_var["std"]
+            else:
+                if noise_masked_kspace_vars is not None:
+                    normalization_vars["noise_masked_kspace_min"] = noise_masked_kspace_vars["min"]
+                    normalization_vars["noise_masked_kspace_max"] = noise_masked_kspace_vars["max"]
+                    normalization_vars["noise_masked_kspace_mean"] = noise_masked_kspace_vars["mean"]
+                    normalization_vars["noise_masked_kspace_std"] = noise_masked_kspace_vars["std"]
+        kspace_vars = kspace_vars["kspace_pre_normalization_vars"]
+        if isinstance(kspace_vars, list):
+            if kspace_vars[0] is not None:
+                for i, kspace_var in enumerate(kspace_vars):
+                    normalization_vars[f"kspace_min_{i}"] = kspace_var["min"]
+                    normalization_vars[f"kspace_max_{i}"] = kspace_var["max"]
+                    normalization_vars[f"kspace_mean_{i}"] = kspace_var["mean"]
+                    normalization_vars[f"kspace_std_{i}"] = kspace_var["std"]
+        else:
+            if kspace_vars is not None:
+                normalization_vars["kspace_min"] = kspace_vars["min"]
+                normalization_vars["kspace_max"] = kspace_vars["max"]
+                normalization_vars["kspace_mean"] = kspace_vars["mean"]
+                normalization_vars["kspace_std"] = kspace_vars["std"]
+        if sensitivity_vars is not None:
+            normalization_vars["sensitivity_maps_min"] = sensitivity_vars["min"]
+            normalization_vars["sensitivity_maps_max"] = sensitivity_vars["max"]
+            normalization_vars["sensitivity_maps_mean"] = sensitivity_vars["mean"]
+            normalization_vars["sensitivity_maps_std"] = sensitivity_vars["std"]
+        if isinstance(prediction_vars, list):
+            if prediction_vars[0] is not None:
+                for i, prediction_var in enumerate(prediction_vars):
+                    normalization_vars[f"prediction_min_{i}"] = prediction_var["min"]
+                    normalization_vars[f"prediction_max_{i}"] = prediction_var["max"]
+                    normalization_vars[f"prediction_mean_{i}"] = prediction_var["mean"]
+                    normalization_vars[f"prediction_std_{i}"] = prediction_var["std"]
+        else:
+            if prediction_vars is not None:
+                normalization_vars["prediction_min"] = prediction_vars["min"]
+                normalization_vars["prediction_max"] = prediction_vars["max"]
+                normalization_vars["prediction_mean"] = prediction_vars["mean"]
+                normalization_vars["prediction_std"] = prediction_vars["std"]
+        if noise_prediction_vars is not None:
+            if isinstance(noise_prediction_vars, list):
+                for i, noise_prediction_var in enumerate(noise_prediction_vars):
+                    normalization_vars[f"noise_prediction_min_{i}"] = noise_prediction_var["min"]
+                    normalization_vars[f"noise_prediction_max_{i}"] = noise_prediction_var["max"]
+                    normalization_vars[f"noise_prediction_mean_{i}"] = noise_prediction_var["mean"]
+                    normalization_vars[f"noise_prediction_std_{i}"] = noise_prediction_var["std"]
+            else:
+                normalization_vars["noise_prediction_min"] = noise_prediction_vars["min"]
+                normalization_vars["noise_prediction_max"] = noise_prediction_vars["max"]
+                normalization_vars["noise_prediction_mean"] = noise_prediction_vars["mean"]
+                normalization_vars["noise_prediction_std"] = noise_prediction_vars["std"]
+        if isinstance(target_vars, list):
+            if target_vars[0] is not None:
+                for i, target_var in enumerate(target_vars):
+                    normalization_vars[f"target_min_{i}"] = target_var["min"]
+                    normalization_vars[f"target_max_{i}"] = target_var["max"]
+                    normalization_vars[f"target_mean_{i}"] = target_var["mean"]
+                    normalization_vars[f"target_std_{i}"] = target_var["std"]
+        else:
+            if target_vars is not None:
+                normalization_vars["target_min"] = target_vars["min"]
+                normalization_vars["target_max"] = target_vars["max"]
+                normalization_vars["target_mean"] = target_vars["mean"]
+                normalization_vars["target_std"] = target_vars["std"]
+        return normalization_vars

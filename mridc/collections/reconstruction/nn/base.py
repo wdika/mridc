@@ -87,6 +87,8 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
         self.reconstruction_loss_regularization_factor = cfg_dict.get("reconstruction_loss_regularization_factor", 1.0)
         if self.n2r:
             self.n2r_loss_regularization_factor = cfg_dict.get("n2r_loss_regularization_factor", 1.0)
+        self.unnormalize_loss_inputs = cfg_dict.get("unnormalize_loss_inputs", False)
+        self.normalization_type = cfg_dict.get("normalization_type", "max")
 
         self.accumulate_predictions = cfg_dict.get("accumulate_predictions", False)
 
@@ -108,6 +110,8 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
         prediction: Union[list, torch.Tensor],
         sensitivity_maps: torch.Tensor,
         mask: torch.Tensor,
+        attrs: Dict,
+        r: int,
         loss_func: torch.nn.Module,
         kspace_reconstruction_loss: bool = False,
     ) -> torch.Tensor:
@@ -126,6 +130,10 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
         mask : torch.Tensor
             Mask of shape [batch_size, n_x, n_y, 2]. It will be used if self.ssdu is True, to enforce data consistency
             on the prediction.
+        attrs : Dict
+            Attributes of the data with pre normalization values.
+        r : int
+            The selected acceleration factor.
         loss_func : torch.nn.Module
             Loss function. Must be one of {torch.nn.L1Loss(), torch.nn.MSELoss(),
             mridc.collections.reconstruction.losses.ssim.SSIMLoss()}. Default is ``torch.nn.L1Loss()``.
@@ -140,7 +148,74 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             If self.accumulate_loss is True, returns an accumulative result of all intermediate losses.
             Otherwise, returns the loss of the last intermediate loss.
         """
-        if not self.kspace_reconstruction_loss and not kspace_reconstruction_loss:
+        if self.unnormalize_loss_inputs:
+            if self.n2r and not attrs["n2r_supervised"]:
+                target = utils.unnormalize(
+                    target,
+                    {
+                        "min": attrs["prediction_min"] if "prediction_min" in attrs else attrs[f"prediction_min_{r}"],
+                        "max": attrs["prediction_max"] if "prediction_max" in attrs else attrs[f"prediction_max_{r}"],
+                        "mean": attrs["prediction_mean"]
+                        if "prediction_mean" in attrs
+                        else attrs[f"prediction_mean_{r}"],
+                        "std": attrs["prediction_std"] if "prediction_std" in attrs else attrs[f"prediction_std_{r}"],
+                    },
+                    self.normalization_type,
+                )
+                prediction = utils.unnormalize(
+                    prediction,
+                    {
+                        "min": attrs["noise_prediction_min"]
+                        if "noise_prediction_min" in attrs
+                        else attrs[f"noise_prediction_min_{r}"],
+                        "max": attrs["noise_prediction_max"]
+                        if "noise_prediction_max" in attrs
+                        else attrs[f"noise_prediction_max_{r}"],
+                        attrs["noise_prediction_mean"]
+                        if "noise_prediction_mean" in attrs
+                        else "mean": attrs[f"noise_prediction_mean_{r}"],
+                        attrs["noise_prediction_std"]
+                        if "noise_prediction_std" in attrs
+                        else "std": attrs[f"noise_prediction_std_{r}"],
+                    },
+                    self.normalization_type,
+                )
+            else:
+                target = utils.unnormalize(
+                    target,
+                    {
+                        "min": attrs["target_min"],
+                        "max": attrs["target_max"],
+                        "mean": attrs["target_mean"],
+                        "std": attrs["target_std"],
+                    },
+                    self.normalization_type,
+                )
+                prediction = utils.unnormalize(
+                    prediction,
+                    {
+                        "min": attrs["prediction_min"] if "prediction_min" in attrs else attrs[f"prediction_min_{r}"],
+                        "max": attrs["prediction_max"] if "prediction_max" in attrs else attrs[f"prediction_max_{r}"],
+                        "mean": attrs["prediction_mean"]
+                        if "prediction_mean" in attrs
+                        else attrs[f"prediction_mean_{r}"],
+                        "std": attrs["prediction_std"] if "prediction_std" in attrs else attrs[f"prediction_std_{r}"],
+                    },
+                    self.normalization_type,
+                )
+
+            sensitivity_maps = utils.unnormalize(
+                sensitivity_maps,
+                {
+                    "min": attrs["sensitivity_maps_min"],
+                    "max": attrs["sensitivity_maps_max"],
+                    "mean": attrs["sensitivity_maps_mean"],
+                    "std": attrs["sensitivity_maps_std"],
+                },
+                self.normalization_type,
+            )
+
+        if not self.kspace_reconstruction_loss and not kspace_reconstruction_loss and not self.unnormalize_loss_inputs:
             target = torch.abs(target / torch.max(torch.abs(target)))
         else:
             if target.shape[-1] != 2:
@@ -193,7 +268,11 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                 loss: torch.FloatTensor
                     Loss value.
                 """
-                if not self.kspace_reconstruction_loss and not kspace_reconstruction_loss:
+                if (
+                    not self.kspace_reconstruction_loss
+                    and not kspace_reconstruction_loss
+                    and not self.unnormalize_loss_inputs
+                ):
                     y = torch.abs(y / torch.max(torch.abs(y)))
                 else:
                     if y.shape[-1] != 2:
@@ -286,6 +365,8 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                 Slice number.
             'acc' : float
                 Acceleration factor of the sampling mask.
+            'attrs' : dict
+                Attributes dictionary.
         batch_idx : int
             Batch index.
 
@@ -345,21 +426,14 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             if preds_n2r is not None:
                 preds_n2r = utils.real_to_complex_tensor_or_list(preds_n2r)
                 if self.ssdu or attrs["n2r_supervised"]:  # type: ignore
-                    train_loss = self.n2r_loss_regularization_factor * sum(
-                        self.process_reconstruction_loss(
-                            preds,
-                            preds_n2r,
-                            sensitivity_maps,
-                            loss_mask,
-                            loss_func=self.train_loss_fn,
-                            kspace_reconstruction_loss=self.kspace_reconstruction_loss,
-                        )
-                    ) + sum(
+                    train_loss = sum(
                         self.process_reconstruction_loss(
                             target,
                             preds,
                             sensitivity_maps,
                             loss_mask,
+                            attrs,  # type: ignore
+                            r,
                             loss_func=self.train_loss_fn,
                             # in case of fully unsupervised n2r, we want to use the ssdu loss as pseudo-supervised loss
                             kspace_reconstruction_loss=self.ssdu,
@@ -372,6 +446,8 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                             preds_n2r,
                             sensitivity_maps,
                             loss_mask,
+                            attrs,  # type: ignore
+                            r,
                             loss_func=self.train_loss_fn,
                             kspace_reconstruction_loss=self.kspace_reconstruction_loss,
                         )
@@ -384,6 +460,8 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                         preds,
                         sensitivity_maps,
                         loss_mask,
+                        attrs,  # type: ignore
+                        r,
                         loss_func=self.train_loss_fn,
                         kspace_reconstruction_loss=self.kspace_reconstruction_loss,
                     )
@@ -393,18 +471,13 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             if preds_n2r is not None:
                 preds_n2r = utils.real_to_complex_tensor_or_list(preds_n2r)
                 if self.ssdu or attrs["n2r_supervised"]:  # type: ignore
-                    train_loss = self.n2r_loss_regularization_factor * self.process_reconstruction_loss(
-                        preds,
-                        preds_n2r,
-                        sensitivity_maps,
-                        loss_mask,
-                        loss_func=self.train_loss_fn,
-                        kspace_reconstruction_loss=self.kspace_reconstruction_loss,
-                    ) + self.process_reconstruction_loss(
+                    train_loss = self.process_reconstruction_loss(
                         target,
                         preds,
                         sensitivity_maps,
                         loss_mask,
+                        attrs,  # type: ignore
+                        r,
                         loss_func=self.train_loss_fn,
                         # in case of fully unsupervised n2r, we want to use the ssdu loss as pseudo-supervised loss
                         kspace_reconstruction_loss=self.ssdu,
@@ -415,6 +488,8 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                         preds_n2r,
                         sensitivity_maps,
                         loss_mask,
+                        attrs,  # type: ignore
+                        r,
                         loss_func=self.train_loss_fn,
                         kspace_reconstruction_loss=self.kspace_reconstruction_loss,
                     )
@@ -425,6 +500,8 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                     preds,
                     sensitivity_maps,
                     loss_mask,
+                    attrs,  # type: ignore
+                    r,
                     loss_func=self.train_loss_fn,
                     kspace_reconstruction_loss=self.kspace_reconstruction_loss,
                 )
@@ -464,7 +541,7 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             'attrs' : float
                 Acceleration factor of the sampling mask.
             'attrs' : dict
-                Attributes.
+                Attributes dictionary.
         batch_idx : int
             Batch index.
 
@@ -524,21 +601,34 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             if preds_n2r is not None:
                 preds_n2r = utils.real_to_complex_tensor_or_list(preds_n2r)
                 if self.ssdu or attrs["n2r_supervised"]:  # type: ignore
-                    val_loss = self.n2r_loss_regularization_factor * sum(
-                        self.process_reconstruction_loss(
-                            preds,
-                            preds_n2r,
-                            sensitivity_maps,
-                            loss_mask,
-                            loss_func=self.train_loss_fn,
-                            kspace_reconstruction_loss=self.kspace_reconstruction_loss,
-                        )
-                    ) + sum(
+                    # val_loss = self.n2r_loss_regularization_factor * sum(
+                    #     self.process_reconstruction_loss(
+                    #         preds,
+                    #         preds_n2r,
+                    #         sensitivity_maps,
+                    #         loss_mask,
+                    #         loss_func=self.train_loss_fn,
+                    #         kspace_reconstruction_loss=self.kspace_reconstruction_loss,
+                    #     )
+                    # ) + sum(
+                    #     self.process_reconstruction_loss(
+                    #         target,
+                    #         preds,
+                    #         sensitivity_maps,
+                    #         loss_mask,
+                    #         loss_func=self.train_loss_fn,
+                    #         # in case of fully unsupervised n2r, we want to use the ssdu loss as pseudo-supervised loss
+                    #         kspace_reconstruction_loss=self.ssdu,
+                    #     )
+                    # )
+                    val_loss = sum(
                         self.process_reconstruction_loss(
                             target,
                             preds,
                             sensitivity_maps,
                             loss_mask,
+                            attrs,  # type: ignore
+                            r,
                             loss_func=self.train_loss_fn,
                             # in case of fully unsupervised n2r, we want to use the ssdu loss as pseudo-supervised loss
                             kspace_reconstruction_loss=self.ssdu,
@@ -551,6 +641,8 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                             preds_n2r,
                             sensitivity_maps,
                             loss_mask,
+                            attrs,  # type: ignore
+                            r,
                             loss_func=self.train_loss_fn,
                             kspace_reconstruction_loss=self.kspace_reconstruction_loss,
                         )
@@ -563,6 +655,8 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                         preds,
                         sensitivity_maps,
                         loss_mask,
+                        attrs,  # type: ignore
+                        r,
                         loss_func=self.train_loss_fn,
                         kspace_reconstruction_loss=self.kspace_reconstruction_loss,
                     )
@@ -572,18 +666,29 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
             if preds_n2r is not None:
                 preds_n2r = utils.real_to_complex_tensor_or_list(preds_n2r)
                 if self.ssdu or attrs["n2r_supervised"]:  # type: ignore
-                    val_loss = self.n2r_loss_regularization_factor * self.process_reconstruction_loss(
-                        preds,
-                        preds_n2r,
-                        sensitivity_maps,
-                        loss_mask,
-                        loss_func=self.train_loss_fn,
-                        kspace_reconstruction_loss=self.kspace_reconstruction_loss,
-                    ) + self.process_reconstruction_loss(
+                    # val_loss = self.n2r_loss_regularization_factor * self.process_reconstruction_loss(
+                    #     preds,
+                    #     preds_n2r,
+                    #     sensitivity_maps,
+                    #     loss_mask,
+                    #     loss_func=self.train_loss_fn,
+                    #     kspace_reconstruction_loss=self.kspace_reconstruction_loss,
+                    # ) + self.process_reconstruction_loss(
+                    #     target,
+                    #     preds,
+                    #     sensitivity_maps,
+                    #     loss_mask,
+                    #     loss_func=self.train_loss_fn,
+                    #     # in case of fully unsupervised n2r, we want to use the ssdu loss as pseudo-supervised loss
+                    #     kspace_reconstruction_loss=self.ssdu,
+                    # )
+                    val_loss = self.process_reconstruction_loss(
                         target,
                         preds,
                         sensitivity_maps,
                         loss_mask,
+                        attrs,  # type: ignore
+                        r,
                         loss_func=self.train_loss_fn,
                         # in case of fully unsupervised n2r, we want to use the ssdu loss as pseudo-supervised loss
                         kspace_reconstruction_loss=self.ssdu,
@@ -594,6 +699,8 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                         preds_n2r,
                         sensitivity_maps,
                         loss_mask,
+                        attrs,  # type: ignore
+                        r,
                         loss_func=self.train_loss_fn,
                         kspace_reconstruction_loss=self.kspace_reconstruction_loss,
                     )
@@ -604,6 +711,8 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                     preds,
                     sensitivity_maps,
                     loss_mask,
+                    attrs,  # type: ignore
+                    r,
                     loss_func=self.train_loss_fn,
                     kspace_reconstruction_loss=self.kspace_reconstruction_loss,
                 )
@@ -614,13 +723,6 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
         if isinstance(preds, list):
             preds = preds[-1]
 
-        # if preds_n2r is not None and not attrs["n2r_supervised"].all():  # type: ignore
-        #     target = utils.real_to_complex_tensor_or_list(preds_n2r)  # type: ignore
-        #     if isinstance(target, list):
-        #         target = target[-1]
-        #     if isinstance(target, list):
-        #         target = target[-1]
-        # else:
         target = utils.real_to_complex_tensor_or_list(target)  # type: ignore
 
         target = target.unsqueeze(1)  # type: ignore
@@ -680,6 +782,8 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                 Slice number.
             'acc' : float
                 Acceleration factor of the sampling mask.
+            'attrs' : dict
+                Attributes dictionary.
         batch_idx : int
             Batch index.
 

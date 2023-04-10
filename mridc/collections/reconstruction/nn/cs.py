@@ -77,9 +77,26 @@ class CS(base_models.BaseMRIReconstructionModel, ABC):  # type: ignore
             sensitivity_maps = fft.fftshift(sensitivity_maps, dim=self.spatial_dims)
         if self.center_mask:
             mask = fft.fftshift(mask, dim=self.spatial_dims)
+
+        # import matplotlib
+        # matplotlib.use('TkAgg')
+        # import matplotlib.pyplot as plt
+        # import numpy as np
+        # tmp = torch.view_as_complex(fft.ifft2(y, self.fft_centered, self.fft_normalization, self.spatial_dims))
+        # plt.subplot(1, 4, 1)
+        # plt.imshow(np.abs(tmp.detach().cpu().numpy()[0, 0, :, :]), cmap='gray')
+        # plt.subplot(1, 4, 2)
+        # plt.imshow(np.abs(sensitivity_maps.detach().cpu().numpy()[0, 0, :, :]), cmap='gray')
+        # plt.subplot(1, 4, 3)
+        # plt.imshow(np.abs(mask.squeeze().detach().cpu().numpy()), cmap='gray')
+        # plt.subplot(1, 4, 4)
+        # plt.imshow(np.abs(np.sum(tmp.detach().cpu().numpy()[0, :, :, :]*sensitivity_maps.detach().cpu().numpy()[0, :, :, :].conj(), 0)), cmap='gray')
+        # plt.show()
+
         y = from_pytorch(y.detach().cpu())
         sensitivity_maps = from_pytorch(sensitivity_maps.detach().cpu())
         mask = from_pytorch(mask.detach().cpu())
+
         if self.cs_type == "l1_wavelet":
             # TODO: find a fix for this. If a cross of zeros appears on the reconstruction, then we need to manually go
             #  to sigpy.wavelet.py and fftshift the wavelet coefficients before the inverse transform and then

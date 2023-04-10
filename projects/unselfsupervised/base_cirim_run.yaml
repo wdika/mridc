@@ -1,81 +1,108 @@
 pretrained: true
-checkpoint: /data/projects/recon/other/dkarkalousos/trained_models/fastMRI_FLAIR_equispaced1d_4x_320x320/CIRIM_5C_64F_ssim_NODC/--val_loss=0.2787-epoch=19.ckpt
+checkpoint: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/trained_models/CIRIM_128F5C_3T_T1_3D_Brains_Gaussian2D_12x/default/2023-04-15_16-59-53/checkpoints/default--val_loss=0.0740-epoch=83.ckpt
 mode: test
 
 model:
   model_name: CIRIM
   recurrent_layer: IndRNN
   conv_filters:
-    - 64
-    - 64
-    - 2
+  - 128
+  - 128
+  - 2
   conv_kernels:
-    - 5
-    - 3
-    - 3
+  - 5
+  - 3
+  - 3
   conv_dilations:
-    - 1
-    - 2
-    - 1
+  - 1
+  - 2
+  - 1
   conv_bias:
-    - true
-    - true
-    - false
+  - true
+  - true
+  - false
   recurrent_filters:
-    - 64
-    - 64
-    - 0
+  - 128
+  - 128
+  - 0
   recurrent_kernels:
-    - 1
-    - 1
-    - 0
+  - 1
+  - 1
+  - 0
   recurrent_dilations:
-    - 1
-    - 1
-    - 0
+  - 1
+  - 1
+  - 0
   recurrent_bias:
-    - true
-    - true
-    - false
+  - true
+  - true
+  - false
   depth: 2
   time_steps: 8
   conv_dim: 2
   num_cascades: 5
+  dimensionality: 2
   no_dc: true
-  keep_eta: true
-  output_type: SENSE
+  keep_prediction: true
+  accumulate_predictions: true
+  train_loss_fn: l1
+  val_loss_fn: l1
+  coil_combination_method: SENSE
+  fft_centered: true
+  fft_normalization: ortho
+  spatial_dims:
+  - -2
+  - -1
+  coil_dim: 1
   use_sens_net: false
-  sens_chans: 8
-  sens_pools: 4
-  sens_mask_type: 1D
-  sens_normalize: true
-  mask_center: true
-  train_loss_fn: ssim
-  eval_loss_fn: ssim
-  accumulate_estimates: true
-  fft_type: orthogonal
+  consecutive_slices: 1
+  log_images: true
 
   test_ds:
-    data_path: /data/projects/recon/data/public/fastmri/brain/data/FLAIR/multicoil_val
-    sense_data_path: /data/projects/recon/data/public/fastmri/brain/sensitivities_maps/FLAIR
-    dataset_type: FastMRI
+    data_path: /scratch/iskylitsis/data/mridata_knee_2019/test
+    sense_path: None
+    mask_path: None
+    dataset_format: stanford_knees
+    initial_predictions_path: None
     challenge: multicoil
-    fft_type: orthogonal
+    batch_size: 1
+    sample_rate: 1
+    volume_sample_rate: None
+    use_dataset_cache: false
+    dataset_cache_file: None
+    num_cols: None
+    consecutive_slices: 1
+    data_saved_per_slice: false
+    complex_data: true
+    apply_prewhitening: false
+    apply_gcc: false
+    coil_combination_method: SENSE
+    dimensionality: 2
     mask_args:
-      type: equispaced1d
+      type: poisson2d
       accelerations:
-      - 4
+        - 12
       center_fractions:
-      - 0.08
+        - 0.7
       scale: 0.02
       shift_mask: false
       use_seed: false
-    normalize_inputs: true
-    crop_size: [320, 320]
+    half_scan_percentage: 0.0
+    remask: false
+    crop_size: None
+    kspace_crop: false
     crop_before_masking: true
     kspace_zero_filling_size: None
-    sample_rate: 1
-    batch_size: 1
+    normalize_inputs: true
+    normalization_type: max
+    kspace_normalization: false
+    fft_centered: true
+    fft_normalization: ortho
+    spatial_dims:
+      - -2
+      - -1
+    coil_dim: 1
+    use_seed: false
     shuffle: false
     num_workers: 8
     drop_last: false
@@ -107,6 +134,6 @@ trainer:
   max_steps: -1
 
 exp_manager:
-  name: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/reconstructions/CIRIM_5C_64F_ssim_NODC_fastmri_brain_FLAIR_Equispaced1d_4x
+  name: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/reconstructions_stanford_knees_poisson2d_12x/CIRIM_128F5C_3T_T1_3D_Brains_Gaussian2D_12x
   create_tensorboard_logger: true
   files_to_copy: [ ]

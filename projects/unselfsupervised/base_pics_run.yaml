@@ -4,7 +4,7 @@ mode: test
 
 model:
   model_name: PICS
-  reg_wt: 0.01
+  reg_wt: 0.05
   num_iters: 60
   centered: false
   device: cuda
@@ -22,8 +22,8 @@ model:
   log_images: true
 
   test_ds:
-    data_path: /data/projects/recon/data/public/fastmri/brain/data/FLAIR/multicoil_val
-    coil_sensitivity_maps_path: /data/projects/recon/data/public/fastmri/brain/sensitivities_maps/FLAIR
+    data_path: /scratch/iskylitsis/data/mridata_knee_2019/test
+    coil_sensitivity_maps_path: None
     mask_path: None
     sample_rate: 1
     volume_sample_rate: None
@@ -34,24 +34,22 @@ model:
     data_saved_per_slice: false
     apply_prewhitening: false
     apply_gcc: false
-    gcc_virtual_coils: 8
-    gcc_calib_lines: 24
-    gcc_align_data: true
     coil_combination_method: SENSE
     dimensionality: 2
     mask_args:
-      type: equispaced1d
+      type: poisson2d
       accelerations:
-      - 4
+      - 12
       center_fractions:
-      - 0.08
+      - 0.7
       scale: 0.02
       shift_mask: false
       use_seed: false
     half_scan_percentage: 0.0
     remask: false
     ssdu: false
-    crop_size: [320, 320]
+    n2r: false
+    crop_size: None
     kspace_crop: false
     crop_before_masking: true
     kspace_zero_filling_size: None
@@ -61,22 +59,35 @@ model:
     fft_centered: true
     fft_normalization: ortho
     spatial_dims:
-      - -2
-      - -1
+    - -2
+    - -1
     coil_dim: 1
     use_seed: false
     batch_size: 1
     shuffle: false
-    num_workers: 8
+    num_workers: 4
     pin_memory: false
     drop_last: false
 
+  optim:
+    name: adam
+    lr: 0.001
+    betas:
+    - 0.9
+    - 0.999
+    weight_decay: 0.0
+    sched:
+      name: InverseSquareRootAnnealing
+      min_lr: 0.0
+      last_epoch: -1
+      warmup_ratio: 0.1
+
 trainer:
-  strategy: ddp_find_unused_parameters_false
+  strategy: ddp
   accelerator: gpu
   devices: 1
   num_nodes: 1
-  max_epochs: 200
+  max_epochs: 20
   precision: 16
   enable_checkpointing: false
   logger: false
@@ -85,7 +96,7 @@ trainer:
   max_steps: -1
 
 exp_manager:
-  exp_dir: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/reconstructions/PICS_fastmri_brain_FLAIR_Equispaced1d_4x/
+  exp_dir: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/reconstructions_stanford_knees_poisson2d_12x/PICS/
   create_tensorboard_logger: true
   create_wandb_logger: false
   wandb_logger_kwargs:

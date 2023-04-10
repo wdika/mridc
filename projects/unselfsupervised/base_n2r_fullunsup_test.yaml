@@ -1,57 +1,26 @@
 pretrained: true
-checkpoint: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/trained_models/N2R_34SUPSUBJ_CIRIM_5C_fastmri_brain_FLAIR_Equispaced1d_4x/default/2023-03-31_18-32-53/checkpoints/default--val_loss=0.0043-epoch=19-last.ckpt
+checkpoint: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/trained_models/N2R_FULLUNSUPSUP_stanford_knees_Poisson2d_12x/default/2023-04-16_19-40-41/checkpoints/default--val_loss=0.0056-epoch=41-last.ckpt
 mode: test
 
 model:
-  model_name: CIRIM
-  recurrent_layer: IndRNN
-  conv_filters:
-    - 64
-    - 64
-    - 2
-  conv_kernels:
-    - 5
-    - 3
-    - 3
-  conv_dilations:
-    - 1
-    - 2
-    - 1
-  conv_bias:
-    - true
-    - true
-    - false
-  recurrent_filters:
-    - 64
-    - 64
-    - 0
-  recurrent_kernels:
-    - 1
-    - 1
-    - 0
-  recurrent_dilations:
-    - 1
-    - 1
-    - 0
-  recurrent_bias:
-    - true
-    - true
-    - false
-  depth: 2
-  time_steps: 8
-  conv_dim: 2
-  num_cascades: 5
+  model_name: UNET
+  channels: 32
+  pooling_layers: 4
+  in_channels: 2
+  out_channels: 2
+  padding_size: 11
+  dropout: 0.0
+  normalize: true
+  norm_groups: 2
   dimensionality: 2
-  no_dc: true
-  keep_prediction: true
-  accumulate_predictions: true
   loss_fn: l1
   kspace_reconstruction_loss: false
-  reconstruction_loss_regularization_factor: 1.0
+  reconstruction_loss_regularization_factor: .9
+  unnormalize_loss_inputs: false
   coil_combination_method: SENSE
   ssdu: false
-  n2r: true
-  n2r_loss_regularization_factor: 0.1
+  n2r: false
+  n2r_loss_regularization_factor: .1
   fft_centered: true
   fft_normalization: ortho
   spatial_dims:
@@ -63,9 +32,10 @@ model:
   log_images: true
 
   test_ds:
-    data_path: /data/projects/recon/data/public/fastmri/brain/data/FLAIR/multicoil_val
-    coil_sensitivity_maps_path: /data/projects/recon/data/public/fastmri/brain/sensitivities_maps/FLAIR
+    data_path: /scratch/iskylitsis/data/mridata_knee_2019/test
+    coil_sensitivity_maps_path: None
     mask_path: None
+    dataset_format: stanford_knees
     sample_rate: 1
     volume_sample_rate: None
     use_dataset_cache: false
@@ -75,24 +45,30 @@ model:
     data_saved_per_slice: false
     apply_prewhitening: false
     apply_gcc: false
-    gcc_virtual_coils: 8
-    gcc_calib_lines: 24
-    gcc_align_data: true
     coil_combination_method: SENSE
     dimensionality: 2
     mask_args:
-      type: equispaced1d
+      type: poisson2d
       accelerations:
-      - 4
+      - 12
       center_fractions:
-      - 0.08
+      - 0.7
       scale: 0.02
       shift_mask: false
       use_seed: false
     half_scan_percentage: 0.0
     remask: false
     ssdu: false
-    n2r: true
+    ssdu_mask_type: Uniform
+    ssdu_rho: 0.4
+    ssdu_acs_block_size:
+    - 4
+    - 4
+    ssdu_gaussian_std_scaling_factor: 4.0
+    ssdu_max_iterations: 1
+    ssdu_outer_kspace_fraction: 0.0
+    ssdu_export_and_reuse_masks: false
+    n2r: false
     n2r_supervised_rate: 0.0
     n2r_probability: 0.2
     n2r_std_devs:
@@ -102,7 +78,7 @@ model:
     - 1.0
     - 1.0
     n2r_use_mask: true
-    crop_size: [320, 320]
+    crop_size: None
     kspace_crop: false
     crop_before_masking: true
     kspace_zero_filling_size: None
@@ -123,7 +99,7 @@ model:
 
   optim:
     name: adam
-    lr: 1e-4
+    lr: 0.001
     betas:
     - 0.9
     - 0.999
@@ -148,9 +124,11 @@ trainer:
   max_steps: -1
 
 exp_manager:
-  exp_dir: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/reconstructions/N2R_34SUPSUBJ_CIRIM_5C_fastmri_brain_FLAIR_Equispaced1d_4x
+  exp_dir: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/reconstructions_stanford_knees_poisson2d_12x/N2R_FULLUNSUPSUP_stanford_knees_Poisson2d_12x
   create_tensorboard_logger: true
   create_wandb_logger: false
   wandb_logger_kwargs:
     project: ???
   files_to_copy: [ ]
+  checkpoint_callback_params:
+    save_top_k: -1
