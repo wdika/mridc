@@ -18,7 +18,6 @@ try:
     HAVE_APEX = True
 
 except ImportError:
-
     HAVE_APEX = False
 
 
