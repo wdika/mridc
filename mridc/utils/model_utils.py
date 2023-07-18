@@ -270,7 +270,6 @@ def resolve_validation_dataloaders(model: ModelPT):
     ds_values = cfg.validation_ds[ds_key]
 
     if isinstance(ds_values, (list, tuple, ListConfig)):
-
         for ds_value in ds_values:
             cfg.validation_ds[ds_key] = ds_value
             model.setup_validation_data(cfg.validation_ds)
@@ -339,7 +338,6 @@ def resolve_test_dataloaders(model: "ModelPT"):
     ds_values = cfg.test_ds[ds_key]
 
     if isinstance(ds_values, (list, tuple, ListConfig)):
-
         for ds_value in ds_values:
             cfg.test_ds[ds_key] = ds_value
             model.setup_test_data(cfg.test_ds)
