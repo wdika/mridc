@@ -31,7 +31,6 @@ class BaseqMRIReconstructionModel(base_reconstruction_models.BaseMRIReconstructi
     """Base class of all quantitative MRIReconstruction models."""
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
-
         # Get global rank and total number of GPU workers for IterableDataset partitioning, if applicable
         self.acc = 1
 
@@ -346,7 +345,15 @@ class BaseqMRIReconstructionModel(base_reconstruction_models.BaseMRIReconstructi
             acc,
         ) = batch
 
-        (R2star_map_init, S0_map_init, B0_map_init, phi_map_init, y, sampling_mask, r,) = self.process_inputs(
+        (
+            R2star_map_init,
+            S0_map_init,
+            B0_map_init,
+            phi_map_init,
+            y,
+            sampling_mask,
+            r,
+        ) = self.process_inputs(
             R2star_map_init,
             S0_map_init,
             B0_map_init,
@@ -527,7 +534,15 @@ class BaseqMRIReconstructionModel(base_reconstruction_models.BaseMRIReconstructi
             acc,
         ) = batch
 
-        (R2star_map_init, S0_map_init, B0_map_init, phi_map_init, y, sampling_mask, r,) = self.process_inputs(
+        (
+            R2star_map_init,
+            S0_map_init,
+            B0_map_init,
+            phi_map_init,
+            y,
+            sampling_mask,
+            r,
+        ) = self.process_inputs(
             R2star_map_init,
             S0_map_init,
             B0_map_init,
@@ -892,7 +907,15 @@ class BaseqMRIReconstructionModel(base_reconstruction_models.BaseMRIReconstructi
             acc,
         ) = batch
 
-        (R2star_map_init, S0_map_init, B0_map_init, phi_map_init, y, sampling_mask, r,) = self.process_inputs(
+        (
+            R2star_map_init,
+            S0_map_init,
+            B0_map_init,
+            phi_map_init,
+            y,
+            sampling_mask,
+            r,
+        ) = self.process_inputs(
             R2star_map_init,
             S0_map_init,
             B0_map_init,
