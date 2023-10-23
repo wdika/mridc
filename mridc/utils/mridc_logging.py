@@ -52,7 +52,6 @@ class Logger(metaclass=Singleton):
     _level_names = {0: "NOTSET", 10: "DEBUG", 20: "INFO", 30: "WARNING", 40: "ERROR", 50: "CRITICAL"}
 
     def __init__(self, capture_warnings=True):
-
         self._logger = None
         # Multi-GPU runs run in separate processes, thread locks shouldn't be needed
         self._logger_lock = threading.Lock()
@@ -291,7 +290,6 @@ class Logger(metaclass=Singleton):
     def temp_verbosity(self, verbosity_level):
         """Sets a temporary threshold for what messages will be logged."""
         if self._logger is not None:
-
             old_verbosity = self.get_verbosity()
 
             try:
@@ -314,7 +312,6 @@ class Logger(metaclass=Singleton):
         If capture is False, ensure that warnings are not redirected to logging but to their original destinations.
         """
         if self._logger is not None:
-
             if capture and self.old_warnings_showwarning is None:
                 # Backup Method
                 self.old_warnings_showwarning = warnings.showwarning

@@ -33,7 +33,6 @@ class BaseMRIJointReconstructionSegmentationModel(base_reconstruction_models.Bas
     """Base class of all MRI Segmentation and Joint Reconstruction & Segmentation models."""
 
     def __init__(self, cfg: DictConfig, trainer: Trainer = None):
-
         # Get global rank and total number of GPU workers for IterableDataset partitioning, if applicable
         self.acc = 1.0
 
