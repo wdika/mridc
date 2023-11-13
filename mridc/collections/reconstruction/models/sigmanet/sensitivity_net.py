@@ -295,7 +295,6 @@ class SensitivityNetwork(torch.nn.Module):
         # if all unlocked, don't do anything
         if not np.all(self.is_trainable):
             for i in range(self.num_iter):
-
                 # if last cascade is reached, unlock all
                 if i == self.num_iter - 1:
                     self.unfreeze_all()
