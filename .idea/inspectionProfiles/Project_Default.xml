@@ -1,0 +1,115 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="DuplicatedCode" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <Languages>
+        <language minSize="1264" name="Python" />
+      </Languages>
+    </inspection_tool>
+    <inspection_tool class="PyCompatibilityInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ourVersions">
+        <value>
+          <list size="2">
+            <item index="0" class="java.lang.String" itemvalue="3.10" />
+            <item index="1" class="java.lang.String" itemvalue="3.11" />
+          </list>
+        </value>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyInterpreterInspection" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <value>
+          <list size="37">
+            <item index="0" class="java.lang.String" itemvalue="scikit_image" />
+            <item index="1" class="java.lang.String" itemvalue="PyYAML" />
+            <item index="2" class="java.lang.String" itemvalue="pytorch_lightning" />
+            <item index="3" class="java.lang.String" itemvalue="torch" />
+            <item index="4" class="java.lang.String" itemvalue="runstats" />
+            <item index="5" class="java.lang.String" itemvalue="numpy" />
+            <item index="6" class="java.lang.String" itemvalue="torchvision" />
+            <item index="7" class="java.lang.String" itemvalue="h5py" />
+            <item index="8" class="java.lang.String" itemvalue="tensorflow" />
+            <item index="9" class="java.lang.String" itemvalue="matplotlib" />
+            <item index="10" class="java.lang.String" itemvalue="scikit-image" />
+            <item index="11" class="java.lang.String" itemvalue="hydra" />
+            <item index="12" class="java.lang.String" itemvalue="bart" />
+            <item index="13" class="java.lang.String" itemvalue="mridc" />
+            <item index="14" class="java.lang.String" itemvalue="sphinx" />
+            <item index="15" class="java.lang.String" itemvalue="sphinxcontrib-apidoc" />
+            <item index="16" class="java.lang.String" itemvalue="myst-parser" />
+            <item index="17" class="java.lang.String" itemvalue="onnxruntime" />
+            <item index="18" class="java.lang.String" itemvalue="hydra-core" />
+            <item index="19" class="java.lang.String" itemvalue="pytest" />
+            <item index="20" class="java.lang.String" itemvalue="setuptools" />
+            <item index="21" class="java.lang.String" itemvalue="omegaconf" />
+            <item index="22" class="java.lang.String" itemvalue="tensorflow-gpu" />
+            <item index="23" class="java.lang.String" itemvalue="nibabel" />
+            <item index="24" class="java.lang.String" itemvalue="emcqmri" />
+            <item index="25" class="java.lang.String" itemvalue="monai" />
+            <item index="26" class="java.lang.String" itemvalue="meddlr" />
+            <item index="27" class="java.lang.String" itemvalue="dosma" />
+            <item index="28" class="java.lang.String" itemvalue="packaging" />
+            <item index="29" class="java.lang.String" itemvalue="pandas" />
+            <item index="30" class="java.lang.String" itemvalue="tqdm" />
+            <item index="31" class="java.lang.String" itemvalue="pytorch-lightning" />
+            <item index="32" class="java.lang.String" itemvalue="fvcore" />
+            <item index="33" class="java.lang.String" itemvalue="iopath" />
+            <item index="34" class="java.lang.String" itemvalue="medpy" />
+            <item index="35" class="java.lang.String" itemvalue="xlrd" />
+            <item index="36" class="java.lang.String" itemvalue="zarr" />
+          </list>
+        </value>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyPep8NamingInspection" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="ignoredErrors">
+        <list>
+          <option value="N806" />
+          <option value="N812" />
+          <option value="N802" />
+          <option value="N801" />
+          <option value="N803" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyShadowingBuiltinsInspection" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="ignoredNames">
+        <list>
+          <option value="format" />
+          <option value="id" />
+          <option value="dir" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredIdentifiers">
+        <list>
+          <option value="bool.all" />
+          <option value="object.additional_training_loss_terms" />
+          <option value="object.model_setup" />
+          <option value="mridc.reconstruction.tranforms" />
+          <option value="int.text" />
+          <option value="bart" />
+          <option value="OptimizerParams" />
+          <option value="str.axes" />
+          <option value="mridc.utils.model_utils" />
+          <option value="mridc.core.classes.common.Serialization._cfg" />
+          <option value="mridc.core.classes.export.Exportable.freeze" />
+          <option value="tuple.kind" />
+          <option value="mridc.core.classes.export.Exportable.forward_for_export" />
+          <option value="mridc.core.classes.export.Exportable.*" />
+          <option value="pytorch_lightning.trainer.trainer.Trainer.*" />
+          <option value="mridc.core.optim.*" />
+          <option value="torch.utils.data.sampler.Sampler.*" />
+          <option value="torch.nn.functional" />
+          <option value="omegaconf.omegaconf.OmegaConf.__setitem__" />
+          <option value="gaussian_std_scaling_factor" />
+          <option value="list.shape" />
+          <option value="nibabel.filebasedimages.FileBasedHeader.__getitem__" />
+          <option value="Examples" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>

@@ -244,63 +244,6 @@ class qMRIDataTransforms:
         elif mask.ndim != 0:
             mask = torch.from_numpy(mask)
 
-        if self.apply_prewhitening:
-            kspace = torch.stack(
-                [self.prewhitening(kspace[echo]) for echo in range(kspace.shape[0])],  # type: ignore
-                dim=0,
-            )
-
-        if self.gcc is not None:
-            kspace = torch.stack([self.gcc(kspace[echo]) for echo in range(kspace.shape[0])], dim=0)
-            if isinstance(sensitivity_map, torch.Tensor):
-                sensitivity_map = fft.ifft2(
-                    self.gcc(
-                        fft.fft2(
-                            sensitivity_map,
-                            centered=self.fft_centered,
-                            normalization=self.fft_normalization,
-                            spatial_dims=self.spatial_dims,
-                        )
-                    ),
-                    centered=self.fft_centered,
-                    normalization=self.fft_normalization,
-                    spatial_dims=self.spatial_dims,
-                )
-
-        # Apply zero-filling on kspace
-        if self.kspace_zero_filling_size is not None and self.kspace_zero_filling_size not in ("", "None"):
-            padding_top = np.floor_divide(abs(int(self.kspace_zero_filling_size[0]) - kspace.shape[2]), 2)
-            padding_bottom = padding_top
-            padding_left = np.floor_divide(abs(int(self.kspace_zero_filling_size[1]) - kspace.shape[3]), 2)
-            padding_right = padding_left
-
-            kspace = torch.view_as_complex(kspace)
-            kspace = torch.nn.functional.pad(
-                kspace, pad=(padding_left, padding_right, padding_top, padding_bottom), mode="constant", value=0
-            )
-            kspace = torch.view_as_real(kspace)
-
-            sensitivity_map = fft.fft2(
-                sensitivity_map,
-                centered=self.fft_centered,
-                normalization=self.fft_normalization,
-                spatial_dims=self.spatial_dims,
-            )
-            sensitivity_map = torch.view_as_complex(sensitivity_map)
-            sensitivity_map = torch.nn.functional.pad(
-                sensitivity_map,
-                pad=(padding_left, padding_right, padding_top, padding_bottom),
-                mode="constant",
-                value=0,
-            )
-            sensitivity_map = torch.view_as_real(sensitivity_map)
-            sensitivity_map = fft.ifft2(
-                sensitivity_map,
-                centered=self.fft_centered,
-                normalization=self.fft_normalization,
-                spatial_dims=self.spatial_dims,
-            )
-
         # Initial estimation
         eta = utils.to_tensor(eta) if eta is not None and eta.size != 0 else torch.tensor([])
 

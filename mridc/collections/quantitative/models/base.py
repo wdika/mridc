@@ -673,21 +673,17 @@ class BaseqMRIReconstructionModel(base_reconstruction_models.BaseMRIReconstructi
                         torch.abs(target[:, echo_time, :, :] - recon_pred[:, echo_time, :, :]),  # type: ignore
                     )
 
-            self.log_image(f"{key}/R2star/target", R2star_map_target)
-            self.log_image(f"{key}/R2star/reconstruction", R2star_map_output)
-            self.log_image(f"{key}/R2star/error", torch.abs(R2star_map_target - R2star_map_output))
+            target_qmaps = torch.cat(
+                [R2star_map_target, S0_map_target, B0_map_target, phi_map_target], dim=-1
+            )
+            output_qmaps = torch.cat(
+                [R2star_map_output, S0_map_output, B0_map_output, phi_map_output], dim=-1
+            )
+            error_qmaps = torch.abs(target_qmaps - output_qmaps)
 
-            self.log_image(f"{key}/S0/target", S0_map_target)
-            self.log_image(f"{key}/S0/reconstruction", S0_map_output)
-            self.log_image(f"{key}/S0/error", S0_map_target - S0_map_output)
-
-            self.log_image(f"{key}/B0/target", B0_map_target)
-            self.log_image(f"{key}/B0/reconstruction", B0_map_output)
-            self.log_image(f"{key}/B0/error", torch.abs(B0_map_target - B0_map_output))
-
-            self.log_image(f"{key}/phi/target", phi_map_target)
-            self.log_image(f"{key}/phi/reconstruction", phi_map_output)
-            self.log_image(f"{key}/phi/error", phi_map_target - phi_map_output)
+            self.log_image(f"{key}/qmaps/target", target_qmaps)
+            self.log_image(f"{key}/qmaps/reconstruction", output_qmaps)
+            self.log_image(f"{key}/qmaps/error", error_qmaps)
 
         if self.use_reconstruction_module:
             recon_pred = recon_pred.numpy()  # type: ignore

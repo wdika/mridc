@@ -1,0 +1,163 @@
+pretrained: false
+checkpoint: None
+mode: train
+
+model:
+  model_name: UNET
+  channels: 64
+  pooling_layers: 2
+  in_channels: 2
+  out_channels: 2
+  padding_size: 11
+  dropout: 0.0
+  normalize: true
+  norm_groups: 2
+  dimensionality: 2
+  loss_fn: l1
+  kspace_reconstruction_loss: false
+  reconstruction_loss_regularization_factor: .9
+  unnormalize_loss_inputs: false
+  coil_combination_method: SENSE
+  ssdu: false
+  n2r: false
+  n2r_loss_regularization_factor: .1
+  fft_centered: true
+  fft_normalization: ortho
+  spatial_dims:
+  - -2
+  - -1
+  coil_dim: 1
+  use_sens_net: false
+  consecutive_slices: 1
+  log_images: true
+
+  train_ds:
+    data_path: /scratch/iskylitsis/data/mridata_knee_2019/train
+    coil_sensitivity_maps_path: None
+    mask_path: None
+    dataset_format: stanford_knees
+    sample_rate: 1
+    volume_sample_rate: None
+    use_dataset_cache: false
+    dataset_cache_file: None
+    num_cols: None
+    consecutive_slices: 1
+    data_saved_per_slice: false
+    apply_prewhitening: false
+    apply_gcc: false
+    coil_combination_method: SENSE
+    dimensionality: 2
+    mask_args:
+      type: poisson2d
+      accelerations:
+      - 12
+      center_fractions:
+      - 0.7
+      scale: 0.02
+      shift_mask: false
+      use_seed: true
+    half_scan_percentage: 0.0
+    remask: false
+    ssdu: false
+    n2r: false
+    crop_size: None
+    kspace_crop: false
+    crop_before_masking: true
+    kspace_zero_filling_size: None
+    normalize_inputs: true
+    normalization_type: max
+    kspace_normalization: false
+    fft_centered: true
+    fft_normalization: ortho
+    spatial_dims:
+    - -2
+    - -1
+    coil_dim: 1
+    use_seed: true
+    batch_size: 1
+    shuffle: true
+    num_workers: 4
+    pin_memory: false
+    drop_last: false
+
+  validation_ds:
+    data_path: /scratch/iskylitsis/data/mridata_knee_2019/val
+    coil_sensitivity_maps_path: None
+    mask_path: None
+    dataset_format: stanford_knees
+    sample_rate: 1
+    volume_sample_rate: None
+    use_dataset_cache: false
+    dataset_cache_file: None
+    num_cols: None
+    consecutive_slices: 1
+    data_saved_per_slice: false
+    apply_prewhitening: false
+    apply_gcc: false
+    coil_combination_method: SENSE
+    dimensionality: 2
+    mask_args:
+      type: poisson2d
+      accelerations:
+      - 12
+      center_fractions:
+      - 0.7
+      scale: 0.02
+      shift_mask: false
+      use_seed: false
+    half_scan_percentage: 0.0
+    remask: false
+    ssdu: false
+    n2r: false
+    crop_size: None
+    kspace_crop: false
+    crop_before_masking: true
+    kspace_zero_filling_size: None
+    normalize_inputs: true
+    normalization_type: max
+    kspace_normalization: false
+    fft_centered: true
+    fft_normalization: ortho
+    spatial_dims:
+    - -2
+    - -1
+    coil_dim: 1
+    use_seed: false
+    batch_size: 1
+    shuffle: false
+    num_workers: 4
+    pin_memory: false
+
+  optim:
+    name: adam
+    lr: 1e-4
+    betas:
+    - 0.9
+    - 0.999
+    weight_decay: 0.0
+    sched:
+      name: InverseSquareRootAnnealing
+      min_lr: 0.0
+      last_epoch: -1
+      warmup_ratio: 0.1
+
+trainer:
+  strategy: ddp_find_unused_parameters_false
+  accelerator: gpu
+  devices: 1
+  num_nodes: 1
+  max_epochs: 20
+  precision: 16
+  enable_checkpointing: false
+  logger: false
+  log_every_n_steps: 50
+  check_val_every_n_epoch: -1
+  max_steps: -1
+
+exp_manager:
+  exp_dir: /data/projects/recon/other/dkarkalousos/UnSelfSupervised/trained_models/UNET_stanford_knees_Poisson2d_12x
+  create_tensorboard_logger: true
+  create_wandb_logger: false
+  wandb_logger_kwargs:
+    project: ???
+  files_to_copy: [ ]

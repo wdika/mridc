@@ -5,51 +5,10 @@ mode: train
 model:
   model_name: qCIRIM
   use_reconstruction_module: false
-  reconstruction_module_recurrent_layer: GRU
-  reconstruction_module_conv_filters:
-    - 128
-    - 128
-    - 2
-  reconstruction_module_conv_kernels:
-    - 5
-    - 3
-    - 3
-  reconstruction_module_conv_dilations:
-    - 1
-    - 2
-    - 1
-  reconstruction_module_conv_bias:
-    - true
-    - true
-    - false
-  reconstruction_module_recurrent_filters:
-    - 128
-    - 128
-    - 0
-  reconstruction_module_recurrent_kernels:
-    - 1
-    - 1
-    - 0
-  reconstruction_module_recurrent_dilations:
-    - 1
-    - 1
-    - 0
-  reconstruction_module_recurrent_bias:
-    - true
-    - true
-    - false
-  reconstruction_module_depth: 2
-  reconstruction_module_time_steps: 8
-  reconstruction_module_conv_dim: 2
-  reconstruction_module_num_cascades: 1
-  reconstruction_module_dimensionality: 2
-  reconstruction_module_no_dc: true
-  reconstruction_module_keep_eta: true
-  reconstruction_module_accumulate_estimates: true
   quantitative_module_recurrent_layer: GRU
   quantitative_module_conv_filters:
-    - 128
-    - 128
+    - 64
+    - 64
     - 4
   quantitative_module_conv_kernels:
     - 5
@@ -64,8 +23,8 @@ model:
     - true
     - false
   quantitative_module_recurrent_filters:
-    - 128
-    - 128
+    - 64
+    - 64
     - 0
   quantitative_module_recurrent_kernels:
     - 1
@@ -123,19 +82,19 @@ model:
   log_images: true
 
   train_ds:
-    data_path: ???
+    data_path: /data/projects/recon/data/qMRI/dimitris/data/Brain_MEGRE/multicoil_train
     sense_path: None
     mask_path: None
     initial_predictions_path: None
     challenge: multicoil
     batch_size: 1
-    sample_rate: 1
+    sample_rate: .1
     volume_sample_rate: None
     use_dataset_cache: false
     dataset_cache_file: None
     num_cols: None
     consecutive_slices: 1
-    data_saved_per_slice: false
+    data_saved_per_slice: true
     complex_data: true
     apply_prewhitening: false
     apply_gcc: false
@@ -161,13 +120,7 @@ model:
       type: gaussian2d
       accelerations:
         - 3
-        - 6
-        - 9
-        - 12
       center_fractions:
-        - 0.7
-        - 0.7
-        - 0.7
         - 0.7
       scale: 0.02
       shift_mask: false
@@ -183,19 +136,19 @@ model:
     pin_memory: false
 
   validation_ds:
-    data_path: ???
+    data_path: /data/projects/recon/data/qMRI/dimitris/data/Brain_MEGRE/multicoil_val
     sense_path: None
     mask_path: None
     initial_predictions_path: None
     challenge: multicoil
     batch_size: 1
-    sample_rate: 1
+    sample_rate: .1
     volume_sample_rate: None
     use_dataset_cache: false
     dataset_cache_file: None
     num_cols: None
     consecutive_slices: 1
-    data_saved_per_slice: false
+    data_saved_per_slice: true
     complex_data: true
     apply_prewhitening: false
     apply_gcc: false
@@ -221,13 +174,7 @@ model:
       type: gaussian2d
       accelerations:
         - 3
-        - 6
-        - 9
-        - 12
       center_fractions:
-        - 0.7
-        - 0.7
-        - 0.7
         - 0.7
       scale: 0.02
       shift_mask: false
@@ -269,7 +216,7 @@ trainer:
   max_steps: -1
 
 exp_manager:
-  exp_dir: ???
+  exp_dir: /data/projects/recon/other/dkarkalousos/atommic/quantitative/trained_models/AHEAD_gaussian2d_12x/qRIM_mridc/
   create_tensorboard_logger: true
   create_wandb_logger: false
   wandb_logger_kwargs:
