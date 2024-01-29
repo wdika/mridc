@@ -67,7 +67,6 @@ class ConvLSTMCell(nn.Module):
 
 
 class ConvLSTM(nn.Module):
-
     """
 
     Parameters:

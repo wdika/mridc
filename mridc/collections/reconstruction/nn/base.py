@@ -155,9 +155,9 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                     {
                         "min": attrs["prediction_min"] if "prediction_min" in attrs else attrs[f"prediction_min_{r}"],
                         "max": attrs["prediction_max"] if "prediction_max" in attrs else attrs[f"prediction_max_{r}"],
-                        "mean": attrs["prediction_mean"]
-                        if "prediction_mean" in attrs
-                        else attrs[f"prediction_mean_{r}"],
+                        "mean": (
+                            attrs["prediction_mean"] if "prediction_mean" in attrs else attrs[f"prediction_mean_{r}"]
+                        ),
                         "std": attrs["prediction_std"] if "prediction_std" in attrs else attrs[f"prediction_std_{r}"],
                     },
                     self.normalization_type,
@@ -165,18 +165,22 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                 prediction = utils.unnormalize(
                     prediction,
                     {
-                        "min": attrs["noise_prediction_min"]
-                        if "noise_prediction_min" in attrs
-                        else attrs[f"noise_prediction_min_{r}"],
-                        "max": attrs["noise_prediction_max"]
-                        if "noise_prediction_max" in attrs
-                        else attrs[f"noise_prediction_max_{r}"],
-                        attrs["noise_prediction_mean"]
-                        if "noise_prediction_mean" in attrs
-                        else "mean": attrs[f"noise_prediction_mean_{r}"],
-                        attrs["noise_prediction_std"]
-                        if "noise_prediction_std" in attrs
-                        else "std": attrs[f"noise_prediction_std_{r}"],
+                        "min": (
+                            attrs["noise_prediction_min"]
+                            if "noise_prediction_min" in attrs
+                            else attrs[f"noise_prediction_min_{r}"]
+                        ),
+                        "max": (
+                            attrs["noise_prediction_max"]
+                            if "noise_prediction_max" in attrs
+                            else attrs[f"noise_prediction_max_{r}"]
+                        ),
+                        attrs["noise_prediction_mean"] if "noise_prediction_mean" in attrs else "mean": attrs[
+                            f"noise_prediction_mean_{r}"
+                        ],
+                        attrs["noise_prediction_std"] if "noise_prediction_std" in attrs else "std": attrs[
+                            f"noise_prediction_std_{r}"
+                        ],
                     },
                     self.normalization_type,
                 )
@@ -196,9 +200,9 @@ class BaseMRIReconstructionModel(BaseMRIModel, ABC):  # type: ignore
                     {
                         "min": attrs["prediction_min"] if "prediction_min" in attrs else attrs[f"prediction_min_{r}"],
                         "max": attrs["prediction_max"] if "prediction_max" in attrs else attrs[f"prediction_max_{r}"],
-                        "mean": attrs["prediction_mean"]
-                        if "prediction_mean" in attrs
-                        else attrs[f"prediction_mean_{r}"],
+                        "mean": (
+                            attrs["prediction_mean"] if "prediction_mean" in attrs else attrs[f"prediction_mean_{r}"]
+                        ),
                         "std": attrs["prediction_std"] if "prediction_std" in attrs else attrs[f"prediction_std_{r}"],
                     },
                     self.normalization_type,
