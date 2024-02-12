@@ -346,7 +346,15 @@ class BaseqMRIReconstructionModel(base_reconstruction_models.BaseMRIReconstructi
             acc,
         ) = batch
 
-        (R2star_map_init, S0_map_init, B0_map_init, phi_map_init, y, sampling_mask, r,) = self.process_inputs(
+        (
+            R2star_map_init,
+            S0_map_init,
+            B0_map_init,
+            phi_map_init,
+            y,
+            sampling_mask,
+            r,
+        ) = self.process_inputs(
             R2star_map_init,
             S0_map_init,
             B0_map_init,
@@ -527,7 +535,15 @@ class BaseqMRIReconstructionModel(base_reconstruction_models.BaseMRIReconstructi
             acc,
         ) = batch
 
-        (R2star_map_init, S0_map_init, B0_map_init, phi_map_init, y, sampling_mask, r,) = self.process_inputs(
+        (
+            R2star_map_init,
+            S0_map_init,
+            B0_map_init,
+            phi_map_init,
+            y,
+            sampling_mask,
+            r,
+        ) = self.process_inputs(
             R2star_map_init,
             S0_map_init,
             B0_map_init,
@@ -673,12 +689,8 @@ class BaseqMRIReconstructionModel(base_reconstruction_models.BaseMRIReconstructi
                         torch.abs(target[:, echo_time, :, :] - recon_pred[:, echo_time, :, :]),  # type: ignore
                     )
 
-            target_qmaps = torch.cat(
-                [R2star_map_target, S0_map_target, B0_map_target, phi_map_target], dim=-1
-            )
-            output_qmaps = torch.cat(
-                [R2star_map_output, S0_map_output, B0_map_output, phi_map_output], dim=-1
-            )
+            target_qmaps = torch.cat([R2star_map_target, S0_map_target, B0_map_target, phi_map_target], dim=-1)
+            output_qmaps = torch.cat([R2star_map_output, S0_map_output, B0_map_output, phi_map_output], dim=-1)
             error_qmaps = torch.abs(target_qmaps - output_qmaps)
 
             self.log_image(f"{key}/qmaps/target", target_qmaps)
@@ -888,7 +900,15 @@ class BaseqMRIReconstructionModel(base_reconstruction_models.BaseMRIReconstructi
             acc,
         ) = batch
 
-        (R2star_map_init, S0_map_init, B0_map_init, phi_map_init, y, sampling_mask, r,) = self.process_inputs(
+        (
+            R2star_map_init,
+            S0_map_init,
+            B0_map_init,
+            phi_map_init,
+            y,
+            sampling_mask,
+            r,
+        ) = self.process_inputs(
             R2star_map_init,
             S0_map_init,
             B0_map_init,

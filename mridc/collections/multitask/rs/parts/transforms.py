@@ -411,9 +411,7 @@ class RSMRIDataTransforms:
     def __str__(self) -> str:
         return self.__repr__()
 
-    def __process_kspace__(
-        self, kspace: np.ndarray, mask: Union[np.ndarray, None], attrs: Dict, fname: str
-    ) -> Tuple[
+    def __process_kspace__(self, kspace: np.ndarray, mask: Union[np.ndarray, None], attrs: Dict, fname: str) -> Tuple[
         torch.Tensor,
         Union[List[torch.Tensor], torch.Tensor],
         Union[List[torch.Tensor], torch.Tensor],
