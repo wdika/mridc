@@ -69,12 +69,8 @@ def log_likelihood_gradient(  # noqa: W0221
     )
     pred_real, pred_imag = pred.chunk(2, -1)
 
-    re_out = torch.sum(pred_real * sensitivity_maps_real + pred_imag * sensitivity_maps_imag, coil_dim) / (
-        sigma**2.0
-    )
-    im_out = torch.sum(pred_imag * sensitivity_maps_real - pred_real * sensitivity_maps_imag, coil_dim) / (
-        sigma**2.0
-    )
+    re_out = torch.sum(pred_real * sensitivity_maps_real + pred_imag * sensitivity_maps_imag, coil_dim) / (sigma**2.0)
+    im_out = torch.sum(pred_imag * sensitivity_maps_real - pred_real * sensitivity_maps_imag, coil_dim) / (sigma**2.0)
 
     prediction_real = prediction_real.squeeze(coil_dim)
     prediction_imag = prediction_imag.squeeze(coil_dim)
