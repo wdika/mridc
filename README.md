@@ -1,3 +1,7 @@
+# mridc is no longer active! Please check [ATOMMIC](https://github.com/wdika/atommic), which integrates mridc and majorly extends it. Thank you all for checking out mridc :) 
+
+---
+
 # Data Consistency for Magnetic Resonance Imaging
 
 [![CodeQL](https://github.com/wdika/mridc/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/wdika/mridc/actions/workflows/codeql-analysis.yml)
